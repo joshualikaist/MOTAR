@@ -1,0 +1,728 @@
+{
+ "scope": "SMOKE_AND_COUNTEREXAMPLES_NOT_ACCURACY",
+ "synthetic": {
+  "F1 empty scene, belief 12 m": {
+   "v1": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "DEPTH_FOREGROUND_BEFORE_EXPECTED_SURFACE"
+    ]
+   },
+   "v2": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "INCONCLUSIVE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 0,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 1,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F1 empty scene, belief 10 m": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NO_RETURN_BEYOND_OBSTACLE_FAR_PLANE",
+     "INCONCLUSIVE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 4,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F1 empty scene, belief 9 m": {
+   "v1": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_SEES_BEYOND_EXPECTED_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ]
+   },
+   "v2": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 4,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F1 bar 8.6 m before belief 9.6 m": {
+   "v1": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "DEPTH_FOREGROUND_BEFORE_EXPECTED_SURFACE"
+    ]
+   },
+   "v2": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_OBSTACLE_FOREGROUND",
+     "LIDAR_FOREGROUND_AGREES",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 4,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": true
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 1,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": true
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F1 upsampling blend beside LOS": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 4,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F2 side bar, clear LOS (Fable case)": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 4,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F2 bar crossing LOS": {
+   "v1": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "DEPTH_FOREGROUND_BEFORE_EXPECTED_SURFACE"
+    ]
+   },
+   "v2": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_OBSTACLE_FOREGROUND",
+     "LIDAR_FOREGROUND_AGREES",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 4,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": true
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 1,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": true
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F2 bar behind belief": {
+   "v1": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_SEES_BEYOND_EXPECTED_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ]
+   },
+   "v2": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 4,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F3 depth all zero": {
+   "v1": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "DEPTH_FOREGROUND_BEFORE_EXPECTED_SURFACE"
+    ]
+   },
+   "v2": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_INPUT_UNUSABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 0,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 0,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F3 LiDAR all zero": {
+   "v1": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "LIDAR_ONLY_FOREGROUND"
+    ]
+   },
+   "v2": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "LIDAR_INPUT_UNUSABLE",
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 4,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 0,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F4 thin bar across envelope": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "SENSOR_DISAGREEMENT_CAMERA_FOREGROUND_LIDAR_CLEAR"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 2,
+     "consistent": 0,
+     "clear": 2,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": true
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "F6 flag with nothing at track": {
+   "v1": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION"
+    ],
+    "identity": "CONTRADICTED",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 4,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 0,
+    "near_warning": false
+   }
+  },
+  "visible target, flag set": {
+   "v1": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_SUPPORTED"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 4,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 1,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 44,
+    "near_warning": false
+   }
+  }
+ },
+ "q01_frames": {
+  "frame0 recorded_flag": {
+   "v1": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_SUPPORTED"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 4,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 1,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 68,
+    "near_warning": false
+   }
+  },
+  "frame0 camera_flag_cleared": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 4,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 1,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 68,
+    "near_warning": false
+   }
+  },
+  "frame1 recorded_flag": {
+   "v1": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_SUPPORTED"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 4,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 1,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 86,
+    "near_warning": false
+   }
+  },
+  "frame1 camera_flag_cleared": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 4,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 4,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 1,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 86,
+    "near_warning": false
+   }
+  },
+  "frame2 recorded_flag": {
+   "v1": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_SUPPORTED"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "camera": {
+     "rays": 5,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 5,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 70,
+    "near_warning": false
+   }
+  },
+  "frame2 camera_flag_cleared": {
+   "v1": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ]
+   },
+   "v2": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "camera": {
+     "rays": 5,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 0,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 5,
+     "foreground_extended": false
+    },
+    "lidar": {
+     "rays": 1,
+     "foreground": 0,
+     "consistent": 0,
+     "clear": 1,
+     "censored": 0,
+     "near_clipped": 0,
+     "unobserved": 0,
+     "foreground_extended": false
+    },
+    "pasted": 70,
+    "near_warning": false
+   }
+  }
+ }
+}

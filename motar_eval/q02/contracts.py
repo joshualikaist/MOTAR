@@ -18,6 +18,10 @@ DEPTH_CONVENTION = "EUCLIDEAN_RAY_RANGE_M"     # range along the unit pixel ray,
 LIDAR_LAYOUT = "LIDAR_ZERO_WIDTH_4x72_5deg_10deg"
 CAMERA_OFFSET_M = (0.10, 0.0, 0.03)
 ACCEPTED_CLOCK_PROVENANCE = ("DECLARED_SIM_SCHEDULE",)
+EVIDENCE_CONTRACT_VERSION = "Q02A-v2"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit
+
+# Per-sample semantics, shared by camera depth and LiDAR.
+VALID_HIT, NO_RETURN, NEAR_CLIPPED, INVALID_SAMPLE = "VALID_HIT", "NO_RETURN", "NEAR_CLIPPED", "INVALID"
 
 
 @dataclass(frozen=True)
@@ -71,6 +75,31 @@ class LidarModel:
 
 FROZEN_F_CAMERA = frozen_f_camera()
 FROZEN_F_LIDAR = LidarModel()
+
+
+@dataclass(frozen=True)
+class SensorProfile:
+    """How the delivered depth/LiDAR samples were produced (audited source, Q02A_SPEC §2).
+
+    Camera depth = obstacle depth rendered on a native 40x24 ray grid from the camera origin
+    (environment mesh only, never the target), no hit -> far plane 10 m, bilinearly upsampled
+    (align_corners=False) to 160x90, clamped [0, 10]; distractor and then target pixels are pasted
+    over it at full resolution with their exact depth (navrl_detector.py:47-49, 875-886, 927-974).
+    LiDAR = getter output: hits in [0.2, 12) m, no hit -> 12 m, nearer than 0.2 m -> 0.0,
+    NaN/Inf -> 12 m (warp_sensor.py:233-238, navrl_lidar_config.py:71-72, navrl_task.py:6013-6017).
+    The obstacle far plane and the distractor count are not in the Q01 calibration tuple; they are
+    declared here for the pinned Frozen F profile and checked against config source text in tests.
+    """
+    obstacle_native_wh: tuple = (40, 24)
+    obstacle_far_m: float = 10.0
+    depth_near_clip_m: float = 0.05
+    lidar_no_return_m: float = 12.0
+    lidar_near_clip_value: float = 0.0
+    distractors: int = 0
+    min_obstacle_width_m: float = 0.40     # bar footprint random in [0.4, 0.8] m, 3 m tall (env_object_config.py:796-818)
+
+
+FROZEN_F_PROFILE = SensorProfile()
 
 
 @dataclass(frozen=True)

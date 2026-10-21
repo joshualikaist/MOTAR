@@ -1,7 +1,11 @@
-"""Q02-A CPU tests: contract constants, frames, validation and the evidence hypothesis rule.
+"""Q02-A CPU tests (contract Q02A-v2): constants, frames, sensor semantics, validation and the rule.
 
-Scenes are synthetic ray casts (sphere target, vertical-cylinder bars). They test the rule's
-logic against known geometry; they are not evidence of detection accuracy in the simulator.
+Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
+40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
+pasted at full resolution where it is in front of the bars; LiDAR = first hit of bars and the 0.20 m
+target proxy, < 0.2 m -> 0.0, no hit -> 12 m. The v1 helper rendered a 20 m full-resolution depth
+image, which is not what the Frozen F profile delivers; that is why v1 tests missed the Fable F1
+defect (REVIEW.md). Scenes test the rule's logic against known geometry, not detection accuracy.
 """
 import ast
 from dataclasses import fields, replace
@@ -17,10 +21,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from motar_eval.q02 import contracts as c, evidence as ev, geometry as geo, validation as va
 
-CAM, LID = c.FROZEN_F_CAMERA, c.FROZEN_F_LIDAR
+CAM, LID, PROF = c.FROZEN_F_CAMERA, c.FROZEN_F_LIDAR, c.FROZEN_F_PROFILE
 CALIB = ("YAW_ONLY", CAM.fx, CAM.fy, CAM.cx, CAM.cy, .10, 0., .03, "EUCLIDEAN_RAY_RANGE_M", 12., .2,
          "LIDAR_ZERO_WIDTH_4x72_5deg_10deg", "NO_CALIBRATED_ERROR_BOUNDS")
 POS = np.array([0., 0., 1.5])
+AV, AH = geo.bilinear_matrix(90, 24), geo.bilinear_matrix(160, 40)
 
 
 def yaw_quat(yaw):
@@ -41,28 +46,32 @@ def _cylinder_hits(origin, dirs, bars):
     return t
 
 
-def scene(target_v=None, bars=(), yaw=0.0):
-    """Vehicle-frame synthetic RGB-D (camera at its offset) and LiDAR (vehicle origin)."""
-    h, w = int(2 * CAM.cy + 1), int(2 * CAM.cx + 1)
-    vv, uu = np.mgrid[0:h, 0:w]
-    rays = geo.pixel_rays(uu, vv, CAM)
+def scene(target_v=None, bars=(), target_in_camera=True, target_in_lidar=True):
+    """Production-faithful synthetic depth (90, 160) and LiDAR (4, 72) in the vehicle frame."""
     cam_o = np.array(CAM.camera_offset)
-    t_cam = _cylinder_hits(cam_o, rays, bars)
-    lid_dirs = geo.lidar_directions(LID)
-    t_lid = _cylinder_hits(np.zeros(3), lid_dirs, bars)
-    if target_v is not None:
-        t_cam = np.minimum(t_cam, geo.sphere_first_hit(cam_o, rays, target_v, CAM.target_radius))
-        t_lid = np.minimum(t_lid, geo.sphere_first_hit(np.zeros(3), lid_dirs, target_v, LID.target_proxy_radius_m))
-    depth = np.minimum(t_cam, CAM.max_camera_range)
-    lidar = np.clip(np.minimum(t_lid, LID.max_range_m), 0, LID.max_range_m)
+    native = np.minimum(_cylinder_hits(cam_o, geo.native_camera_rays(CAM, PROF.obstacle_native_wh), bars), PROF.obstacle_far_m)
+    depth = np.clip(AV @ native @ AH.T, 0.0, PROF.obstacle_far_m)
+    vv, uu = np.mgrid[0:90, 0:160]
+    rays = geo.pixel_rays(uu, vv, CAM)
+    if target_v is not None and target_in_camera:
+        t_tgt = geo.sphere_first_hit(cam_o, rays, target_v, CAM.target_radius)
+        visible = np.isfinite(t_tgt) & (t_tgt < _cylinder_hits(cam_o, rays, bars)) & (t_tgt <= CAM.max_camera_range)
+        depth = np.where(visible, t_tgt, depth)
+    dirs = geo.lidar_directions(LID)
+    t = _cylinder_hits(np.zeros(3), dirs, bars)
+    if target_v is not None and target_in_lidar:
+        t = np.minimum(t, geo.sphere_first_hit(np.zeros(3), dirs, target_v, LID.target_proxy_radius_m))
+    lidar = np.where(t < LID.min_range_m, 0.0, np.where(t >= LID.max_range_m, LID.max_range_m, t))
     return depth.astype(np.float32), lidar.astype(np.float32)
 
 
 def make(target_v=(8., 0., 0.), *, render_target=True, bars=(), detected=False, yaw=0.0, cov_pos=0.01,
-         age=0.3, active=True, cam_clock=None, lidar_clock=None, decision=0.0, quat=None, calibration=CALIB, **kw):
-    depth, lidar = scene(np.array(target_v) if render_target else None, bars)
+         age=0.3, active=True, cam_clock=None, lidar_clock=None, decision=0.0, quat=None, calibration=CALIB,
+         target_in_camera=True, target_in_lidar=True, cov=None, **kw):
+    depth, lidar = scene(np.array(target_v) if render_target else None, bars, target_in_camera, target_in_lidar)
     world = geo.vehicle_to_world(np.array(target_v), POS, yaw)
-    cov = np.diag([cov_pos] * 3 + [0.1] * 3)
+    if cov is None:
+        cov = np.diag([cov_pos] * 3 + [0.1] * 3)
     clock = c.Clock(0.0, 0.0, "DECLARED_SIM_SCHEDULE")
     args = dict(rgb=np.zeros((3, 90, 160)), depth=depth, lidar=lidar.reshape(-1), camera_detected=detected,
                 fused_update=False, confidence=0.0, track_mean=np.r_[world, 0, 0, 0], track_cov=cov,
@@ -157,7 +166,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual(self.hyp(detected=True).hypothesis, ev.TARGET_VISIBLE)
         occ = self.hyp(bars=bar)
         self.assertEqual(occ.hypothesis, ev.OCCLUDED)
-        self.assertGreater(occ.depth_foreground, 0); self.assertGreater(occ.lidar_foreground, 0)
+        self.assertGreater(occ.camera.foreground, 0); self.assertGreater(occ.lidar.foreground, 0)  # v2 field names
         self.assertEqual(self.hyp(target_v=(-6., 2., 0.)).hypothesis, ev.OUT_OF_FOV)
         miss = self.hyp(render_target=False)  # free line of sight, nothing at the predicted place
         self.assertEqual(miss.hypothesis, ev.DETECTION_MISS)
@@ -188,7 +197,7 @@ class EvidenceTests(unittest.TestCase):
     def test_lidar_failure_degrades_to_depth_only_with_reason(self):
         r = self.hyp(bars=((4., 0., .3),), lidar=np.full(288, np.nan))
         self.assertEqual(r.hypothesis, ev.OCCLUDED); self.assertIn("LIDAR_INPUT_UNUSABLE", r.reasons)
-        self.assertEqual(r.lidar_beams, 0)
+        self.assertEqual(r.lidar.rays, 0)  # v2 field name
 
     def test_frames_used_consistently_under_yaw(self):
         # The same vehicle-frame scene seen with the vehicle yawed 90 degrees in the world.
@@ -200,7 +209,9 @@ class EvidenceTests(unittest.TestCase):
     def test_record_semantics_and_no_ground_truth(self):
         r = self.hyp(bars=((4., 0., .3),))
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
-        self.assertEqual(r.confidence_semantics, "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY")
+        # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
+        self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
+        self.assertEqual(r.contract_version, "Q02A-v2")
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -240,6 +251,173 @@ class EvidenceTests(unittest.TestCase):
         r = ev.estimate(c.EvidenceInput.from_packet(packet))
         self.assertEqual(r.validation_problems, ())
         self.assertEqual(r.hypothesis, ev.DETECTION_MISS)  # empty 10 m depth / 12 m LiDAR beyond a target at 8 m
+
+
+def hyp(**kw):
+    return ev.estimate(make(**kw))
+
+
+class SensorSemanticsTests(unittest.TestCase):
+    """Fable review F1-F7 (docs/evidence/q02a_fable_review_2026-10-21/REVIEW.md) as regression tests."""
+
+    def test_production_sentinels_in_config_text(self):
+        task = (ROOT / "aerial_gym/config/task_config/navrl_task_config.py").read_text()
+        det = (ROOT / "aerial_gym/task/navrl_task/navrl_detector.py").read_text()
+        lidar = (ROOT / "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py").read_text()
+        for pattern in (r"camera_obstacle_width = 40", r"camera_obstacle_height = 24", r"camera_obstacle_max_range = 10\.0"):
+            self.assertRegex(task, pattern)
+        self.assertRegex(det, r'mode="bilinear",\s*align_corners=False')
+        self.assertRegex(det, r"dist = far_plane")
+        self.assertRegex(lidar, r"far_out_of_range_value = max_range")
+        self.assertRegex(lidar, r"near_out_of_range_value = -max_range")
+
+    def test_native_recovery_is_exact_and_matches_torch_operator(self):
+        import torch
+        rng = np.random.default_rng(11)
+        x = rng.uniform(0.5, 10.0, (24, 40)); x[rng.uniform(size=x.shape) < 0.7] = 10.0
+        y = torch.nn.functional.interpolate(torch.tensor(x)[None, None], size=(90, 160), mode="bilinear",
+                                            align_corners=False)[0, 0].numpy()
+        self.assertLess(np.abs(AV @ x @ AH.T - y).max(), 1e-12)
+        native, pasted, residual = geo.recover_native_depth(y.astype(np.float32), (40, 24))
+        self.assertLess(np.abs(native - x).max(), 1e-5); self.assertFalse(pasted.any())
+        vv, uu = np.mgrid[0:90, 0:160]
+        y2 = y.copy(); blob = (vv - 45) ** 2 + (uu - 90) ** 2 < 49; y2[blob] = 3.0 + 0.001 * (uu[blob] - 90) ** 2
+        native2, pasted2, _ = geo.recover_native_depth(y2.astype(np.float32), (40, 24))
+        seen = np.isfinite(native2)
+        self.assertTrue(pasted2[blob].all())                      # every pasted pixel is excluded
+        self.assertLess(np.abs(native2[seen] - x[seen]).max(), 1e-5)  # observed cells stay exact
+        self.assertLess(seen.mean(), 1.0)                           # cells hidden by the blob are UNOBSERVED
+
+    def test_F1_ten_metre_fill_is_no_return_not_a_surface(self):
+        self.assertEqual(list(va.classify_depth_native([10.0, 9.9995, 9.5, 0.01, np.nan], PROF)),
+                         [c.NO_RETURN, c.NO_RETURN, c.VALID_HIT, c.NEAR_CLIPPED, c.INVALID_SAMPLE])
+        far = hyp(target_v=(12., 0., 0.), render_target=False)          # v1: OCCLUDED from the fill
+        self.assertEqual(far.hypothesis, ev.UNKNOWN)                    # 0.35 m envelope falls between native rays
+        self.assertIn("CAMERA_NATIVE_NO_COVERAGE", far.reasons)
+        wide = np.diag([0.01, 0.04, 0.04, .1, .1, .1])                  # envelope 0.55 m: native rays reach it
+        far = hyp(target_v=(12., 0., 0.), render_target=False, cov=wide)
+        self.assertEqual(far.hypothesis, ev.UNKNOWN); self.assertGreater(far.camera.censored, 0)
+        self.assertIn("CAMERA_NO_RETURN_BEYOND_OBSTACLE_FAR_PLANE", far.reasons)
+        at10 = hyp(target_v=(10.0, 0., 0.), render_target=False)        # v1: IDENTITY_AMBIGUOUS from the fill
+        self.assertNotIn(at10.hypothesis, (ev.OCCLUDED, ev.IDENTITY_AMBIGUOUS))
+        near = hyp(target_v=(9., 0., 0.), render_target=False)          # space before the far plane is observed
+        self.assertEqual(near.hypothesis, ev.DETECTION_MISS)
+
+    def test_F1_real_foreground_before_the_far_plane_is_occlusion(self):
+        r = hyp(target_v=(9.6, 0., 0.), render_target=False, bars=((8.6, 0., .3),))
+        self.assertEqual(r.hypothesis, ev.OCCLUDED); self.assertIn("CAMERA_OBSTACLE_FOREGROUND", r.reasons)
+        r = hyp(target_v=(12., 0., 0.), render_target=False, bars=((6., 0., .3),))   # target beyond 10 m, bar before
+        self.assertEqual(r.hypothesis, ev.OCCLUDED)
+
+    def test_F1_upsampling_blend_beside_the_line_of_sight_is_not_occlusion(self):
+        bars = ((4., 0.5, .3),)   # bar edge 0.2 m beside the LOS at 4 m: outside the envelope (0.175 m there)
+        inp = make(render_target=False, bars=bars)
+        u, v, _, _ = geo.project(geo.vehicle_to_camera(np.array([8., 0., 0.]), CAM)[None], CAM)
+        window = inp.depth[int(round(v[0])) - 3:int(round(v[0])) + 4, int(round(u[0])) - 6:int(round(u[0])) + 7]
+        self.assertLess(window.min(), PROF.obstacle_far_m - 0.5)   # the v1 square window saw a blended "surface"
+        self.assertEqual(ev.estimate(inp).hypothesis, ev.DETECTION_MISS)
+
+    def test_F2_lidar_rays_must_pass_through_the_target_envelope(self):
+        side = ((4 * math.cos(math.radians(8)), 4 * math.sin(math.radians(8)), .30),)   # Fable F2 case
+        r = hyp(render_target=False, bars=side)
+        self.assertNotEqual(r.hypothesis, ev.OCCLUDED); self.assertEqual(r.lidar.foreground, 0)
+        crossing = hyp(render_target=False, bars=((4., 0., .3),))
+        self.assertEqual(crossing.hypothesis, ev.OCCLUDED); self.assertGreater(crossing.lidar.foreground, 0)
+        behind = hyp(render_target=False, bars=((9.5, 0., .3),))
+        self.assertEqual(behind.hypothesis, ev.DETECTION_MISS)
+        self.assertEqual((behind.camera.foreground, behind.lidar.foreground), (0, 0))
+
+    def test_F2_adjacent_object_depends_on_belief_spread_and_spread_is_capped(self):
+        beside = ((8., 0.6, .15),)
+        self.assertEqual(hyp(render_target=False, bars=beside).hypothesis, ev.DETECTION_MISS)   # small sigma: outside
+        wide = np.diag([0.01, 0.09, 0.09, .1, .1, .1])    # lateral sigma 0.3 m -> envelope 0.75 m
+        self.assertEqual(hyp(render_target=False, bars=beside, cov=wide).hypothesis, ev.IDENTITY_AMBIGUOUS)
+        huge = np.diag([0.01, 0.5, 0.5, .1, .1, .1])      # 2 * 0.71 m > 0.8 m cap
+        r = hyp(render_target=False, bars=beside, cov=huge)
+        self.assertEqual((r.hypothesis, r.reasons), (ev.UNKNOWN, ("BELIEF_TOO_DIFFUSE_FOR_RAY_TEST",)))
+
+    def test_F2_each_sensor_uses_its_own_origin(self):
+        d = np.array([[1., 0., 0.]])
+        cam_in, cam_entry, _, _ = geo.ray_envelope(np.array(CAM.camera_offset), d, [8., 0., 0.03], 0.15)
+        lid_in, lid_entry, _, _ = geo.ray_envelope(np.zeros(3), d, [8., 0., 0.03], 0.15)
+        self.assertTrue(cam_in[0] and lid_in[0])
+        self.assertAlmostEqual(cam_entry[0], 7.9 - 0.15)                         # camera at (0.10, 0, 0.03)
+        self.assertAlmostEqual(lid_entry[0], 8.0 - math.sqrt(0.15 ** 2 - 0.03 ** 2))  # LiDAR at the vehicle centre
+        off_axis_in, _, _, perp = geo.ray_envelope(np.array(CAM.camera_offset), d, [8., 0., 0.20], 0.15)
+        self.assertFalse(off_axis_in[0]); self.assertAlmostEqual(perp[0], 0.17)
+
+    def test_F3_zero_values_are_near_clipped_not_obstacles(self):
+        self.assertEqual(list(va.classify_lidar([0.0, 0.1, 0.2, 5.0, 12.0, np.nan, np.inf], LID, PROF)),
+                         [c.NEAR_CLIPPED, c.INVALID_SAMPLE, c.VALID_HIT, c.VALID_HIT, c.NO_RETURN,
+                          c.INVALID_SAMPLE, c.INVALID_SAMPLE])
+        zero_depth = hyp(render_target=False, depth=np.zeros((90, 160)))
+        self.assertEqual((zero_depth.hypothesis, zero_depth.reasons), (ev.UNKNOWN, ("CAMERA_INPUT_UNUSABLE",)))
+        self.assertIn("depth:INVALID", " ".join(zero_depth.validation_problems))
+        zero_lidar = hyp(render_target=False, lidar=np.zeros(288))   # LiDAR invalid, camera still informs
+        self.assertEqual(zero_lidar.hypothesis, ev.DETECTION_MISS); self.assertIn("LIDAR_INPUT_UNUSABLE", zero_lidar.reasons)
+        base = make(render_target=False)
+        on_los = np.array(base.lidar); on_los[1:3, 36] = 0.0          # near-clipped beams on the line of sight
+        r = hyp(render_target=False, lidar=on_los.reshape(-1))
+        self.assertEqual(r.hypothesis, ev.UNKNOWN); self.assertIn("NEAR_CLIPPED_IN_LINE_OF_SIGHT", r.reasons)
+        self.assertTrue(r.near_obstacle_warning)
+        elsewhere = np.array(base.lidar); elsewhere[2, 0] = 0.0       # behind the vehicle: warning only
+        r = hyp(render_target=False, lidar=elsewhere.reshape(-1))
+        self.assertEqual(r.hypothesis, ev.DETECTION_MISS); self.assertTrue(r.near_obstacle_warning)
+        self.assertEqual(r.near_clipped_lidar_beams, 1)
+        for bad in (np.full(288, np.nan), np.r_[np.full(287, 12.0), np.inf], np.r_[np.full(287, 12.0), 0.1]):
+            self.assertEqual(va.validate(make(render_target=False, lidar=bad), CAM, LID).status("lidar"), va.INVALID)
+
+    def test_F3_foreign_depth_content_fails_closed(self):
+        noise = np.random.default_rng(5).uniform(1, 9, (90, 160))   # not a 40x24 upsample
+        report = va.validate(make(render_target=False, depth=noise), CAM, LID)
+        self.assertEqual(report.status("depth_structure"), va.FRAME_MISMATCH)
+        self.assertEqual(hyp(render_target=False, depth=noise).hypothesis, ev.UNKNOWN)
+
+    def test_F4_foreground_inside_the_envelope_vetoes_a_clear_line_of_sight(self):
+        r = hyp(render_target=False, bars=((4., 0.12, .08),))   # thin bar partly across the envelope
+        self.assertNotEqual(r.hypothesis, ev.DETECTION_MISS)
+
+    def test_F5_target_nearer_than_predicted_is_not_called_occluded(self):
+        inp = make(target_v=(7., 0., 0.), target_in_camera=False)
+        mean = np.array(inp.track_mean); mean[0] += 1.0             # belief 1 m too far
+        r = ev.estimate(make(target_v=(7., 0., 0.), target_in_camera=False, track_mean=mean))
+        self.assertEqual(r.hypothesis, ev.UNKNOWN)          # LiDAR sees the target early, camera sees nothing
+        self.assertIn("SENSOR_DISAGREEMENT_LIDAR_FOREGROUND_CAMERA_CLEAR", r.reasons)
+        far = make(target_v=(10.5, 0., 0.), target_in_camera=False)
+        mean = np.array(far.track_mean); mean[0] += 1.0     # beyond the camera far plane: only LiDAR informs
+        r = ev.estimate(make(target_v=(10.5, 0., 0.), target_in_camera=False, track_mean=mean))
+        self.assertEqual(r.hypothesis, ev.UNKNOWN); self.assertIn("FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE", r.reasons)
+        self.assertFalse(r.lidar.foreground_extended)
+        bar = ev.estimate(make(target_v=(10.5, 0., 0.), render_target=False, bars=((9.5, 0., .3),), track_mean=mean))
+        self.assertEqual(bar.hypothesis, ev.OCCLUDED); self.assertTrue(bar.lidar.foreground_extended)  # a 3 m bar is not target-sized
+        r = ev.estimate(make(target_v=(7., 0., 0.), track_mean=mean))   # camera shows the pasted target nearer
+        self.assertEqual(r.hypothesis, ev.IDENTITY_AMBIGUOUS)
+        self.assertIn("PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION", r.reasons)
+
+    def test_F6_camera_flag_is_cross_checked_against_the_track(self):
+        ok = hyp(detected=True)
+        self.assertEqual((ok.hypothesis, ok.identity_status), (ev.TARGET_VISIBLE, "SUPPORTED_BY_FOOTPRINT"))
+        self.assertIn("CAMERA_FLAG_VISIBLE", ok.reasons)
+        wrong = hyp(detected=True, render_target=False)              # flag fires, nothing at the tracked place
+        self.assertEqual((wrong.hypothesis, wrong.identity_status), (ev.IDENTITY_AMBIGUOUS, "CONTRADICTED"))
+        distractors = ev.estimate(make(detected=True), profile=replace(PROF, distractors=3))
+        self.assertEqual(distractors.hypothesis, ev.IDENTITY_AMBIGUOUS)
+
+    def test_q01_frames_v2_read_only_if_present(self):
+        import json, os
+        run_root = Path("/home/fair/workspaces/aerial_gym_ws/boia_shadow_runs/BOIA-SHADOW-Q01-V2/S1_ON")
+        if not run_root.is_dir():
+            self.skipTest("Q01-V2 raw not present on this machine")
+        before = {p.name: os.stat(p).st_mtime_ns for p in run_root.iterdir()}
+        rows = [json.loads(l) for l in (run_root / "sensors.jsonl").read_text().splitlines()]
+        ck = lambda t: c.Clock(t["capture_sim_s"], t["delivery_sim_s"], t["provenance"], t["frame"], t["depth_convention"])
+        for i in range(3):
+            z = dict(np.load(run_root / ("sensor_%03d.npz" % i), allow_pickle=False))
+            inp = c.EvidenceInput.from_arrays(z, ck(rows[i]["camera_time"]), ck(rows[i]["lidar_time"]),
+                                              rows[i]["camera_time"]["decision_sim_s"], tuple(rows[i]["calibration"]))
+            r = ev.estimate(inp)
+            self.assertEqual(r.validation_problems, ()); self.assertEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")
+        self.assertEqual(before, {p.name: os.stat(p).st_mtime_ns for p in run_root.iterdir()})
 
 
 if __name__ == "__main__":

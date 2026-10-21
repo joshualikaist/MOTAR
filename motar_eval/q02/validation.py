@@ -4,8 +4,9 @@ import math
 
 import numpy as np
 
-from .contracts import ACCEPTED_CLOCK_PROVENANCE, CAMERA_OFFSET_M, DEPTH_CONVENTION, LIDAR_LAYOUT, YAW_VEHICLE
-from .geometry import is_yaw_only
+from .contracts import (ACCEPTED_CLOCK_PROVENANCE, CAMERA_OFFSET_M, DEPTH_CONVENTION, FROZEN_F_PROFILE, INVALID_SAMPLE,
+                        LIDAR_LAYOUT, NEAR_CLIPPED, NO_RETURN, VALID_HIT, YAW_VEHICLE)
+from .geometry import is_yaw_only, recover_native_depth
 
 OK, MISSING, STALE, INVALID, FRAME_MISMATCH = "OK", "MISSING", "STALE", "INVALID", "FRAME_MISMATCH"
 
@@ -18,6 +19,7 @@ class ValidationLimits:
     quat_tol: float = 1e-4
     cov_symmetry_tol: float = 1e-6
     cov_psd_tol: float = 1e-9
+    max_pasted_fraction: float = 0.5   # beyond this the image is not the declared obstacle upsample
 
 
 @dataclass(frozen=True)
@@ -30,6 +32,9 @@ class Check:
 @dataclass(frozen=True)
 class ValidationReport:
     checks: tuple
+    depth_native: object = None      # (24, 40) recovered native obstacle depth, NaN = unobserved
+    depth_pasted: object = None      # (90, 160) pixels pasted over the upsample (target/distractor)
+    depth_residual: object = None
 
     def status(self, name):
         return dict((c.name, c.status) for c in self.checks)[name]
@@ -39,7 +44,7 @@ class ValidationReport:
 
     @property
     def camera_usable(self):
-        return self.ok("camera_clock", "rgb", "depth", "pose", "calibration")
+        return self.ok("camera_clock", "rgb", "depth", "depth_structure", "pose", "calibration")
 
     @property
     def lidar_usable(self):
@@ -85,17 +90,70 @@ def _calibration(calibration, camera, lidar):
     return Check("calibration", OK if same else FRAME_MISMATCH, "" if same else "calibration differs from contract")
 
 
-def validate(inp, camera, lidar, limits=ValidationLimits()):
+def classify_depth_native(x, profile=FROZEN_F_PROFILE):
+    """Recovered native obstacle-depth samples -> VALID_HIT / NO_RETURN / NEAR_CLIPPED / INVALID (unobserved)."""
+    x = np.asarray(x, float)
+    out = np.full(x.shape, VALID_HIT, dtype="<U12")
+    out[x >= profile.obstacle_far_m - 1e-3] = NO_RETURN
+    out[x < profile.depth_near_clip_m] = NEAR_CLIPPED
+    out[~np.isfinite(x)] = INVALID_SAMPLE
+    return out
+
+
+def classify_lidar(r, model, profile=FROZEN_F_PROFILE):
+    """Getter ranges -> VALID_HIT in [0.2, 12) / NO_RETURN at 12 / NEAR_CLIPPED at 0 / INVALID otherwise."""
+    r = np.asarray(r, float)
+    out = np.full(r.shape, INVALID_SAMPLE, dtype="<U12")
+    finite = np.isfinite(r)
+    out[finite & (r >= model.min_range_m) & (r < profile.lidar_no_return_m - 1e-6)] = VALID_HIT
+    out[finite & (np.abs(r - profile.lidar_no_return_m) <= 1e-6)] = NO_RETURN
+    out[finite & (np.abs(r - profile.lidar_near_clip_value) <= 1e-6)] = NEAR_CLIPPED
+    return out
+
+
+def _depth_structure(depth, profile, max_pasted_fraction):
+    """The delivered depth must be a bilinear upsample of a native grid in [0, far] plus pasted pixels."""
+    try:
+        native, pasted, residual = recover_native_depth(depth, profile.obstacle_native_wh)
+    except np.linalg.LinAlgError:
+        return Check("depth_structure", FRAME_MISMATCH, "native recovery failed"), None, None, None
+    obs = np.isfinite(native)
+    ok = (residual <= 2e-3 and pasted.mean() <= max_pasted_fraction and
+          (native[obs] <= profile.obstacle_far_m + 2e-3).all() and (native[obs] >= -2e-3).all() and
+          (np.asarray(depth)[~pasted] <= profile.obstacle_far_m + 2e-3).all())
+    detail = "" if ok else "not a %dx%d upsample with far %.1f m (residual %.1e, pasted %.2f)" % (
+        profile.obstacle_native_wh[0], profile.obstacle_native_wh[1], profile.obstacle_far_m, residual, pasted.mean())
+    return Check("depth_structure", OK if ok else FRAME_MISMATCH, detail), native, pasted, residual
+
+
+def validate(inp, camera, lidar, limits=ValidationLimits(), profile=FROZEN_F_PROFILE):
     checks = [_clock("camera_clock", inp.camera_clock, inp.decision_s, limits.max_camera_age_s),
               _clock("lidar_clock", inp.lidar_clock, inp.decision_s, limits.max_lidar_age_s)]
     rgb = inp.rgb
     checks.append(Check("rgb", OK) if np.isfinite(rgb).all() and rgb.min() >= 0 and rgb.max() <= 1
                   else Check("rgb", INVALID, "non-finite or outside [0,1]"))
-    checks.append(Check("depth", OK) if np.isfinite(inp.depth).all() and inp.depth.min() >= 0
-                  else Check("depth", INVALID, "non-finite or negative"))
+    depth = inp.depth
+    native = pasted = residual = None
+    if not (np.isfinite(depth).all() and depth.min() >= 0):
+        checks.append(Check("depth", INVALID, "non-finite or negative"))
+    elif (depth < profile.depth_near_clip_m).all():
+        checks.append(Check("depth", INVALID, "whole frame near-clipped (all ~0): not a range image"))
+    else:
+        checks.append(Check("depth", OK))
+    if checks[-1].status == OK:
+        structure, native, pasted, residual = _depth_structure(depth, profile, limits.max_pasted_fraction)
+        checks.append(structure)
+    else:
+        checks.append(Check("depth_structure", INVALID, "depth invalid"))
     lid = inp.lidar
-    checks.append(Check("lidar", OK) if np.isfinite(lid).all() and lid.min() >= 0 and lid.max() <= lidar.max_range_m + 1e-6
-                  else Check("lidar", INVALID, "non-finite or outside [0, max range]"))
+    categories = classify_lidar(lid, lidar, profile)
+    if (categories == INVALID_SAMPLE).any():
+        checks.append(Check("lidar", INVALID, "%d samples outside the getter contract (NaN/Inf or (0, 0.2) m or > 12 m)"
+                            % int((categories == INVALID_SAMPLE).sum())))
+    elif (categories == NEAR_CLIPPED).all():
+        checks.append(Check("lidar", INVALID, "whole scan near-clipped (all 0): not a range scan"))
+    else:
+        checks.append(Check("lidar", OK))
     pose_ok = np.isfinite(inp.position).all() and np.isfinite(inp.velocity).all() and np.isfinite(inp.vehicle_quat).all()
     if not pose_ok:
         checks.append(Check("pose", INVALID, "non-finite own state"))
@@ -114,4 +172,4 @@ def validate(inp, camera, lidar, limits=ValidationLimits()):
     else:
         checks.append(Check("track", OK))
     checks.append(_calibration(inp.calibration, camera, lidar))
-    return ValidationReport(tuple(checks))
+    return ValidationReport(tuple(checks), native, pasted, residual)

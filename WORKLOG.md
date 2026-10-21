@@ -22382,3 +22382,30 @@ Decision: Q02-B stopped at Phase 0 as instructed; no Q02-B code committed. Stage
 tests (25 passing against the unfixed rule) and design/plan drafts preserved outside Git at
 `/home/fair/workspaces/aerial_gym_ws/q02b_staged_wip_2026-10-21/`. Next: fix F1–F3 (and F4–F7) in
 Q02-A with 10 m-clamped and zero-value tests, re-review, then resume Q02-B. GPU NOT_RUN, G5 HOLD.
+
+## 2026-10-21 — Q02-A v2: sensor-semantics repair of the evidence rule (Fable F1–F7)
+
+Production contract re-derived from source: camera depth = 40×24 obstacle render (environment
+only, never the target) with a finite 10 m no-return, bilinear (align_corners=False) to 160×90,
+target/distractor pixels pasted at full resolution; LiDAR 0.0 = nearer than 0.2 m, 12 m = no return.
+Hypothesis "depth < 10 m at a pixel is a measured surface on that pixel's ray" rejected: bilinear
+blends of hits with the 10 m fill create phantom depths beside obstacles.
+
+Repair (contract `Q02A-v2`): exact recovery of the native grid (Woodbury masked least squares,
+local linearity test for pasted pixels, pasted blobs and hidden cells excluded); per-sample
+VALID_HIT / NO_RETURN / NEAR_CLIPPED / INVALID; one ray-envelope test for camera-native and LiDAR
+rays from their own origins (R_sensor + 2σ⊥, capped at +0.8 m); near-clipped rays make the line
+of sight UNKNOWN and raise a separate warning; whole-zero frames INVALID; LiDAR foreground must be
+wider than the target proxy to count as an obstacle; camera flag cross-checked against the track
+footprint (identity status); confidence relabelled. Interface: record fields versioned.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 30 OK (16 kept, 3 updated for renamed fields/F7 label; 14 new) |
+| PUBLIC_CPU | 3095 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL |
+| v1 → v2 on identical inputs | empty 12 m: OCCLUDED → UNKNOWN; empty 10 m: IDENTITY_AMBIGUOUS → UNKNOWN; blend beside LOS and Fable side bar: IDENTITY_AMBIGUOUS → DETECTION_MISS; zero depth/LiDAR: OCCLUDED → UNKNOWN/DETECTION_MISS; real bars on the LOS stay OCCLUDED |
+| Q01 frames (read-only) | flag set: TARGET_VISIBLE, footprint supported; flag cleared: IDENTITY_AMBIGUOUS now from pasted target pixels (v1's fill-based result withdrawn) |
+
+Records: `docs/evidence/q02a_v2_repair_2026-10-21/` (REPAIR.md, compare_v1_v2.py/.json). No
+accuracy claim (no labels). Q02-B WIP not modified; its required interface changes are listed
+in REPAIR.md. GPU NOT_RUN, G5 HOLD. Next: Fable re-review of this commit; Q02-B stays blocked.
