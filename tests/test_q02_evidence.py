@@ -1,4 +1,4 @@
-"""Q02-A CPU tests (contract Q02A-v2.3): constants, frames, sensor semantics, validation and the rule.
+"""Q02-A CPU tests (contract Q02A-v2.4): constants, frames, sensor semantics, validation and the rule.
 
 Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
 40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
@@ -211,7 +211,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
         # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
         self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
-        self.assertEqual(r.contract_version, "Q02A-v2.3")   # v2.1: re-review R1-R4; v2.2: D1/D2/D7; v2.3: C1
+        self.assertEqual(r.contract_version, "Q02A-v2.4")   # v2.1: R1-R4; v2.2: D1/D2/D7; v2.3: C1; v2.4: E1
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -288,8 +288,10 @@ class SensorSemanticsTests(unittest.TestCase):
         self.assertTrue(rec2.excluded[blob].all())                    # every pasted pixel is excluded
         # v2.3 (C1): foreign = flagged along both row and column, so it marks the paste without being a
         # segmentation of it (v2.1 asserted every blob pixel foreign; this blob is constant along columns).
-        near_blob = (vv - 45) ** 2 + (uu - 90) ** 2 < 15 ** 2
-        self.assertTrue(rec2.foreign[blob].any()); self.assertFalse((rec2.foreign & ~near_blob).any())
+        rows, cols = np.nonzero(blob.any(axis=1))[0], np.nonzero(blob.any(axis=0))[0]
+        box = np.zeros_like(blob); box[rows.min():rows.max() + 1, cols.min():cols.max() + 1] = True
+        self.assertFalse((rec2.foreign & ~box).any())                 # inside the paste's tight box (E2)
+        self.assertGreaterEqual((rec2.foreign & blob).sum(), 0.5 * blob.sum())
         self.assertLess(np.abs(rec2.native[seen] - x[seen]).max(), 1e-5)  # observed cells stay exact
         self.assertLess(seen.mean(), 1.0)                               # cells hidden by the blob are UNOBSERVED
 
@@ -589,6 +591,23 @@ class ConfirmationC1Tests(unittest.TestCase):
                 with self.subTest(range_m=rng_, gap=gap, track_error=err):
                     r = ev.estimate(make(target_v=(rng_, 0., 0.), detected=True, bars=bars, track_mean=mean))
                     self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")   # v2.2: SUPPORTED from blend pixels
+
+
+class FinalReviewE1Tests(unittest.TestCase):
+    """Q02A-v2.4: the P1 finding of the v2.3 final review (docs/evidence/q02a_v23_fable_final_review_2026-10-22)."""
+
+    def test_E1_obstacle_behind_the_paste_never_supports_a_track_that_is_too_far(self):
+        for rng_, gap in ((3.0, 1.0), (2.0, 0.6), (8.0, 1.0)):
+            bars = ((rng_ + gap + 0.3, 0.0, 0.3),)                 # bar surface `gap` behind the target centre
+            base = make(target_v=(rng_, 0., 0.), detected=True, bars=bars)
+            ok = ev.estimate(base)
+            self.assertEqual(ok.identity_status, "SUPPORTED_BY_FOOTPRINT"); self.assertEqual(ok.pasted_pixels_nearer_than_track, 0)
+            for err in (0.8, 1.0, 1.3):                             # track beyond the target, at the bar's range
+                mean = np.array(base.track_mean); mean[0] += err
+                with self.subTest(range_m=rng_, behind=gap, range_error=err):
+                    r = ev.estimate(make(target_v=(rng_, 0., 0.), detected=True, bars=bars, track_mean=mean))
+                    self.assertEqual(r.identity_status, "RANGE_CONTRADICTED")   # v2.3: SUPPORTED from box-corner pixels
+                    self.assertIn("PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK", r.reasons)
 
 
 if __name__ == "__main__":

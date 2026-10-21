@@ -22559,3 +22559,24 @@ measured 2,154 false SUPPORTED with range errors toward an obstacle behind. The 
 `depth_native` (obstacle_depth OK) was judged usable under the stated conditions. Record:
 `docs/evidence/q02a_v23_fable_final_review_2026-10-22/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
 Next: rule C (at > near) as Q02A-v2.4 and a further confirmation.
+
+## 2026-10-22 — Q02-A v2.4: identity support needs more pasted pixels at range than nearer (final review E1)
+
+Minimal fix of the one P1 (contract `Q02A-v2.4`; only `evidence.py`, `contracts.py` and the Q02 tests; geometry and
+validation unchanged). `_pasted_in_footprint` also counts pasted pixels in the envelope that lie nearer than the
+track interval. SUPPORTED_BY_FOOTPRINT needs `at > near`; otherwise the result is RANGE_CONTRADICTED
+(+ `PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK`). The target is pasted only where it is the nearest surface, so mostly-nearer
+pasted content means the detection is nearer than the track. The E2 test now requires foreign pixels inside the paste's tight
+box and ≥ 50 % coverage. E4 (lock file) is reported, not changed: it is out of scope, and an advisory flock target does not block a run.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 42 OK (41 kept: version, E2 assertion strengthened; 1 new E1) |
+| PUBLIC_CPU | 3107 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL (pre-existing) |
+| Reviewer identity attack, 10 families, 9,482 cases | false SUPPORTED 2,154 → 0; correct tracks (1,436) 0 lost; 355 wrong tracks with range error 0.5–1.0 m → RANGE_CONTRADICTED (fail-safe) |
+| v2.3 → v2.4 comparison (64 cases) | 3 changed (E1 tracks 1.0 m too far → RANGE_CONTRADICTED); Q01 frames identical |
+| Close-range map / C1 families / 252-case correct-track sweep | unchanged: 0 leaks 289/13/8; 0 false; 0 lost |
+
+Records: `docs/evidence/q02a_v24_repair_2026-10-22/` (REPAIR.md, compare_v23_v24.py/.json,
+identity_attack.py, summarize_attack.py, identity_attack_summary.json). Q02-B WIP unchanged. GPU
+NOT_RUN, G5 HOLD. Next: Fable confirmation of this commit; Q02-B stays blocked until it reports.

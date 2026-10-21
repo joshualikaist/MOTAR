@@ -1,4 +1,4 @@
-"""Module A (contract Q02A-v2.3): explainable sensor evidence about a tracked target's line of sight.
+"""Module A (contract Q02A-v2.4): explainable sensor evidence about a tracked target's line of sight.
 
 Deterministic rule over measured samples; not a calibrated classifier and no probability. UNKNOWN
 is returned whenever the inputs cannot separate the cases, and UNKNOWN is never free space or a
@@ -24,6 +24,8 @@ contact range can pass as an upsample), and no-return fill pixels never count as
 diffuse belief makes the camera flag's footprint NOT_TESTABLE (D7).
 v2.3 (confirmation review C1): a pixel counts as pasted only if the window test flags it along both
 its row and its column, so obstacle-blend pixels beside a paste no longer grant identity support.
+v2.4 (final review E1): identity support also needs more pasted pixels at the track range than nearer
+than it, so obstacle pixels in the paste's box behind the target cannot support a track that is too far.
 In the Frozen F profile the camera flag is oracle-grade (true-pose rasterization), so agreement
 with it is not evidence that this rule would work with a real detector.
 """
@@ -97,6 +99,7 @@ class EvidenceRecord:
     lidar: SensorRays
     pasted_pixels_in_footprint: int
     pasted_pixels_at_track_range: int
+    pasted_pixels_nearer_than_track: int
     near_obstacle_warning: bool
     near_clipped_lidar_beams: int
     validation_problems: tuple
@@ -107,7 +110,7 @@ class EvidenceRecord:
     calibration: str = "NONE_DECLARED_PRIORS"
 
 
-def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=SensorRays(), lid=SensorRays(), pasted=(0, 0),
+def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=SensorRays(), lid=SensorRays(), pasted=(0, 0, 0),
             near_beams=0):
     g, nan = g or {}, float("nan")
     return EvidenceRecord(hypothesis, tuple(dict.fromkeys(reasons)), source, identity, inp.camera_detected, inp.confidence,
@@ -115,7 +118,7 @@ def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=Sens
                           tuple(float(x) for x in g.get("p_v", (nan, nan, nan))), g.get("range", nan),
                           g.get("bearing", nan), g.get("elevation", nan), g.get("sigma_r", nan), g.get("sigma_lat", nan),
                           g.get("fov_in", 0), g.get("fov_total", 0), g.get("env_cam", nan), g.get("env_lid", nan),
-                          cam, lid, int(pasted[0]), int(pasted[1]),
+                          cam, lid, int(pasted[0]), int(pasted[1]), int(pasted[2]),
                           bool(near_beams > 0 or cam.near_clipped > 0 or report.camera_contact_range), int(near_beams),
                           report.problems())
 
@@ -204,16 +207,17 @@ def _lidar_evidence(inp, lidar, profile, params, g):
 
 def _pasted_in_footprint(inp, report, camera, params, g):
     """Pasted (target/distractor) pixels whose full-resolution rays pass through the camera envelope,
-    and how many of them carry a depth inside the track's range interval on that ray."""
+    how many of them carry a depth inside the track's range interval on that ray, and how many lie
+    nearer than that interval."""
     if report.depth_pasted is None or not report.depth_pasted.any():
-        return 0, 0
+        return 0, 0, 0
     v, u = np.nonzero(report.depth_pasted)
     rays = pixel_rays(u, v, camera)
     inside, entry, exit_, _ = ray_envelope(np.asarray(camera.camera_offset, float), rays, g["p_v"], g["env_cam"])
     d = np.asarray(inp.depth, float)[v, u]
     k, tol = params.sigma_k, params.range_tol_m
-    at = inside & (d >= entry - k * g["sigma_r"] - tol) & (d <= exit_ + k * g["sigma_r"] + tol)
-    return int(inside.sum()), int(at.sum())
+    lo, hi = entry - k * g["sigma_r"] - tol, exit_ + k * g["sigma_r"] + tol
+    return int(inside.sum()), int((inside & (d >= lo) & (d <= hi)).sum()), int((inside & (d < lo)).sum())
 
 
 def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceParams(), limits=ValidationLimits(),
@@ -245,11 +249,15 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
         notes = [] if report.obstacle_depth_usable else ["CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"]
         if cam.consistent or lid.consistent:
             notes.append("SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE")
-        if pasted[1] > 0:
+        # The target is pasted only where it is the nearest surface, so pasted content on the track's rays
+        # that is mostly nearer than the track interval means the detection is nearer than the track; the
+        # paste's box can also hold obstacle pixels behind it at the (wrong) track range (review E1).
+        if pasted[1] > pasted[2]:
             return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "PASTED_DEPTH_AT_TRACK_RANGE"] + notes, "CAMERA_FLAG",
                            "SUPPORTED_BY_FOOTPRINT", inp, report, **args)
         if pasted[0] > 0:
-            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE"] + notes, "CAMERA_FLAG",
+            extra = ["PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK"] if pasted[2] >= max(pasted[1], 1) else []
+            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE"] + extra + notes, "CAMERA_FLAG",
                            "RANGE_CONTRADICTED", inp, report, **args)
         if report.depth_pasted is not None and not report.depth_pasted.any():
             notes.append("NO_PASTED_PIXELS_IN_IMAGE")   # the oracle flag normally comes with pasted pixels
