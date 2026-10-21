@@ -22543,3 +22543,19 @@ exclusion + non-empty + locality, because `foreign` is intentionally no longer a
 Records: `docs/evidence/q02a_v23_repair_2026-10-22/` (REPAIR.md, compare_v22_v23.py/.json,
 identity_support_sweep.py/.json, blend_support_v23.txt, fuzz_results.json). Q02-B WIP unchanged.
 GPU NOT_RUN, G5 HOLD. Next: final Fable confirmation of this commit; Q02-B stays blocked until it reports.
+
+## 2026-10-22 — Q02-A v2.3 final review (Fable 5.1, 17cf5e9): HOLD_P0_P1_REMAINS (E1)
+
+Read-only CPU final confirmation. No P0. C1 (as filed), C3 and C7 are fixed, and every re-run claim reproduces
+(41 OK, compare JSON identical, fuzz seed 77 0 leaks, PUBLIC_CPU 3106/0/4).
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| E1 | P1 | Obstacle pixels in the corners of the paste's tight box (obstacle behind the target) give SUPPORTED to a track 0.8 m or more too far: 2,154/9,482 production-shaped cases (box bars 2/3 m, slivers, yaw, borders); 0/3,498 at range error ≤ 0.7 m; correct tracks 0 lost in 1,436; pre-existing at v2.2 |
+| E2–E4 | NOTE | Re-scoped test assertion weak; box-corner content unquantified; a PUBLIC_CPU test creates a git-ignored 0-byte flock file `train_session_logs/.navrl_training.lock` |
+
+Hypothesis "the both-direction rule removes every non-target pixel that can decide identity" rejected:
+measured 2,154 false SUPPORTED with range errors toward an obstacle behind. The consumer of
+`depth_native` (obstacle_depth OK) was judged usable under the stated conditions. Record:
+`docs/evidence/q02a_v23_fable_final_review_2026-10-22/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
+Next: rule C (at > near) as Q02A-v2.4 and a further confirmation.
