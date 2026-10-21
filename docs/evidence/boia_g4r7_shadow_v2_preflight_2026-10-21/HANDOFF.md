@@ -1,5 +1,14 @@
 # G4-R7 handoff
 
+> **Update 2026-10-21 (supervisor fix, before any execution).** An independent review found that
+> `verify` read only worker receipts, so a stage the supervisor had stopped (e.g.
+> `DEVICE_VRAM_CEILING`) could still give PASS. Fixed in `6c9bc81` and hardened in `453bd12`
+> (final source): every stage needs a valid COMPLETED supervisor receipt; otherwise
+> `STOPPED_INTEGRITY_NOT_EVALUATED`, with no SUPPORTED claim. Fable delta and micro-reviews:
+> PASS_WITH_LIMITATIONS, no P0/P1/P2 (3 P3 notes). Current receipt:
+> [validation_supervisor_fix.json](validation_supervisor_fix.json); `validation.json` below is
+> superseded for the verifier. The rest of this handoff still applies.
+
 2026-10-21 KST, `codex/mt-p1`. Local commits only; nothing pushed or merged. GPU NOT_RUN. G5 HOLD.
 
 ## State

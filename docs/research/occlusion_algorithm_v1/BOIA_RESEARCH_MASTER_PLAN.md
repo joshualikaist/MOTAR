@@ -200,6 +200,9 @@ match the prior DetectReduction errors. Aggregate PUBLIC_CPU remains FAIL and
 motar-6nn.5 remains open. No test was deleted/skipped to obtain BOIA qualification.
 G4-R7 (Q01-V2 source `a0840c2`): 49 + 23 focused and 324 combined BOIA CPU tests pass; PUBLIC_CPU
 ran 3063 tests with 0 failures and the same 4 DetectReduction errors, so its aggregate stays FAIL.
+Before any execution, a P1 verifier defect (supervisor receipts ignored) was fixed in `6c9bc81` and
+`453bd12` (final source; [receipt](../../evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/validation_supervisor_fix.json)):
+50 + 24 focused, 326 combined BOIA pass; PUBLIC_CPU 3065 ran, 0 failures, same 4 errors.
 
 ## 4. Mathematics, decision rule and interception
 

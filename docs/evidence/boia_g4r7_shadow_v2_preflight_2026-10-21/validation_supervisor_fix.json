@@ -1,0 +1,166 @@
+{
+ "schema": "motar.boia.g4r7.supervisor-fix.v1",
+ "created_UTC": "2026-10-21T07:18:42.641442+00:00",
+ "supersedes_receipt": {
+  "path": "docs/evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/validation.json",
+  "sha256": "3916c8499139438bc90b793c2314f104ffd983135c28259bba84f448363e1d62",
+  "bound_source": "a0840c2e5377e433f9e1df46b21b467996af6754",
+  "status": "SUPERSEDED_BEFORE_ANY_EXECUTION: its verifier ignored supervisor receipts"
+ },
+ "defect": {
+  "severity": "P1",
+  "reported_by": "user independent review",
+  "function": "tools/boia_shadow.py stage_record()/verify()",
+  "before_fix": [
+   "S1_ON supervisor: STOPPED_INTEGRITY (DEVICE_VRAM_CEILING); worker process_done: COMPLETED",
+   "comparisons: {'native_vs_off': 'PASS', 'off_vs_on': 'PASS', 'replay_s0_vs_on': 'PASS', 'runtime_profile': 'PASS'}",
+   "VERDICT: PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL | observer_noninterference: SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE"
+  ],
+  "after_fix": [
+   "S1_ON supervisor: STOPPED_INTEGRITY (DEVICE_VRAM_CEILING); worker process_done: COMPLETED",
+   "comparisons: {'native_vs_off': 'PASS', 'off_vs_on': 'NOT_AVAILABLE', 'replay_s0_vs_on': 'NOT_AVAILABLE', 'runtime_profile': 'PASS'}",
+   "VERDICT: STOPPED_INTEGRITY_NOT_EVALUATED | observer_noninterference: NOT_SUPPORTED"
+  ],
+  "counterexample": "all four worker process_done COMPLETED, S1_ON_supervisor.json STOPPED_INTEGRITY DEVICE_VRAM_CEILING, all traces equal"
+ },
+ "source_commits": [
+  "6c9bc811374a6970812b7e957cd64985428c553e",
+  "453bd12177fca34d58747bf0857844e833a03b64"
+ ],
+ "final_source_commit": "453bd12177fca34d58747bf0857844e833a03b64",
+ "base_commit": "8bde1eec4ccb11bbd5ac65f9543337de810a1dc4",
+ "approval_target": "the HEAD containing this receipt (docs-only on top of final_source_commit); preflight at that HEAD is reported in the handoff",
+ "verdict": "READY_FOR_BOUNDED_GPU_SHADOW_APPROVAL",
+ "fix": {
+  "new_verdict": "STOPPED_INTEGRITY_NOT_EVALUATED (overrides all others)",
+  "supervisor_checks": [
+   "receipt exists and parses to an object",
+   "stage",
+   "status COMPLETED",
+   "reason/first_cause/worker_failure null",
+   "worker_returncode int 0",
+   "source",
+   "config_sha",
+   "checkpoint_sha256_after"
+  ],
+  "contradiction": "SUPERVISOR_WORKER_CONTRADICTION -> integrity failure",
+  "claims": "no SUPPORTED claim and no replay PASS unless all four stages COMPLETED by worker and supervisor",
+  "unchanged": "compare_rows/read_rows/COMPARISONS/comparison loop byte-identical; run_stage and stage/limit contract unchanged"
+ },
+ "regression_cases": [
+  "worker COMPLETED + supervisor STOPPED_INTEGRITY (synthetic and through real run_stage)",
+  "DEVICE_VRAM_CEILING",
+  "CHECKPOINT_CHANGED",
+  "supervisor missing",
+  "corrupt / [] / null / string receipt",
+  "source mismatch",
+  "config mismatch",
+  "stage mismatch",
+  "worker returncode 1 / 0.0",
+  "reason only",
+  "killed worker without receipt",
+  "S1_NATIVE supervisor stop",
+  "S1_NATIVE online-tag stop with later stages planted",
+  "normal campaign PASS kept",
+  "verify CLI exit 0 only on PASS"
+ ],
+ "tests": {
+  "test_boia_shadow": 50,
+  "test_boia_shadow_runner": 24,
+  "resource_warning_as_error": true,
+  "combined_boia": {
+   "ran": 326,
+   "failures": 0,
+   "errors": 0,
+   "skipped": 0
+  },
+  "public_cpu": {
+   "ran": 3065,
+   "failures": 0,
+   "errors": 4,
+   "skipped": 10,
+   "aggregate": "FAIL",
+   "error_ids": [
+    [
+     "test_bounding_box_and_empty_convention",
+     "test_navrl_detect_resolution.DetectReduction"
+    ],
+    [
+     "test_count_centroid_and_range",
+     "test_navrl_detect_resolution.DetectReduction"
+    ],
+    [
+     "test_frame_carries_the_rendered_target_colour_and_far_plane",
+     "test_navrl_detect_resolution.DetectReduction"
+    ],
+    [
+     "test_the_frame_carries_no_image_sized_tensor",
+     "test_navrl_detect_resolution.DetectReduction"
+    ]
+   ],
+   "known_error_text_count": 4
+  }
+ },
+ "preflight": {
+  "commit": "453bd12177fca34d58747bf0857844e833a03b64",
+  "status": "PASS_CPU_PREFLIGHT",
+  "checks": {
+   "branch": true,
+   "exact_HEAD": true,
+   "clean_tracked_tree": true,
+   "no_untracked_runtime": true,
+   "committed_inputs": true,
+   "checkpoint_sha": true,
+   "python_available": true,
+   "v1_preserved": true,
+   "superseded_v1_not_run": true,
+   "disk": true,
+   "aerial_gym_origin": true,
+   "motar_eval_origin": true
+  },
+  "config_sha256": "be1c22e4e8e8c66edc655e7c81481f1431de98adccabe1ec43b5412c051ea3e8",
+  "free_bytes": 7472590848
+ },
+ "fable": {
+  "delta_8bde1ee_6c9bc81": "PASS_WITH_LIMITATIONS, no P0/P1; P2 F1-F5 and N1 fixed in final commit",
+  "micro_6c9bc81_final": "PASS_WITH_LIMITATIONS, no P0/P1/P2; no false refusal of a real run_stage success receipt",
+  "open_P3": [
+   "no dedicated test for replay claim with a non-replay stage incomplete (behaviour verified by reviewer counterexample)",
+   "MISSING/UNREADABLE supervisor records omit reason/first_cause keys (schema not uniform)",
+   "tests run as scripts/run_tests.py only; tests/ has no __init__.py (pre-existing)"
+  ]
+ },
+ "code_sha256": {
+  "motar_eval/boia_shadow.py": "3eadc3f86e44366eb268a6143e1730c303489e281a089e83cc3c472af26bb1f8",
+  "tools/boia_shadow.py": "0b8f81c79adc86ed1037fc4e66afbdf37a5fe3a1bd2dc949eec0188c8bd89145",
+  "tests/test_boia_shadow.py": "fb02987a5e5426c4b5d4396481659bc95183af6639f91df066fb506356697f7e",
+  "tests/test_boia_shadow_runner.py": "990ba6b1eaf2131163d49eaf1c18b76489854792653a4cc225904b45abd67fd5",
+  "docs/plans/boia_shadow_q01_v2.json": "be1c22e4e8e8c66edc655e7c81481f1431de98adccabe1ec43b5412c051ea3e8",
+  "docs/plans/boia_shadow_q01_v2.md": "1150ee872a50b1990e693f84b791a4a271380e94b6563f8b6e74b4cd36a900d7",
+  "docs/plans/boia_shadow_q01_v1_amendment_2026-10-21.md": "cc159cb5e8f04bfe94838c8078beb34e1d872effb797968343b6e30ca2201324",
+  "docs/evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/GPU_SHADOW_RUNBOOK.md": "a10b47cdde7f6f4c0f25d988a8e10c775b455653f8533e62af01d18f3bf65268"
+ },
+ "v1_preserved": {
+  "config": "759fef83ebbc4365c9080cb8dc15ebbb2209cc4d097f7dc5a235f1a41bc54df8",
+  "preregistration": "cf5da98367770a1f6ebaf83461a533ed74e40c3469402b3e2f269e8a179f36b0"
+ },
+ "git": {
+  "research_at_final_source": "0/0/0 (git status empty after commit; symlinks hidden worktree-locally)",
+  "main": {
+   "head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+   "unstaged": 3,
+   "untracked": 3553,
+   "untracked_results": 3474,
+   "results_fingerprint_unchanged": true,
+   "wip_diff_unchanged": true
+  },
+  "other_worktrees_unchanged": true,
+  "stash": [
+   "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary"
+  ]
+ },
+ "limits": "unchanged: N1, seed 4901, S0/S1_NATIVE/S1_OFF/S1_ON 20/200/200/200 actions, 180/300/300/300 s, 1080 s total",
+ "GPU": "NOT_RUN",
+ "runtime_parity": "GPU_PENDING",
+ "G5": "HOLD"
+}

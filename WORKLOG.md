@@ -22304,3 +22304,14 @@ worker and supervisor); the supervisor's own stop reason was dropped when a work
 | PUBLIC_CPU | 3065 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
 
 GPU NOT_RUN, no push/merge, G5 HOLD.
+
+## 2026-10-21 — G4-R7 supervisor-fix evidence: Q01-V2 ready for GPU approval again
+
+New receipt `docs/evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/validation_supervisor_fix.json`,
+generated from the actual result files; it binds final source `453bd12` (after `6c9bc81`) and
+marks the earlier `validation.json` superseded for the verifier. HANDOFF and Master Plan updated.
+Fable micro-review of `6c9bc81..453bd12`: PASS_WITH_LIMITATIONS, no P0/P1/P2; open P3 notes: no
+dedicated test for the replay claim with a non-replay stage incomplete (behaviour verified by the
+reviewer), MISSING/UNREADABLE supervisor records lack `reason`/`first_cause` keys, `tests/` has no
+`__init__.py` (pre-existing). Preflight PASS at `453bd12`; main WIP/Raw/stash unchanged.
+Verdict READY_FOR_BOUNDED_GPU_SHADOW_APPROVAL. GPU NOT_RUN, G5 HOLD; docs only in this commit.
