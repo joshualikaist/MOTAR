@@ -22282,3 +22282,25 @@ stand-in campaign now goes through the real `run_stage`, so its supervisor recei
 | PUBLIC_CPU | 3065 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
 
 GPU NOT_RUN, no push/merge, G5 HOLD. Next: preflight, Fable delta review, evidence addendum.
+
+## 2026-10-21 — G4-R7 supervisor-fix hardening after Fable delta review
+
+Fable 5.1 read-only delta review of `8bde1ee..6c9bc81`: PASS_WITH_LIMITATIONS, no P0/P1. It
+confirmed no false refusal of a real `run_stage` success receipt and byte-identical trace
+comparison code. Its P2s, all fixed here: a receipt that parses but is not an object crashed
+`verify` instead of giving an integrity verdict (F1); `replay_reproducibility` was not gated by
+integrity (F2); a SUPPORTED claim could coexist with a stopped stage whose cause was an online
+mismatch tag, if later stages were planted (F3; now every claim needs all four stages COMPLETED by
+worker and supervisor); the supervisor's own stop reason was dropped when a worker failure existed
+(F4; `reason` and `first_cause` both kept); the runbook lacked `STOPPED_INTEGRITY_NOT_EVALUATED`
+(F5). Also `worker_returncode` must be an int 0 (N1).
+
+| Check (CPU) | Result |
+| --- | --- |
+| new cases | `[]`/`null`/`"COMPLETED"` receipts, float return code, S1_NATIVE supervisor stop → INTEGRITY; S1_NATIVE online-tag stop → MISMATCH with no SUPPORTED claim |
+| original counterexample | STOPPED_INTEGRITY_NOT_EVALUATED, NOT_SUPPORTED |
+| shadow fixture / supervisor tests | 50 OK / 24 OK |
+| combined `tests/test_boia_*.py` | 326 ran, 0 failures, 0 errors |
+| PUBLIC_CPU | 3065 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
+
+GPU NOT_RUN, no push/merge, G5 HOLD.

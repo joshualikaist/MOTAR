@@ -81,6 +81,9 @@ stage path is never reused or deleted. A rerun needs a new, separately approved 
   fields and both stages' numerics attestation are recorded; the cause is `NOT_VERIFIED`.
   Do not read it as observer interference or as CUDA nondeterminism without new evidence.
 - `INCOMPLETE_CAMPAIGN_NOT_EVALUATED` — a stage is missing and nothing mismatched.
+- `STOPPED_INTEGRITY_NOT_EVALUATED` — a supervisor stopped a stage (e.g. `DEVICE_VRAM_CEILING`,
+  `CHECKPOINT_CHANGED`), a supervisor receipt is missing or unreadable, or worker and supervisor
+  receipts disagree. It overrides every other verdict; no claim is SUPPORTED.
 
 Real GPU runtime parity, device build, VRAM and timing remain `GPU_PENDING` until a run.
 G5 HOLD whatever the verdict.

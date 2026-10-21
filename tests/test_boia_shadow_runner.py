@@ -96,7 +96,7 @@ class RunnerTests(unittest.TestCase):
         self.fake_supervisor(root,stage)
 
     def fake_supervisor(self, root, stage_name, **change):
-        # Same keys run_stage writes for a completed stage.
+        # The fields verify checks, with the values run_stage writes for a completed stage.
         r=dict(stage=stage_name,status='COMPLETED',reason=None,first_cause=None,worker_failure=None,worker_returncode=0,
                wall_s=1.,source='a'*40,config_sha=b.sha(b.PLAN),checkpoint_sha256_after=self.p['frozen']['policy_f_sha256'])
         r.update(change);path=root/(stage_name+'_supervisor.json')
@@ -139,6 +139,18 @@ class RunnerTests(unittest.TestCase):
                 'sup_reason_only':dict(reason='ValueError: CAMPAIGN_OUTPUT_CAP')}
             if name=='S1_ON' and case in supervisor_changes:self.fake_supervisor(root,name,**supervisor_changes[case])
             if name=='S1_ON' and case=='sup_missing':(root/'S1_ON_supervisor.json').unlink()
+            if name=='S1_ON' and case in ('sup_list','sup_null','sup_string','sup_float_rc'):
+                (root/'S1_ON_supervisor.json').unlink()
+                body={'sup_list':'[]','sup_null':'null','sup_string':'"COMPLETED"'}.get(case)
+                if body is None:self.fake_supervisor(root,name,worker_returncode=0.)
+                else:(root/'S1_ON_supervisor.json').write_text(body)
+            if name=='S1_NATIVE' and case in ('native_sup_vram','native_online_tag'):
+                change=dict(status='STOPPED_INTEGRITY',reason='ValueError: DEVICE_VRAM_CEILING',first_cause='ValueError: DEVICE_VRAM_CEILING')
+                if case=='native_online_tag':
+                    tag='IntegrityError: RUNTIME_NUMERICS_CHANGED_DURING_PROCESS'
+                    (root/name/'process_done.json').unlink();b.write_new(root/name/'failure.json',dict(status='STOPPED_INTEGRITY',reason=tag))
+                    change=dict(status='STOPPED_INTEGRITY',reason='ValueError: WORKER_NONZERO_EXIT_1',first_cause=tag,worker_failure={'reason':tag},worker_returncode=1)
+                self.fake_supervisor(root,name,**change)
             if name=='S1_ON' and case=='sup_corrupt':
                 (root/'S1_ON_supervisor.json').unlink();(root/'S1_ON_supervisor.json').write_text('{"status": "COMPL')
         try:
@@ -164,14 +176,20 @@ class RunnerTests(unittest.TestCase):
                               ('on_killed_no_worker_receipt',b.INTEGRITY),('sup_vram',b.INTEGRITY),
                               ('sup_checkpoint',b.INTEGRITY),('sup_source',b.INTEGRITY),('sup_config',b.INTEGRITY),
                               ('sup_returncode',b.INTEGRITY),('sup_stage',b.INTEGRITY),('sup_reason_only',b.INTEGRITY),
-                              ('sup_missing',b.INTEGRITY),('sup_corrupt',b.INTEGRITY)):
+                              ('sup_missing',b.INTEGRITY),('sup_corrupt',b.INTEGRITY),('sup_list',b.INTEGRITY),
+                              ('sup_null',b.INTEGRITY),('sup_string',b.INTEGRITY),('sup_float_rc',b.INTEGRITY),
+                              ('native_sup_vram',b.INTEGRITY),('native_online_tag',b.MISMATCH)):
             with self.subTest(case=case):
                 result=results[case]=self.synthetic(case);self.assertEqual(result['verdict'],expected)
                 self.assertEqual(result['claims']['observer_noninterference'],'NOT_SUPPORTED')
+                if not all(x['status']=='COMPLETED' for x in result['stages'].values()):
+                    self.assertEqual({v for k,v in result['claims'].items()
+                                      if k.endswith('noninterference') or k=='replay_reproducibility'},{'NOT_SUPPORTED'})
                 if expected in (b.INTEGRITY,b.INCOMPLETE):
                     self.assertEqual({v for k,v in result['claims'].items() if k.endswith('noninterference')},{'NOT_SUPPORTED'})
-                if expected==b.INTEGRITY:self.assertIn('S1_ON',result['integrity_failures'])
+                if expected==b.INTEGRITY:self.assertIn('S1_NATIVE' if case.startswith('native') else 'S1_ON',result['integrity_failures'])
                 if expected==b.MISMATCH:self.assertEqual(result['claims']['mismatch_cause'],'NOT_VERIFIED')
+        self.assertIn('DEVICE_VRAM_CEILING',results['sup_vram']['stages']['S1_ON']['supervisor']['reason'])
         self.assertEqual(self.synthetic('terminal')['claims']['terminal_reset_compared'],
                          dict(native_vs_off=False,off_vs_on=False,replay_s0_vs_on=False))
         row=results['native_row']['comparisons']['native_vs_off']['files']['host.jsonl']

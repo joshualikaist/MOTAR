@@ -262,14 +262,18 @@ def supervisor_record(root, stage, p, approved):
         r = load(path)
     except ValueError as exc:
         return dict(status="UNREADABLE", problems=["SUPERVISOR_RECEIPT_UNREADABLE: " + str(exc)], cause=None)
+    if not isinstance(r, dict):
+        return dict(status="UNREADABLE", problems=["SUPERVISOR_RECEIPT_NOT_AN_OBJECT"], cause=None)
     problems = [name for name, ok in (
         ("STAGE", r.get("stage") == stage), ("STATUS", r.get("status") == "COMPLETED"),
         ("REASON", r.get("reason") is None and r.get("first_cause") is None and r.get("worker_failure") is None),
-        ("WORKER_RETURNCODE", r.get("worker_returncode") == 0), ("SOURCE", r.get("source") == approved),
+        ("WORKER_RETURNCODE", type(r.get("worker_returncode")) is int and r.get("worker_returncode") == 0),
+        ("SOURCE", r.get("source") == approved),
         ("CONFIG", r.get("config_sha") == sha(PLAN)),
         ("CHECKPOINT", r.get("checkpoint_sha256_after") == p["frozen"]["policy_f_sha256"])) if not ok]
     return dict(status="COMPLETED" if not problems else "STOPPED_INTEGRITY", problems=problems,
-                cause=r.get("first_cause") or r.get("reason"))
+                cause=r.get("first_cause") or r.get("reason"), reason=r.get("reason"),
+                first_cause=r.get("first_cause"))  # both kept: a supervisor stop stays visible
 
 
 def stage_record(root, stage, p, approved):
@@ -353,14 +357,15 @@ def verify(p, approved):
         verdict = INCOMPLETE
     else:
         verdict = PASS
-    def supported(*names):  # never SUPPORTED while any supervisor/worker integrity failure exists
-        return not integrity_failures and all(comparisons[n]["status"] == "PASS"
-                                              for n in names + ("replay_s0_vs_on", "runtime_profile"))
+    all_completed = all(stages[s]["status"] == "COMPLETED" for s in STAGES)
+    def supported(*names):  # never SUPPORTED unless all four stages are COMPLETED by worker AND supervisor
+        return all_completed and all(comparisons[n]["status"] == "PASS"
+                                     for n in names + ("replay_s0_vs_on", "runtime_profile"))
     claims = dict(
         observer_noninterference="SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE" if supported("native_vs_off") else "NOT_SUPPORTED",
         diagnostic_noninterference="SUPPORTED_EXACT_THIS_PROFILE" if supported("off_vs_on") else "NOT_SUPPORTED",
         replay_reproducibility=("PASS_ON_CONFIGURATION_S0_PREFIX_ONLY"
-                                if comparisons["replay_s0_vs_on"]["status"] == "PASS" else "NOT_SUPPORTED"),
+                                if all_completed and comparisons["replay_s0_vs_on"]["status"] == "PASS" else "NOT_SUPPORTED"),
         mismatch_cause="NOT_VERIFIED" if verdict == MISMATCH else None,
         host_instrumentation="READ_ONLY_HOST_TRACE_IN_EVERY_STAGE_NO_UNINSTRUMENTED_RUN",
         # The mid-episode reset path is compared only if both stages ended an episode in their cap.
