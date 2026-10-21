@@ -1,0 +1,254 @@
+{
+  "G5": "HOLD",
+  "claims": {
+    "boia_computation": "NOT_QUALIFIED",
+    "diagnostic_noninterference": "SUPPORTED_EXACT_THIS_PROFILE",
+    "host_instrumentation": "READ_ONLY_HOST_TRACE_IN_EVERY_STAGE_NO_UNINSTRUMENTED_RUN",
+    "mismatch_cause": null,
+    "observer_noninterference": "SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE",
+    "replay_reproducibility": "PASS_ON_CONFIGURATION_S0_PREFIX_ONLY",
+    "terminal_reset_compared": {
+      "native_vs_off": true,
+      "off_vs_on": true,
+      "replay_s0_vs_on": false
+    }
+  },
+  "comparisons": {
+    "native_vs_off": {
+      "files": {
+        "host.jsonl": {
+          "compared": 31,
+          "rows": [
+            31,
+            31
+          ],
+          "status": "PASS"
+        }
+      },
+      "status": "PASS"
+    },
+    "off_vs_on": {
+      "files": {
+        "host.jsonl": {
+          "compared": 31,
+          "rows": [
+            31,
+            31
+          ],
+          "status": "PASS"
+        },
+        "parity.jsonl": {
+          "compared": 30,
+          "rows": [
+            30,
+            30
+          ],
+          "status": "PASS"
+        }
+      },
+      "status": "PASS"
+    },
+    "replay_s0_vs_on": {
+      "files": {
+        "host.jsonl": {
+          "compared": 21,
+          "rows": [
+            21,
+            31
+          ],
+          "status": "PASS"
+        },
+        "parity.jsonl": {
+          "compared": 20,
+          "rows": [
+            20,
+            30
+          ],
+          "status": "PASS"
+        }
+      },
+      "status": "PASS"
+    },
+    "runtime_profile": {
+      "attestation": {
+        "S0": {
+          "cuda": "12.1",
+          "cudnn": 90100,
+          "cudnn_allow_tf32": true,
+          "cudnn_benchmark": true,
+          "cudnn_deterministic": false,
+          "deterministic_algorithms": false,
+          "device_capability": [
+            8,
+            6
+          ],
+          "device_name": "NVIDIA GeForce RTX 3070",
+          "float32_matmul_precision": "high",
+          "matmul_allow_tf32": true,
+          "torch": "2.4.1+cu121"
+        },
+        "S1_NATIVE": {
+          "cuda": "12.1",
+          "cudnn": 90100,
+          "cudnn_allow_tf32": true,
+          "cudnn_benchmark": true,
+          "cudnn_deterministic": false,
+          "deterministic_algorithms": false,
+          "device_capability": [
+            8,
+            6
+          ],
+          "device_name": "NVIDIA GeForce RTX 3070",
+          "float32_matmul_precision": "high",
+          "matmul_allow_tf32": true,
+          "torch": "2.4.1+cu121"
+        },
+        "S1_OFF": {
+          "cuda": "12.1",
+          "cudnn": 90100,
+          "cudnn_allow_tf32": true,
+          "cudnn_benchmark": true,
+          "cudnn_deterministic": false,
+          "deterministic_algorithms": false,
+          "device_capability": [
+            8,
+            6
+          ],
+          "device_name": "NVIDIA GeForce RTX 3070",
+          "float32_matmul_precision": "high",
+          "matmul_allow_tf32": true,
+          "torch": "2.4.1+cu121"
+        },
+        "S1_ON": {
+          "cuda": "12.1",
+          "cudnn": 90100,
+          "cudnn_allow_tf32": true,
+          "cudnn_benchmark": true,
+          "cudnn_deterministic": false,
+          "deterministic_algorithms": false,
+          "device_capability": [
+            8,
+            6
+          ],
+          "device_name": "NVIDIA GeForce RTX 3070",
+          "float32_matmul_precision": "high",
+          "matmul_allow_tf32": true,
+          "torch": "2.4.1+cu121"
+        }
+      },
+      "hooks_during": {
+        "S0": {
+          "contact_chain": true,
+          "detector.render_raw_rgbd": true,
+          "perception.observe": true,
+          "sim_env.post_reward_calculation_step": true,
+          "task.compute_state_reward_and_terminations": true,
+          "task.reset_idx": true,
+          "task.step": true,
+          "task.transform_action_to_command": true,
+          "warp_sensor.capture": true
+        },
+        "S1_NATIVE": {
+          "contact_chain": false,
+          "detector.render_raw_rgbd": false,
+          "perception.observe": false,
+          "sim_env.post_reward_calculation_step": false,
+          "task.compute_state_reward_and_terminations": false,
+          "task.reset_idx": false,
+          "task.step": false,
+          "task.transform_action_to_command": false,
+          "warp_sensor.capture": false
+        },
+        "S1_OFF": {
+          "contact_chain": true,
+          "detector.render_raw_rgbd": true,
+          "perception.observe": true,
+          "sim_env.post_reward_calculation_step": true,
+          "task.compute_state_reward_and_terminations": true,
+          "task.reset_idx": true,
+          "task.step": true,
+          "task.transform_action_to_command": true,
+          "warp_sensor.capture": true
+        },
+        "S1_ON": {
+          "contact_chain": true,
+          "detector.render_raw_rgbd": true,
+          "perception.observe": true,
+          "sim_env.post_reward_calculation_step": true,
+          "task.compute_state_reward_and_terminations": true,
+          "task.reset_idx": true,
+          "task.step": true,
+          "task.transform_action_to_command": true,
+          "warp_sensor.capture": true
+        }
+      },
+      "status": "PASS"
+    }
+  },
+  "config_sha": "be1c22e4e8e8c66edc655e7c81481f1431de98adccabe1ec43b5412c051ea3e8",
+  "excluded_rows": 0,
+  "failed_on_mismatch": [],
+  "integrity_failures": [],
+  "physical_safety": "NOT_QUALIFIED",
+  "source": "f6a0ce6b17f46c28a4477df2b914cfac1eb5d2d7",
+  "stages": {
+    "S0": {
+      "actions": 20,
+      "ended_episodes": 0,
+      "reason": null,
+      "status": "COMPLETED",
+      "supervisor": {
+        "cause": null,
+        "first_cause": null,
+        "problems": [],
+        "reason": null,
+        "status": "COMPLETED"
+      },
+      "worker_status": "COMPLETED"
+    },
+    "S1_NATIVE": {
+      "actions": 30,
+      "ended_episodes": 1,
+      "reason": null,
+      "status": "COMPLETED",
+      "supervisor": {
+        "cause": null,
+        "first_cause": null,
+        "problems": [],
+        "reason": null,
+        "status": "COMPLETED"
+      },
+      "worker_status": "COMPLETED"
+    },
+    "S1_OFF": {
+      "actions": 30,
+      "ended_episodes": 1,
+      "reason": null,
+      "status": "COMPLETED",
+      "supervisor": {
+        "cause": null,
+        "first_cause": null,
+        "problems": [],
+        "reason": null,
+        "status": "COMPLETED"
+      },
+      "worker_status": "COMPLETED"
+    },
+    "S1_ON": {
+      "actions": 30,
+      "ended_episodes": 1,
+      "reason": null,
+      "status": "COMPLETED",
+      "supervisor": {
+        "cause": null,
+        "first_cause": null,
+        "problems": [],
+        "reason": null,
+        "status": "COMPLETED"
+      },
+      "worker_status": "COMPLETED"
+    }
+  },
+  "tolerance": 0,
+  "verdict": "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL"
+}

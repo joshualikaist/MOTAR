@@ -1,0 +1,76 @@
+{
+  "files": {
+    "S0.log": {
+      "bytes": 19938,
+      "sha256": "76585cf5610ef495a5d0a00cf42359d4852813d1361f9e79b82d6392ef8279e7"
+    },
+    "S0/actions.jsonl": {
+      "bytes": 18132,
+      "sha256": "4ef46582f87629dcb2c311af1a9e3dc3fc3e7ef5d77c1b476f9a7fd1766a98c2"
+    },
+    "S0/evaluator.jsonl": {
+      "bytes": 13670,
+      "sha256": "00455f3b316c0f956add237d32c8a33e5bbe4bd845b95698896f48ac2fd6b891"
+    },
+    "S0/events.jsonl": {
+      "bytes": 186,
+      "sha256": "9d758edf5bb834fa65a8c720c8b88921f682ecd1cac0121c93b77ee3fa5edab1"
+    },
+    "S0/host.jsonl": {
+      "bytes": 49295,
+      "sha256": "8ce76f16bd61cf00fdbab2fc42818fda904071b2c30137e79eff4ecbbd9e35cc"
+    },
+    "S0/parity.jsonl": {
+      "bytes": 50994,
+      "sha256": "5f70f6f2077ed3f0e89dd009347ffbf220d9561514e79d518cf078bcdd95483f"
+    },
+    "S0/process_done.json": {
+      "bytes": 15703,
+      "sha256": "2cb74e810140c8949904fb182c8c9191587e83784ae81261b978718cc8fe0ba0"
+    },
+    "S0/sensor_000.npz": {
+      "bytes": 6384,
+      "sha256": "ec60aa1dbf5978f49150a41ffd2e78f98321c05b6b93628645121e288d8e1e52"
+    },
+    "S0/sensor_001.npz": {
+      "bytes": 6298,
+      "sha256": "4ec41537945f50e8880103d1d2ab49ab7c0f275ed1e789c088b7f1141893d520"
+    },
+    "S0/sensors.jsonl": {
+      "bytes": 44265,
+      "sha256": "a78179c970dda2a07e582698355404e4dffb1647887b5a01e1c35e3c2ed88b46"
+    },
+    "S0/shadow.jsonl": {
+      "bytes": 3456,
+      "sha256": "e340f832ee381a3a58c82956e0797707adad13a1bf5942f9bc237d3d1e4f7baa"
+    },
+    "S0_RAW_MANIFEST.json": {
+      "bytes": 1803,
+      "sha256": "d29430573d3e377f7f5f7542546d298495fdf1c210df42564a3e8921307194cd"
+    },
+    "S0_supervisor.json": {
+      "bytes": 879,
+      "sha256": "311f524e31ec043478948c4ead20c08818a4b1983a4e04823ff31174694b4e19"
+    },
+    "S1_NATIVE.log": {
+      "bytes": 19938,
+      "sha256": "e7a7dddee61ad7bcbde963d55242aa9b9f27f921ed4efdd9ddf3fe021cc9fb38"
+    },
+    "S1_NATIVE/host.jsonl": {
+      "bytes": 73033,
+      "sha256": "43457347b0480966ca79289728982654d5c02af544b695df7e3508f1f81af453"
+    },
+    "S1_NATIVE/process_done.json": {
+      "bytes": 5675,
+      "sha256": "be8a5d2930ed201f20455302c313c5cd71f8488ee2c49b44398874745c6e7d35"
+    },
+    "S1_NATIVE_supervisor.json": {
+      "bytes": 894,
+      "sha256": "91590c9a5d7ba678b6ea5692ccb8b3c68bdc971f873e659a9f1549754ec2b6cb"
+    },
+    "campaign_start.json": {
+      "bytes": 4835,
+      "sha256": "c49cc27fb4980d88f2f1e1e3a3b88eb0dfc7b51d74ca728a151f1f500f891592"
+    }
+  }
+}

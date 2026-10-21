@@ -1,0 +1,28 @@
+{
+  "G5": "HOLD",
+  "GPU_parity": "PENDING_VERIFY",
+  "checkpoint_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/boia_shadow.py",
+    "_worker",
+    "--stage",
+    "S1_ON",
+    "--approved-commit",
+    "f6a0ce6b17f46c28a4477df2b914cfac1eb5d2d7"
+  ],
+  "config_sha": "be1c22e4e8e8c66edc655e7c81481f1431de98adccabe1ec43b5412c051ea3e8",
+  "first_cause": null,
+  "peak_device_mib": 5330,
+  "physical_safety": "NOT_QUALIFIED",
+  "reason": null,
+  "source": "f6a0ce6b17f46c28a4477df2b914cfac1eb5d2d7",
+  "stage": "S1_ON",
+  "status": "COMPLETED",
+  "vram_cap_mib": 6656,
+  "vram_sampling": "SUPERVISOR_POLL_2S_NOT_A_TRUE_PEAK",
+  "wall_s": 8.206692926003598,
+  "worker_failure": null,
+  "worker_returncode": 0
+}

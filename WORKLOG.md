@@ -22315,3 +22315,25 @@ dedicated test for the replay claim with a non-replay stage incomplete (behaviou
 reviewer), MISSING/UNREADABLE supervisor records lack `reason`/`first_cause` keys, `tests/` has no
 `__init__.py` (pre-existing). Preflight PASS at `453bd12`; main WIP/Raw/stash unchanged.
 Verdict READY_FOR_BOUNDED_GPU_SHADOW_APPROVAL. GPU NOT_RUN, G5 HOLD; docs only in this commit.
+
+## 2026-10-21 — BOIA-SHADOW-Q01-V2 GPU run: exact NATIVE/OFF/ON parity PASS
+
+User-approved single bounded run at `f6a0ce6` (source `453bd12`), 16:58:37–16:59:14 KST, RTX 3070.
+Verdict `PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL`; all worker and supervisor receipts
+COMPLETED, return code 0, bindings and checkpoint unchanged.
+
+| Stage | Wall s | Actions | End | Observer P50/P95/P99 ms |
+| --- | --- | --- | --- | --- |
+| S0 | 8.2 | 20 | censored (cap) | 3.82/7.07/8.31 |
+| S1_NATIVE | 12.3 | 30 | episode end | — |
+| S1_OFF | 8.2 | 30 | capture | 3.61/5.18/5.51 |
+| S1_ON | 8.2 | 30 | capture | 3.73/5.27/5.78 |
+
+NATIVE/OFF host 31/31 exact; OFF/ON parity 30/30 and host 31/31 exact; S0/ON prefix 20/21
+exact; numerics identical (cudnn.benchmark/TF32 on). Sampled device memory ≤ 5,332 MiB (cap
+6,656); torch peak 15 MiB; campaign 37.0 s of 1,080 s. Collision-free capture proxy True in
+OFF/ON (zero thresholded contact, no boundary height/OOB), with its stated limits. Raw:
+`/home/fair/workspaces/aerial_gym_ws/boia_shadow_runs/BOIA-SHADOW-Q01-V2/` (48 files, 1.0 MB),
+bound in `docs/evidence/boia_shadow_q01_v2_run_2026-10-21/result.json`. No BOIA computation,
+mission-benefit, physical-safety or real-time claim; one episode per stage. G5 HOLD; no further
+experiment authorized.
