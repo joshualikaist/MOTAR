@@ -53,7 +53,8 @@
    0.33,
    0.349
   ],
-  "raw_written": false
+  "raw_written": false,
+  "cpu_ms_note": "first three: recorded detection flag; last three: camera flag cleared (tracker-evidence branch)"
  },
  "claims": {
   "detection_accuracy": "NOT_TESTED_NO_LABELS",
@@ -73,7 +74,7 @@
   "motar_eval/q02/validation.py": "fc2478fc555049e7d99e2614e6b0d56b80cc3190eaff4c6896b3c90d4c8b5a36",
   "motar_eval/q02/evidence.py": "8261c29929ff40a00b197481662421f7df407322c11390f4ac7323e7b53eb14c",
   "tests/test_q02_evidence.py": "d04308984c601ef2606a4099ee5408e3206d7a1b51951c16c28886810051791d",
-  "docs/research/q02_evidence_aware_reacquisition/Q02A_SPEC.md": "f52321aaf9c7814a1a7aad63ef03b5197c0c14b3d225d44a7cc61559f59b0a7a",
+  "docs/research/q02_evidence_aware_reacquisition/Q02A_SPEC.md": "c9c96168bde41533435c18f6d36f849c8d692b2341140a05fcfe696483143004",
   "docs/research/q02_evidence_aware_reacquisition/HANDOFF.md": "17e1c2ae5ff734174ff90ef9baf75b336d462990554b70f7226c747d467fde6c",
   "docs/evidence/q02a_cpu_2026-10-21/q01_frame_replay.py": "83c60f47b3d6aa8ba853c416cb391eb094a485b2b37939d8702223bdc1eddd2c",
   "docs/evidence/q02a_cpu_2026-10-21/q01_frame_replay.json": "6354273f791d7555690cd2b32d0e9fcb7f93128311621aae7b94043a35da9c88"
