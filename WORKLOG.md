@@ -22255,3 +22255,30 @@ Plan and `docs/PROJECT_STATE.md` updated to Q01-V2. Source commits `1efbcf8`, `e
 Verdict `READY_FOR_REVISED_GPU_SHADOW_APPROVAL`. Q01-V2: N1, seed 4901, 20/200/200/200 actions,
 180/300/300/300 s, 1080 s total, ≤ 256 MB output, stop below 3 GB. GPU NOT_RUN; runtime parity
 GPU_PENDING; G5 HOLD. Next: user decision on the Q01-V2 GPU run (`motar-3p3.22`).
+
+## 2026-10-21 — G4-R7 P1 fix: verify ignored the supervisor receipt
+
+User-reported P1, reproduced on `8bde1ee` before the fix: with every worker `process_done.json`
+COMPLETED and `S1_ON_supervisor.json` STOPPED_INTEGRITY (`DEVICE_VRAM_CEILING`), `verify()` returned
+`PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL` with observer noninterference SUPPORTED,
+because `stage_record()` never read the supervisor receipt. Hypothesis "a COMPLETED worker
+receipt implies a valid stage" rejected.
+
+Fix (`tools/boia_shadow.py`): new `supervisor_record()` requires the receipt to exist, parse, and
+show stage, COMPLETED, no reason/first_cause/worker_failure, worker return code 0, and matching
+source/config/post-run checkpoint. `stage_record()` combines worker and supervisor; any
+contradiction is `SUPERVISOR_WORKER_CONTRADICTION`. New verdict `STOPPED_INTEGRITY_NOT_EVALUATED`
+overrides all others, and no claim is SUPPORTED while any integrity failure exists. Trace
+comparisons stay exact. Q01-V2 config verdict list and prereg updated with a dated correction
+(before any execution). `run_stage` and the stage/limit contract are unchanged. The worker
+stand-in campaign now goes through the real `run_stage`, so its supervisor receipts are genuine.
+
+| Check (CPU) | Result |
+| --- | --- |
+| counterexample before / after | PASS (wrong) / STOPPED_INTEGRITY_NOT_EVALUATED, NOT_SUPPORTED |
+| new cases | worker COMPLETED + supervisor VRAM / CHECKPOINT_CHANGED / reason / source / config / stage / returncode / missing / corrupt; killed worker; all INTEGRITY; normal campaign stays PASS; `verify` CLI exit 0 only on PASS |
+| shadow fixture / supervisor tests | 50 OK / 24 OK |
+| combined `tests/test_boia_*.py` | 326 ran, 0 failures, 0 errors |
+| PUBLIC_CPU | 3065 ran, 0 failures, same 4 `DetectReduction` errors, 10 skipped; aggregate FAIL |
+
+GPU NOT_RUN, no push/merge, G5 HOLD. Next: preflight, Fable delta review, evidence addendum.

@@ -653,25 +653,60 @@ class WorkerStandInTests(unittest.TestCase):
         self.ckpt=tmp/'policy.pth';self.ckpt.write_bytes(b'frozen F stand-in')
         self.p['frozen']['policy_f_sha256']=b.sha(self.ckpt)
 
-    def campaign(self, tap_class=None, scenario=None, stages=b.STAGES):
+    def worker_patches(self, task, player, tap_class=None):
         from motar_eval import eq1d_telemetry as tel
+        fake=ModuleType('eq1d_fixture_launcher');fake.build_player=lambda n,c:(player,{})
+        fake.find_task=lambda pl:task;fake.check_origins=lambda:{};fake.find_rms=lambda m:NS()
         env={'BOIA_SHADOW_PARENT_PID':str(os.getppid()),'BOIA_SHADOW_CONFIG_SHA':b.sha(b.PLAN)}
+        return [patch.dict(sys.modules,{'isaacgym':ModuleType('isaacgym'),'eq1d_fixture_launcher':fake}),
+                patch.dict(os.environ,env),patch.object(sys,'path',list(sys.path)),
+                patch.object(b,'runtime_profile',return_value={}),
+                patch.object(tel,'rms_digest',return_value=self.p['frozen']['rms_digest_sha256']),
+                patch.object(torch.cuda,'reset_peak_memory_stats'),patch.object(torch.cuda,'synchronize'),
+                patch.object(torch.cuda,'max_memory_allocated',return_value=0),
+                patch.object(s,'EvaluatorTap',tap_class or s.EvaluatorTap)]
+
+    def campaign(self, tap_class=None, scenario=None, stages=b.STAGES, via_supervisor=True):
+        """Each stage through the real run_stage (supervisor receipt) with an in-process worker."""
+        from contextlib import ExitStack
+        class Proc:
+            pid=999999
+            def __init__(self,code):self.returncode=code
+            def poll(self):return self.returncode
+        if via_supervisor:Path(self.p['output_root']).rmdir()  # run_stage creates the campaign root
+        pref={'status':'PASS_CPU_PREFLIGHT','checks':{},'config_sha256':b.sha(b.PLAN)}
         with fresh_rng_each_stage() as fresh:
             for stage in stages:
                 fresh();task=FakeTask(scenario);player=FakePlayer(task)
-                fake=ModuleType('eq1d_fixture_launcher');fake.build_player=lambda n,c:(player,{})
-                fake.find_task=lambda pl:task;fake.check_origins=lambda:{};fake.find_rms=lambda m:NS()
-                with patch.dict(sys.modules,{'isaacgym':ModuleType('isaacgym'),'eq1d_fixture_launcher':fake}),\
-                     patch.dict(os.environ,env),patch.object(sys,'path',list(sys.path)),\
-                     patch.object(b,'guard_sources'),patch.object(b,'checkpoint',return_value=self.ckpt),\
-                     patch.object(b,'runtime_profile',return_value={}),\
-                     patch.object(tel,'rms_digest',return_value=self.p['frozen']['rms_digest_sha256']),\
-                     patch.object(torch.cuda,'reset_peak_memory_stats'),patch.object(torch.cuda,'synchronize'),\
-                     patch.object(torch.cuda,'max_memory_allocated',return_value=0),\
-                     patch.object(s,'EvaluatorTap',tap_class or s.EvaluatorTap):
-                    b.worker(self.p,stage,'a'*40)
+                with ExitStack() as stack:
+                    for x in self.worker_patches(task,player,tap_class)+[patch.object(b,'guard_sources'),
+                            patch.object(b,'checkpoint',return_value=self.ckpt)]:
+                        stack.enter_context(x)
+                    if not via_supervisor:
+                        b.worker(self.p,stage,'a'*40);continue
+                    def launch(*a,stage=stage,**kw):
+                        try:b.worker(self.p,stage,'a'*40);return Proc(0)
+                        except RuntimeError:return Proc(1)
+                    for x in (patch.object(b,'preflight',return_value=pref),patch.object(b,'_terminate'),
+                              patch.object(b,'gpu_state',return_value=dict(name='RTX3070',total_mib=8192,used_mib=100)),
+                              patch.object(b.subprocess,'Popen',side_effect=launch)):
+                        stack.enter_context(x)
+                    b.run_stage(self.p,stage,'a'*40)
         with patch.object(b,'guard_sources'):
             return b.verify(self.p,'a'*40)
+
+    def test_supervisor_stop_after_completed_worker_is_never_PASS(self):
+        """User-reported P1: worker COMPLETED, supervisor STOPPED_INTEGRITY -> verify must not PASS."""
+        result=self.campaign(scenario={'capture_after':30})
+        self.assertEqual(result['verdict'],b.PASS)
+        root=Path(self.p['output_root']);(root/'parity_result.json').unlink()  # tmp copy only
+        receipt=b.load(root/'S1_ON_supervisor.json');receipt.update(status='STOPPED_INTEGRITY',
+            reason='ValueError: DEVICE_VRAM_CEILING',first_cause='ValueError: DEVICE_VRAM_CEILING')
+        (root/'S1_ON_supervisor.json').write_text(json.dumps(receipt))
+        with patch.object(b,'guard_sources'):result=b.verify(self.p,'a'*40)
+        self.assertEqual(result['verdict'],b.INTEGRITY);self.assertEqual(result['integrity_failures'],['S1_ON'])
+        self.assertEqual(result['stages']['S1_ON']['worker_status'],'COMPLETED')
+        self.assertEqual(result['claims']['observer_noninterference'],'NOT_SUPPORTED')
 
     def test_four_stages_through_real_worker_then_verify_pass(self):
         result=self.campaign(scenario={'capture_after':30})
@@ -709,7 +744,7 @@ class WorkerStandInTests(unittest.TestCase):
                 return super().get_action(obs,is_deterministic)
         before=signal.getsignal(signal.SIGTERM)
         with patch(__name__+'.FakePlayer',KilledPlayer),self.assertRaisesRegex(RuntimeError,'SupervisorStop'):
-            self.campaign(stages=('S0',))
+            self.campaign(stages=('S0',),via_supervisor=False)
         self.assertIs(signal.getsignal(signal.SIGTERM),before)
         failure=b.load(Path(self.p['output_root'])/'S0/failure.json')
         self.assertIn('SIGTERM_FROM_SUPERVISOR',failure['reason']);self.assertEqual(failure['actions_completed'],2)

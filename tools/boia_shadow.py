@@ -44,6 +44,8 @@ ONLINE_MISMATCH = ("OFF_ON_MISMATCH", "OFF_ON_TRACE_LENGTH_MISMATCH", "HOST_OBSE
 PASS = "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL"
 MISMATCH = "REPLAY_INSTABILITY_OR_PROFILE_MISMATCH"
 INCOMPLETE = "INCOMPLETE_CAMPAIGN_NOT_EVALUATED"
+# A supervisor stop, a missing/unreadable supervisor receipt, or a worker/supervisor contradiction.
+INTEGRITY = "STOPPED_INTEGRITY_NOT_EVALUATED"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -103,7 +105,7 @@ def validate_plan(p):
           "campaign cap must equal the stage caps")
     check({k: {f: v[f] for f in ("left", "right", "files", "mode")} for k, v in p["comparisons"].items()}
           == COMPARISONS, "comparison contract changed")
-    check(p["verdicts"] == [PASS, MISMATCH, INCOMPLETE], "verdict vocabulary changed")
+    check(p["verdicts"] == [PASS, MISMATCH, INCOMPLETE, INTEGRITY], "verdict vocabulary changed")
     check(p["supersedes"] == dict(V1, status="WITHDRAWN_BEFORE_EXECUTION_NOT_RUN",
                                   amendment="docs/plans/boia_shadow_q01_v1_amendment_2026-10-21.md"),
           "superseded v1 binding changed")
@@ -251,7 +253,41 @@ def _line_count(path):
         return sum(1 for _ in f)
 
 
+def supervisor_record(root, stage, p, approved):
+    """The supervisor's own verdict on a stage. Missing or unreadable is never success."""
+    path = root / (stage + "_supervisor.json")
+    if not path.is_file():
+        return dict(status="MISSING", problems=["SUPERVISOR_RECEIPT_MISSING"], cause=None)
+    try:
+        r = load(path)
+    except ValueError as exc:
+        return dict(status="UNREADABLE", problems=["SUPERVISOR_RECEIPT_UNREADABLE: " + str(exc)], cause=None)
+    problems = [name for name, ok in (
+        ("STAGE", r.get("stage") == stage), ("STATUS", r.get("status") == "COMPLETED"),
+        ("REASON", r.get("reason") is None and r.get("first_cause") is None and r.get("worker_failure") is None),
+        ("WORKER_RETURNCODE", r.get("worker_returncode") == 0), ("SOURCE", r.get("source") == approved),
+        ("CONFIG", r.get("config_sha") == sha(PLAN)),
+        ("CHECKPOINT", r.get("checkpoint_sha256_after") == p["frozen"]["policy_f_sha256"])) if not ok]
+    return dict(status="COMPLETED" if not problems else "STOPPED_INTEGRITY", problems=problems,
+                cause=r.get("first_cause") or r.get("reason"))
+
+
 def stage_record(root, stage, p, approved):
+    """Worker receipt and supervisor receipt must agree; only then is a stage COMPLETED."""
+    worker = _worker_record(root, stage, p, approved)
+    supervisor = supervisor_record(root, stage, p, approved)
+    if worker["status"] == "MISSING" and supervisor["status"] == "MISSING":
+        status = "MISSING"  # never launched
+    elif supervisor["status"] == "COMPLETED" and worker["status"] in ("COMPLETED", "BINDING_MISMATCH"):
+        status = worker["status"]
+    elif supervisor["status"] == "STOPPED_INTEGRITY" and worker["status"] in ("FAILED", "MISSING"):
+        status = "FAILED"  # consistent stop; worker receipt may be absent if killed or never started
+    else:
+        status = "SUPERVISOR_WORKER_CONTRADICTION"
+    return dict(status=status, meta=worker["meta"], worker_status=worker["status"], supervisor=supervisor)
+
+
+def _worker_record(root, stage, p, approved):
     done, failure = root / stage / "process_done.json", root / stage / "failure.json"
     if done.is_file():
         meta = load(done)
@@ -302,17 +338,24 @@ def verify(p, approved):
     hooks_as_planned = all(all(v is p["stages"][s]["observer"] for v in hooks[s].values()) for s in completed)
     comparisons["runtime_profile"] = dict(status="PASS" if same_numerics and hooks_as_planned else "MISMATCH",
                                           attestation=attestation, hooks_during=hooks)
-    failed_on_mismatch = [s for s in STAGES if stages[s]["status"] == "FAILED" and
-                          any(": " + tag in str(stages[s]["meta"].get("reason")) for tag in ONLINE_MISMATCH)]
-    if (any(c["status"] == "MISMATCH" for c in comparisons.values()) or failed_on_mismatch or
+    def online_mismatch(record):
+        causes = (None if record["meta"] is None else record["meta"].get("reason"), record["supervisor"]["cause"])
+        return any(": " + tag in str(c) for c in causes for tag in ONLINE_MISMATCH)
+    failed_on_mismatch = [s for s in STAGES if stages[s]["status"] == "FAILED" and online_mismatch(stages[s])]
+    integrity_failures = [s for s in STAGES if stages[s]["status"] == "SUPERVISOR_WORKER_CONTRADICTION" or
+                          (stages[s]["status"] == "FAILED" and s not in failed_on_mismatch)]
+    if integrity_failures:
+        verdict = INTEGRITY
+    elif (any(c["status"] == "MISMATCH" for c in comparisons.values()) or failed_on_mismatch or
             any(stages[s]["status"] == "BINDING_MISMATCH" for s in STAGES)):
         verdict = MISMATCH
     elif any(stages[s]["status"] != "COMPLETED" for s in STAGES):
         verdict = INCOMPLETE
     else:
         verdict = PASS
-    def supported(*names):
-        return all(comparisons[n]["status"] == "PASS" for n in names + ("replay_s0_vs_on", "runtime_profile"))
+    def supported(*names):  # never SUPPORTED while any supervisor/worker integrity failure exists
+        return not integrity_failures and all(comparisons[n]["status"] == "PASS"
+                                              for n in names + ("replay_s0_vs_on", "runtime_profile"))
     claims = dict(
         observer_noninterference="SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE" if supported("native_vs_off") else "NOT_SUPPORTED",
         diagnostic_noninterference="SUPPORTED_EXACT_THIS_PROFILE" if supported("off_vs_on") else "NOT_SUPPORTED",
@@ -330,9 +373,10 @@ def verify(p, approved):
                   stages={s: dict(status=r["status"], reason=None if r["meta"] is None else r["meta"].get("reason"),
                                   actions=None if r["meta"] is None else r["meta"].get("actions",
                                           r["meta"].get("actions_completed")),
-                                  ended_episodes=None if r["meta"] is None else r["meta"].get("ended_episodes"))
+                                  ended_episodes=None if r["meta"] is None else r["meta"].get("ended_episodes"),
+                                  worker_status=r["worker_status"], supervisor=r["supervisor"])
                           for s, r in stages.items()},
-                  failed_on_mismatch=failed_on_mismatch, comparisons=comparisons, claims=claims,
+                  failed_on_mismatch=failed_on_mismatch, integrity_failures=integrity_failures, comparisons=comparisons, claims=claims,
                   physical_safety="NOT_QUALIFIED", G5="HOLD")
     write_new(root / "parity_result.json", result)
     return result

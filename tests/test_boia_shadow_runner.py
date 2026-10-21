@@ -93,8 +93,17 @@ class RunnerTests(unittest.TestCase):
                   ended_episodes=ended,actions=len(host)-1,host_rows=len(host),runtime_attestation_start={'cudnn_benchmark':True},
                   hooks_during={'task.step':observer,'contact_chain':observer})
         done.update(meta);b.write_new(d/'process_done.json',done)
+        self.fake_supervisor(root,stage)
 
-    def synthetic(self, case):
+    def fake_supervisor(self, root, stage_name, **change):
+        # Same keys run_stage writes for a completed stage.
+        r=dict(stage=stage_name,status='COMPLETED',reason=None,first_cause=None,worker_failure=None,worker_returncode=0,
+               wall_s=1.,source='a'*40,config_sha=b.sha(b.PLAN),checkpoint_sha256_after=self.p['frozen']['policy_f_sha256'])
+        r.update(change);path=root/(stage_name+'_supervisor.json')
+        if path.exists():path.unlink()
+        b.write_new(path,r)
+
+    def synthetic(self, case, run=True):
         p=copy.deepcopy(self.p);p['output_root']=str(Path(self.tmp.name)/case/'BOIA-SHADOW-Q01-V2')
         root=Path(p['output_root']);root.mkdir(parents=True);self.p,saved=p,self.p
         host=[{'kind':'INITIAL','returned':'r0'}]+[{'kind':'STEP','index':i,'state':{'own_position':'x%d'%i}} for i in range(30)]
@@ -113,23 +122,55 @@ class RunnerTests(unittest.TestCase):
             if case in ('on_online_mismatch','on_schema_failure') and name=='S1_ON':
                 reason='IntegrityError: '+('OFF_ON_MISMATCH_actor' if case=='on_online_mismatch' else 'SENSOR_SHAPE_MISMATCH')
                 (root/name).mkdir();b.write_new(root/name/'failure.json',dict(status='STOPPED_INTEGRITY',reason=reason,actions_completed=7))
+                self.fake_supervisor(root,name,status='STOPPED_INTEGRITY',reason='ValueError: WORKER_NONZERO_EXIT_1',
+                                     first_cause=reason,worker_failure={'reason':reason},worker_returncode=1)
+                continue
+            if case=='on_killed_no_worker_receipt' and name=='S1_ON':
+                self.fake_supervisor(root,name,status='STOPPED_INTEGRITY',reason='ValueError: DEVICE_VRAM_CEILING',
+                                     first_cause='ValueError: DEVICE_VRAM_CEILING',worker_returncode=-15)
                 continue
             if case=='receipt_rows' and name=='S1_OFF':spec=dict(spec,host_rows=len(host)+1)
             self.fake_stage(root,name,**spec)
+            supervisor_changes={  # worker process_done COMPLETED in every one of these
+                'sup_vram':dict(status='STOPPED_INTEGRITY',reason='ValueError: DEVICE_VRAM_CEILING',first_cause='ValueError: DEVICE_VRAM_CEILING'),
+                'sup_checkpoint':dict(status='STOPPED_INTEGRITY',reason='CHECKPOINT_CHANGED',first_cause='CHECKPOINT_CHANGED',checkpoint_sha256_after='0'*64),
+                'sup_source':dict(source='b'*40),'sup_config':dict(config_sha='0'*64),
+                'sup_returncode':dict(worker_returncode=1),'sup_stage':dict(stage='S1_OFF'),
+                'sup_reason_only':dict(reason='ValueError: CAMPAIGN_OUTPUT_CAP')}
+            if name=='S1_ON' and case in supervisor_changes:self.fake_supervisor(root,name,**supervisor_changes[case])
+            if name=='S1_ON' and case=='sup_missing':(root/'S1_ON_supervisor.json').unlink()
+            if name=='S1_ON' and case=='sup_corrupt':
+                (root/'S1_ON_supervisor.json').unlink();(root/'S1_ON_supervisor.json').write_text('{"status": "COMPL')
         try:
+            if not run:return p
             with patch.object(b,'guard_sources'):return b.verify(p,'a'*40)
         finally:self.p=saved
+
+    def test_verify_cli_exit_code_is_nonzero_unless_PASS(self):
+        real=b.load
+        for case,expected in (('pass',0),('sup_vram',1),('sup_checkpoint',1),('sup_missing',1),('sup_returncode',1)):
+            p=self.synthetic(case,run=False)
+            with self.subTest(case=case),patch.object(b,'guard_sources'),\
+                 patch.object(b,'load',side_effect=lambda path,p=p:p if Path(path)==b.PLAN else real(path)),\
+                 patch('builtins.print'):
+                self.assertEqual(b.main(['verify','--approved-commit','a'*40]),expected)
 
     def test_verify_verdicts_are_exact_and_never_attribute_cause(self):
         self.assertEqual(self.synthetic('pass')['verdict'],b.PASS);results={}
         for case,expected in (('native_row',b.MISMATCH),('off_empty',b.MISMATCH),('on_numerics',b.MISMATCH),
                               ('s0_ended_early',b.MISMATCH),('native_hooked',b.MISMATCH),('wrong_source',b.MISMATCH),
                               ('on_online_mismatch',b.MISMATCH),('receipt_rows',b.MISMATCH),
-                              ('on_missing',b.INCOMPLETE),('on_schema_failure',b.INCOMPLETE)):
+                              ('on_missing',b.INCOMPLETE),('on_schema_failure',b.INTEGRITY),
+                              ('on_killed_no_worker_receipt',b.INTEGRITY),('sup_vram',b.INTEGRITY),
+                              ('sup_checkpoint',b.INTEGRITY),('sup_source',b.INTEGRITY),('sup_config',b.INTEGRITY),
+                              ('sup_returncode',b.INTEGRITY),('sup_stage',b.INTEGRITY),('sup_reason_only',b.INTEGRITY),
+                              ('sup_missing',b.INTEGRITY),('sup_corrupt',b.INTEGRITY)):
             with self.subTest(case=case):
                 result=results[case]=self.synthetic(case);self.assertEqual(result['verdict'],expected)
-                self.assertNotEqual(result['claims']['observer_noninterference'] if case not in ('on_missing','on_schema_failure') else 'x',
-                                    'SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE')
+                self.assertEqual(result['claims']['observer_noninterference'],'NOT_SUPPORTED')
+                if expected in (b.INTEGRITY,b.INCOMPLETE):
+                    self.assertEqual({v for k,v in result['claims'].items() if k.endswith('noninterference')},{'NOT_SUPPORTED'})
+                if expected==b.INTEGRITY:self.assertIn('S1_ON',result['integrity_failures'])
                 if expected==b.MISMATCH:self.assertEqual(result['claims']['mismatch_cause'],'NOT_VERIFIED')
         self.assertEqual(self.synthetic('terminal')['claims']['terminal_reset_compared'],
                          dict(native_vs_off=False,off_vs_on=False,replay_s0_vs_on=False))

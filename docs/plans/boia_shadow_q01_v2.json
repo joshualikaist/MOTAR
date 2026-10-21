@@ -215,7 +215,8 @@
   "verdicts": [
     "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL",
     "REPLAY_INSTABILITY_OR_PROFILE_MISMATCH",
-    "INCOMPLETE_CAMPAIGN_NOT_EVALUATED"
+    "INCOMPLETE_CAMPAIGN_NOT_EVALUATED",
+    "STOPPED_INTEGRITY_NOT_EVALUATED"
   ],
   "qualification_scope": {
     "sensor_acquisition": "MEASURED",
@@ -244,6 +245,7 @@
     "numerics": "torch/CUDA/cuDNN versions, cudnn.benchmark/deterministic/allow_tf32, matmul allow_tf32 and float32 precision recorded per stage and required equal; never changed by Q01",
     "seed": "rl_games seeds globals with the player yaml seed 42 at runner load; BaseTask.seed(task_config.seed) then reseeds numpy/torch/CUDA/random from NAVRL_SEED=4901 at task construction, so 4901 is effective; runtime_profile requires task_config.seed == profile.seed",
     "replay_control_scope": "ON configuration, S0 prefix only; a mismatch after the prefix or specific to NATIVE is not separable from replay instability",
-    "terminal_reset": "compared only if both stages end an episode within their own action cap (20 for S0, 200 otherwise) (claims.terminal_reset_compared)"
+    "terminal_reset": "compared only if both stages end an episode within their own action cap (20 for S0, 200 otherwise) (claims.terminal_reset_compared)",
+    "supervisor_receipts": "verify requires every stage's supervisor receipt COMPLETED with matching stage/source/config/checkpoint, worker returncode 0 and no reason; a stop, missing/unreadable receipt or worker/supervisor contradiction gives STOPPED_INTEGRITY_NOT_EVALUATED and no SUPPORTED claim (corrected 2026-10-21 before any execution)"
   }
 }

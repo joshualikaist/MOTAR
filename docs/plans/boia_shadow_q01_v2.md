@@ -74,7 +74,13 @@ Verdicts: `PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL` only when every 
 passes. Any mismatch is `REPLAY_INSTABILITY_OR_PROFILE_MISMATCH`, with the first row, the
 differing fields and both stages' runtime attestation recorded, and cause `NOT_VERIFIED`:
 it is not attributed to the observer or to CUDA nondeterminism without separate evidence.
-Missing stages give `INCOMPLETE_CAMPAIGN_NOT_EVALUATED`. Observer noninterference is
+Missing stages give `INCOMPLETE_CAMPAIGN_NOT_EVALUATED`. Every stage also needs its supervisor
+receipt: COMPLETED, matching stage/source/config/checkpoint, worker return code 0 and no stop
+reason. A supervisor stop (e.g. `DEVICE_VRAM_CEILING`, `CHECKPOINT_CHANGED`), a missing or
+unreadable receipt, or a worker receipt that contradicts it gives
+`STOPPED_INTEGRITY_NOT_EVALUATED`, which overrides every other verdict and allows no SUPPORTED
+claim. (Correction of 2026-10-21, made before any execution: the first v2 verifier read only the
+worker's receipt and could report PASS for a stage its supervisor had stopped.) Observer noninterference is
 supported only if comparisons 1 and 3 and the runtime profile all pass; diagnostic
 noninterference only if 2 and 3 and the runtime profile pass.
 
