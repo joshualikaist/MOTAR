@@ -22365,3 +22365,20 @@ IDENTITY_AMBIGUOUS / UNKNOWN), thresholds as declared priors, utility ABSTAIN. S
 
 No labels exist, so no accuracy claim. Modules B–E are design only. GPU NOT_RUN, G5 HOLD. Next:
 Q02-B (evaluator-side label design, Module C v0 local map, D v0 candidate features).
+
+## 2026-10-21 — Q02-B Phase 0: Fable review of Q02-A → HOLD (P0/P1 in the evidence rule)
+
+Independent Fable 5.1 read-only review of `93fbabf`: HOLD_P0_P1_FIX_REQUIRED, re-checked here
+against source and the Q01-V2 frames. P0 F1: production camera depth is a 40×24 obstacle render
+upsampled and filled at a 10 m far plane (97.2–98.4 % of real-frame pixels sit at the fill), but
+Q02-A treated it as 20 m measured range, so the fill became a surface. Hypothesis "the Q01 replay's
+IDENTITY_AMBIGUOUS reflected the target surface" rejected: it is the 10 m fill. P1 F2: padded LiDAR
+beam window counts side beams as foreground (side bar beside a clear LOS → OCCLUDED). P1 F3:
+zero depth/LiDAR (production near-clip writes 0.0) passes validation and counts as foreground.
+Plus P2 F4–F7 and NOTEs F8–F10; full table and minimal fixes in
+`docs/evidence/q02a_fable_review_2026-10-21/REVIEW.md`.
+
+Decision: Q02-B stopped at Phase 0 as instructed; no Q02-B code committed. Staged Q02-B modules,
+tests (25 passing against the unfixed rule) and design/plan drafts preserved outside Git at
+`/home/fair/workspaces/aerial_gym_ws/q02b_staged_wip_2026-10-21/`. Next: fix F1–F3 (and F4–F7) in
+Q02-A with 10 m-clamped and zero-value tests, re-review, then resume Q02-B. GPU NOT_RUN, G5 HOLD.
