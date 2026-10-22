@@ -22621,3 +22621,27 @@ Hypothesis "a pixel-count rule over the non-upsample mask can separate target fr
 identity_attack_v24_families.py, summarize_families.py, identity_families_summary.json, bars_h3_corner_v25.json,
 rejected_eps1mm_*.json). Q02-B WIP unchanged. GPU NOT_RUN, G5 HOLD. Next: Opus 5.5 confirmation review. This is the final
 round: on PASS lift the Q02-B HOLD, on P1 report HOLD without further iteration.
+
+## 2026-10-22 — Q02-A v2.5 final review (Opus 5.5, 5fc64a3): HOLD_P0_P1_REMAINS (G1, G2); series stopped
+
+Read-only CPU final review, the first on Opus 5.5 (user instruction). No P0. All re-runnable v2.5 numbers reproduce
+(43 OK, compare JSON byte-identical, Q01 4/12/14 at range, family re-runs match).
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| G1 | P1 | Obstacle blend pixels in the paste box read farther than the true sphere and veto it; a 2-inlier sphere on blend pixels wins. Author reproduction (L5 example): fitted sphere 4.45 m from the target, correct track RANGE_CONTRADICTED, wrong tracks at 6.3/6.6 m SUPPORTED with 0 target pixels. Reviewer: 26/636 (2 m bar) and 24/607 (3 m bar) corner scenes, errors −2.1…+5.5 m; 1/9,000 random scenes |
+| G2 | P1 | Record claim false: a box-shaped (physical-dynamics) target is fitted as a sphere and SUPPORTED (author reproduction; reviewer 1,052/155,844 false swept tracks with bars) |
+| G3, G4 | P2 | Limb slivers missed by seeding (~0.8 % of scenes, fail-safe NOT_TESTABLE); near-miss false SUPPORTED 7.4e-5 of tracker-like decisions |
+| G5–G7 | NOTE | Docstring reason wrong; degenerate fit at ≥ ~12 m; runtime fine |
+
+Hypothesis "a declared-radius sphere fit with a farther-content veto separates target from box pixels" rejected: measured
+a spurious 2-pixel winner in ~4 % of bar-corner-in-silhouette scenes. Per the stop rule declared before this round, there is
+no further iteration in this run.
+
+Final status of the Q02-A repair series: **HOLD_P0_P1_REMAINS**. The original P0/P1 (10 m fill, LOS window, 0 m values) are
+fixed, hypothesis outputs are correct in every sweep, and `depth_native` is usable under the stated conditions. Still open:
+the identity status SUPPORTED_BY_FOOTPRINT on the flag path (G1, G2). Proposed v2.6 (separate approval): abstain when the
+veto decides, ≥ 3 inliers, better seeds, declared target shape → UNVERIFIABLE otherwise, a candidate inlier at range,
+and corrected record text. Q02-B stays blocked (motar-3p3.26). The reviewer judged lifting the CPU-only design hold
+reasonable under conditions; that decision is left to the user. Record:
+`docs/evidence/q02a_v25_opus_final_review_2026-10-22/` (REVIEW.md, probes/, g1_g2_reproduction.py/.txt). GPU NOT_RUN, G5 HOLD.

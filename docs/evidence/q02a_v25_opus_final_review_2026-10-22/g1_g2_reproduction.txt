@@ -1,0 +1,6 @@
+G1 paste px 15 | fitted centre 4.45 m from the target, inliers 2, mask 2 (true paste 0), mask depths [7.3  7.31]
+G1 correct track: RANGE_CONTRADICTED
+G1 track 6.3 m on the target ray (cov 0.04): TARGET_VISIBLE SUPPORTED_BY_FOOTPRINT target_at=2
+G1 track 6.6 m on the target ray (cov 0.01): TARGET_VISIBLE SUPPORTED_BY_FOOTPRINT target_at=2
+G1 track 5.0 m on the target ray (cov 0.01): IDENTITY_AMBIGUOUS RANGE_CONTRADICTED target_at=0
+G2 box-shaped target 4 m, correct track: SUPPORTED_BY_FOOTPRINT | sphere found: True
