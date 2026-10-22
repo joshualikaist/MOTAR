@@ -1,4 +1,4 @@
-"""Module A (contract Q02A-v2.5): explainable sensor evidence about a tracked target's line of sight.
+"""Module A (contract Q02A-v2.6): explainable sensor evidence about a tracked target's line of sight.
 
 Deterministic rule over measured samples; not a calibrated classifier and no probability. UNKNOWN
 is returned whenever the inputs cannot separate the cases, and UNKNOWN is never free space or a
@@ -29,6 +29,10 @@ than it, so obstacle pixels in the paste's box behind the target cannot support 
 v2.5 (v2.4 review F1): identity support uses only the pixels of the single declared-radius sphere that
 explains the paste (geometry.fit_target_sphere), so obstacle pixels inside the paste's box never count,
 whether they lie nearer or farther than the target.
+v2.6 (Opus review G1/G2): the record separates detection support, footprint geometry, upstream tracker
+association and an identity verdict that is never "confirmed" (identity_status stays as an alias of
+the footprint-geometry statement). The most consistent sphere is judged with its own contradictions
+and rivals and is never replaced by a lower-ranked one; the target shape is a declared profile field.
 In the Frozen F profile the camera flag is oracle-grade (true-pose rasterization), so agreement
 with it is not evidence that this rule would work with a real detector.
 """
@@ -37,9 +41,9 @@ import math
 
 import numpy as np
 
-from .contracts import (EVIDENCE_CONTRACT_VERSION, FROZEN_F_CAMERA, FROZEN_F_LIDAR, FROZEN_F_PROFILE, NEAR_CLIPPED,
-                        NO_RETURN, VALID_HIT)
-from .geometry import (cov_world_to_vehicle, fit_target_sphere, lidar_directions, native_camera_rays, pixel_rays,
+from .contracts import (EVIDENCE_CONTRACT_VERSION, EVIDENCE_RECORD_SCHEMA, FROZEN_F_CAMERA, FROZEN_F_LIDAR, FROZEN_F_PROFILE,
+                        NEAR_CLIPPED, NO_RETURN, TARGET_SPHERE, VALID_HIT)
+from .geometry import (SPHERE_OK, SPHERE_SHAPE, SPHERE_TIE, SPHERE_VETOED, cov_world_to_vehicle, fit_target_sphere, lidar_directions, native_camera_rays, pixel_rays,
                        point_line_distance, project, quat_yaw_xyzw, ray_envelope, vehicle_to_camera, world_to_vehicle)
 from .validation import ValidationLimits, classify_depth_native, classify_lidar, validate
 
@@ -109,6 +113,16 @@ class EvidenceRecord:
     near_obstacle_warning: bool
     near_clipped_lidar_beams: int
     validation_problems: tuple
+    # v2.6 identity contract (Opus review G1/G2): five separate statements; none of them confirms identity.
+    detection_support: str = "NONE"              # CAMERA_FLAG: the renderer flagged a target-coloured detection
+    detector_provenance: str = "ORACLE_TRUE_POSE_RASTER"
+    geometry_support: str = "NOT_APPLICABLE"     # does the detection's paste lie in the track footprint, at range?
+    tracker_association: str = "NO_TRACK"        # what the upstream tracker reports; not verified here
+    identity_verdict: str = "NOT_APPLICABLE"     # CONSISTENT_NOT_CONFIRMED / AMBIGUOUS / CONTRADICTED / NOT_TESTABLE
+    identity_confirmation: str = "NOT_AVAILABLE_SINGLE_FRAME_ORACLE_FLAG"
+    sphere_fit_status: str = "NOT_RUN"
+    target_geometry: str = "SPHERE"
+    schema_version: str = EVIDENCE_RECORD_SCHEMA
     contract_version: str = EVIDENCE_CONTRACT_VERSION
     confidence_semantics: str = CONFIDENCE_SEMANTICS
     ground_truth_used: bool = False
@@ -116,9 +130,25 @@ class EvidenceRecord:
     calibration: str = "NONE_DECLARED_PRIORS"
 
 
+# identity_status is kept as a compatibility alias of the footprint-geometry statement (v2.6): it never means
+# "the same target"; SUPPORTED_BY_FOOTPRINT = the detection's target pixels lie in the track footprint at range.
+_IDENTITY_MAP = {
+    "SUPPORTED_BY_FOOTPRINT": ("FOOTPRINT_CONSISTENT", "CONSISTENT_NOT_CONFIRMED"),
+    "RANGE_CONTRADICTED": ("RANGE_INCONSISTENT", "CONTRADICTED"),
+    "CONTRADICTED": ("POSITION_INCONSISTENT", "CONTRADICTED"),
+    "AMBIGUOUS": ("AMBIGUOUS", "AMBIGUOUS"),
+    "UNVERIFIABLE": ("NOT_TESTABLE", "AMBIGUOUS"),
+    "NOT_TESTABLE": ("NOT_TESTABLE", "NOT_TESTABLE"),
+    "NOT_APPLICABLE": ("NOT_APPLICABLE", "NOT_APPLICABLE"),
+}
+
+
 def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=SensorRays(), lid=SensorRays(), pasted=(0, 0, 0),
-            near_beams=0, target=(False, 0, 0)):
+            near_beams=0, target=(False, 0, 0), fit_status="NOT_RUN", profile=FROZEN_F_PROFILE):
     g, nan = g or {}, float("nan")
+    geometry, verdict = _IDENTITY_MAP[identity]
+    association = ("NO_TRACK" if not inp.track_active else
+                   "UPSTREAM_MEASUREMENT_UPDATE_NOT_VERIFIED" if inp.fused_update else "PREDICTION_ONLY")
     return EvidenceRecord(hypothesis, tuple(dict.fromkeys(reasons)), source, identity, inp.camera_detected, inp.confidence,
                           "MEASUREMENT_UPDATED" if inp.fused_update else "PREDICTED_ONLY", inp.track_age_s,
                           tuple(float(x) for x in g.get("p_v", (nan, nan, nan))), g.get("range", nan),
@@ -126,7 +156,8 @@ def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=Sens
                           g.get("fov_in", 0), g.get("fov_total", 0), g.get("env_cam", nan), g.get("env_lid", nan),
                           cam, lid, int(pasted[0]), int(pasted[1]), int(pasted[2]), bool(target[0]), int(target[1]), int(target[2]),
                           bool(near_beams > 0 or cam.near_clipped > 0 or report.camera_contact_range), int(near_beams),
-                          report.problems())
+                          report.problems(), "CAMERA_FLAG" if inp.camera_detected else "NONE", profile.detector_provenance,
+                          geometry, association, verdict, sphere_fit_status=fit_status, target_geometry=profile.target_geometry)
 
 
 def _belief_geometry(inp, camera, lidar, params):
@@ -227,6 +258,29 @@ def _pasted_in_footprint(inp, report, camera, params, g, mask=None):
     return int(inside.sum()), int((inside & (d >= lo) & (d <= hi)).sum()), int((inside & (d < lo)).sum())
 
 
+def _footprint_decision(inp, report, camera, params, g, fit, pasted):
+    """Footprint-geometry statement for a camera flag, from one SphereFit (v2.6). Returns (hypothesis,
+    reasons, identity_status, target counts) or hypothesis None to fall through to the camera-clear and
+    not-testable rules. Only an uncontradicted, unrivalled sphere can support; a contradicted or rivalled
+    most-consistent sphere makes the identity ambiguous -- a lower-ranked candidate never inherits support.
+    Support needs at least one candidate inlier (not only interior fill-in pixels) at the track range."""
+    if fit.status in (SPHERE_VETOED, SPHERE_TIE, SPHERE_SHAPE):
+        return IDENTITY_AMBIGUOUS, ("CAMERA_FLAG_VISIBLE", "TARGET_SPHERE_" + fit.status), "AMBIGUOUS", (False, 0, 0)
+    if fit.status != SPHERE_OK:
+        return None, (), None, (False, 0, 0)
+    tgt = _pasted_in_footprint(inp, report, camera, params, g, mask=fit.mask)
+    core = _pasted_in_footprint(inp, report, camera, params, g, mask=fit.inlier_mask)
+    target = (True, tgt[0], core[1])
+    if core[1] > 0:
+        return TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "TARGET_SPHERE_AT_TRACK_RANGE"), "SUPPORTED_BY_FOOTPRINT", target
+    if tgt[1] > 0:
+        return TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "TARGET_SPHERE_AT_RANGE_ONLY_INTERIOR_PIXELS"), "NOT_TESTABLE", target
+    if tgt[0] > 0:
+        extra = "TARGET_SPHERE_NEARER_THAN_TRACK" if tgt[2] > 0 else "TARGET_SPHERE_FARTHER_THAN_TRACK"
+        return IDENTITY_AMBIGUOUS, ("CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE", extra), "RANGE_CONTRADICTED", target
+    return None, (), None, target
+
+
 def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceParams(), limits=ValidationLimits(),
              profile=FROZEN_F_PROFILE):
     """One evidence record for one decision. Pure: no RNG, no I/O, inputs are read-only."""
@@ -252,24 +306,21 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
             return _record(TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"),
                            "CAMERA_FLAG", "NOT_TESTABLE", inp, report, g=g, cam=cam, lid=lid, near_beams=near_beams)
         pasted = _pasted_in_footprint(inp, report, camera, params, g)
-        # Identity evidence = pixels of the single declared-radius sphere that explains the paste (v2.5,
-        # review F1): obstacle pixels inside the paste's box are never target pixels, whatever their range.
-        _, sphere_mask, sphere_status, _ = fit_target_sphere(inp.depth, report.depth_pasted, camera, camera.target_radius) \
-            if report.depth_pasted is not None else (None, None, "NO_CONSISTENT_SPHERE", 0)
-        tgt = _pasted_in_footprint(inp, report, camera, params, g, mask=sphere_mask) if sphere_status == "OK" else (0, 0, 0)
-        args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams, target=(sphere_status == "OK", tgt[0], tgt[1]))
         notes = [] if report.obstacle_depth_usable else ["CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"]
         if cam.consistent or lid.consistent:
             notes.append("SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE")
-        if tgt[1] > 0:
-            return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "TARGET_SPHERE_AT_TRACK_RANGE"] + notes, "CAMERA_FLAG",
-                           "SUPPORTED_BY_FOOTPRINT", inp, report, **args)
-        if tgt[0] > 0:
-            extra = ["TARGET_SPHERE_NEARER_THAN_TRACK"] if tgt[2] > 0 else ["TARGET_SPHERE_FARTHER_THAN_TRACK"]
-            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE"] + extra + notes, "CAMERA_FLAG",
-                           "RANGE_CONTRADICTED", inp, report, **args)
-        if pasted[0] > 0 and sphere_status != "OK":
-            notes.append("PASTE_NOT_EXPLAINED_BY_TARGET_SPHERE")
+        if profile.target_geometry != TARGET_SPHERE:      # v2.6, review G2: no model for this target's paste
+            return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "TARGET_GEOMETRY_MODEL_NOT_APPLICABLE"] + notes,
+                           "CAMERA_FLAG", "NOT_TESTABLE", inp, report, g=g, cam=cam, lid=lid, pasted=pasted,
+                           near_beams=near_beams, fit_status="NOT_RUN", profile=profile)
+        fit = fit_target_sphere(inp.depth, report.depth_pasted, camera, camera.target_radius)
+        decision = _footprint_decision(inp, report, camera, params, g, fit, pasted)
+        args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams, target=decision[3],
+                    fit_status=fit.status, profile=profile)
+        if decision[0] is not None:
+            return _record(decision[0], list(decision[1]) + notes, "CAMERA_FLAG", decision[2], inp, report, **args)
+        if pasted[0] > 0:
+            notes.append("PASTE_NOT_EXPLAINED_BY_TARGET_SPHERE" if fit.status != SPHERE_OK else "TARGET_SPHERE_NOT_IN_FOOTPRINT")
         if report.depth_pasted is not None and not report.depth_pasted.any():
             notes.append("NO_PASTED_PIXELS_IN_IMAGE")   # the oracle flag normally comes with pasted pixels
         if cam.rays and cam.clear / cam.rays >= params.min_fraction and cam.foreground == 0:

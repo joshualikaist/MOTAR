@@ -320,9 +320,32 @@ def point_line_distance(points, origin, direction):
     return np.sqrt(np.clip((v * v).sum(axis=-1) - along * along, 0.0, None))
 
 
-# --- Q02A-v2.5: the declared target sphere as the paste model ----------------------------------
+# --- Q02A-v2.5/v2.6: the declared target sphere as the paste model ---------------------------------
 _FULL_RAYS = {}
-TARGET_SPHERE_OK, TARGET_SPHERE_NONE = "OK", "NO_CONSISTENT_SPHERE"
+SPHERE_OK = "OK"                                   # one consistent, uncontradicted sphere
+SPHERE_NONE = "NO_CONSISTENT_SPHERE"              # no candidate lies on a sphere of the declared radius
+SPHERE_VETOED = "MOST_CONSISTENT_SPHERE_CONTRADICTED"
+SPHERE_TIE = "COMPETING_SPHERES"                  # distinct uncontradicted spheres explain equally many pixels
+SPHERE_WEAK = "TOO_FEW_INLIERS"                   # < 3 inliers and other nearby candidates unexplained
+SPHERE_SHAPE = "SHAPE_INCONSISTENT"               # same-object pixels near the sphere mostly off its surface
+TARGET_SPHERE_OK, TARGET_SPHERE_NONE = SPHERE_OK, SPHERE_NONE   # v2.5 names
+
+
+@dataclass(frozen=True)
+class SphereFit:
+    """Geometric consistency, contradiction and ranking kept apart (v2.6). `centre`/`mask` describe
+    the most consistent sphere (max inliers) even when it is contradicted; only status OK may be
+    used as footprint evidence. `inlier_mask` = candidate pixels on that sphere; `mask` adds
+    non-candidate pixels whose depth equals its surface (the smooth interior of large pastes)."""
+    status: str
+    centre: object
+    mask: object
+    inlier_mask: object
+    inliers: int
+    contradictions: int        # farther pixels in its disc core that lie on a distinct target-like sphere (veto)
+    farther_unexplained: int   # farther pixels in its disc core on no such sphere (obstacle blends; recorded, no veto)
+    rival_inliers: int         # best distinct, uncontradicted competitor
+    band_pixels: int           # candidates near it (lateral <= 2R, depth within its band)
 
 
 def _full_rays(camera, shape):
@@ -333,29 +356,42 @@ def _full_rays(camera, shape):
     return _FULL_RAYS[key]
 
 
-def fit_target_sphere(depth, candidates, camera, radius, eps=5e-3, inner=0.02, max_seeds=64):
-    """The single sphere of the declared radius that explains the candidate (non-upsample) pixels.
+def fit_target_sphere(depth, candidates, camera, radius, eps=5e-3, inner=0.02, max_seeds=64, min_inliers=3,
+                      min_band_fraction=0.5):
+    """Sphere of the declared radius that explains the candidate (non-upsample) pixels, as evidence.
 
-    The production target is an analytic sphere pasted with its exact ray depth wherever it is the
-    nearest surface (navrl_detector.py:111-132), so its pixels lie on one sphere of radius `radius`
-    to float precision (Q01 frames: residual <= 1e-4 m). Candidates seed sphere centres (pixel point +
-    radius along its ray), refined by Gauss-Newton on |p - c| = radius. Each sphere is scored by its
-    front-facing inliers (within eps) minus candidate pixels inside its disc core (rays within
-    radius - inner of the centre) that show content farther than the sphere: only one target exists
-    and nothing pasted can be visible behind it. Obstacle-render pixels are not candidates, so an
-    occluder thinner than the native grid does not count against the true sphere. Returns
-    (centre (3,) in the camera-offset frame of `camera`, target mask (H, W), status, inliers)."""
+    The production target in the declared profile is an analytic sphere pasted with its exact ray
+    depth wherever it is the nearest surface (navrl_detector.py:111-132), so its pixels lie on one
+    sphere of radius `radius` (Q01 frames: residual <= 1e-4 m). Candidates seed sphere centres (pixel
+    point + radius along its ray), refined by Gauss-Newton on |p - c| = radius; a sphere's inliers are
+    the front-facing candidates within eps of its surface (geometric consistency).
+
+    v2.6 (Opus review G1): the ranking is by consistency alone, and the most consistent sphere is
+    judged with its OWN contradictions: candidate pixels inside its disc core that show a farther
+    surface lying on a distinct target-like sphere (>= min_inliers inliers) -- a second target-like
+    surface behind it, impossible for the single declared target. Farther pixels on no such sphere are
+    obstacle-render blends beside the paste (bilinear mixes toward the 10 m fill); they are counted but
+    cannot veto, and they never support anything. A contradicted best sphere is not replaced by a
+    lower-ranked one (the v2.5 score let a 2-pixel blend sphere win): the paste is then ambiguous. Two distinct uncontradicted spheres
+    with equal inliers are ambiguous. Fewer than `min_inliers` inliers is too weak unless the sphere
+    explains every candidate near it (2 points always fit a 0.15 m sphere). Same-object candidates
+    near it (lateral <= 2R, depth within [front - R, centre + R]) that are mostly off its surface mean
+    the paste is not this sphere (G2: a box target). Thresholds are declared geometry checks, not
+    probabilities, and passing them does not establish identity."""
     d = np.asarray(depth, dtype=np.float64)
     o = np.asarray(camera.camera_offset, dtype=np.float64)
     rays_all = _full_rays(camera, d.shape)
-    v, u = np.nonzero(candidates)
     empty = np.zeros(d.shape, dtype=bool)
+    none = SphereFit(SPHERE_NONE, None, empty, empty, 0, 0, 0, 0, 0)
+    if candidates is None:
+        return none
+    v, u = np.nonzero(candidates)
     if v.size == 0:
-        return None, empty, TARGET_SPHERE_NONE, 0
+        return none
     rays = rays_all[v, u]; t = d[v, u]; pts = o + t[:, None] * rays
     order = np.argsort(t)
     seeds = order if order.size <= max_seeds else order[np.linspace(0, order.size - 1, max_seeds).astype(int)]
-    best = None
+    spheres = []
     for i in seeds:
         c = pts[i] + radius * rays[i]
         for tol in (0.05, 0.02, eps):
@@ -367,19 +403,44 @@ def fit_target_sphere(depth, candidates, camera, radius, eps=5e-3, inner=0.02, m
                 c = c + np.linalg.lstsq(-q / dq[:, None], -(dq - radius), rcond=None)[0]
         dist = np.linalg.norm(pts - c, axis=1)
         front = np.einsum("ij,ij->i", pts - c, rays) < 0
-        n_in = int(((np.abs(dist - radius) < eps) & front).sum())
-        if n_in == 0:
+        inl = (np.abs(dist - radius) < eps) & front
+        if not inl.any():
             continue
         oc = c - o; s = rays @ oc; perp2 = oc @ oc - s * s
         core = (s > 0) & (perp2 <= (radius - inner) ** 2)
         surface = s - np.sqrt(np.clip(radius * radius - perp2, 0.0, None))
-        score = n_in - int((core & (t > surface + eps)).sum())
-        if best is None or (score, n_in) > (best[0], best[1]):
-            best = (score, n_in, c)
-    if best is None or best[0] <= 0:
-        return None, empty, TARGET_SPHERE_NONE, 0
-    c = best[2]
+        farther = core & (t > surface + eps)
+        near = (s > 0) & (perp2 <= (2.0 * radius) ** 2)
+        crange = float(np.linalg.norm(oc))
+        band = near & (t >= crange - 2.0 * radius) & (t <= crange + radius)
+        spheres.append((int(inl.sum()), farther, c, inl, int(near.sum()), int(band.sum())))
+    if not spheres:
+        return none
+    spheres.sort(key=lambda x: (-x[0], int(x[1].sum())))           # ranking = geometric consistency only
+    n_in, farther, c, inl, n_near, n_band = spheres[0]
+    distinct = [x for x in spheres[1:] if np.linalg.norm(x[2] - c) > radius]
+    # A farther pixel contradicts the best sphere only if it lies on a distinct target-like sphere (>= min_inliers):
+    # then a second target-like surface is visible behind it, impossible for the single target. Farther pixels on no
+    # such sphere are obstacle-render blends beside the paste; they are recorded but cannot veto.
+    target_like = np.zeros(len(t), dtype=bool)
+    for x in distinct:
+        if x[0] >= min_inliers:
+            target_like |= x[3]
+    contra = int((farther & target_like).sum()); unexplained = int((farther & ~target_like).sum())
+    rivals = [x[0] for x in distinct if not (x[1] & inl).any() and np.linalg.norm(x[2] - c) > 2.0 * radius]
+    rival = max(rivals) if rivals else 0
+    in_mask = empty.copy(); in_mask[v[inl], u[inl]] = True
     _, entry, _, perp = ray_envelope(o, rays_all.reshape(-1, 3), c, radius)
-    surface = entry.reshape(d.shape)
-    mask = (perp.reshape(d.shape) <= radius) & (surface > 0) & (np.abs(d - surface) <= eps)
-    return c, mask, TARGET_SPHERE_OK, best[1]
+    surf = entry.reshape(d.shape)
+    mask = (perp.reshape(d.shape) <= radius) & (surf > 0) & (np.abs(d - surf) <= eps)
+    if contra > 0:
+        status = SPHERE_VETOED
+    elif rival >= n_in:
+        status = SPHERE_TIE
+    elif n_in < min_inliers and n_in < n_near:
+        status = SPHERE_WEAK
+    elif n_in < min_band_fraction * n_band:
+        status = SPHERE_SHAPE
+    else:
+        status = SPHERE_OK
+    return SphereFit(status, c, mask, in_mask, n_in, contra, unexplained, rival, n_band)

@@ -1,4 +1,4 @@
-"""Q02-A CPU tests (contract Q02A-v2.5): constants, frames, sensor semantics, validation and the rule.
+"""Q02-A CPU tests (contract Q02A-v2.6): constants, frames, sensor semantics, validation and the rule.
 
 Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
 40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
@@ -9,6 +9,7 @@ defect (REVIEW.md). Scenes test the rule's logic against known geometry, not det
 """
 import ast
 from dataclasses import fields, replace
+import json
 import math
 from pathlib import Path
 import re
@@ -211,7 +212,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
         # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
         self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
-        self.assertEqual(r.contract_version, "Q02A-v2.5")   # v2.1: R1-R4; v2.2: D1/D2/D7; v2.3: C1; v2.4: E1; v2.5: F1
+        self.assertEqual(r.contract_version, "Q02A-v2.6")   # v2.1: R1-R4; v2.2: D1/D2/D7; v2.3: C1; v2.4: E1; v2.5: F1; v2.6: G1/G2
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -660,6 +661,114 @@ class ReviewF1Tests(unittest.TestCase):
                 r = ev.estimate(make(target_v=tuple(face), detected=True, depth=depth, lidar=lidar))
                 self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")      # v2.4: SUPPORTED
                 self.assertEqual(r.target_pixels_at_track_range, 0)
+
+
+def _front_corner_scene(R, d_f, a, b, top=1.0, half=0.3):
+    """Target behind a front bar whose top corner lies inside the target's silhouette (box_scene geometry)."""
+    cam_o = np.array(CAM.camera_offset); x_f = R - d_f
+    corner = np.array([x_f, 0.0, top]); c = (corner - cam_o) / np.linalg.norm(corner - cam_o)
+    ey = np.cross([0, 0, 1.0], c); ey /= np.linalg.norm(ey); ez = np.cross(c, ey)
+    th = CAM.target_radius / R
+    dr = c + a * th * ey + b * th * ez; dr /= np.linalg.norm(dr)
+    tv = cam_o + R * dr
+    depth, lidar = box_scene(tv, [(x_f + half, -half, half, half, -1.0, top)])
+    return tv, dr, depth, lidar
+
+
+def box_target_scene(centre, half=(0.14, 0.14, 0.06)):
+    """The physical-dynamics box target (axis-aligned) pasted with exact depth over an empty obstacle render."""
+    cam_o = np.array(CAM.camera_offset); vv, uu = np.mgrid[0:90, 0:160]
+    c, h = np.asarray(centre, float), np.asarray(half, float)
+    t = _box_hits(cam_o, geo.pixel_rays(uu, vv, CAM), [(c[0], c[1], h[0], h[1], c[2] - h[2], c[2] + h[2])])
+    base = np.clip(AV @ np.full((24, 40), 10.0) @ AH.T, 0.0, PROF.obstacle_far_m)
+    return np.where(np.isfinite(t), t, base).astype(np.float32)
+
+
+class IdentityContractV26Tests(unittest.TestCase):
+    """Q02A-v2.6: Opus review G1/G2 and the split identity contract (docs/evidence/q02a_v25_opus_final_review_2026-10-22)."""
+
+    def test_A_G1_blend_pixels_cannot_promote_a_lower_ranked_sphere(self):
+        # The reviewer's fixture: target 3 m, a 2 m bar 0.4 m in front, corner offsets a = b = -0.7 (the v2.5 L5 case).
+        # v2.5 scored inliers minus farther pixels; 22 obstacle blends vetoed the true sphere and a 2-pixel sphere on
+        # blends at 7.3 m won, so the correct track was RANGE_CONTRADICTED and tracks at 6.3/6.6 m were SUPPORTED.
+        tv, dr, depth, lidar = _front_corner_scene(3.0, 0.4, -0.7, -0.7)
+        cam_o = np.array(CAM.camera_offset)
+        report = va.validate(make(target_v=tuple(tv), detected=True, depth=depth, lidar=lidar), CAM, LID)
+        fit = geo.fit_target_sphere(depth, report.depth_pasted, CAM, CAM.target_radius)
+        self.assertLess(np.linalg.norm(fit.centre - tv), 0.01)          # ranking by consistency picks the true sphere
+        self.assertEqual((fit.status, fit.contradictions), (geo.SPHERE_OK, 0))
+        self.assertGreater(fit.farther_unexplained, 0)                   # blends are counted, not used as a veto
+        ok = ev.estimate(make(target_v=tuple(tv), detected=True, depth=depth, lidar=lidar))
+        self.assertEqual(ok.identity_status, "SUPPORTED_BY_FOOTPRINT")
+        for rt, cov in ((6.3, 0.04), (6.6, 0.01), (7.3, 0.01)):
+            with self.subTest(track_range=rt):
+                r = ev.estimate(make(target_v=tuple(cam_o + rt * dr), detected=True, depth=depth, lidar=lidar, cov_pos=cov))
+                self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")
+                self.assertEqual(r.target_pixels_at_track_range, 0)
+
+    def test_A_G1_a_high_ranked_candidate_with_its_own_contradiction_is_held_ambiguous(self):
+        # Adversarial depth: a ring of a sphere at 3 m (more inliers) around the disc of a second sphere at 6 m that
+        # shows through its core -- a target-like surface behind the best sphere, impossible for one target.
+        cam_o = np.array(CAM.camera_offset); vv, uu = np.mgrid[0:90, 0:160]; rays = geo.pixel_rays(uu, vv, CAM)
+        front, back = np.array([3.0, 0.0, 0.0]), np.array([6.0, 0.0, 0.0])
+        t_front = geo.sphere_first_hit(cam_o, rays, front, CAM.target_radius)
+        t_back = geo.sphere_first_hit(cam_o, rays, back, CAM.target_radius)
+        depth = np.clip(AV @ np.full((24, 40), 10.0) @ AH.T, 0.0, 10.0)
+        depth = np.where(np.isfinite(t_back), t_back, np.where(np.isfinite(t_front), t_front, depth)).astype(np.float32)
+        report = va.validate(make(target_v=tuple(front), detected=True, depth=depth), CAM, LID)
+        fit = geo.fit_target_sphere(depth, report.depth_pasted, CAM, CAM.target_radius)
+        self.assertLess(np.linalg.norm(fit.centre - front), 0.01)        # the higher-ranked candidate
+        self.assertGreater(fit.contradictions, 0); self.assertEqual(fit.status, geo.SPHERE_VETOED)
+        for centre in (front, back):                                      # neither candidate is supported
+            with self.subTest(track=tuple(centre)):
+                r = ev.estimate(make(target_v=tuple(centre), detected=True, depth=depth))
+                self.assertEqual((r.identity_status, r.identity_verdict), ("AMBIGUOUS", "AMBIGUOUS"))
+
+    def test_B_G2_target_geometry_is_a_declared_contract(self):
+        sphere = hyp(detected=True)
+        self.assertEqual((sphere.identity_status, sphere.geometry_support), ("SUPPORTED_BY_FOOTPRINT", "FOOTPRINT_CONSISTENT"))
+        self.assertEqual(sphere.identity_verdict, "CONSISTENT_NOT_CONFIRMED")          # geometry is not identity
+        for centre in ((4.0, 0.2, 0.0), (2.0, 0.0, 0.1)):                              # box target, SPHERE declared
+            with self.subTest(box=centre):
+                r = ev.estimate(make(target_v=centre, detected=True, depth=box_target_scene(centre)))
+                self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")      # v2.5: SUPPORTED
+                self.assertIn(r.identity_verdict, ("AMBIGUOUS", "NOT_TESTABLE"))
+        for geometry in (c.TARGET_ORIENTED_BOX, c.TARGET_MESH, c.TARGET_UNKNOWN):      # declared non-sphere / unknown
+            with self.subTest(geometry=geometry):
+                r = ev.estimate(make(detected=True), profile=replace(PROF, target_geometry=geometry))
+                self.assertEqual((r.identity_status, r.target_geometry), ("NOT_TESTABLE", geometry))
+                self.assertIn("TARGET_GEOMETRY_MODEL_NOT_APPLICABLE", r.reasons)
+
+    def test_B_identity_record_never_confirms_identity(self):
+        cases = [hyp(detected=True), hyp(detected=True, render_target=False), hyp(render_target=False),
+                 hyp(detected=True, age=5.0), ev.estimate(make(detected=True), profile=replace(PROF, distractors=2))]
+        for r in cases:
+            with self.subTest(identity=r.identity_status):
+                self.assertNotIn("CONFIRMED", r.identity_verdict.replace("NOT_CONFIRMED", ""))
+                self.assertEqual(r.identity_confirmation, "NOT_AVAILABLE_SINGLE_FRAME_ORACLE_FLAG")
+                self.assertEqual((r.detector_provenance, r.schema_version), ("ORACLE_TRUE_POSE_RASTER", "Q02A-RECORD-3"))
+        self.assertEqual(cases[0].detection_support, "CAMERA_FLAG"); self.assertEqual(cases[2].detection_support, "NONE")
+        self.assertEqual(cases[2].geometry_support, "NOT_APPLICABLE")
+        self.assertIn(cases[0].tracker_association, ("UPSTREAM_MEASUREMENT_UPDATE_NOT_VERIFIED", "PREDICTION_ONLY"))
+        self.assertEqual(cases[4].identity_verdict, "AMBIGUOUS")                       # distractors: unverifiable
+
+    def test_B_declared_geometry_matches_the_renderer_configuration_text(self):
+        det = (ROOT / "aerial_gym/task/navrl_task/navrl_detector.py").read_text()
+        self.assertRegex(det, r'NAVRL_TARGET_DYNAMICS", "legacy"\)\.strip\(\)\.lower\(\) == "physical"')
+        self.assertRegex(det, r"target_half_extents = wp\.vec3\(0\.14, 0\.14, 0\.06\)")
+        self.assertRegex(det, r"def attach_dynamic_mesh_treatment")
+        q01 = json.loads((ROOT / "docs/plans/boia_shadow_q01_v2.json").read_text())
+        flat = json.dumps(q01)
+        self.assertIn('"NAVRL_TARGET_DYNAMICS": "bounded"', flat)                       # not "physical" -> sphere
+        self.assertEqual(PROF.target_geometry, c.TARGET_SPHERE)
+
+    def test_D_small_far_target_and_contradictory_ranking(self):
+        far = make(target_v=(15.0, 0.3, 0.0), detected=True)
+        ok = ev.estimate(far)
+        self.assertIn(ok.identity_status, ("SUPPORTED_BY_FOOTPRINT", "NOT_TESTABLE"))
+        mean = np.array(far.track_mean); mean[0] -= 2.0                               # track 2 m too near
+        self.assertNotEqual(ev.estimate(make(target_v=(15.0, 0.3, 0.0), detected=True, track_mean=mean)).identity_status,
+                            "SUPPORTED_BY_FOOTPRINT")
 
 
 if __name__ == "__main__":

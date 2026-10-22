@@ -18,8 +18,10 @@ DEPTH_CONVENTION = "EUCLIDEAN_RAY_RANGE_M"     # range along the unit pixel ray,
 LIDAR_LAYOUT = "LIDAR_ZERO_WIDTH_4x72_5deg_10deg"
 CAMERA_OFFSET_M = (0.10, 0.0, 0.03)
 ACCEPTED_CLOCK_PROVENANCE = ("DECLARED_SIM_SCHEDULE",)
-EVIDENCE_CONTRACT_VERSION = "Q02A-v2.5"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6, v2.1 = aab9b31,
-                                           # v2.2 = 94acd1a, v2.3 = 17cf5e9, v2.4 = 8eea494
+EVIDENCE_CONTRACT_VERSION = "Q02A-v2.6"   # v1 (a5fee45) read depth as 20 m range and 0 m as a hit; v2 = 87cced6, v2.1 = aab9b31,
+                                           # v2.2 = 94acd1a, v2.3 = 17cf5e9, v2.4 = 8eea494, v2.5 = 5fc64a3
+EVIDENCE_RECORD_SCHEMA = "Q02A-RECORD-3"   # v2.6: identity split into detection/geometry/association/verdict fields
+TARGET_SPHERE, TARGET_ORIENTED_BOX, TARGET_MESH, TARGET_UNKNOWN = "SPHERE", "ORIENTED_BOX", "MESH", "UNKNOWN"
 
 # Per-sample semantics, shared by camera depth and LiDAR.
 VALID_HIT, NO_RETURN, NEAR_CLIPPED, INVALID_SAMPLE = "VALID_HIT", "NO_RETURN", "NEAR_CLIPPED", "INVALID"
@@ -98,6 +100,14 @@ class SensorProfile:
     lidar_no_return_m: float = 12.0
     lidar_near_clip_value: float = 0.0
     distractors: int = 0
+    # Target observation contract (v2.6, review G2). DECLARED from static renderer configuration, never
+    # from the target's hidden pose: NAVRL_TARGET_DYNAMICS=physical renders an oriented box (half extents
+    # 0.14/0.14/0.06 m, navrl_detector.py:329-332), a D8 mesh treatment replaces the paste
+    # (attach_dynamic_mesh_treatment, :1010), every other value renders the 0.15 m sphere. The pinned Q01-V2
+    # profile uses NAVRL_TARGET_DYNAMICS=bounded and no mesh treatment -> SPHERE (tests check both texts).
+    target_geometry: str = "SPHERE"
+    geometry_contract: str = "Q02A-GEOM-1"
+    detector_provenance: str = "ORACLE_TRUE_POSE_RASTER"   # flag from the renderer's true-pose raster, not an image detector
     min_obstacle_width_m: float = 0.40     # bar footprint random in [0.4, 0.8] m (env_object_config.py:796-797); 2 m tall,
                                            # 3 m with NAVRL_BAR_POOL=bars_h3 as pinned by Q01 v2 (:813-818)
 

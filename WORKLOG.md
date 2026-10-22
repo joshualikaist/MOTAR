@@ -22645,3 +22645,35 @@ veto decides, ≥ 3 inliers, better seeds, declared target shape → UNVERIFIABL
 and corrected record text. Q02-B stays blocked (motar-3p3.26). The reviewer judged lifting the CPU-only design hold
 reasonable under conditions; that decision is left to the user. Record:
 `docs/evidence/q02a_v25_opus_final_review_2026-10-22/` (REVIEW.md, probes/, g1_g2_reproduction.py/.txt). GPU NOT_RUN, G5 HOLD.
+
+## 2026-10-22 — Q02-A v2.6: identity semantics repair (Opus review G1, G2)
+
+User decision: repair G1/G2 first, keep the Q02-B HOLD. Contract `Q02A-v2.6`, record schema `Q02A-RECORD-3`; only
+`motar_eval/q02/{contracts,geometry,evidence}.py` and the Q02 tests changed (validation and depth recovery unchanged).
+- **G1:** ranking and contradiction separated. Spheres are ranked by inliers only. The most consistent sphere is vetoed
+  only by a farther pixel lying on a distinct target-like sphere (≥ 3 inliers); obstacle blends are recorded and do not veto.
+  A vetoed or rivalled best sphere → AMBIGUOUS, never replaced by a lower-ranked one. < 3 inliers → not supported.
+  Support needs a candidate inlier at range.
+- **G2:** `SensorProfile.target_geometry` is declared from static renderer config (Q01-V2: `NAVRL_TARGET_DYNAMICS=bounded` → sphere).
+  A non-sphere or unknown shape → NOT_TESTABLE. A misdeclared box is mostly caught by `SHAPE_INCONSISTENT` / contradiction.
+- **Contract:** the record separates `detection_support`, `geometry_support`, `tracker_association` and `identity_verdict`
+  (never confirmed). `identity_status` stays as a footprint-geometry alias.
+
+| Family (separate) | False support v2.5 → v2.6 (material) | Correct-track rejection v2.5 → v2.6 |
+| --- | --- | --- |
+| Bar corner 2 m (636 scenes, adversarial) | 1,298 (1,199) → 88 (74) | 1.8 % → 13.3 % |
+| Bar corner 3 m (607, adversarial) | 993 (854) → 75 (15) | 1.3 % → 9.0 % |
+| Random seed 4 / 5 (1,500 each) | 7 (0) / 116 (99) → 0 / 0 | 0.8 / 0.7 % → 3.5 / 3.5 % |
+| Box target, SPHERE declared (225) | 943 (882) → 0 | by design |
+| 22 committed families (18,258) | 0 → 0 | 24 → 337 lost (far 1–2 px 120, corner 183) |
+
+Other checks:
+- The residual corner false support comes from 8 / 1,243 scenes, each with only 2–8 visible target pixels (an information limit).
+- Rejected: a small-paste abstention, which flips 48–124 true-winner corner scenes to catch 9–19 spurious fits.
+- 49 tests OK; PUBLIC_CPU 3114 ran, 0 failures, same 4 `DetectReduction` errors; 10,371 harness cross-checks against `estimate`, 0 mismatches.
+- v2.5 → v2.6: 6/74 cases changed, all G1/G2. Q01 frames: FOOTPRINT_CONSISTENT, CONSISTENT_NOT_CONFIRMED, 4/12/14.
+
+Hypothesis "a farther pixel inside the best sphere's disc contradicts it" rejected for obstacle blends: measured 403/636
+corner scenes vetoed with the true sphere winning. WIP risk paths noted (`history.py:112`, `shadow.py:177`).
+
+Records: `docs/evidence/q02a_v26_repair_2026-10-22/`. GPU NOT_RUN, G5 HOLD. Next: independent read-only review (Opus 5.5, fresh context).
