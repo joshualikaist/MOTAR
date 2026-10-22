@@ -22828,3 +22828,30 @@ the peak speed along the path, must be SAFE in observed FREE for the 0.45 m body
   leniency had only accepted candidates that also had `NO_VISIBILITY_GAIN`. The committed benchmark evidence is unchanged.
 
 Severity P2: it overstated an L2 CPU check in shadow only, with no executor connected. GPU NOT_RUN, G5 HOLD.
+
+## 2026-10-22 — Q02-B/Q03 interfaces and Q04 timing-learning readiness (Phase 5, DESIGN_ONLY)
+
+New documents in `docs/research/q02_evidence_aware_reacquisition/`:
+- `Q02B_Q03_INTERFACES.md`: pipeline, eligibility and provisional acquisition, map v0 structure and cost, planner
+  levels L1–L4, the 19 features, and the `ShadowDecision` schema with ABSTAIN codes.
+- `Q04_READINESS.md`, sections A–D:
+  - A: timing utility with hard constraints before any weighted sum; ΔU NOT_ESTIMATED.
+  - B: snapshot inventory (full snapshot NOT available), the fresh-process common-prefix replay contract and its
+    integrity checks, and the D0 data contract.
+  - C: statistical design. Seed is the unit; eligibility is decided on the common prefix only; post-intervention
+    conditioning is forbidden; four Holm-corrected seed-cluster contrasts.
+  - D: model-selection criteria for logistic regression, GBT, MLP, GRU and an abstaining threshold. No model is chosen.
+- `Q04_PREREG_DRAFT.md`: a draft at a non-preregistration path.
+
+The staged WIP plans are adapted by copy; the originals are untouched.
+
+**Readiness verdict:**
+
+| Stage | Status | Reason |
+| --- | --- | --- |
+| Q04-D0 (CONTINUE-only shadow data) | READY_FOR_PREREG | still needs GPU approval, the observer tap and evaluator labels |
+| D1 (paired REACQUIRE branches) | BLOCKED | no executor; L3/L4 NOT_VALIDATED |
+| L (learning E[ΔU \| h]) | BLOCKED | waits for D1 |
+| C (closed-loop comparison) | BLOCKED | waits for an executor, L3/L4 and a learned or abstaining BOIA rule |
+
+Nothing was trained or run. GPU NOT_RUN, G5 HOLD.
