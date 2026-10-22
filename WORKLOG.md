@@ -22809,3 +22809,22 @@ Fixes made while building the benchmark, all recorded:
 
 Not changed: S9's label stays and is reported as missed (a diffuse belief makes the evidence UNKNOWN, so every rule abstains).
 None of these metrics is a capture rate or a causal effect. GPU NOT_RUN, G5 HOLD.
+
+## 2026-10-22 — Q03 planner v0: stopping screen fixed (L2 was too lenient by twice the body radius)
+
+Found while writing the interface document. The L2 stopping check in `reacq_planner.plan` accepted a candidate when
+`braking_distance ≤ clearance + body_radius`. The correct condition subtracts the radius, so the old rule was lenient by
+0.9 m. It now applies the `boia.safety` stop screen: the overshoot segment from the endpoint, of the braking distance at
+the peak speed along the path, must be SAFE in observed FREE for the 0.45 m body radius.
+
+| Case | Old rule | New rule |
+| --- | --- | --- |
+| ADVANCE 1 m toward a bar with its surface at 1.9 m (braking 0.55 m) | L2 PASS | L2 FAIL, `STOPPING_DISTANCE_EXCEEDS_KNOWN_FREE` |
+
+- New test: `test_stopping_overshoot_must_stay_in_observed_free`. It fails on the old code (checked by loading the HEAD
+  copy of the module) and passes now.
+- Tests: Q03 planner 15/15, Q02-B timing 29/29, benchmark metrics 2/2.
+- The Phase 4 benchmark was rerun. Every metric and the example records are identical apart from runtime. The old
+  leniency had only accepted candidates that also had `NO_VISIBILITY_GAIN`. The committed benchmark evidence is unchanged.
+
+Severity P2: it overstated an L2 CPU check in shadow only, with no executor connected. GPU NOT_RUN, G5 HOLD.

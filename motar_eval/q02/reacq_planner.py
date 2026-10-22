@@ -187,7 +187,9 @@ def plan(m, position, yaw, velocity, belief, now_s, camera=FROZEN_F_CAMERA, limi
             kin.append("TRAVEL_TIME_ABOVE_LIMIT")
         if t_cancel > limits.max_velocity_cancel_s:
             kin.append("EXCESSIVE_VELOCITY_CHANGE")
-        if dist > 0 and stop > clearance + limits.body_radius_m:
+        # Stopping screen (adapted from boia.safety stop_ok): the overshoot segment from the endpoint along the path, of the
+        # braking distance at the peak speed, must lie in observed FREE for the body radius.
+        if dist > 0 and m.segment_status(xy, xy + stop * u_path, limits.body_radius_m, now_s)[0] != om.SAFE:
             kin.append("STOPPING_DISTANCE_EXCEEDS_KNOWN_FREE")
         l2 = PASS if (l1 == PASS and not kin) else FAIL
         why += kin

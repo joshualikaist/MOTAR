@@ -90,6 +90,21 @@ class PlannerTests(unittest.TestCase):
         cands, _, _ = plan(((4.0, 0.0, 0.3),), b=belief((-8.0, 0.5)), limits=slow_yaw)   # belief behind: ~180 deg turn
         self.assertTrue(all("TRAVEL_TIME_ABOVE_LIMIT" in c.reasons for c in cands))
 
+    def test_stopping_overshoot_must_stay_in_observed_free(self):
+        cands, _, _ = plan(((2.2, 0.0, 0.3),))                              # bar surface 1.9 m: endpoint 1 m, braking 0.55 m
+        adv = by_kind(cands, "ADVANCE")[0]
+        self.assertEqual((adv.l1_observed_direction_open, adv.l2_kinematic_check), (rp.PASS, rp.FAIL))
+        self.assertIn("STOPPING_DISTANCE_EXCEEDS_KNOWN_FREE", adv.reasons)
+        cands, _, _ = plan(((4.0, 0.0, 0.3),))
+        lim = rp.MotionLimits()
+        for c in cands:
+            if c.l2_kinematic_check == rp.PASS and c.kind != "ROTATE":
+                end = np.array(c.position_xy); d = end - np.array(c.trajectory[0][1:3]); u = d / np.linalg.norm(d)
+                stop = float(rp.braking_distance(np.array([min(lim.speed_cap_mps, math.sqrt(lim.accel_cap_mps2 * np.linalg.norm(d)))]),
+                                                 lim.braking_table, lim.t_react_s)[0][0])
+                m = om.LocalObstacleMap(); inp, rep = t3.frame_at(((4.0, 0.0, 0.3),)); m.integrate(inp, rep)
+                self.assertEqual(m.segment_status(end, end + stop * u, lim.body_radius_m, 0.0)[0], om.SAFE, c.candidate_id)
+
     def test_large_belief_covariance(self):
         cands, status, why = plan(((4.0, 0.0, 0.3),), b=belief(valid=False, cov=9.0))
         self.assertEqual((status, why[0]), (rp.NO_FEASIBLE_PLAN, "BELIEF_INVALID"))
