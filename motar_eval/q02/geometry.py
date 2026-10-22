@@ -318,3 +318,68 @@ def point_line_distance(points, origin, direction):
     v = np.asarray(points, float) - np.asarray(origin, float)
     along = v @ np.asarray(direction, float)
     return np.sqrt(np.clip((v * v).sum(axis=-1) - along * along, 0.0, None))
+
+
+# --- Q02A-v2.5: the declared target sphere as the paste model ----------------------------------
+_FULL_RAYS = {}
+TARGET_SPHERE_OK, TARGET_SPHERE_NONE = "OK", "NO_CONSISTENT_SPHERE"
+
+
+def _full_rays(camera, shape):
+    key = (camera.fx, camera.fy, camera.cx, camera.cy, tuple(shape))
+    if key not in _FULL_RAYS:
+        vv, uu = np.mgrid[0:shape[0], 0:shape[1]]
+        _FULL_RAYS[key] = pixel_rays(uu, vv, camera)
+    return _FULL_RAYS[key]
+
+
+def fit_target_sphere(depth, candidates, camera, radius, eps=5e-3, inner=0.02, max_seeds=64):
+    """The single sphere of the declared radius that explains the candidate (non-upsample) pixels.
+
+    The production target is an analytic sphere pasted with its exact ray depth wherever it is the
+    nearest surface (navrl_detector.py:111-132), so its pixels lie on one sphere of radius `radius`
+    to float precision (Q01 frames: residual <= 1e-4 m). Candidates seed sphere centres (pixel point +
+    radius along its ray), refined by Gauss-Newton on |p - c| = radius. Each sphere is scored by its
+    front-facing inliers (within eps) minus candidate pixels inside its disc core (rays within
+    radius - inner of the centre) that show content farther than the sphere: only one target exists
+    and nothing pasted can be visible behind it. Obstacle-render pixels are not candidates, so an
+    occluder thinner than the native grid does not count against the true sphere. Returns
+    (centre (3,) in the camera-offset frame of `camera`, target mask (H, W), status, inliers)."""
+    d = np.asarray(depth, dtype=np.float64)
+    o = np.asarray(camera.camera_offset, dtype=np.float64)
+    rays_all = _full_rays(camera, d.shape)
+    v, u = np.nonzero(candidates)
+    empty = np.zeros(d.shape, dtype=bool)
+    if v.size == 0:
+        return None, empty, TARGET_SPHERE_NONE, 0
+    rays = rays_all[v, u]; t = d[v, u]; pts = o + t[:, None] * rays
+    order = np.argsort(t)
+    seeds = order if order.size <= max_seeds else order[np.linspace(0, order.size - 1, max_seeds).astype(int)]
+    best = None
+    for i in seeds:
+        c = pts[i] + radius * rays[i]
+        for tol in (0.05, 0.02, eps):
+            inl = np.abs(np.linalg.norm(pts - c, axis=1) - radius) < tol
+            if not inl.any():
+                break
+            for _ in range(3):
+                q = pts[inl] - c; dq = np.linalg.norm(q, axis=1)
+                c = c + np.linalg.lstsq(-q / dq[:, None], -(dq - radius), rcond=None)[0]
+        dist = np.linalg.norm(pts - c, axis=1)
+        front = np.einsum("ij,ij->i", pts - c, rays) < 0
+        n_in = int(((np.abs(dist - radius) < eps) & front).sum())
+        if n_in == 0:
+            continue
+        oc = c - o; s = rays @ oc; perp2 = oc @ oc - s * s
+        core = (s > 0) & (perp2 <= (radius - inner) ** 2)
+        surface = s - np.sqrt(np.clip(radius * radius - perp2, 0.0, None))
+        score = n_in - int((core & (t > surface + eps)).sum())
+        if best is None or (score, n_in) > (best[0], best[1]):
+            best = (score, n_in, c)
+    if best is None or best[0] <= 0:
+        return None, empty, TARGET_SPHERE_NONE, 0
+    c = best[2]
+    _, entry, _, perp = ray_envelope(o, rays_all.reshape(-1, 3), c, radius)
+    surface = entry.reshape(d.shape)
+    mask = (perp.reshape(d.shape) <= radius) & (surface > 0) & (np.abs(d - surface) <= eps)
+    return c, mask, TARGET_SPHERE_OK, best[1]

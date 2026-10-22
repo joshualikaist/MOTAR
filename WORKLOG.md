@@ -22597,3 +22597,27 @@ Hypothesis "counting nearer pasted pixels against at-range pixels closes the box
 Record: `docs/evidence/q02a_v24_fable_confirmation_review_2026-10-22/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
 Next: replace the pixel-count rules with the root fix (declared target sphere), as Q02A-v2.5. From now on, reviews
 use Opus 5.5 (user instruction).
+
+## 2026-10-22 — Q02-A v2.5: identity evidence from the declared target sphere (v2.4 review F1, F2)
+
+Root fix of the box-pixel class (C1, E1, F1, F2) instead of a fifth pixel-count rule (contract `Q02A-v2.5`; `geometry.py`
+gains `fit_target_sphere`, `evidence.py` uses it, recovery and validation unchanged). The production target is an analytic
+0.15 m sphere pasted with exact depth where it is nearest. On the Q01 frames, its pixels lie on such a sphere with residual
+≤ 1e-4 m. The single declared-radius sphere is fitted to the non-upsample pixels. It is scored by inliers minus pasted
+content farther than it inside its disc. SUPPORTED_BY_FOOTPRINT needs ≥ 1 sphere pixel at track range in the envelope.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02_evidence.py` | 43 OK (42 kept: version, 2 reason names; 1 new F1 with a box-bar scene, which reproduces v2.4 SUPPORTED) |
+| PUBLIC_CPU | 3108 ran, 0 failures, same 4 `DetectReduction` errors; aggregate FAIL (pre-existing) |
+| 22 identity attack families (18,258 cases, real module) | false SUPPORTED 0 (v2.4 on the same flagged rows: 261; S1 46); correct tracks lost 24 (corner-occluded, fail-safe); wrong-track fail-safe 61 |
+| 3 m bar-corner probe (`m1_z3.py`, 492) | false 146 → 2 (interval-boundary coincidences: blend pixel within 5 mm of the sphere, track 0.9 m off) |
+| Rejected: 1 mm tolerance | same 2 corner cases, correct-track losses 24 → 57 |
+| v2.4 → v2.5 comparison (68 cases) | 3 changed (F1 tracks at the bar face → RANGE_CONTRADICTED); Q01 frames SUPPORTED with 4/12/14 sphere pixels |
+| Close-range map | unchanged: 0 leaks, 289/13/8 |
+
+Hypothesis "a pixel-count rule over the non-upsample mask can separate target from box pixels" rejected: four rounds
+(C1, E1, F1, F2), each with a new route. Records: `docs/evidence/q02a_v25_repair_2026-10-22/` (REPAIR.md, compare_v24_v25.py/.json,
+identity_attack_v24_families.py, summarize_families.py, identity_families_summary.json, bars_h3_corner_v25.json,
+rejected_eps1mm_*.json). Q02-B WIP unchanged. GPU NOT_RUN, G5 HOLD. Next: Opus 5.5 confirmation review. This is the final
+round: on PASS lift the Q02-B HOLD, on P1 report HOLD without further iteration.

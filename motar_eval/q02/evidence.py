@@ -1,4 +1,4 @@
-"""Module A (contract Q02A-v2.4): explainable sensor evidence about a tracked target's line of sight.
+"""Module A (contract Q02A-v2.5): explainable sensor evidence about a tracked target's line of sight.
 
 Deterministic rule over measured samples; not a calibrated classifier and no probability. UNKNOWN
 is returned whenever the inputs cannot separate the cases, and UNKNOWN is never free space or a
@@ -26,6 +26,9 @@ v2.3 (confirmation review C1): a pixel counts as pasted only if the window test 
 its row and its column, so obstacle-blend pixels beside a paste no longer grant identity support.
 v2.4 (final review E1): identity support also needs more pasted pixels at the track range than nearer
 than it, so obstacle pixels in the paste's box behind the target cannot support a track that is too far.
+v2.5 (v2.4 review F1): identity support uses only the pixels of the single declared-radius sphere that
+explains the paste (geometry.fit_target_sphere), so obstacle pixels inside the paste's box never count,
+whether they lie nearer or farther than the target.
 In the Frozen F profile the camera flag is oracle-grade (true-pose rasterization), so agreement
 with it is not evidence that this rule would work with a real detector.
 """
@@ -36,8 +39,8 @@ import numpy as np
 
 from .contracts import (EVIDENCE_CONTRACT_VERSION, FROZEN_F_CAMERA, FROZEN_F_LIDAR, FROZEN_F_PROFILE, NEAR_CLIPPED,
                         NO_RETURN, VALID_HIT)
-from .geometry import (cov_world_to_vehicle, lidar_directions, native_camera_rays, pixel_rays, point_line_distance,
-                       project, quat_yaw_xyzw, ray_envelope, vehicle_to_camera, world_to_vehicle)
+from .geometry import (cov_world_to_vehicle, fit_target_sphere, lidar_directions, native_camera_rays, pixel_rays,
+                       point_line_distance, project, quat_yaw_xyzw, ray_envelope, vehicle_to_camera, world_to_vehicle)
 from .validation import ValidationLimits, classify_depth_native, classify_lidar, validate
 
 TARGET_VISIBLE, OCCLUDED, OUT_OF_FOV = "TARGET_VISIBLE", "OCCLUDED", "OUT_OF_FOV"
@@ -100,6 +103,9 @@ class EvidenceRecord:
     pasted_pixels_in_footprint: int
     pasted_pixels_at_track_range: int
     pasted_pixels_nearer_than_track: int
+    target_sphere_found: bool
+    target_pixels_in_footprint: int
+    target_pixels_at_track_range: int
     near_obstacle_warning: bool
     near_clipped_lidar_beams: int
     validation_problems: tuple
@@ -111,14 +117,14 @@ class EvidenceRecord:
 
 
 def _record(hypothesis, reasons, source, identity, inp, report, g=None, cam=SensorRays(), lid=SensorRays(), pasted=(0, 0, 0),
-            near_beams=0):
+            near_beams=0, target=(False, 0, 0)):
     g, nan = g or {}, float("nan")
     return EvidenceRecord(hypothesis, tuple(dict.fromkeys(reasons)), source, identity, inp.camera_detected, inp.confidence,
                           "MEASUREMENT_UPDATED" if inp.fused_update else "PREDICTED_ONLY", inp.track_age_s,
                           tuple(float(x) for x in g.get("p_v", (nan, nan, nan))), g.get("range", nan),
                           g.get("bearing", nan), g.get("elevation", nan), g.get("sigma_r", nan), g.get("sigma_lat", nan),
                           g.get("fov_in", 0), g.get("fov_total", 0), g.get("env_cam", nan), g.get("env_lid", nan),
-                          cam, lid, int(pasted[0]), int(pasted[1]), int(pasted[2]),
+                          cam, lid, int(pasted[0]), int(pasted[1]), int(pasted[2]), bool(target[0]), int(target[1]), int(target[2]),
                           bool(near_beams > 0 or cam.near_clipped > 0 or report.camera_contact_range), int(near_beams),
                           report.problems())
 
@@ -205,13 +211,14 @@ def _lidar_evidence(inp, lidar, profile, params, g):
                        params, lidar.target_proxy_radius_m, (lidar.vbeams, lidar.hbeams, True)), int((cats == NEAR_CLIPPED).sum())
 
 
-def _pasted_in_footprint(inp, report, camera, params, g):
-    """Pasted (target/distractor) pixels whose full-resolution rays pass through the camera envelope,
-    how many of them carry a depth inside the track's range interval on that ray, and how many lie
-    nearer than that interval."""
-    if report.depth_pasted is None or not report.depth_pasted.any():
+def _pasted_in_footprint(inp, report, camera, params, g, mask=None):
+    """Pixels of `mask` (default: the pasted, non-upsample pixels) whose full-resolution rays pass
+    through the camera envelope, how many of them carry a depth inside the track's range interval on
+    that ray, and how many lie nearer than that interval."""
+    mask = report.depth_pasted if mask is None else mask
+    if mask is None or not mask.any():
         return 0, 0, 0
-    v, u = np.nonzero(report.depth_pasted)
+    v, u = np.nonzero(mask)
     rays = pixel_rays(u, v, camera)
     inside, entry, exit_, _ = ray_envelope(np.asarray(camera.camera_offset, float), rays, g["p_v"], g["env_cam"])
     d = np.asarray(inp.depth, float)[v, u]
@@ -245,20 +252,24 @@ def estimate(inp, camera=FROZEN_F_CAMERA, lidar=FROZEN_F_LIDAR, params=EvidenceP
             return _record(TARGET_VISIBLE, ("CAMERA_FLAG_VISIBLE", "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"),
                            "CAMERA_FLAG", "NOT_TESTABLE", inp, report, g=g, cam=cam, lid=lid, near_beams=near_beams)
         pasted = _pasted_in_footprint(inp, report, camera, params, g)
-        args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams)
+        # Identity evidence = pixels of the single declared-radius sphere that explains the paste (v2.5,
+        # review F1): obstacle pixels inside the paste's box are never target pixels, whatever their range.
+        _, sphere_mask, sphere_status, _ = fit_target_sphere(inp.depth, report.depth_pasted, camera, camera.target_radius) \
+            if report.depth_pasted is not None else (None, None, "NO_CONSISTENT_SPHERE", 0)
+        tgt = _pasted_in_footprint(inp, report, camera, params, g, mask=sphere_mask) if sphere_status == "OK" else (0, 0, 0)
+        args = dict(g=g, cam=cam, lid=lid, pasted=pasted, near_beams=near_beams, target=(sphere_status == "OK", tgt[0], tgt[1]))
         notes = [] if report.obstacle_depth_usable else ["CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"]
         if cam.consistent or lid.consistent:
             notes.append("SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE")
-        # The target is pasted only where it is the nearest surface, so pasted content on the track's rays
-        # that is mostly nearer than the track interval means the detection is nearer than the track; the
-        # paste's box can also hold obstacle pixels behind it at the (wrong) track range (review E1).
-        if pasted[1] > pasted[2]:
-            return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "PASTED_DEPTH_AT_TRACK_RANGE"] + notes, "CAMERA_FLAG",
+        if tgt[1] > 0:
+            return _record(TARGET_VISIBLE, ["CAMERA_FLAG_VISIBLE", "TARGET_SPHERE_AT_TRACK_RANGE"] + notes, "CAMERA_FLAG",
                            "SUPPORTED_BY_FOOTPRINT", inp, report, **args)
-        if pasted[0] > 0:
-            extra = ["PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK"] if pasted[2] >= max(pasted[1], 1) else []
-            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE"] + extra + notes, "CAMERA_FLAG",
+        if tgt[0] > 0:
+            extra = ["TARGET_SPHERE_NEARER_THAN_TRACK"] if tgt[2] > 0 else ["TARGET_SPHERE_FARTHER_THAN_TRACK"]
+            return _record(IDENTITY_AMBIGUOUS, ["CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE"] + extra + notes, "CAMERA_FLAG",
                            "RANGE_CONTRADICTED", inp, report, **args)
+        if pasted[0] > 0 and sphere_status != "OK":
+            notes.append("PASTE_NOT_EXPLAINED_BY_TARGET_SPHERE")
         if report.depth_pasted is not None and not report.depth_pasted.any():
             notes.append("NO_PASTED_PIXELS_IN_IMAGE")   # the oracle flag normally comes with pasted pixels
         if cam.rays and cam.clear / cam.rays >= params.min_fraction and cam.foreground == 0:

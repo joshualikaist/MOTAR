@@ -1,4 +1,4 @@
-"""Q02-A CPU tests (contract Q02A-v2.4): constants, frames, sensor semantics, validation and the rule.
+"""Q02-A CPU tests (contract Q02A-v2.5): constants, frames, sensor semantics, validation and the rule.
 
 Scenes are synthetic ray casts reproducing the production sensor pipeline: camera depth = a native
 40x24 obstacle render (bars only, no hit -> 10 m) bilinearly upsampled to 160x90 with the target
@@ -211,7 +211,7 @@ class EvidenceTests(unittest.TestCase):
         self.assertEqual((r.utility, r.ground_truth_used, r.calibration), ("ABSTAIN", False, "NONE_DECLARED_PRIORS"))
         # F7: production confidence = max(camera segmenter support, LiDAR association gate), navrl_perception.py:2396
         self.assertEqual(r.confidence_semantics, "MAX_OF_CAMERA_SEGMENTER_SUPPORT_AND_LIDAR_ASSOCIATION_GATE_NOT_A_PROBABILITY")
-        self.assertEqual(r.contract_version, "Q02A-v2.4")   # v2.1: R1-R4; v2.2: D1/D2/D7; v2.3: C1; v2.4: E1
+        self.assertEqual(r.contract_version, "Q02A-v2.5")   # v2.1: R1-R4; v2.2: D1/D2/D7; v2.3: C1; v2.4: E1; v2.5: F1
         self.assertEqual(r.belief_kind, "PREDICTED_ONLY")
         self.assertIn(r.hypothesis, ev.HYPOTHESES)
         names = {f.name for f in fields(c.EvidenceInput)}
@@ -511,8 +511,8 @@ class ReReviewR1toR4Tests(unittest.TestCase):
 
     def test_R3_identity_support_needs_pasted_depth_inside_the_track_interval(self):
         ok = hyp(detected=True)
-        self.assertEqual(ok.identity_status, "SUPPORTED_BY_FOOTPRINT"); self.assertIn("PASTED_DEPTH_AT_TRACK_RANGE", ok.reasons)
-        self.assertGreater(ok.pasted_pixels_at_track_range, 0)
+        self.assertEqual(ok.identity_status, "SUPPORTED_BY_FOOTPRINT"); self.assertIn("TARGET_SPHERE_AT_TRACK_RANGE", ok.reasons)
+        self.assertGreater(ok.pasted_pixels_at_track_range, 0); self.assertGreater(ok.target_pixels_at_track_range, 0)
         near = make(target_v=(3., 0., 0.), detected=True)
         mean = np.array(near.track_mean); mean[0] += 5.0                  # target pasted at 3 m, belief at 8 m
         r = ev.estimate(make(target_v=(3., 0., 0.), detected=True, track_mean=mean))
@@ -607,7 +607,59 @@ class FinalReviewE1Tests(unittest.TestCase):
                 with self.subTest(range_m=rng_, behind=gap, range_error=err):
                     r = ev.estimate(make(target_v=(rng_, 0., 0.), detected=True, bars=bars, track_mean=mean))
                     self.assertEqual(r.identity_status, "RANGE_CONTRADICTED")   # v2.3: SUPPORTED from box-corner pixels
-                    self.assertIn("PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK", r.reasons)
+                    self.assertIn("TARGET_SPHERE_NEARER_THAN_TRACK", r.reasons)       # v2.4 reason: PASTED_DEPTH_MOSTLY_NEARER
+                    self.assertEqual(r.target_pixels_at_track_range, 0)
+
+
+def _box_hits(origin, dirs, boxes):
+    """First entry distance into axis-aligned boxes (cx, cy, hx, hy, z0, z1) in the vehicle frame."""
+    t_all, o = np.full(dirs.shape[:-1], np.inf), np.asarray(origin, float)
+    for cx, cy, hx, hy, z0, z1 in boxes:
+        lo, hi = np.array([cx - hx, cy - hy, z0]), np.array([cx + hx, cy + hy, z1])
+        with np.errstate(divide="ignore", invalid="ignore"):
+            t1, t2 = (lo - o) / dirs, (hi - o) / dirs
+        tmin, tmax = np.max(np.minimum(t1, t2), axis=-1), np.min(np.maximum(t1, t2), axis=-1)
+        t_all = np.minimum(t_all, np.where((tmax >= np.maximum(tmin, 0.0)) & (tmin > 0.0), tmin, np.inf))
+    return t_all
+
+
+def box_scene(target_v, boxes):
+    """Like scene(), with finite box bars (a bar's top corner can lie inside the target's silhouette)."""
+    cam_o = np.array(CAM.camera_offset)
+    native = np.minimum(_box_hits(cam_o, geo.native_camera_rays(CAM, PROF.obstacle_native_wh), boxes), PROF.obstacle_far_m)
+    depth = np.clip(AV @ native @ AH.T, 0.0, PROF.obstacle_far_m)
+    vv, uu = np.mgrid[0:90, 0:160]
+    rays = geo.pixel_rays(uu, vv, CAM)
+    t_tgt = geo.sphere_first_hit(cam_o, rays, target_v, CAM.target_radius)
+    depth = np.where(np.isfinite(t_tgt) & (t_tgt < _box_hits(cam_o, rays, boxes)), t_tgt, depth)
+    dirs = geo.lidar_directions(LID)
+    t = np.minimum(_box_hits(np.zeros(3), dirs, boxes), geo.sphere_first_hit(np.zeros(3), dirs, target_v, LID.target_proxy_radius_m))
+    lidar = np.where(t < LID.min_range_m, 0.0, np.where(t >= LID.max_range_m, LID.max_range_m, t))
+    return depth.astype(np.float32), lidar.astype(np.float32).reshape(-1)
+
+
+class ReviewF1Tests(unittest.TestCase):
+    """Q02A-v2.5: the P1 finding of the v2.4 confirmation review (docs/evidence/q02a_v24_fable_confirmation_review_2026-10-22)."""
+
+    def test_F1_front_bar_corner_inside_the_silhouette_never_supports_a_track_at_the_bar(self):
+        # The reviewer's diagnostic case: target 4 m, a 2 m bar (top 1 m above the camera) 1.5 m in front,
+        # its top corner inside the target's silhouette; v2.4 gave SUPPORTED from the bar's own pixels.
+        cam_o = np.array(CAM.camera_offset); x_f, half = 2.5, 0.3
+        corner = np.array([x_f, 0.0, 1.0]); c = (corner - cam_o) / np.linalg.norm(corner - cam_o)
+        ey = np.cross([0, 0, 1.0], c); ey /= np.linalg.norm(ey); ez = np.cross(c, ey)
+        th = CAM.target_radius / 4.0
+        dr = c - 0.7 * th * ey - 0.7 * th * ez; dr /= np.linalg.norm(dr)
+        tv = cam_o + 4.0 * dr
+        boxes = [(x_f + half, -half, half, half, -1.0, 1.0)]
+        depth, lidar = box_scene(tv, boxes)
+        ok = ev.estimate(make(target_v=tuple(tv), detected=True, depth=depth, lidar=lidar))
+        self.assertEqual(ok.identity_status, "SUPPORTED_BY_FOOTPRINT"); self.assertTrue(ok.target_sphere_found)
+        for delta in (-0.3, 0.0, 0.3):                              # track on the target's ray at the bar face
+            face = cam_o + ((x_f - cam_o[0]) / dr[0] + delta) * dr
+            with self.subTest(delta=delta):
+                r = ev.estimate(make(target_v=tuple(face), detected=True, depth=depth, lidar=lidar))
+                self.assertNotEqual(r.identity_status, "SUPPORTED_BY_FOOTPRINT")      # v2.4: SUPPORTED
+                self.assertEqual(r.target_pixels_at_track_range, 0)
 
 
 if __name__ == "__main__":
