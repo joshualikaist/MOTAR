@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="figure-title figure-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="518.4pt" height="324pt" viewBox="0 0 518.4 324" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<title id="figure-title">Actor observation data structure</title>
+<desc id="figure-desc">288 + 480 + 50 + 80 = 898 flat actor values; 17 embedded tokens include CLS. Five history slots nominally span two seconds; tracker expiry is five seconds. No direct target ground truth enters the actor.</desc>
+ <title>Actor observation data structure</title>
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title>Actor observation data structure</dc:title>
+    <dc:description>288 + 480 + 50 + 80 = 898 flat actor values; 17 embedded tokens include CLS. Five history slots nominally span two seconds; tracker expiry is five seconds. No direct target ground truth enters the actor.</dc:description>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>MOTAR reproducible publication figure builder</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 324
+L 518.4 324
+L 518.4 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 12.96 46.494
+L 347.8464 46.494
+L 347.8464 81.648
+L 12.96 81.648
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 349.848302 64.071
+Q 362.62136 64.071 374.388188 64.071
+" clip-path="url(#p7f6da8c02b)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 371.188188 62.471
+L 374.388188 64.071
+L 371.188188 65.671
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 382.32 46.494
+L 505.44 46.494
+L 505.44 81.648
+L 382.32 81.648
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 12.96 86.67
+L 347.8464 86.67
+L 347.8464 121.824
+L 12.96 121.824
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 349.848302 104.247
+Q 362.62136 104.247 374.388188 104.247
+" clip-path="url(#p7f6da8c02b)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 371.188188 102.647
+L 374.388188 104.247
+L 371.188188 105.847
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 382.32 86.67
+L 505.44 86.67
+L 505.44 121.824
+L 382.32 121.824
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 12.96 126.846
+L 347.8464 126.846
+L 347.8464 162
+L 12.96 162
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 349.848302 144.423
+Q 362.62136 144.423 374.388188 144.423
+" clip-path="url(#p7f6da8c02b)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 371.188188 142.823
+L 374.388188 144.423
+L 371.188188 146.023
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 382.32 126.846
+L 505.44 126.846
+L 505.44 162
+L 382.32 162
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 12.96 167.022
+L 347.8464 167.022
+L 347.8464 202.176
+L 12.96 202.176
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.6; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 349.848302 184.599
+Q 362.62136 184.599 374.388188 184.599
+" clip-path="url(#p7f6da8c02b)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 371.188188 182.999
+L 374.388188 184.599
+L 371.188188 186.199
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 382.32 167.022
+L 505.44 167.022
+L 505.44 202.176
+L 382.32 202.176
+z
+" clip-path="url(#p7f6da8c02b)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 12.96 267.462
+L 505.44 267.462
+" clip-path="url(#p7f6da8c02b)" style="fill: none; stroke: #bac7cf; stroke-width: 0.7; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: start" x="12.96" y="18.947937" transform="rotate(-0 12.96 18.947937)">(a) Flat actor observation</text>
+   </g>
+   <g id="text_2">
+    <text style="fill: #546675; font: 8.5px 'Liberation Sans'; text-anchor: end" x="505.44" y="18.560047" transform="rotate(-0 505.44 18.560047)">898 scalar values · before network embedding</text>
+   </g>
+   <g id="text_3">
+    <text style="fill: #172b3a; font: 700 8.7px 'Liberation Sans'; text-anchor: start" x="22.8096" y="61.298766" transform="rotate(-0 22.8096 61.298766)">Fused static scan</text>
+   </g>
+   <g id="text_4">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="22.8096" y="74.67715" transform="rotate(-0 22.8096 74.67715)">RGB-D + LiDAR · 4 × 72 bins</text>
+   </g>
+   <g id="text_5">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: end" x="333.072" y="66.656937" transform="rotate(-0 333.072 66.656937)">288</text>
+   </g>
+   <g id="text_6">
+    <text style="fill: #172b3a; font: 700 8.6px 'Liberation Sans'; text-anchor: middle" x="443.88" y="66.294906" transform="rotate(-0 443.88 66.294906)">1 token</text>
+   </g>
+   <g id="text_7">
+    <text style="fill: #172b3a; font: 700 8.7px 'Liberation Sans'; text-anchor: start" x="22.8096" y="101.474766" transform="rotate(-0 22.8096 101.474766)">Obstacle history</text>
+   </g>
+   <g id="text_8">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="22.8096" y="114.85315" transform="rotate(-0 22.8096 114.85315)">5 steps × 8 slots × 12 features</text>
+   </g>
+   <g id="text_9">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: end" x="333.072" y="106.832938" transform="rotate(-0 333.072 106.832938)">480</text>
+   </g>
+   <g id="text_10">
+    <text style="fill: #172b3a; font: 700 8.6px 'Liberation Sans'; text-anchor: middle" x="443.88" y="106.470906" transform="rotate(-0 443.88 106.470906)">5 tokens</text>
+   </g>
+   <g id="text_11">
+    <text style="fill: #172b3a; font: 700 8.7px 'Liberation Sans'; text-anchor: start" x="22.8096" y="141.650766" transform="rotate(-0 22.8096 141.650766)">Own-state history</text>
+   </g>
+   <g id="text_12">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="22.8096" y="155.02915" transform="rotate(-0 22.8096 155.02915)">5 steps × 10 features</text>
+   </g>
+   <g id="text_13">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: end" x="333.072" y="147.008938" transform="rotate(-0 333.072 147.008938)">50</text>
+   </g>
+   <g id="text_14">
+    <text style="fill: #172b3a; font: 700 8.6px 'Liberation Sans'; text-anchor: middle" x="443.88" y="146.646906" transform="rotate(-0 443.88 146.646906)">5 tokens</text>
+   </g>
+   <g id="text_15">
+    <text style="fill: #172b3a; font: 700 8.7px 'Liberation Sans'; text-anchor: start" x="22.8096" y="181.807734" transform="rotate(-0 22.8096 181.807734)">Target-track history</text>
+   </g>
+   <g id="text_16">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="22.8096" y="195.20515" transform="rotate(-0 22.8096 195.20515)">5 steps × 16 features</text>
+   </g>
+   <g id="text_17">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: end" x="333.072" y="187.184938" transform="rotate(-0 333.072 187.184938)">80</text>
+   </g>
+   <g id="text_18">
+    <text style="fill: #172b3a; font: 700 8.6px 'Liberation Sans'; text-anchor: middle" x="443.88" y="186.822906" transform="rotate(-0 443.88 186.822906)">5 tokens</text>
+   </g>
+   <g id="text_19">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: start" x="22.8096" y="224.849938" transform="rotate(-0 22.8096 224.849938)">(b) Network sequence</text>
+   </g>
+   <g id="text_20">
+    <text style="fill: #172b3a; font: 700 8.5px 'Liberation Sans'; text-anchor: start" x="22.8096" y="249.553453" transform="rotate(-0 22.8096 249.553453)">[CLS] + scan + obstacle[1..5] + own[1..5] + target[1..5]</text>
+   </g>
+   <g id="text_21">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: end" x="505.44" y="249.959938" transform="rotate(-0 505.44 249.959938)">17 × 64</text>
+   </g>
+   <g id="text_22">
+    <text style="fill: #172b3a; font: 8px 'Liberation Sans'; text-anchor: start" x="12.96" y="284.59675" transform="rotate(-0 12.96 284.59675)">History: 5 slots at nominal 0.5 s spacing (2 s span). Tracker expiry: 5 s.</text>
+   </g>
+   <g id="text_23">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="12.96" y="304.68475" transform="rotate(-0 12.96 304.68475)">Target history stores measured/estimated features; no direct target-GT fields enter the actor.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p7f6da8c02b">
+   <rect x="12.96" y="11.34" width="492.48" height="301.32"/>
+  </clipPath>
+ </defs>
+</svg>

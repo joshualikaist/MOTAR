@@ -19984,3 +19984,26 @@ tablet and mobile sizes. The 58 documentation tests, public-doc checker, site Ja
 checks and 12 browser layout checks pass. Existing result figures and viewer behavior are
 preserved. This records the reviewed candidate; GitHub Pages publication is verified after
 the authorized remote push.
+
+## 2026-10-23 — Complete publication-page rebuild and source-verified figure family
+
+- User clarified that the complete page and erroneous diagrams must be recreated. Rebuilt
+  the project page, evidence ledger and a new figure atlas on the isolated docs branch,
+  with six new SVG/PDF/300 dpi PNG figures and a source/output SHA manifest. Earlier
+  measurements and the 108 historical assets/preview sources remain byte-identical.
+- Independent read-only source checks corrected flat898→17×64 order, fused static scan,
+  altitude-hold ownership, previous-action semantics, riskcap/arc alternatives, cross-modal
+  sensor paths and the passive BOIA boundary. Seed-t safety inference now uses its own
+  seed mean, with pooled historical inference reported separately. No new experiment.
+- Validation: 158 documentation/page/figure tests, zero failures/errors/skips; public-doc
+  checker and two browser-contract commands PASS; 9 browser page/viewport checks and 6
+  SVG text-geometry checks PASS; 20 artifacts regenerate byte-identically. All 112 density
+  rates match primary counts. Historical figure generator remains byte-exact PASS.
+- Evidence: `docs/evidence/website_figure_rebuild_2026-10-22/REPORT.md`; source corrections
+  `docs/research/figure-redesign-2026-10-22.md`; assets
+  `docs/assets/paper/redesign-2026-10-22/`. Historical layout assertions remain attached
+  to a visibly superseded evidence snapshot; current tests verify the new surface.
+- Main WIP/stash preserved (82 changes), local main HEAD f74390a, research fde21cd clean.
+  No raw/checkpoint/runtime/PPO modifications. No GPU experiment. The prior website
+  deployment authorization continues for publishing this corrective redesign; research
+  main merge and research-code publication are outside this work. Q02-B/Q03 and G5 HOLD.

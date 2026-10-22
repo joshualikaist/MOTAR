@@ -1,0 +1,17 @@
+{
+  "base": "7689664bbaceae8c1ae6f349e41dbb6871eda3ab",
+  "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+  "main_stash": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+  "main_wip_sha": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "research_head": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+  "raw_policy": "READ_ONLY: no raw/checkpoint operation",
+  "main_change_count": 82,
+  "main_status_sha256": "a51959182b96a821a000b050d0e7d9c280ff8a6469e0728ec30006770cf506a0",
+  "research_clean": true,
+  "historical_asset_count": 108,
+  "historical_asset_map_sha256": "e337c0225a9b84516998c233a36c11a8defd2bb38cdd823c4f7190d12953865a"
+}

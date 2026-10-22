@@ -1,4 +1,4 @@
-"""Full-evidence page contracts (docs/status/evidence.html) plus the browser-preview DOM on the project page.
+"""Preserved pre-redesign evidence contracts (docs/status/evidence-archive-2026-10-22.html) plus the browser-preview DOM on the project page.
 
 The detailed paper page moved from index.html to evidence.html on 2026-09-24 when index.html became the
 concise project page; its contracts moved with it. Project-page contracts are in test_project_page.py.
@@ -50,7 +50,7 @@ class Page(HTMLParser):
 
 class ResearchOverviewTest(unittest.TestCase):
     def setUp(self):
-        self.text = (SITE / 'evidence.html').read_text()
+        self.text = (SITE / 'evidence-archive-2026-10-22.html').read_text()
         self.index = (SITE / 'index.html').read_text()
         self.css = (SITE / 'overview.css').read_text()
         self.page = Page(self.text)
@@ -92,7 +92,7 @@ class ResearchOverviewTest(unittest.TestCase):
         self.assertNotIn('overview-card', self.text)
 
     def test_all_active_local_links_and_html_fragments(self):
-        for page_name, page in (('evidence.html', self.page), ('index.html', Page(self.index))):
+        for page_name, page in (('evidence-archive-2026-10-22.html', self.page), ('index.html', Page(self.index))):
             for link in page.links:
                 parsed = urlsplit(link)
                 if parsed.scheme or parsed.netloc:

@@ -1,0 +1,25 @@
+{
+  "status": "PASS",
+  "files": {
+    "fig04-density.pdf": true,
+    "fig02-observation.png": true,
+    "fig05-sensitivities.pdf": true,
+    "fig04-density.png": true,
+    "fig02-observation.pdf": true,
+    "fig01-system.png": true,
+    "fig05-sensitivities.png": true,
+    "fig01-system.pdf": true,
+    "fig04-density.svg": true,
+    "fig06-boia.pdf": true,
+    "fig03-motion.pdf": true,
+    "fig01-system.svg": true,
+    "motar-publication-figures.zip": true,
+    "fig06-boia.png": true,
+    "manifest.json": true,
+    "fig05-sensitivities.svg": true,
+    "fig03-motion.png": true,
+    "fig03-motion.svg": true,
+    "fig02-observation.svg": true,
+    "fig06-boia.svg": true
+  }
+}

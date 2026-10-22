@@ -1,0 +1,797 @@
+{
+  "schema": "MOTAR-PUBLICATION-REDESIGN-1",
+  "measurement_source": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+  "research_snapshot": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+  "matplotlib_version": "3.7.5",
+  "sources": {
+    "motion": {
+      "path": "results/target_motion_replication_7seed/analysis.json",
+      "sha256": "87398121b20575ac91a965cf7c44d5a235d88a6abfd4f88ca978564346298786"
+    },
+    "cells": {
+      "path": "results/target_motion_replication_7seed/cells.csv",
+      "sha256": "5a29d9de946107046fc33d201f96cf46f569175eb9f6192983fce375cef4a020"
+    },
+    "perception": {
+      "path": "results/perception_p10_seed_replication_2026-09-10/summary.json",
+      "sha256": "60c6d20b52e599d859645711fe0e64da24b38e367cced27ea21729d3b4c9d6ed"
+    },
+    "safety": {
+      "path": "results/independent_verification_2026-09-07/recomputed.json",
+      "sha256": "f7c684b07969372d0495ed941734458a6c1416e4ac5ba96c2a535dd20b577f93"
+    },
+    "observation": {
+      "path": "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/summary.json",
+      "sha256": "afea81a6b57cf749a18dc9ffaf33e3f0100d78c27174a8d88ae10dfd60f53606"
+    },
+    "progress": {
+      "path": "docs/status/data/boia-progress.json",
+      "sha256": "524a9170da718bb475562f5c1a784dfb21894f5d0834b3ce2d59aca751e993d7"
+    },
+    "e3s": {
+      "path": "results/eth_ds5_e3s_2026-09-10/run/e3s_result.json",
+      "sha256": "c21bd8b7ee7735764626ea4200c54d0626c0de43ba6cd4b5aac728cf2ae4ebc9"
+    },
+    "component_registry": {
+      "path": "docs/research_status_registry.json",
+      "sha256": "5b3ea7d2d98bb18cd7d6df169096cc7565594fc67bc7ed96ffa9123ac6e55909"
+    },
+    "status_manifest": {
+      "path": "docs/status_manifest.json",
+      "sha256": "13c2a1a784b8818d6532c8a4d97e868474d115f7ff287aba0a82dae0e3251205"
+    }
+  },
+  "graph": {
+    "baseline_edges": [
+      [
+        "rgbd",
+        "perception"
+      ],
+      [
+        "lidar",
+        "perception"
+      ],
+      [
+        "own_state",
+        "perception"
+      ],
+      [
+        "perception",
+        "flat898"
+      ],
+      [
+        "flat898",
+        "tokens17"
+      ],
+      [
+        "tokens17",
+        "actor"
+      ],
+      [
+        "actor",
+        "action_transform"
+      ],
+      [
+        "action_transform",
+        "xy_governor"
+      ],
+      [
+        "lidar",
+        "xy_governor"
+      ],
+      [
+        "xy_governor",
+        "lee_controller"
+      ],
+      [
+        "lee_controller",
+        "physx"
+      ],
+      [
+        "physx",
+        "sensor_models"
+      ],
+      [
+        "sensor_models",
+        "rgbd"
+      ],
+      [
+        "sensor_models",
+        "lidar"
+      ],
+      [
+        "physx",
+        "own_state"
+      ]
+    ],
+    "baseline_governor": "riskcap",
+    "alternative_governor": "arc-clearance (experimental alternate; not serial)",
+    "vertical_action": "Actor z output overwritten by task PI altitude hold",
+    "ground_truth": "Scene generation/rendering and evaluator/critic only; no direct actor target-GT input",
+    "boia_applies_action": false,
+    "actor_fields": [
+      {
+        "name": "Fused static scan",
+        "shape": [
+          4,
+          72
+        ],
+        "flat": 288,
+        "tokens": 1
+      },
+      {
+        "name": "Obstacle history",
+        "shape": [
+          5,
+          8,
+          12
+        ],
+        "flat": 480,
+        "tokens": 5
+      },
+      {
+        "name": "Own-state history",
+        "shape": [
+          5,
+          10
+        ],
+        "flat": 50,
+        "tokens": 5
+      },
+      {
+        "name": "Target-track history",
+        "shape": [
+          5,
+          16
+        ],
+        "flat": 80,
+        "tokens": 5
+      }
+    ],
+    "history_slots": 5,
+    "nominal_history_interval_s": 0.5,
+    "tracker_expiry_s": 5.0,
+    "token_embedding_width": 64,
+    "source_commit": "b1c0bc612339d2f8dfb86a0ca16de11bdffe09b5",
+    "source_locators": {
+      "flat_and_history": "navrl_perception.py::observe, _update_histories, _target_features",
+      "tokens": "navrl_transformer_network.py::forward",
+      "action": "navrl_task.py::transform_action_to_command (z overwrite)",
+      "filter": "navrl_task.py::_apply_sensor_speed_governor; speed_governor.py::apply_speed_governor",
+      "control": "velocity_control.py::LeeVelocityController.update"
+    }
+  },
+  "values": {
+    "seeds": [
+      4104,
+      4105,
+      4106,
+      4107,
+      4108,
+      4109,
+      4110
+    ],
+    "densities": [
+      70,
+      115,
+      160,
+      205
+    ],
+    "density_capture_pct": {
+      "H_historical": [
+        [
+          91.552734375,
+          90.966796875,
+          86.669921875,
+          82.12890625
+        ],
+        [
+          91.11328125,
+          90.185546875,
+          86.376953125,
+          83.7890625
+        ],
+        [
+          91.259765625,
+          90.576171875,
+          87.841796875,
+          80.37109375
+        ],
+        [
+          90.8203125,
+          90.52734375,
+          87.40234375,
+          82.861328125
+        ],
+        [
+          91.015625,
+          89.501953125,
+          87.79296875,
+          83.59375
+        ],
+        [
+          92.626953125,
+          90.234375,
+          86.71875,
+          82.71484375
+        ],
+        [
+          92.724609375,
+          89.16015625,
+          86.083984375,
+          80.712890625
+        ]
+      ],
+      "E0_static": [
+        [
+          84.814453125,
+          83.447265625,
+          82.6171875,
+          78.173828125
+        ],
+        [
+          84.27734375,
+          83.984375,
+          81.689453125,
+          78.076171875
+        ],
+        [
+          84.228515625,
+          83.49609375,
+          82.03125,
+          79.052734375
+        ],
+        [
+          85.888671875,
+          85.15625,
+          84.1796875,
+          79.296875
+        ],
+        [
+          84.326171875,
+          84.1796875,
+          82.2265625,
+          78.61328125
+        ],
+        [
+          83.447265625,
+          83.30078125,
+          81.201171875,
+          79.4921875
+        ],
+        [
+          84.86328125,
+          85.205078125,
+          82.666015625,
+          77.05078125
+        ]
+      ],
+      "E1_cv": [
+        [
+          88.232421875,
+          88.18359375,
+          83.642578125,
+          78.759765625
+        ],
+        [
+          87.3046875,
+          87.01171875,
+          85.05859375,
+          79.150390625
+        ],
+        [
+          86.767578125,
+          86.474609375,
+          83.49609375,
+          78.80859375
+        ],
+        [
+          87.548828125,
+          85.7421875,
+          84.423828125,
+          79.736328125
+        ],
+        [
+          87.40234375,
+          87.548828125,
+          83.056640625,
+          79.248046875
+        ],
+        [
+          86.71875,
+          86.23046875,
+          84.66796875,
+          77.783203125
+        ],
+        [
+          86.5234375,
+          87.109375,
+          83.984375,
+          80.224609375
+        ]
+      ],
+      "E2_obstacle_aware": [
+        [
+          93.1640625,
+          91.552734375,
+          88.232421875,
+          83.251953125
+        ],
+        [
+          93.45703125,
+          92.333984375,
+          87.20703125,
+          83.544921875
+        ],
+        [
+          93.896484375,
+          92.7734375,
+          88.525390625,
+          84.521484375
+        ],
+        [
+          93.84765625,
+          92.333984375,
+          87.255859375,
+          82.861328125
+        ],
+        [
+          93.359375,
+          92.724609375,
+          87.6953125,
+          81.8359375
+        ],
+        [
+          93.65234375,
+          91.455078125,
+          87.060546875,
+          83.30078125
+        ],
+        [
+          93.310546875,
+          91.6015625,
+          87.744140625,
+          82.763671875
+        ]
+      ]
+    },
+    "episodes": 229376,
+    "motion_primary": [
+      {
+        "arm": "E0_static",
+        "baseline": "H_historical",
+        "metric": "capture",
+        "seed_diffs": {
+          "4104": -0.0556640625,
+          "4105": -0.05859375,
+          "4106": -0.0531005859375,
+          "4107": -0.042724609375,
+          "4108": -0.056396484375,
+          "4109": -0.0621337890625,
+          "4110": -0.0472412109375
+        },
+        "mean_diff": -0.05369349888392857,
+        "bca95": [
+          -0.057774135044642856,
+          -0.0484619140625
+        ],
+        "exact_p": 0.015625,
+        "seeds_same_sign": 7,
+        "n_seeds": 7,
+        "holm_adjusted_p": 0.046875,
+        "original_sign": -1,
+        "replicates": true,
+        "classification": "SUCCESSFUL_DIRECTIONAL_STATISTICAL_REPLICATION"
+      },
+      {
+        "arm": "E1_cv",
+        "baseline": "H_historical",
+        "metric": "capture",
+        "seed_diffs": {
+          "4104": -0.03125,
+          "4105": -0.0323486328125,
+          "4106": -0.0362548828125,
+          "4107": -0.035400390625,
+          "4108": -0.03662109375,
+          "4109": -0.042236328125,
+          "4110": -0.027099609375
+        },
+        "mean_diff": -0.034458705357142856,
+        "bca95": [
+          -0.03789411272321429,
+          -0.031145368303571428
+        ],
+        "exact_p": 0.015625,
+        "seeds_same_sign": 7,
+        "n_seeds": 7,
+        "holm_adjusted_p": 0.046875,
+        "original_sign": -1,
+        "replicates": true,
+        "classification": "SUCCESSFUL_DIRECTIONAL_STATISTICAL_REPLICATION"
+      },
+      {
+        "arm": "E2_obstacle_aware",
+        "baseline": "H_historical",
+        "metric": "capture",
+        "seed_diffs": {
+          "4104": 0.01220703125,
+          "4105": 0.0126953125,
+          "4106": 0.024169921875,
+          "4107": 0.01171875,
+          "4108": 0.00927734375,
+          "4109": 0.0079345703125,
+          "4110": 0.016845703125
+        },
+        "mean_diff": 0.0135498046875,
+        "bca95": [
+          0.010689871651785714,
+          0.0186767578125
+        ],
+        "exact_p": 0.015625,
+        "seeds_same_sign": 7,
+        "n_seeds": 7,
+        "holm_adjusted_p": 0.046875,
+        "original_sign": 1,
+        "replicates": true,
+        "classification": "SUCCESSFUL_DIRECTIONAL_STATISTICAL_REPLICATION"
+      }
+    ],
+    "motion_capture_pct": {
+      "H_historical": 87.76157924107143,
+      "E0_static": 82.39222935267857,
+      "E1_cv": 84.31570870535714,
+      "E2_obstacle_aware": 89.11655970982143
+    },
+    "frozen_cost": {
+      "a": "3161/4099",
+      "b": "3350/4101",
+      "ci95": [
+        -6.3188972850234295,
+        -2.8231496597741144
+      ],
+      "delta_pp": -4.571023472398772,
+      "excludes_zero": true,
+      "se_pp": 0.8917887402073013
+    },
+    "readaptation": {
+      "ci95": [
+        -1.0377749574498445,
+        2.497823877633491
+      ],
+      "df": 2,
+      "excludes_zero": false,
+      "mean_pp": 0.7300244600918234,
+      "per_seed_delta_pp": [
+        1.414979263234939,
+        0.7806782141985824,
+        -0.005584097158051193
+      ],
+      "sd_pp": 0.7116350309860997,
+      "seeds": [
+        811,
+        857,
+        863
+      ]
+    },
+    "safety_pooled": {
+      "delta": -1.4903321941010428,
+      "se": 0.2080243017116587,
+      "lo": -1.8980523333649877,
+      "hi": -1.0826120548370979,
+      "p": 7.822977675077339e-13,
+      "variance": 0.043274110102623206,
+      "k": 15,
+      "Q": 10.27639183122052,
+      "df": 14,
+      "I2": 0,
+      "Q_p": 0.7417097548859256
+    },
+    "safety_seed": {
+      "mean": -1.494220464857499,
+      "se": 0.2151020405327219,
+      "lo": -2.41972984673041,
+      "hi": -0.5687110829845881,
+      "p": 0.020100623975277343,
+      "df": 2
+    },
+    "safety_per_seed": [
+      {
+        "seed": 523,
+        "delta": -1.1481578985608598,
+        "se": 0.3565892107959136,
+        "lo": -1.847059908996412,
+        "hi": -0.4492558881253077,
+        "p": 0.0012826505521414512,
+        "variance": 0.12715586525605252,
+        "k": 5,
+        "Q": 1.741625113823919,
+        "df": 4,
+        "I2": 0,
+        "Q_p": 0.783143212035512
+      },
+      {
+        "seed": 527,
+        "delta": -1.8885822445040652,
+        "se": 0.36253524858550246,
+        "lo": -2.5991382748579257,
+        "hi": -1.1780262141502047,
+        "p": 1.8947729164549307e-07,
+        "variance": 0.13143180646695207,
+        "k": 5,
+        "Q": 5.121953989059877,
+        "df": 4,
+        "I2": 0.2190480413249103,
+        "Q_p": 0.2750115861767821
+      },
+      {
+        "seed": 531,
+        "delta": -1.4459212515075721,
+        "se": 0.3618907467285886,
+        "lo": -2.155214081433912,
+        "hi": -0.736628421581232,
+        "p": 6.456781842007235e-05,
+        "variance": 0.13096491256777545,
+        "k": 5,
+        "Q": 1.270234415683342,
+        "df": 4,
+        "I2": 0,
+        "Q_p": 0.8664050805730987
+      }
+    ],
+    "safety_cells": [
+      {
+        "seed": 523,
+        "density": 70,
+        "delta": -1.2173219536002096,
+        "se": 0.6868830223122906,
+        "lo": -2.5635879389243215,
+        "hi": 0.12894403172390234,
+        "p": 0.07635463304892788,
+        "variance": 0.47180828634086674
+      },
+      {
+        "seed": 523,
+        "density": 100,
+        "delta": -1.7569546120058566,
+        "se": 0.7126431589294154,
+        "lo": -3.153709537336365,
+        "hi": -0.3601996866753485,
+        "p": 0.013685813739506022,
+        "variance": 0.507860271968896
+      },
+      {
+        "seed": 523,
+        "density": 130,
+        "delta": -0.43923865300146414,
+        "se": 0.7683287674882306,
+        "lo": -1.9451353655644454,
+        "hi": 1.066658059561517,
+        "p": 0.5675383778291452,
+        "variance": 0.5903290949499835
+      },
+      {
+        "seed": 523,
+        "density": 160,
+        "delta": -0.8784773060029283,
+        "se": 0.8753342454487325,
+        "lo": -2.594100901516988,
+        "hi": 0.8371462895111312,
+        "p": 0.3155759402226923,
+        "variance": 0.7662100412553018
+      },
+      {
+        "seed": 523,
+        "density": 205,
+        "delta": -1.4153245485602732,
+        "se": 1.134666782398971,
+        "lo": -3.6392305765162027,
+        "hi": 0.8085814793956563,
+        "p": 0.21226985763675016,
+        "variance": 1.2874687070796336
+      },
+      {
+        "seed": 527,
+        "density": 70,
+        "delta": -2.582107478802726,
+        "se": 0.703999390945709,
+        "lo": -3.961920930194449,
+        "hi": -1.202294027411003,
+        "p": 0.00024467562291208874,
+        "variance": 0.49561514245192917
+      },
+      {
+        "seed": 527,
+        "density": 100,
+        "delta": -0.8784773060029283,
+        "se": 0.7305965186750126,
+        "lo": -2.310420169836298,
+        "hi": 0.5534655578304415,
+        "p": 0.2292043212764701,
+        "variance": 0.533771273100048
+      },
+      {
+        "seed": 527,
+        "density": 130,
+        "delta": -1.171303074670571,
+        "se": 0.7880468030857278,
+        "lo": -2.7158464268505256,
+        "hi": 0.3732402775093835,
+        "p": 0.1371900202121292,
+        "variance": 0.6210177638536358
+      },
+      {
+        "seed": 527,
+        "density": 160,
+        "delta": -2.4842576390624815,
+        "se": 0.8709573488747125,
+        "lo": -4.191302674927405,
+        "hi": -0.7772126031975579,
+        "p": 0.00434000407870356,
+        "variance": 0.7585667035588677
+      },
+      {
+        "seed": 527,
+        "density": 205,
+        "delta": -2.9823881271479724,
+        "se": 1.125931520068007,
+        "lo": -5.189173355539703,
+        "hi": -0.775602898756242,
+        "p": 0.008077372220262195,
+        "variance": 1.2677217878826526
+      },
+      {
+        "seed": 531,
+        "density": 70,
+        "delta": -1.856848670975729,
+        "se": 0.718355188270484,
+        "lo": -3.264798968093367,
+        "hi": -0.4488983738580907,
+        "p": 0.009741812060513133,
+        "variance": 0.5160341765151225
+      },
+      {
+        "seed": 531,
+        "density": 100,
+        "delta": -1.0736944851146901,
+        "se": 0.7129742116642422,
+        "lo": -2.4710982618824424,
+        "hi": 0.32370929165306195,
+        "p": 0.13208326082502936,
+        "variance": 0.5083322264982477
+      },
+      {
+        "seed": 531,
+        "density": 130,
+        "delta": -0.9721611111771777,
+        "se": 0.774359454797513,
+        "lo": -2.489877753668375,
+        "hi": 0.5455555313140197,
+        "p": 0.2093194149405707,
+        "variance": 0.5996325652343016
+      },
+      {
+        "seed": 531,
+        "density": 160,
+        "delta": -1.9071766120296638,
+        "se": 0.8825907262645898,
+        "lo": -3.637022648597309,
+        "hi": -0.17733057546201825,
+        "p": 0.030704263233375537,
+        "variance": 0.7789663900882561
+      },
+      {
+        "seed": 531,
+        "density": 205,
+        "delta": -1.6177552405099465,
+        "se": 1.1329170118102356,
+        "lo": -3.838231781130747,
+        "hi": 0.6027213001108542,
+        "p": 0.1533046261121492,
+        "variance": 1.2835009556490338
+      }
+    ],
+    "observation": {
+      "ci95": [
+        -50.11285929556478,
+        -47.821092225502404
+      ],
+      "df": 2,
+      "margin_pp": -3.0,
+      "mean": -48.96697576053359,
+      "name": "mesh_shaded_minus_analytic_capture_rate_pp",
+      "t_critical": 4.302652729911275,
+      "unit": "paired evaluation seed",
+      "values": [
+        -48.6090775988287,
+        -48.804294777940456,
+        -49.48755490483162
+      ]
+    },
+    "progress": {
+      "Q01": "RUNTIME_QUALIFIED",
+      "Q02-A": "CPU_TESTED_INDEPENDENTLY_REVIEWED_WITH_LIMITS",
+      "Q02-B": "CPU_TESTED_INDEPENDENT_REVIEW_FAIL_HOLD",
+      "Q03": "CPU_TESTED_INDEPENDENT_REVIEW_FAIL_HOLD",
+      "Q04": "DESIGN_ONLY_D0_HOLD"
+    },
+    "research_snapshot": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+    "e3s": {
+      "median_pct": 6.186509849137348,
+      "frames": 3107,
+      "blocks": 9,
+      "block_seconds": 15.0
+    }
+  },
+  "figures": [
+    {
+      "id": "fig01-system",
+      "title": "Verified sensor-to-action architecture",
+      "caption": "Historical Policy F closed loop. Sensor models and own state feed perception; 898 flat values precede tokenization. PI altitude hold replaces actor z. Baseline riskcap and experimental arc-clearance are alternatives.",
+      "width_in": 7.2,
+      "height_in": 4.3,
+      "png_dpi": 300
+    },
+    {
+      "id": "fig02-observation",
+      "title": "Actor observation data structure",
+      "caption": "288 + 480 + 50 + 80 = 898 flat actor values; 17 embedded tokens include CLS. Five history slots nominally span two seconds; tracker expiry is five seconds. No direct target ground truth enters the actor.",
+      "width_in": 7.2,
+      "height_in": 4.5,
+      "png_dpi": 300
+    },
+    {
+      "id": "fig03-motion",
+      "title": "Independent target-motion replication",
+      "caption": "Recorded seven-seed paired capture contrasts with BCa intervals. Unit of inference is evaluation seed, equal-weight densities and per-environment quota. Historical three-seed results are not pooled.",
+      "width_in": 7.2,
+      "height_in": 3.3,
+      "png_dpi": 300
+    },
+    {
+      "id": "fig04-density",
+      "title": "Target-motion density response",
+      "caption": "New exploratory display of immutable primary counts, seven seed trajectories and density-wise E2 minus H contrasts. No new tests or density-specific confidence intervals.",
+      "width_in": 7.2,
+      "height_in": 3.5,
+      "png_dpi": 300
+    },
+    {
+      "id": "fig05-sensitivities",
+      "title": "Separate sensitivity experiments",
+      "caption": "Perception cost and readaptation, seed-level arc crash mean, and rendering sensitivity in distinct panels. Policy F and policy R never pooled. Different inference units and independent horizontal axes are labelled.",
+      "width_in": 7.2,
+      "height_in": 5.0,
+      "png_dpi": 300
+    },
+    {
+      "id": "fig06-boia",
+      "title": "BOIA passive evidence and proposal architecture",
+      "caption": "Separate shadow-only research branch. Input evidence, permitted belief and timestamped local map feed candidate checks and timing records. Q02-B and Q03 remain FAIL/HOLD; no executor or online action path.",
+      "width_in": 7.2,
+      "height_in": 4.3,
+      "png_dpi": 300
+    }
+  ],
+  "files": {
+    "fig01-system.svg": "7b1f355bff2cd8bdfce08b36305d67675e63b9737d236a75afdc096ab1286175",
+    "fig01-system.pdf": "8e2c4a4fefc9274f56bf1105f9c05db0a00616189c3359828b926da203e957ce",
+    "fig01-system.png": "3e80535a4d79028b6ff9f4e51698fdc5ac60c2427ef456c06d7b5712621f4682",
+    "fig02-observation.svg": "63bb869784aba05e6e7e7ea2683ef34580863a2824b2c9a1b43e339266458697",
+    "fig02-observation.pdf": "1f55191ae4083a2b04c8ae306127683282b1910f4bf5af818b223bc2a0a789be",
+    "fig02-observation.png": "4906c63a03486999e1fe41b02dfc70c0aaf14b980e24d39e0129a9404b65c86f",
+    "fig03-motion.svg": "a77e4d3c925716c1bc39be03e3f7dda389212e881bc5a4fe551ed35e4441202d",
+    "fig03-motion.pdf": "7087ebc56ae8c11bd1ac7c4d62c0d2d0649f465037dccaec30b6af12425a96e3",
+    "fig03-motion.png": "beeee54b3a546b332eb0051ab0ad5965cf01b42b526eb6fef1fb0cd242e36900",
+    "fig04-density.svg": "7ece4e488706c3cb98ca707f68b93495e4f5105ba072b9978539ad19817b40e1",
+    "fig04-density.pdf": "1caa4066227b2c09bb9a54b9279886e5e46400b95f629c006fe327ad804c3ca7",
+    "fig04-density.png": "344e14bbbbda2036bf9c212a98e07982d4efb2689862f72beeab4b7361e740c3",
+    "fig05-sensitivities.svg": "b7dd1eafb6b328503a05ee62bf4a35eba9fc25c3b8ebeda1bbebbb29925ccd87",
+    "fig05-sensitivities.pdf": "7d6c6063aa9da9e4abaf4764d0ec7cb4329cc428cc05cc7b9e6ea0b6ff608ab6",
+    "fig05-sensitivities.png": "a9da1d1b88b9cc0b1d2aa917aa658b13c439551f5e36272f155b268f4413fd93",
+    "fig06-boia.svg": "56ff994adb7cd16c584a3c711ff15f3f7f390816a7e533102b6d785df684493c",
+    "fig06-boia.pdf": "1209fe32cee4d9e5fcf765ce43595a51b10775fa116302ccebd7510b5b5e0ea7",
+    "fig06-boia.png": "fc432a6509c5e436852333d5a01c59d62361fcccc24f89c12ea293f50b14703a"
+  },
+  "density_display": "Exploratory re-display of primary counts. No added CI or hypothesis test.",
+  "safety_estimands": "Chart uses seed_t.mean with seed_t CI; pooled estimate preserved separately."
+}

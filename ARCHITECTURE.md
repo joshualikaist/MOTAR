@@ -3,7 +3,7 @@
 How the MOTAR system fits together, and where each part lives. The purpose and research questions
 are in [`PROJECT.md`](PROJECT.md); the rules for changing anything are in [`AGENTS.md`](AGENTS.md).
 
-![MOTAR code map: the closed simulation loop, the inputs that define a scenario, and the evidence layer](docs/assets/paper/final/arch-motar-code-map.svg)
+![Verified Policy F closed loop and control ownership](docs/assets/paper/redesign-2026-10-22/fig01-system.svg)
 
 ## The closed loop
 
@@ -13,22 +13,22 @@ One RL step is 0.1 s: ten physics steps of 0.01 s in Isaac Gym PhysX.
 obstacle environment ── bars 70–205 in a 40 × 40 × 3 m arena; moving target
         │
         ▼
-sensors ─────────────── forward camera (target) · LiDAR 72 × 4 beams @ 12 m (obstacles)
+sensors ─────────────── RGB-D camera · LiDAR 72 × 4 beams @ 12 m · own simulator state
         │
         ▼
-perception ──────────── target detection, tracking, 2 s history          [+ optional P9 measured-error injection]
+perception ──────────── target detection, fusion, tracking; sampled history [+ optional P9 measured-error injection]
         │                                                                  [+ optional D8 mesh rendering treatment]
         ▼
-temporal state ──────── 17 tokens: [CLS], static scan, 5 obstacle, 5 robot, 5 target-track steps
+policy observation ──── flat actor 898-D: 288 scan + 480 obstacle + 50 own state + 80 target history
         │
         ▼
-policy observation ──── actor 898-D · critic 906-D (critic adds 8 ground-truth values)
+network embedding ───── 17 × 64 tokens: [CLS], static scan, 5 obstacle, 5 robot, 5 target-track steps
         │
         ▼
-frozen PPO policy ───── Transformer actor-critic (rl_games) → vx, vy, vz, yaw rate
+frozen PPO policy ───── four actor outputs → planar velocity + yaw request; task PI altitude hold replaces z
         │
         ▼
-safety filter ───────── LiDAR speed cap (riskcap for policy F); scales speed, keeps direction
+safety filter ───────── LiDAR XY speed cap (riskcap for policy F); scales XY magnitude, keeps direction
         │
         ▼
 low-level control ───── Lee velocity controller → quadrotor dynamics → back to the environment
@@ -39,6 +39,14 @@ mask, bearing, range, `target_position` or ground-truth visibility. Ground truth
 detector supervision, rewards, termination, the critic and evaluation metrics. Observation widths
 belong to lineages (156 → 305 → 1265 → 898) that must never be mixed; a checkpoint only loads into
 its own width.
+
+The 898-D vector is assembled **before** network tokenization. The critic is separate, 906-D
+(898 + 8 privileged GT values). Five sampled history slots nominally span two seconds at 0.5 s
+spacing; the tracker's five-second expiry is a different contract. LiDAR also assists
+camera-initialized target association/ranging; it is not exclusively an obstacle sensor. The
+simulator renderer/detector is synthetic, not a qualified real-image flight detector. See the
+[October source verification](docs/research/figure-redesign-2026-10-22.md) for exact functions
+and the corrected historical presentation errors.
 
 **Task contract.** A capture (close approach) is a pursuer–target distance below `success_radius =
 0.5 m` and ends the episode. A crash is a bar contact, leaving the arena, or hitting the floor or
@@ -62,7 +70,7 @@ reproducible only through its recorded launcher environment
 | Physical target (gated) | 6-DoF target with optional global route; its routing gates FAILed | `aerial_gym/task/navrl_task/physical_target.py`, `target_route_planner.py` |
 | Camera and detector | Forward camera; target pixels occlusion-tested; built-in or learned detector | `aerial_gym/task/navrl_task/navrl_detector.py` |
 | LiDAR | 72 × 4 beams at 12 m for policy F (source defaults are 36 × 4 at 4 m) | `aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py` |
-| Perception and temporal state | Fusion, tracking, uncertainty, 2 s history, token assembly | `aerial_gym/task/navrl_task/navrl_perception.py` |
+| Perception and temporal state | Fusion, tracking, uncertainty, sampled history, flat observation assembly | `aerial_gym/task/navrl_task/navrl_perception.py` |
 | Measured-error injection (P9) | Replays the P8 error model in simulation (opt-in) | `aerial_gym/task/navrl_task/navrl_empirical_error.py` |
 | Rendering treatment (D8) | Mesh-derived target mask and depth (opt-in) | `aerial_gym/task/navrl_task/navrl_dynamic_mesh_treatment.py` |
 | Task | Observation assembly, reward, termination, metrics | `aerial_gym/task/navrl_task/navrl_task.py`, `aerial_gym/config/task_config/navrl_task_config.py` |
@@ -96,7 +104,8 @@ preregistration (docs/) ─► fail-closed launcher ─► receipt + raw counts 
   - `docs/research_status_registry.json`: component lifecycle.
   - `docs/status_manifest.json`: Track D states.
 - **Published numbers** in the README, site and figures are generated from, or tested against, those
-  registries. `tools/build_paper_figures.py` builds the figures;
+  registries. `tools/build_publication_figures_20261022.py` builds the current figure family;
+  `tools/build_paper_figures.py` retains the historical family;
   `tests/test_canonical_docs.py` and the site tests bind the text.
 
 ## Repository structure

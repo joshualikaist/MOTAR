@@ -1,11 +1,14 @@
-"""Bind public comparison rows to the original result records; no experiments run."""
+"""Bind preserved historical comparison rows to their original records; no experiments.
+
+Current rebuilt figures/page are checked independently in test_project_page.py.
+"""
 from pathlib import Path
 import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
 # The matched-baseline table lives on the full-evidence page (moved from index.html 2026-09-24).
-SITE = (ROOT / "docs/status/evidence.html").read_text()
+SITE = (ROOT / "docs/status/evidence-archive-2026-10-22.html").read_text()
 
 
 class SiteComparisonEvidenceTest(unittest.TestCase):

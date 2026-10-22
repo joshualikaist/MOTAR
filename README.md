@@ -5,7 +5,7 @@
 
 MOTAR studies how perception uncertainty, safety-filter geometry, target-motion distribution shift and observation changes affect frozen UAV tracking and close-approach policies in random obstacle fields. All policy evaluations are simulation-only.
 
-![MOTAR overview: the simulated closed loop (environment, perception, temporal state, frozen policy, safety filter and control) above the measured evidence chain](docs/assets/paper/final/fig1-motar-overview.svg)
+![Verified Policy F system: RGB-D, LiDAR and own state to perception, a flat 898-D observation, Transformer, XY speed governor, Lee controller and UAV PhysX](docs/assets/paper/redesign-2026-10-22/fig01-system.svg)
 
 **Main finding:** target-motion effects replicated under a bias-corrected evaluation. Against the
 target motion the policy was trained on, a static target scored **−5.37 pp** capture, a
@@ -33,14 +33,17 @@ for the observation contract only, policy R (ref5in D1 ep1900). No external resu
 
 ## System
 
-![MOTAR code map: scenario inputs, the closed loop from obstacle environment to vehicle dynamics, and the evidence layer](docs/assets/paper/final/arch-motar-code-map.svg)
+![Observation structure: 288 fused static-scan values plus 480 obstacle-history values, 50 own-state-history values and 80 target-track values; then network embedding into 17 tokens](docs/assets/paper/redesign-2026-10-22/fig02-observation.svg)
 
-A forward camera and a LiDAR feed perception, which keeps a short track history. A Transformer PPO
-policy, frozen for every evaluation, turns 17 observation tokens into a velocity command. A LiDAR
-speed filter caps that command before a Lee velocity controller flies the quadrotor. Ground-truth
+A forward RGB-D camera and a LiDAR feed perception. The flat 898-D actor observation is assembled
+first, then embedded into 17 tokens inside the frozen Transformer PPO network. The task replaces
+the actor's z output with PI altitude hold; an XY speed filter caps the planar request before the
+Lee velocity controller. Five sampled history slots nominally span two seconds; tracker expiry
+is a separate five-second contract. Ground-truth
 target state never enters the policy's observation. The scenario inputs (target motion, rendering
 contract, measured-error injection) are the factors the experiments vary. Details and source paths:
-[`ARCHITECTURE.md`](ARCHITECTURE.md).
+[`ARCHITECTURE.md`](ARCHITECTURE.md). The [rebuilt figure atlas](https://joshualikaist.github.io/MOTAR/status/figures.html)
+provides editable SVG, embedded-font PDF and 300 dpi PNG, with [source verification](docs/research/figure-redesign-2026-10-22.md).
 
 ## Target-motion replication
 

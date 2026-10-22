@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="figure-title figure-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="518.4pt" height="309.6pt" viewBox="0 0 518.4 309.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<title id="figure-title">BOIA passive evidence and proposal architecture</title>
+<desc id="figure-desc">Separate shadow-only research branch. Input evidence, permitted belief and timestamped local map feed candidate checks and timing records. Q02-B and Q03 remain FAIL/HOLD; no executor or online action path.</desc>
+ <title>BOIA passive evidence and proposal architecture</title>
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title>BOIA passive evidence and proposal architecture</dc:title>
+    <dc:description>Separate shadow-only research branch. Input evidence, permitted belief and timestamped local map feed candidate checks and timing records. Q02-B and Q03 remain FAIL/HOLD; no executor or online action path.</dc:description>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>MOTAR reproducible publication figure builder</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 309.6
+L 518.4 309.6
+L 518.4 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 12.96 44.4276
+L 505.44 44.4276
+L 505.44 87.6168
+L 12.96 87.6168
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 12.96 121.2084
+L 155.7792 121.2084
+L 155.7792 183.5928
+L 12.96 183.5928
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 187.7904 121.2084
+L 330.6096 121.2084
+L 330.6096 183.5928
+L 187.7904 183.5928
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 362.6208 121.2084
+L 505.44 121.2084
+L 505.44 183.5928
+L 362.6208 183.5928
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 84.3696 89.613762
+Q 84.3696 104.41025 84.3696 118.200507
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 85.9696 115.000507
+L 84.3696 118.200507
+L 82.7696 115.000507
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 259.2 89.613762
+Q 259.2 104.41025 259.2 118.200507
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 260.8 115.000507
+L 259.2 118.200507
+L 257.6 115.000507
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 434.0304 89.613762
+Q 434.0304 104.41025 434.0304 118.200507
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 435.6304 115.000507
+L 434.0304 118.200507
+L 432.4304 115.000507
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 12.96 217.1844
+L 293.6736 217.1844
+L 293.6736 269.9712
+L 12.96 269.9712
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 333.072 217.1844
+L 505.44 217.1844
+L 505.44 269.9712
+L 333.072 269.9712
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 84.3696 185.589762
+Q 84.3696 200.38625 84.3696 214.176507
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 85.9696 210.976507
+L 84.3696 214.176507
+L 82.7696 210.976507
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 259.2 185.589762
+Q 259.2 200.38625 259.2 214.176507
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 260.8 210.976507
+L 259.2 214.176507
+L 257.6 210.976507
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 434.0304 185.589762
+Q 434.0304 200.38625 434.0304 214.176507
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 435.6304 210.976507
+L 434.0304 214.176507
+L 432.4304 210.976507
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 295.669491 241.1784
+Q 313.368566 241.1784 330.061411 241.1784
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 326.861411 239.5784
+L 330.061411 241.1784
+L 326.861411 242.7784
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="text_1">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: start" x="12.96" y="18.220737" transform="rotate(-0 12.96 18.220737)">(a) Passive research branch</text>
+   </g>
+   <g id="text_2">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: end" x="505.44" y="17.70355" transform="rotate(-0 505.44 17.70355)">SCHEMATIC · SOURCE SNAPSHOT fde21cd</text>
+   </g>
+   <g id="text_3">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="20.3472" y="63.019145" transform="rotate(-0 20.3472 63.019145)">Immutable sensor-side input</text>
+   </g>
+   <g id="text_4">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="20.3472" y="75.001222" transform="rotate(-0 20.3472 75.001222)">RGB-D + LiDAR; own state; permitted tracker mean / covariance / age</text>
+   </g>
+   <g id="text_5">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="20.3472" y="139.799945" transform="rotate(-0 20.3472 139.799945)">B · Belief / history</text>
+   </g>
+   <g id="text_6">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(20.3472 159.562604)">Tracker mean + covariance</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(20.3472 169.339104)">Prior acquisition / loss state</text>
+   </g>
+   <g id="text_7">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="195.1776" y="139.799945" transform="rotate(-0 195.1776 139.799945)">C · Local map</text>
+   </g>
+   <g id="text_8">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(195.1776 159.562604)">Timestamped depth + LiDAR</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(195.1776 169.339104)">Observed-space limitations</text>
+   </g>
+   <g id="text_9">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="370.008" y="139.799945" transform="rotate(-0 370.008 139.799945)">A · Evidence</text>
+   </g>
+   <g id="text_10">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(370.008 159.562604)">Detection ≠ identity</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(370.008 169.339104)">Validity + geometry checks</text>
+   </g>
+   <g id="text_11">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="20.3472" y="235.775945" transform="rotate(-0 20.3472 235.775945)">D · Candidate screens</text>
+   </g>
+   <g id="text_12">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="20.3472" y="254.092438" transform="rotate(-0 20.3472 254.092438)">L1/L2 only; review FAIL / HOLD</text>
+   </g>
+   <g id="text_13">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="340.4592" y="235.756695" transform="rotate(-0 340.4592 235.756695)">Timing + shadow log</text>
+   </g>
+   <g id="text_14">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(340.4592 249.204188)">Utility ABSTAIN</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(340.4592 258.980688)">No action executor</text>
+   </g>
+   <g id="text_15">
+    <text style="fill: #172b3a; font: 700 8.5px 'Liberation Sans'; text-anchor: start" x="12.96" y="291.345853" transform="rotate(-0 12.96 291.345853)">(b) Applied commands remain owned by Frozen F → XY governor → Lee controller.</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pfed83de8fa">
+   <rect x="12.96" y="10.836" width="492.48" height="287.928"/>
+  </clipPath>
+ </defs>
+</svg>
