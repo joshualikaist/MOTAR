@@ -22677,3 +22677,21 @@ Hypothesis "a farther pixel inside the best sphere's disc contradicts it" reject
 corner scenes vetoed with the true sphere winning. WIP risk paths noted (`history.py:112`, `shadow.py:177`).
 
 Records: `docs/evidence/q02a_v26_repair_2026-10-22/`. GPU NOT_RUN, G5 HOLD. Next: independent read-only review (Opus 5.5, fresh context).
+
+## 2026-10-22 — Q02-A v2.6 independent review (Opus 5.5, 3fb9050): PASS_WITH_EXPLICIT_IDENTITY_LIMITATIONS
+
+No P0/P1. All committed numbers reproduce (corner/random/box sweeps, cross-checks, compare JSON byte-identical).
+The reviewer's own families found 0 material false support in 22,500 production-shaped scenes: random seeds 1-3 and 6-8,
+far 9–19 m, gap, and clutter. F1–F3 are intact; the declared geometry was checked against the renderer and the Q01 config.
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| H1 | P2 | Equal-inlier ties broken by farther-pixel count, and rivals within (R, 2R] never COMPETING: 2 of the 8 residual corner scenes; rival-test fix gives corner Z2 74 → 41 at +0.3 pp rejection |
+| H2 | P2 | Seeding/convergence misses: the main cause of correct-track rejection (56/57 weak scenes in random seed 4 had ≥ 3 exact pixels) and 1 residual |
+| H3–H4 | NOTE | Accepted-sphere field names; geometry not tied to `runtime_env` / mesh key |
+
+Record corrections are stated in the review: only 3 of 8 residual scenes are information-limited, and the loss attribution is mostly H2.
+The permitted Q02-B scope is defined: non-control CPU development; footprint support is necessary, never sufficient; never a same-target claim.
+Record: `docs/evidence/q02a_v26_opus_review_2026-10-22/`. Beads motar-3p3.27 closed (acceptance: P0/P1 resolved, independent pass).
+Q02-B (motar-3p3.26) is eligible to resume in a separate step under the stated scope; it is not started. GPU NOT_RUN, G5 HOLD.
+Next (separate approval): H1/H2/H4 minimal follow-up, then Q02-B WIP fixes at `history.py:112` and `shadow.py:177`.
