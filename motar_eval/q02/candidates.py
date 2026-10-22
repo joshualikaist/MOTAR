@@ -1,4 +1,7 @@
-"""Module D v0: reacquisition-candidate feasibility metadata (CPU, pure). Not a planner.
+"""SUPERSEDED in the pipeline by obstacle_map.py / reacq_planner.py (Q03 v0, 2026-10-22); kept for its
+equality test against boia.geometry.known_free and as the Q02-B WIP record.
+
+Module D v0: reacquisition-candidate feasibility metadata (CPU, pure). Not a planner.
 
 Generation (a fixed viewpoint lattice around the current position) is separate from evaluation;
 there is no selection. Path safety and information potential are separate questions. A candidate

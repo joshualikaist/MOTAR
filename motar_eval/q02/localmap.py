@@ -1,4 +1,7 @@
-"""Module C v0: one-scan, sensor-only planar obstacle representation (CPU, pure).
+"""SUPERSEDED in the pipeline by obstacle_map.py / reacq_planner.py (Q03 v0, 2026-10-22); kept for its
+equality test against boia.geometry.known_free and as the Q02-B WIP record.
+
+Module C v0: one-scan, sensor-only planar obstacle representation (CPU, pure).
 
 Free space follows motar_eval.boia.geometry.known_free exactly (numpy port, equality-tested):
 per beam the minimum over rows of range*cos(elevation) minus a margin, then the minimum with

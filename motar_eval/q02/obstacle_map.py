@@ -55,6 +55,8 @@ class MapParams:
     occupied_ttl_s: float = 5.0        # occupancy is kept longer (conservative for safety)
     conflict_ttl_s: float = 2.0
     hit_backoff_m: float = 0.2         # free carving stops this far before a hit (cell quantisation)
+    wedge_fill: bool = True            # fill between adjacent rays only where no declared-width obstacle can hide
+    wedge_substeps: int = 4
 
 
 @dataclass(frozen=True)
@@ -131,6 +133,29 @@ class LocalObstacleMap:
         k = (np.arange(n.sum()) - np.repeat(np.cumsum(n) - n, n)) * step
         return (origin + dirs[idx] * k[:, None])[:, :2]
 
+    def _wedges(self, origin, dirs_grid, length_grid, wraps):
+        """Free space between horizontally adjacent rays of each row (rows x cols grids). Two adjacent rays that both
+        pass range r leave a gap of 2 r sin(dtheta/2); no obstacle at least `min_obstacle_width_m` wide (declared
+        profile: bars 0.4-0.8 m) can hide in it while that gap is narrower, so the wedge is FREE up to
+        min(len_a, len_b, r_gap). This is a declared-geometry assumption, not a sensor observation."""
+        if not self.p.wedge_fill:
+            return np.zeros((0, 2))
+        a, b = dirs_grid, np.roll(dirs_grid, -1, axis=1)
+        la, lb = length_grid, np.roll(length_grid, -1, axis=1)
+        if not wraps:
+            a, b, la, lb = a[:, :-1], b[:, :-1], la[:, :-1], lb[:, :-1]
+        dtheta = np.arccos(np.clip(np.einsum("rcx,rcx->rc", a, b), -1.0, 1.0))
+        with np.errstate(divide="ignore"):
+            r_gap = np.where(dtheta > 1e-9, self.profile.min_obstacle_width_m / (2.0 * np.sin(dtheta / 2.0)), np.inf)
+        length = np.minimum(np.minimum(la, lb), r_gap).reshape(-1)
+        a, b = a.reshape(-1, 3), b.reshape(-1, 3)
+        pts = []
+        for f in np.linspace(0.0, 1.0, self.p.wedge_substeps + 2)[1:-1]:
+            d = a * (1.0 - f) + b * f
+            d = d / np.linalg.norm(d, axis=1, keepdims=True)
+            pts.append(self._ray_samples(origin, d, length))
+        return np.concatenate(pts) if pts else np.zeros((0, 2))
+
     def _hits(self, origin, dirs, ranges):
         pts = origin + dirs * ranges[:, None]
         in_band = np.abs(pts[:, 2] - self.z_ref) <= self.p.band_half_m
@@ -170,7 +195,9 @@ class LocalObstacleMap:
             hit, noret, near = cat == VALID_HIT, cat == NO_RETURN, cat == NEAR_CLIPPED
             n_near = int(near.sum()); n_l = int((hit | noret).sum())
             length = np.where(hit, r - self.p.hit_backoff_m, np.where(noret, self.profile.lidar_no_return_m, 0.0))
-            free_l = self._cell_set(self._ray_samples(pos, dirs, length))
+            wedge = self._wedges(pos, dirs.reshape(self.lidar.vbeams, self.lidar.hbeams, 3),
+                                 length.reshape(self.lidar.vbeams, self.lidar.hbeams), True)
+            free_l = self._cell_set(np.concatenate([self._ray_samples(pos, dirs, length), wedge]))
             occ_l = self._cell_set(self._hits(pos, dirs[hit], r[hit]))
         else:
             reasons.append("LIDAR_NOT_INTEGRATED")
@@ -182,8 +209,10 @@ class LocalObstacleMap:
             hit, noret, near = cat == VALID_HIT, cat == NO_RETURN, cat == NEAR_CLIPPED
             n_near += int(near.sum()); n_c = int((hit | noret).sum())
             # 10 m no-return: free up to the far plane, never beyond (the far end stays UNKNOWN).
-            length = np.where(hit, d - self.p.hit_backoff_m, np.where(noret, self.profile.obstacle_far_m - self.p.cell_m, 0.0))
-            free_c = self._cell_set(self._ray_samples(origin, dirs, np.nan_to_num(length)))
+            length = np.nan_to_num(np.where(hit, d - self.p.hit_backoff_m, np.where(noret, self.profile.obstacle_far_m - self.p.cell_m, 0.0)))
+            w, h = self.profile.obstacle_native_wh
+            wedge = self._wedges(origin, dirs.reshape(h, w, 3), length.reshape(h, w), False)
+            free_c = self._cell_set(np.concatenate([self._ray_samples(origin, dirs, length), wedge]))
             occ_c = self._cell_set(self._hits(origin, dirs[hit], d[hit]))
         else:
             reasons.append("CAMERA_OBSTACLE_DEPTH_NOT_INTEGRATED")

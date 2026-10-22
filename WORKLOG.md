@@ -22744,3 +22744,35 @@ between native camera rays (2.72°) at 9.5 m is unobserved. Known limits:
 - the ttl values are declared priors, not calibrated.
 
 GPU NOT_RUN, G5 HOLD. Next: Phase 3, the candidate planner.
+
+## 2026-10-22 — Q03 Phase 3: reacquisition candidate planner v0 + pipeline integration (CPU)
+
+`motar_eval/q02/reacq_planner.py`.
+- **Candidates:** rotate in place, left and right detours (0.75 / 1.5 m), advance, retreat. Each ends facing the belief mean,
+  with a rate-limited trapezoidal trajectory.
+- **Score:** sigma-point view shares (clear / unknown / blocked) through the map, kept apart from hard feasibility.
+- **Feasibility levels:** L1 observed direction open; L2 kinematic check (path in observed-free space for the body radius;
+  speed, yaw, velocity-cancel and travel-time caps; stopping distance inside known-free space); L3 dynamics and L4
+  closed-loop safety are always NOT_VALIDATED (no qualified plant model, no trajectory follower).
+- **Plan status:** NO_FEASIBLE_PLAN unless a candidate passes L2 with a view gain.
+- **Reuse from `motar_eval/boia` (torch):** `fov_mask` and `braking_distance` are numpy ports, equality-tested against the
+  originals (the first `fov_mask` port was wrong, az/el instead of the pinhole frustum, and the equality test caught it).
+  `known_free` was already ported in Phase 1. `boia.candidates` (F-command arcs) and `boia.dynamics.rollout` (unqualified)
+  are not used.
+- **Map addition:** free space between adjacent rays is filled only where no obstacle of the declared minimum width (0.40 m)
+  can hide (LiDAR ≤ 4.6 m, native camera ≤ 8.4 m). This is a declared-geometry assumption.
+- **Pipeline:** the Q02-B pipeline now uses this map (per episode) and planner. Records carry `local_map_status` and a
+  `candidate_summary` (L1 / L2 / L2-with-gain counts, L3 / L4 NOT_VALIDATED); timing features read them.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q03_planner.py` | 13 OK (10 required scenarios, port equality, score vs feasibility, determinism, pipeline record) |
+| `tests/test_q03_local_map.py` / `test_q02b_timing.py` / `test_q02_evidence.py` | 12 / 29 / 49 OK |
+| Cost (single measurements, 1 BLAS thread) | map integrate ~70–85 ms per frame with wedge fill; plan ~20–70 ms |
+
+Known limits:
+- straight-line viewpoints only, no search;
+- the visibility score is uncalibrated;
+- the per-decision cost is near the 0.1 s decision period on CPU, an optimisation item (duplicate validate, wedge sampling).
+
+GPU NOT_RUN, G5 HOLD.

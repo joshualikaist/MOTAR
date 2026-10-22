@@ -9,7 +9,8 @@ import math
 
 import numpy as np
 
-from . import candidates as cd
+from . import obstacle_map as om
+from . import reacq_planner as rp
 from .geometry import quat_yaw_xyzw, world_to_vehicle, yaw_rotation
 from .history import ORACLE_PROXY
 
@@ -53,14 +54,14 @@ def extract(inp, record, loss, local_map, candidate_records, plan_status, recent
                sensor_disagreement=any(r.startswith("SENSOR_DISAGREEMENT") for r in record.reasons),
                near_obstacle_warning=record.near_obstacle_warning)
     clearance = None
-    if local_map is not None:
-        d = (np.min(np.linalg.norm(local_map.hits_xy - np.asarray(local_map.origin_xy), axis=1))
-             if local_map.hits_xy.size else None)
-        clearance = dict(nearest_observed_hit_m=None if d is None else float(d),
-                         forward_known_free_m=float(np.min(local_map.radii[np.abs(local_map.beam_az) <= math.radians(45)])))
-    feasible = [c for c in candidate_records if c.status == cd.FEASIBLE]
-    nonblocked = [c for c in candidate_records if c.status not in (cd.INFEASIBLE_BLOCKED, cd.INFEASIBLE_DYNAMICS)]
-    gains = [c.visibility_gain for c in feasible]
+    if isinstance(local_map, om.LocalObstacleMap) and local_map.frames and "pose:" not in " ".join(record.validation_problems):
+        now = float(inp.decision_s)
+        clearance = dict(non_free_clearance_m=float(local_map.clearance(np.asarray(inp.position[:2], float), now)),
+                         map_validity=local_map.validity(now))
+    feasible = [c for c in candidate_records if c.l2_kinematic_check == rp.PASS and "NO_VISIBILITY_GAIN" not in c.reasons]
+    nonblocked = [c for c in candidate_records if c.l1_observed_direction_open == rp.PASS]
+    gains = [dict(clear_share=c.visibility_score, blocked_reduction=round(c.current_blocked_share - c.visibility_blocked_share, 6))
+             for c in feasible]
     cand_reason = "NO_CANDIDATES_EVALUATED" if not candidate_records else plan_status or "NO_FEASIBLE_PLAN"
     feats = (
         _f("ever_acquired", bool(loss.ever_acquired), "DEBOUNCED_CAMERA_DETECTIONS_WITH_TRACK_CONSISTENCY"),
@@ -74,13 +75,14 @@ def extract(inp, record, loss, local_map, candidate_records, plan_status, recent
         _f("occlusion_evidence", occ, "Q02A_EVIDENCE_RULE_UNCALIBRATED"),
         _f("fov_status", fov, "BELIEF_SIGMA_POINTS_VS_PINHOLE", "NO_BELIEF_GEOMETRY"),
         _f("sensor_validity", dict(problems=record.validation_problems), "Q02A_VALIDATION"),
-        _f("local_clearance", clearance, "LIDAR_SINGLE_SCAN_KNOWN_FREE", "NO_LOCAL_MAP"),
-        _f("candidate_count", len(feasible) if candidate_records else None, "Q02B_VIEWPOINT_LATTICE_METADATA", cand_reason),
-        _f("candidate_visibility_gain", max(gains) if gains else None, "ORDINAL_VIEW_CLASS_CHANGE_BLOCKED_UNKNOWN_CLEAR", cand_reason),
+        _f("local_clearance", clearance, "Q03_LOCAL_MAP_V0_DISTANCE_TO_NON_FREE", "NO_LOCAL_MAP"),
+        _f("candidate_count", len(feasible) if candidate_records else None, "Q03_PLANNER_V0_L2_PASS_WITH_VIEW_GAIN", cand_reason),
+        _f("candidate_visibility_gain", max(gains, key=lambda g: (g["clear_share"], g["blocked_reduction"])) if gains else None,
+           "SIGMA_POINT_SHARES_UNCALIBRATED", cand_reason),
         _f("candidate_travel_time", min(c.travel_time_s for c in feasible) if feasible else None,
-           "DECLARED_SPEED_AND_YAW_CAPS", cand_reason),
-        _f("candidate_unknown_exposure", min(c.path_unknown_fraction for c in nonblocked) if nonblocked else None,
-           "PATH_SAMPLE_FRACTION_IN_UNKNOWN", cand_reason),
+           "TRAPEZOID_PROFILE_DECLARED_CAPS", cand_reason),
+        _f("candidate_unknown_exposure", min(c.unknown_exposure for c in nonblocked) if nonblocked else None,
+           "PATH_SAMPLE_FRACTION_NOT_FREE", cand_reason),
         _f("recent_loss_events", int(loss.recent_loss_events), "DEBOUNCED_HISTORY_WINDOW"),
         _f("recent_switch_count", int(recent_switches), "SHADOW_STATE_MACHINE_WINDOW"),
         _f("detector_provenance", dict(lineage=loss.detection_provenance, realism="NOT_REALISTIC_ORACLE_PROXY"
