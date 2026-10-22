@@ -68,6 +68,34 @@ Within the seven-seed replication, the historical pooled stopping window attenua
 [Canonical status](results/target_motion_replication_7seed/summary.json) ·
 [Analysis](results/target_motion_replication_7seed/analysis.json).
 
+## Current Research Extension — BOIA (October 2026)
+
+BOIA investigates sensor-evidence-based intervention timing for moving-target interception
+(close approach) in unknown cluttered environments: when to continue Frozen F tracking and
+when to propose active reacquisition after observation loss. First acquisition is outside
+this extension. The RGB-D Camera + LiDAR contract, Frozen F checkpoint and actor remain unchanged.
+
+The proposed path connects sensor evidence, target belief and a local obstacle representation
+to candidate reacquisition planning and intervention timing. Evaluation is shadow-only;
+reacquisition proposals do not command the vehicle.
+
+| Milestone | Verified development status |
+| --- | --- |
+| Q01-V2 | Implemented; bounded native/OFF/ON shadow parity qualified for the recorded profile |
+| Q02-A v2.6 | Implemented, CPU Tested, Independently Reviewed: `PASS_WITH_EXPLICIT_IDENTITY_LIMITATIONS`; residual P2 H1/H2 |
+| Q02-B | CPU Tested; independent review FAIL with two P1 findings; HOLD until corrected |
+| Q03 | Map and L1/L2 planner CPU Tested; independent review FAIL on P1-2; L3/L4 unvalidated |
+| Q04 | Design only; D0 HOLD pending fixes, preregistration and separate GPU approval |
+
+**Verification boundary:** actual occlusion accuracy is NOT VALIDATED; persistent same-target
+identity is NOT CONFIRMED. The oracle-derived simulator detector is not a real-image detector.
+Capture improvement, online intervention and physical safety are unmeasured; G5 HOLD and further
+GPU work on hold pending separate approval. The latest research PUBLIC_CPU receipt is 3,177 run,
+0 failures, 10 skips and 4 errors (aggregate FAIL); this is separate from the public-release CPU profile. [Progress and limitations](docs/research/boia-progress.md) ·
+[Source-bound evidence](docs/status/data/boia-progress.json) · [Website section](docs/status/index.html#boia).
+The Code link still targets the separate `MOTAR-public` release; these local research snapshots
+are provenance references, not newly published research-code links.
+
 ## Repository Structure
 
 | Path | Contents |

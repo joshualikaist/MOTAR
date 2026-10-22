@@ -1,0 +1,312 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-10-22",
+  "kind": "development_progress_not_efficacy",
+  "research_branch": "codex/mt-p1",
+  "research_snapshot": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+  "latest_committed_progress_snapshot": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+  "sensor_contract": "RGB-D Camera + LiDAR",
+  "frozen_f_changed": false,
+  "actor_changed": false,
+  "scope": "shadow_only_no_online_intervention",
+  "first_acquisition": "OUT_OF_SCOPE",
+  "g5": "HOLD",
+  "further_gpu": "SEPARATE_APPROVAL_REQUIRED",
+  "q01": {
+    "version": "Q01-V2",
+    "verdict": "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL",
+    "scope": "bounded_profile_evaluator_noninterference_not_algorithm_efficacy",
+    "recorded_gpu_run_completed": true
+  },
+  "q02a": {
+    "version": "v2.6",
+    "source_commit": "3fb9050a318e1ac6c7b27be42589a0d3f76c2f04",
+    "review_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+    "review_verdict": "PASS_WITH_EXPLICIT_IDENTITY_LIMITATIONS",
+    "p0": 0,
+    "p1": 0,
+    "residual_p2": [
+      "H1",
+      "H2"
+    ],
+    "focused_cpu": {
+      "run": 49,
+      "passed": 49
+    },
+    "research_public_cpu": {
+      "run": 3114,
+      "failures": 0,
+      "errors": 4,
+      "aggregate": "FAIL",
+      "existing_errors": "DetectReduction; motar-6nn.5"
+    },
+    "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+    "reviewed_profile": [
+      "SPHERE",
+      "NO_DISTRACTORS",
+      "MATCHING_RUNTIME_CONFIGURATION"
+    ],
+    "occlusion_accuracy": "NOT_VALIDATED",
+    "persistent_identity": "NOT_CONFIRMED",
+    "best_identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "utility": "ABSTAIN",
+    "capture_improvement": "NOT_MEASURED",
+    "physical_safety": "NOT_VALIDATED",
+    "real_flight": "NOT_VALIDATED"
+  },
+  "milestones": {
+    "Q01": "RUNTIME_QUALIFIED",
+    "Q02-A": "CPU_TESTED_INDEPENDENTLY_REVIEWED_WITH_LIMITS",
+    "Q02-B": "CPU_TESTED_INDEPENDENT_REVIEW_FAIL_HOLD",
+    "Q03": "CPU_TESTED_INDEPENDENT_REVIEW_FAIL_HOLD",
+    "Q04": "DESIGN_ONLY_D0_HOLD"
+  },
+  "q02b": {
+    "source_commit": "031e77ca1163cd6670fb03f523cb8c4ed334cba2",
+    "review_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+    "phase": "PHASE6_REVIEWED_HOLD",
+    "phase1_integrated": true,
+    "recorded_cpu_tests": 29,
+    "package_suite_tests": 112,
+    "package_suite_status": "PASS",
+    "package_complete": false,
+    "independent_review_complete": true,
+    "independent_review_verdict": "FAIL",
+    "review_findings": {
+      "p0": 0,
+      "p1": 2,
+      "p2": 9
+    },
+    "p1_1": "NOT_TESTABLE decisions incorrectly advance loss clocks as misses",
+    "p1_2": "see Q03 current-velocity stopping-screen defect",
+    "control": "NONE",
+    "benchmark_values_invalidated": false,
+    "next": "Fix P1-1, P1-2 and trigger-met telemetry issue; obtain delta review before Q04-D0"
+  },
+  "q03": {
+    "source_commit": "031e77ca1163cd6670fb03f523cb8c4ed334cba2",
+    "local_map_cpu_tests": 12,
+    "planner_cpu_tests": 15,
+    "planner_level": "L1_L2_ONLY",
+    "planner_review": "FAIL_P1_2",
+    "local_map": "CPU_TESTED",
+    "planner_executor": "L1_L2_CPU_TESTED_NO_EXECUTOR",
+    "l3_l4": "NOT_VALIDATED",
+    "physical_free_volume_certificate": false,
+    "independent_review_complete": true
+  },
+  "beads": {
+    "motar-3p3.26": {
+      "title": "Q02-B: evaluator-side labels design, Module C v0 local map, Module D v0 candidate features (CPU)",
+      "status": "open",
+      "updated_at": "2026-10-22T11:24:00Z"
+    },
+    "motar-3p3.27": {
+      "title": "Q02-A evidence-rule fixes: 10 m obstacle-depth far plane (P0), LiDAR beam window (P1), zero-value fail-open (P1)",
+      "status": "closed",
+      "updated_at": "2026-10-22T11:23:59Z"
+    },
+    "motar-3p3.28": {
+      "title": "Q02-A v2.7: identity-fit P2 follow-up (H1 tie/rival rule, H2 closed-form seeds, H4 runtime_env geometry check)",
+      "status": "open",
+      "updated_at": "2026-10-22T11:24:00Z"
+    }
+  },
+  "sources": {
+    "q01_report": {
+      "path": "docs/evidence/boia_shadow_q01_v2_run_2026-10-21/REPORT.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "8d286cd56c845a82cdfaeec2d942fb90dc80b81e",
+      "sha256": "c0abffb5bf868b52093e8cf845a033cecbef3c208537360e040d7ba0026c1ced",
+      "public_url": null
+    },
+    "q01_result": {
+      "path": "docs/evidence/boia_shadow_q01_v2_run_2026-10-21/result.json",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "8d286cd56c845a82cdfaeec2d942fb90dc80b81e",
+      "sha256": "103913803fff87ba8893cd6cf4ee76444923f76188bee41167140399790d7f6a",
+      "public_url": null
+    },
+    "q02_original_spec": {
+      "path": "docs/research/q02_evidence_aware_reacquisition/Q02A_SPEC.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "a5fee455f7305294566060070e2434ba6ea2acdc",
+      "sha256": "c9c96168bde41533435c18f6d36f849c8d692b2341140a05fcfe696483143004",
+      "public_url": null
+    },
+    "q02_handoff": {
+      "path": "docs/research/q02_evidence_aware_reacquisition/HANDOFF.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "a5fee455f7305294566060070e2434ba6ea2acdc",
+      "sha256": "17e1c2ae5ff734174ff90ef9baf75b336d462990554b70f7226c747d467fde6c",
+      "public_url": null
+    },
+    "q02_v25_repair": {
+      "path": "docs/evidence/q02a_v25_repair_2026-10-22/REPAIR.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "5fc64a3e901720fe61ee26d9a30aba7b53f7d3c6",
+      "sha256": "e7e89a053909d1f349aecc3f0f3104fb7f50919f96bb4dba32defeb7afc4e8b6",
+      "public_url": null
+    },
+    "q02_v25_review": {
+      "path": "docs/evidence/q02a_v25_opus_final_review_2026-10-22/REVIEW.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "a59a7bb7e80ffb0b07dab02840da35f873ec4c17",
+      "sha256": "a6efa4319d922df4b85f43f342b915c59cf0936efae2802184269b375a7630a1",
+      "public_url": null
+    },
+    "q02_v26_repair": {
+      "path": "docs/evidence/q02a_v26_repair_2026-10-22/REPAIR.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "3fb9050a318e1ac6c7b27be42589a0d3f76c2f04",
+      "sha256": "9549e64fbaf629a2e8cbacdc3c02cd97a1a5fdf877ed954a724cd8411dbaa60a",
+      "public_url": null
+    },
+    "q02_v26_review": {
+      "path": "docs/evidence/q02a_v26_opus_review_2026-10-22/REVIEW.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "sha256": "58da31827febeb1f320848ff65c08f347284e5dce88fcb6f844843fac9eab853",
+      "public_url": null
+    },
+    "master_plan": {
+      "path": "docs/research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md",
+      "snapshot_commit": "95196b5eb6948401be7e43419ef20a98f8b3baf8",
+      "file_commit": "f6a0ce6b17f46c28a4477df2b914cfac1eb5d2d7",
+      "sha256": "072dcef673f4c3ab201737fe9113623fc7af03f9a20ffbc47bb5d14f4c0e45af",
+      "public_url": null
+    },
+    "q02b_phase1_worklog": {
+      "path": "WORKLOG.md",
+      "snapshot_commit": "6ea21de21c852e08bf53e94f4121589edac5450e",
+      "file_commit": "6ea21de21c852e08bf53e94f4121589edac5450e",
+      "sha256": "c1e5978bd137d318ee47da4eecde201a1f71188c2b36841c0ce11bd314124c0a",
+      "public_url": null
+    },
+    "q03_local_map_worklog": {
+      "path": "WORKLOG.md",
+      "snapshot_commit": "363303bc83e24c5df91a703fa3df13ce56c130ed",
+      "file_commit": "363303bc83e24c5df91a703fa3df13ce56c130ed",
+      "sha256": "ae64d0bedb17856d58afee49b27dbfbeda5a4b5b8ddeaca7550da1387adfa486",
+      "public_url": null
+    },
+    "q02b_q03_independent_review": {
+      "path": "docs/evidence/q02b_q03_opus_review_2026-10-22/REVIEW.md",
+      "snapshot_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "file_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "sha256": "8cb1f965cb05f24f406079ce0901133655d65c43fadecd02a2f50c57a23e2539",
+      "public_url": null
+    },
+    "q02b_q03_handoff": {
+      "path": "docs/research/q02_evidence_aware_reacquisition/HANDOFF_Q02B_Q03_2026-10-22.md",
+      "snapshot_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "file_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "sha256": "6a9c53878126fb0a365039436fb7780a566650efaae213f24f04c0ac946345c3",
+      "public_url": null
+    },
+    "q02b_q03_suite_receipt": {
+      "path": "docs/evidence/q02b_q03_cpu_package_2026-10-22/suite_receipt.txt",
+      "snapshot_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "file_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "sha256": "364da93d619be584e2d5526543dbe150584e6176c847788eb3341ce43fd439d6",
+      "public_url": null
+    },
+    "q02b_q03_public_cpu_receipt": {
+      "path": "docs/evidence/q02b_q03_cpu_package_2026-10-22/public_cpu_receipt.txt",
+      "snapshot_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "file_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+      "sha256": "0cb4dd4991a05835ea34b895e86a796865459a631ace24c26ebebb4955ce6caf",
+      "public_url": null
+    }
+  },
+  "scratch_design_provenance": {
+    "README.txt": {
+      "sha256": "2c7d475fd3f679f6997225cf3bd6b5dee733e3ef4cf93ff6af609b34b562e858",
+      "committed": false,
+      "public_url": null
+    },
+    "docs/BOIA_TIMING_EXPERIMENT_PLAN.md": {
+      "sha256": "cc14f6da266ae00384bdc30604523ef905ab844d2760a956522cba56bdae8d18",
+      "committed": false,
+      "public_url": null
+    }
+  },
+  "source_extracts": {
+    "focused_cpu": {
+      "source": "q02_v26_repair",
+      "text": "**49 OK**"
+    },
+    "research_public_cpu": {
+      "source": "q02_v26_repair",
+      "text": "**PUBLIC_CPU:** 3114 ran, 0 failures, 4 errors"
+    },
+    "review": {
+      "source": "q02_v26_review",
+      "text": "## Verdict: PASS_WITH_EXPLICIT_IDENTITY_LIMITATIONS"
+    },
+    "q02b_phase1_cpu": {
+      "source": "q02b_phase1_worklog",
+      "text": "`tests/test_q02b_timing.py` | 29 OK"
+    },
+    "q03_local_map_cpu": {
+      "source": "q03_local_map_worklog",
+      "text": "`tests/test_q03_local_map.py` | 12 OK"
+    },
+    "q02b_q03_review": {
+      "source": "q02b_q03_independent_review",
+      "text": "Verdict: FAIL as a stage gate; 0 P0, 2 P1, 9 P2"
+    },
+    "focused_package_suites": {
+      "source": "q02b_q03_suite_receipt",
+      "text": "112 tests OK across six focused suites"
+    },
+    "latest_public_cpu": {
+      "source": "q02b_q03_public_cpu_receipt",
+      "text": "Ran 3177 tests; failures=0, errors=4, skipped=10"
+    }
+  },
+  "source_corrections": [
+    "Q01 completed result supersedes stale NOT_RUN entries in the master plan.",
+    "Initial SPEC/HANDOFF and initial validation.json describe v1, not v2.6.",
+    "Final Opus review corrects repair-record residual attribution and tie/rival wording.",
+    "Research PUBLIC_CPU aggregate FAIL is separate from the public-release CPU profile.",
+    "Q02-B/Q03 Phase 6 review at fde21cd supersedes earlier notes that independent review was pending; verdict FAIL/HOLD."
+  ],
+  "availability": {
+    "code_link": "https://github.com/joshualikaist/MOTAR-public",
+    "research_commits_linked_as_public": false,
+    "research_code_included_in_docs_branch": false
+  },
+  "q04": {
+    "status": "DESIGN_ONLY_D0_HOLD",
+    "preregistration": "NOT_FINAL",
+    "execution": "NOT_RUN",
+    "blocked_by": [
+      "Q02B_P1_1",
+      "Q03_P1_2",
+      "TRIGGER_MET_TELEMETRY"
+    ]
+  },
+  "focused_package_suites": {
+    "total_tests": 112,
+    "passed": 112,
+    "failed": 0,
+    "components": {
+      "Q02-A": 49,
+      "Q02-B": 29,
+      "Q03_map": 12,
+      "Q03_planner": 15,
+      "benchmark_metrics": 2,
+      "noninterference": 5
+    },
+    "review_gate": "FAIL_HOLD"
+  },
+  "latest_public_cpu": {
+    "run": 3177,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "aggregate": "FAIL",
+    "known_errors": "Warp DetectReduction: vec3f argument conversion"
+  }
+}

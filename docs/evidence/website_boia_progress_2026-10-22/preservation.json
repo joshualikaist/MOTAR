@@ -1,0 +1,14 @@
+{
+  "baseline": "origin/main 2da5b12c1954ee768fcba59d1fb1fb9c78f7d536",
+  "checks": {
+    "original_readme_preserved_verbatim_after_removing_BOIA_section": true,
+    "index_historical_content_preserved_verbatim_after_removing_BOIA_additions": true,
+    "evidence_historical_content_preserved_verbatim_after_removing_BOIA_additions": true,
+    "no_runtime_or_research_source_files_in_scope": true,
+    "raw_checkpoint_policy_f_stash_and_main_wip_unchanged": true,
+    "historical_result_figures_and_browser_viewer_unchanged": true,
+    "remote_base_is_ancestor_of_candidate_branch": true,
+    "no_force_push_or_history_rewrite": true
+  },
+  "pass": true
+}

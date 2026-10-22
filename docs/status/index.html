@@ -8,6 +8,7 @@
 <title>MOTAR · Moving Object Tracking And Rendezvous</title>
 <link rel="stylesheet" href="style.css?v=20260924">
 <link rel="stylesheet" href="site.css?v=20260924">
+<link rel="stylesheet" href="boia-progress.css?v=20261022">
 </head>
 <body class="project">
 <a class="skip-link" href="#main">Skip to content</a>
@@ -30,8 +31,9 @@
 <p class="expansion">Moving Object Tracking And Rendezvous</p>
 <p class="subtitle">Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields</p>
 <p class="thesis">MOTAR studies the full evidence chain from measured perception uncertainty to policy behaviour, safety geometry, target-motion generalization, and observation sensitivity under frozen UAV policies.</p>
-<p class="meta"><span>joshualikaist</span><span>Updated 26 September 2026</span><span>Software record; no published MOTAR paper</span></p>
+<p class="meta"><span>joshualikaist</span><span>Research progress updated 22 October 2026</span><span>Historical results unchanged</span></p>
 <p class="hero-links"><a href="https://github.com/joshualikaist/MOTAR-public">Code</a><a href="evidence.html">Full evidence</a><a href="https://github.com/joshualikaist/MOTAR/blob/main/docs/REPRODUCIBILITY.md">Reproducibility</a><a href="https://github.com/joshualikaist/MOTAR-public/blob/main/CITATION.cff">Citation</a></p>
+<p class="boundary"><a href="#boia">October research extension: active reacquisition / BOIA</a> · development status, not a new performance result.</p>
 </header>
 
 <ul class="callouts" aria-label="Three key results">
@@ -140,6 +142,36 @@
 </figure>
 </section>
 </div>
+
+<section class="block boia-progress" id="boia" aria-labelledby="boia-title" data-boia-record="data/boia-progress.json">
+<p class="num">Current research · October 2026</p>
+<h2 id="boia-title">Current Research: Active Reacquisition / BOIA</h2>
+<p class="boia-source">Development snapshot through local research commit <code>fde21cd</code>, 22 October 2026. Later work is outside this snapshot.</p>
+<p>When observations of an already acquired moving target are lost in unknown clutter, should the UAV continue Frozen F tracking or propose active reacquisition? BOIA studies this intervention-timing question using RGB-D Camera + LiDAR evidence, permitted target belief and local obstacle information. First acquisition is outside scope. Frozen F, its checkpoint and actor remain unchanged.</p>
+<figure aria-labelledby="boia-flow-caption">
+<ol class="boia-flow" aria-label="Proposed BOIA information and decision flow">
+<li><strong>Frozen PPO tracking</strong><span>Frozen F keeps control</span></li>
+<li><strong>Target observation loss</strong><span>After prior acquisition</span></li>
+<li><strong>Evidence &amp; target belief</strong><span>RGB-D + LiDAR; local obstacles</span></li>
+<li><strong>BOIA decision</strong><span>Candidate planning and intervention timing are being developed</span></li>
+<li><strong>CONTINUE</strong><span class="planned">REACQUIRE PROPOSAL — PLANNED; no online command</span></li>
+</ol>
+<figcaption class="boia-caption" id="boia-flow-caption">Architecture schematic, not a rollout. Current validation is shadow-only; utility remains ABSTAIN. Reacquisition planning, execution and timing-policy comparisons are future stages.</figcaption>
+</figure>
+<div class="boia-table" role="region" aria-label="BOIA milestone status" tabindex="0">
+<table><thead><tr><th scope="col">Milestone</th><th scope="col">Status</th><th scope="col">Evidence boundary</th></tr></thead><tbody>
+<tr data-boia-milestone="Q01"><td>Q01-V2</td><td>Implemented · Runtime qualified</td><td>Native/OFF/ON shadow parity passed for the recorded bounded profile. No algorithm efficacy test.</td></tr>
+<tr data-boia-milestone="Q02-A"><td>Q02-A v2.6</td><td>Implemented · CPU Tested · Independently Reviewed</td><td>PASS_WITH_EXPLICIT_IDENTITY_LIMITATIONS. No P0/P1 in that review; residual P2 H1/H2 remain.</td></tr>
+<tr data-boia-milestone="Q02-B"><td>Q02-B</td><td>CPU Tested · Independent review FAIL · HOLD</td><td>Review found two uncorrected P1 defects in loss counting and current-velocity stopping checks; no action executor.</td></tr>
+<tr data-boia-milestone="Q03"><td>Q03</td><td>CPU Tested · Independent review FAIL · HOLD</td><td>The L1/L2 planner shares the current-velocity P1 issue. L3/L4 are NOT_VALIDATED; no executor or physical free-volume certificate.</td></tr>
+<tr data-boia-milestone="Q04"><td>Q04</td><td>Design only · D0 HOLD</td><td>Resolve Q02-B P1 defects and trigger reporting first; preregistration and separate GPU approval remain required.</td></tr>
+</tbody></table>
+</div>
+<p>Q02-A separates detection, geometric footprint consistency, upstream association and identity uncertainty. Its focused CPU checks pass. Q02-B/Q03 have focused CPU coverage, but the independent review found two P1 defects and both remain on HOLD. The <a href="evidence.html#boia">evidence page</a> states the counts and review scope separately from the public-release CPU profile.</p>
+<p class="boia-limit"><strong>Not validated.</strong> Actual occlusion accuracy is NOT VALIDATED. Persistent same-target identity is NOT CONFIRMED. The detector provenance is <code>ORACLE_TRUE_POSE_RASTER</code>, not a real-image detector. The reviewed profile is spherical-target, no-distractor only; synthetic corner failures and conservative rejection remain. No capture improvement, online flight safety or real-flight validation has been measured. G5 HOLD; further GPU work requires separate approval.</p>
+<p>Next: fix Q02-B P1-1 and Q03 planner P1-2, address trigger-reason reporting before Q04-D0, then obtain a delta review. Q04-D0 remains on hold pending a preregistration and separate GPU approval; L3/L4 and any executor remain unvalidated.</p>
+<p class="boia-source"><a href="../research/boia-progress.md">Research summary and source map</a> · <a href="data/boia-progress.json">Machine-readable progress record</a> · <a href="evidence.html#boia">Verification details</a>. Code links continue to the separate <a href="https://github.com/joshualikaist/MOTAR-public">MOTAR-public release</a>; this update does not publish the local BOIA research implementation or link local commits as public artifacts. The browser GT preview below remains separate from BOIA.</p>
+</section>
 
 <section class="block" id="reproducibility" aria-labelledby="repro-title">
 <p class="num">09</p>

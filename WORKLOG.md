@@ -19970,3 +19970,17 @@ commit `2f723ed`, push됨). 분석은 커밋된 `analyze`만. 기록: `results/t
   will be rechecked before reporting deployment complete. Local paths/anchors validated.
 - Next concrete step: normal fast-forward push of the reviewed result and surface commits, verify all
   43 remote links and the deployed HTML/figure bytes, then stop. No new scientific hypothesis tested.
+
+## 2026-10-22 — BOIA website update prepared for Pages review
+
+Prepared a documentation-only publishing commit on top of remote main 2da5b12. This branch
+does not carry the 20 local-only main commits. The BOIA progress snapshot is pinned to the
+local research review commit fde21cd: Q02-B/Q03 remain HOLD after the independent review
+reproduced two unfixed P1 findings. The README and both site pages now state that result.
+No research source, Raw output, checkpoint, Policy F, simulator or PPO file is included.
+
+The preview compares remote main with the candidate in software-rendered Chrome at desktop,
+tablet and mobile sizes. The 58 documentation tests, public-doc checker, site JavaScript
+checks and 12 browser layout checks pass. Existing result figures and viewer behavior are
+preserved. This records the reviewed candidate; GitHub Pages publication is verified after
+the authorized remote push.
