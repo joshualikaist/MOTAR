@@ -19,7 +19,7 @@ non-preregistration path. It becomes a preregistration only when it is copied, c
 
 | Q04 stage | Needs | State on 2026-10-22 |
 | --- | --- | --- |
-| Q04-D0: CONTINUE-only shadow data (F0 arm with all five shadow triggers logged) | the Q02-B/Q03 pipeline as an observer, evaluator labels, approval for a GPU run | **READY_FOR_PREREG** (CPU code exists; the observer tap and evaluator labels are designs) |
+| Q04-D0: CONTINUE-only shadow data (F0 arm with all five shadow triggers logged) | the Q02-B/Q03 pipeline as an observer, evaluator labels, approval for a GPU run | **HOLD**. The CPU code exists, and the observer tap and evaluator labels are designs. It becomes READY_FOR_PREREG only after Opus review P1-1 and P1-2 (loss counting, L2 current velocity) and P2-2 (trigger-met flag) are fixed and re-reviewed |
 | Q04-D1: paired CONTINUE vs REACQUIRE branches (labels for ΔU) | an executor that turns a candidate into Frozen F's velocity/yaw-rate command; candidates qualified at L3 | **BLOCKED**: no executor; L3/L4 are NOT_VALIDATED |
 | Q04-L: learning E[ΔU \| h] | D1 data | **BLOCKED** on D1 |
 | Q04-C: closed-loop comparison F0/H1/H2/H3/BOIA | an executor, L3/L4 evidence and a learned or abstaining BOIA rule | **BLOCKED** |
@@ -178,7 +178,7 @@ Conditioning on any of them is post-intervention selection bias. For example, "l
 | Endpoint | Denominator |
 | --- | --- |
 | Reacquisition | eligible episodes |
-| Time to reacquisition and time to capture | successes, censored at the cap and reported as censored |
+| Time to reacquisition and time to capture | **all eligible episodes**, right-censored at the cap (Kaplan–Meier / RMST). Never conditioned on success, because that is survivor selection (Opus review P2-7) |
 | Collision rate and out-of-bounds rate | all episodes |
 | Mode switches | per episode |
 | Host latency | per decision |
@@ -205,7 +205,7 @@ Reacquisition is reported separately from capture and is never substituted for i
 
 Only the trigger differs. Detector variants are separate experiments.
 
-**Sample size.** Not fixed here. The confirmatory B3−B2 design recommended after the HR3-P01 pilot needed 141 matched events,
+**Sample size.** Not fixed here. With seed as the unit, an exact sign-flip test over 8 seeds has a minimum two-sided p of 2/256 ≈ 0.0078, so Holm over four contrasts leaves almost no power. The seed count must be planned explicitly. The confirmatory B3−B2 design recommended after the HR3-P01 pilot needed 141 matched events,
 which shows the order of magnitude. The preregistration will set the number of seeds from a pilot
 discordance rate, with a cap.
 

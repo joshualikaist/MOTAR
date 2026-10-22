@@ -22855,3 +22855,45 @@ The staged WIP plans are adapted by copy; the originals are untouched.
 | C (closed-loop comparison) | BLOCKED | waits for an executor, L3/L4 and a learned or abstaining BOIA rule |
 
 Nothing was trained or run. GPU NOT_RUN, G5 HOLD.
+
+## 2026-10-22 — Q02-B/Q03 Phase 6 verification and Opus 5.5 independent review: FAIL (2 P1) → package HOLD
+
+**Verification**
+
+| Check | Result |
+| --- | --- |
+| Package suites | Q02-A 49, Q02-B 29, Q03 map 12, Q03 planner 15, benchmark metrics 2, new non-interference 5: all OK (`docs/evidence/q02b_q03_cpu_package_2026-10-22/suite_receipt.txt`) |
+| PUBLIC_CPU | 3177 ran, 0 failures, 10 skipped, 4 errors (`test_navrl_detect_resolution.DetectReduction`, known, `motar-6nn.5`). Not a full PASS (`public_cpu_receipt.txt`) |
+| Non-interference (`tests/test_q02b_q03_noninterference.py`) | no production reference to the package; no simulator, learning or RNG import; inputs immutable and byte-identical; GT-free signatures and sources; identical record digests across fresh processes with different hash and numpy seeds. Frozen F parity on the simulator NOT_RUN |
+| CPU cost (`cpu_cost.json`, 1 BLAS thread) | observe median 82 ms, p95 122 ms, max 186 ms; plan 68 ms; map integrate 10 ms; validate 0.2 ms; tracemalloc peak 16.4 MB; max RSS 74 MB |
+| Q01-V2 raw | 109 of 109 files match their four RAW_MANIFESTs |
+| WIP originals | all 11 staged files unchanged (SHA-256 prefixes) |
+
+The planner takes most of the decision time. The duplicate validate is negligible at 0.2 ms, so the earlier P2
+attribution of the runtime to the duplicate validate is refuted.
+
+**Review: Opus 5.5, fresh context, read-only (`docs/evidence/q02b_q03_opus_review_2026-10-22/REVIEW.md`, probes copied)**
+
+Verdict FAIL as a stage gate, with no P0. I reproduced both P1s:
+- **P1-1.** A flagged NOT_TESTABLE decision counts as a miss in `history.loss_state`. In the reproduction, H1 proposes
+  at the first occluded decision, with no debounce and no dwell.
+- **P1-2.** L2 ignores the current velocity: there is no cancel-displacement or current-speed braking screen, and
+  ROTATE has no stopping screen. In the reproduction, a vehicle moving at +2 m/s toward a bar 1.3 m ahead gets
+  L2 PASS candidates.
+
+Nine P2s are recorded. Of these:
+- P2-2 (trigger-met flag) is needed before D0.
+- Q04 §C was corrected for P2-7 (time-to-event over all eligible episodes with censoring, and the seed-count power
+  note).
+- The INTERFACES L1 wording now matches the code (P2-1).
+
+The committed Phase 4 benchmark is not invalidated: no scenario produces NOT_TESTABLE, and none has a moving
+vehicle.
+
+**Decision.** The package stop rule applies ("new P0/P1 → stop"), so no fix was applied. Q02-B and the Q03 planner
+are on HOLD, and Q04-D0 changes from READY_FOR_PREREG to HOLD.
+
+**Next.** With user approval, fix P1-1, P1-2 and P2-2 with regression tests, rerun the benchmark, and get an Opus
+delta review.
+
+GPU NOT_RUN, PPO NOT_RUN, G5 HOLD.

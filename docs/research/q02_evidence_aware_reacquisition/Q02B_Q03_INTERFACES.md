@@ -35,6 +35,9 @@ raises `TypeError`. It holds no simulator handle and draws no random numbers.
 - the NIS continuity gate passes: χ²₃(0.999) = 16.27 on consecutive tracker means;
 - the identity is not suspect.
 
+> **Open P1 (Opus review 2026-10-22, P1-1).** The current `loss_state` counts a flagged NOT_TESTABLE decision as a
+> miss, which contradicts "neither a hit nor a miss" below. Unfixed; the package is on HOLD.
+
 **Identity outcomes.**
 - **AMBIGUOUS or CONTRADICTED** makes the identity suspect. The decision is not a hit and the
   shadow decision is `IDENTITY_SUSPECT`.
@@ -80,7 +83,7 @@ The 2-D world-anchored grid is the simplest structure that keeps the following:
 - per-evidence time.
 
 **Cost, measured on CPU.**
-- Memory: four float64 120 × 120 arrays, about 0.46 MB.
+- Memory: three float64 120 × 120 timestamp arrays (free, occupied, conflict), 0.33 MB.
 - Integrate plus one plan: median 78 ms, p95 113 ms per decision in the Phase 4 benchmark
   (`shadow_benchmark.json`). The p95 is above the 0.1 s period; this is P2.
 
@@ -147,7 +150,7 @@ says the score is uncalibrated and is not a probability.
 
 | Level | Field | Meaning | Values it can take |
 | --- | --- | --- | --- |
-| L1 | `l1_observed_direction_open` | path not intersecting observed occupancy or conflict | PASS / FAIL |
+| L1 | `l1_observed_direction_open` | path not intersecting observed OCCUPIED cells. A CONFLICT cell does not fail L1, but it does fail L2 (Opus review P2-1) | PASS / FAIL |
 | L2 | `l2_kinematic_check` | L1, plus: the path is entirely in observed FREE for the 0.45 m body radius and the map is fresh; travel time ≤ 3 s, using a trapezoid speed profile (1.5 m/s, 2 m/s²), the velocity-cancel time (≤ 1 s) and the yaw-rate cap (3 rad/s); the stopping overshoot (the braking distance at peak speed beyond the endpoint, adapted from `boia.safety`) is in observed FREE for the body radius | PASS / FAIL |
 | L3 | `l3_dynamic_feasibility` | executable by the real controller/plant | **always NOT_VALIDATED** |
 | L4 | `l4_closed_loop_safety` | safe under closed-loop execution | **always NOT_VALIDATED** |
@@ -162,6 +165,10 @@ reasons:
 - `LOCAL_MAP_STALE`.
 
 There is no trajectory follower and nothing is connected to an executor.
+
+> **Open P1 (Opus review 2026-10-22, P1-2).** L2 does not screen the displacement during velocity cancellation or the
+> braking distance from the current speed, and ROTATE has no stopping screen. A moving vehicle can therefore get
+> L2 PASS toward a blocked overshoot. Unfixed; the package is on HOLD.
 
 ## 5. Timing features (`timing.py`)
 
