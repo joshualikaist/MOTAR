@@ -22716,3 +22716,31 @@ Adaptations:
 | H2 fixture (15 m target, TOO_FEW_INLIERS) | not a hit, never acquired (fail-safe) |
 
 No P0/P1 found in the Phase 1 scope. GPU NOT_RUN, G5 HOLD. Next: Phase 2, the Q03 local obstacle map.
+
+## 2026-10-22 — Q03 Phase 2: sensor-only local obstacle map v0 (CPU)
+
+`motar_eval/q02/obstacle_map.py`.
+- **Structure:** a world-anchored rolling 2-D grid (0.2 m cells, 120 × 120 = 24 m square) as a slice of ±0.5 m around the held
+  flight altitude. Ego-motion is an exact pose transform; the grid re-anchors by whole cells; an altitude change > 0.3 m resets it.
+- **Cell evidence:** separate free / occupied / cross-sensor-conflict timestamps. State is derived at query time:
+  occupied (5 s) or conflict (2 s) blocks; free needs recent (1 s) uncontradicted evidence; everything else is UNKNOWN.
+- **Inputs:** only Q02-A-validated data:
+  - LiDAR categories (hit / 12 m no-return / near-clipped warning);
+  - the 40 × 24 native obstacle depth when `obstacle_depth` is OK. A 10 m no-return carves free space up to 10 m, never beyond;
+    the target paste is not in the native grid.
+- **Refusals:** out-of-order frames, invalid pose and calibration mismatch.
+- **Queries:** state_at, segment_status (SAFE / BLOCKED / UNCERTIFIED with an unknown fraction), line_of_sight, clearance, validity.
+- **Cost:** memory ≈ 0.35 MB; integration 22.6 ms per frame on this host (1 BLAS thread, one measurement).
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q03_local_map.py` | 12 OK |
+| Scenarios covered | empty space, single bar, bar edge, narrow passage, unobserved space behind, near-clipped, stale evidence, camera/LiDAR conflict, ego translation and rotation (no ghosts), partial FOV (camera only), late-observed obstacle, frame order and altitude, GT/import firewall |
+
+Two first-draft test expectations were wrong and the map was right: LiDAR no-return frees space to 12 m, not 10 m; the cell
+between native camera rays (2.72°) at 9.5 m is unobserved. Known limits:
+- a single altitude slice, with no 3-D certificate;
+- target proxy returns are kept as occupancy;
+- the ttl values are declared priors, not calibrated.
+
+GPU NOT_RUN, G5 HOLD. Next: Phase 3, the candidate planner.
