@@ -22776,3 +22776,36 @@ Known limits:
 - the per-decision cost is near the 0.1 s decision period on CPU, an optimisation item (duplicate validate, wedge sampling).
 
 GPU NOT_RUN, G5 HOLD.
+
+## 2026-10-22 — Q02-B Phase 4: CPU shadow scenario benchmark (declared synthetic labels)
+
+The benchmark has 10 deterministic scripted scenarios (`docs/evidence/q02b_q03_cpu_package_2026-10-22/shadow_benchmark.py`):
+brief occlusion, long occlusion with a detour, occlusion with no plan, physical FOV exit, teleport (negative case), detector
+miss with a clear line of sight, sensor dropout, never acquired, ambiguous reappearance, and occlusion with growing covariance.
+The five policies are F0 / H1 (1 s timeout) / H2 (σ ≥ 1 m) / H3 (OCCLUDED) / BOIA (utility NOT_ESTIMATED → ABSTAIN).
+Labels are fixture declarations ("warranted 0.5 s after the loss onset where a detour or rotation exists"), not simulator
+outcomes. The metrics come from `motar_eval/q02/benchmark_metrics.py`.
+
+| Policy | Triggers | Unnecessary | Missed (warranted scenarios) | First-trigger latency | Loss decisions with an L2 candidate |
+| --- | --- | --- | --- | --- | --- |
+| F0 | 0 | 0 | S2, S4, S8, S9 | — | 93 / 132 |
+| H1 | 22 | 0 | S8, S9 | 0.4, 0.4 s | 93 / 132 |
+| H2 | 0 | 0 | S2, S4, S8, S9 | — | 93 / 132 |
+| H3 | 21 | 0 | S4, S9 | 0.1, 0.1 s | 93 / 132 |
+| BOIA | 0 | 0 | S2, S4, S8, S9 (abstains by design) | — | 93 / 132 |
+
+Other results:
+- 8 INPUT_INVALID rejections per policy (sensor dropout).
+- Runtime per decision: median 78 ms, p95 113 ms, max 175 ms (CPU, 1 BLAS thread). p95 exceeds the 0.1 s decision period
+  (P2 performance limit).
+- Q01-V2 packets replayed read-only as single-decision episodes: all NOT_PREVIOUSLY_ACQUIRED; the raw is unchanged.
+
+Fixes made while building the benchmark, all recorded:
+- map cell marking moved from `np.unique(axis=0)` to boolean masks (≈58 → <10 ms, identical states, tests unchanged);
+- the S4 draft teleported the target; it was kept as S4b (identity suspect, correct), and S4 became a 3 m/s lateral exit;
+- the S8 label had omitted its own occlusion phase; it now follows the S2 rule;
+- **planner:** FOV recovery (a sigma point re-entering the FOV with a non-blocked line of sight) now counts as view gain.
+  Before this fix, H1 missed S4 with NO_FEASIBLE_PLAN. A new test covers it.
+
+Not changed: S9's label stays and is reported as missed (a diffuse belief makes the evidence UNKNOWN, so every rule abstains).
+None of these metrics is a capture rate or a causal effect. GPU NOT_RUN, G5 HOLD.

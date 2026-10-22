@@ -161,11 +161,14 @@ class LocalObstacleMap:
         in_band = np.abs(pts[:, 2] - self.z_ref) <= self.p.band_half_m
         return pts[in_band, :2]
 
-    def _cell_set(self, xy):
-        if len(xy) == 0:
-            return np.zeros((0, 2), int)
-        ij, inside = self._cells(xy)
-        return np.unique(ij[inside], axis=0)
+    def _cell_mask(self, xy):
+        """Boolean (n, n) mask of the grid cells containing the given world points (outside points dropped)."""
+        n = self.p.size_cells
+        mask = np.zeros(n * n, dtype=bool)
+        if len(xy):
+            ij, inside = self._cells(xy)
+            mask[ij[inside, 0] * n + ij[inside, 1]] = True
+        return mask.reshape(n, n)
 
     def integrate(self, inp, report):
         """Integrate one frame. `report` is the Q02-A ValidationReport of the same EvidenceInput."""
@@ -186,7 +189,8 @@ class LocalObstacleMap:
         if self.z_ref is None:
             self.z_ref = float(pos[2])
         self._anchor(pos[:2])
-        free_l = occ_l = free_c = occ_c = np.zeros((0, 2), int)
+        n = self.p.size_cells
+        free_l, occ_l, free_c, occ_c = (np.zeros((n, n), dtype=bool) for _ in range(4))
         n_near = n_l = n_c = 0
         if lidar_ok:
             dirs = lidar_directions(self.lidar).reshape(-1, 3) @ rot.T
@@ -197,8 +201,8 @@ class LocalObstacleMap:
             length = np.where(hit, r - self.p.hit_backoff_m, np.where(noret, self.profile.lidar_no_return_m, 0.0))
             wedge = self._wedges(pos, dirs.reshape(self.lidar.vbeams, self.lidar.hbeams, 3),
                                  length.reshape(self.lidar.vbeams, self.lidar.hbeams), True)
-            free_l = self._cell_set(np.concatenate([self._ray_samples(pos, dirs, length), wedge]))
-            occ_l = self._cell_set(self._hits(pos, dirs[hit], r[hit]))
+            free_l = self._cell_mask(np.concatenate([self._ray_samples(pos, dirs, length), wedge]))
+            occ_l = self._cell_mask(self._hits(pos, dirs[hit], r[hit]))
         else:
             reasons.append("LIDAR_NOT_INTEGRATED")
         if cam_ok:
@@ -212,21 +216,18 @@ class LocalObstacleMap:
             length = np.nan_to_num(np.where(hit, d - self.p.hit_backoff_m, np.where(noret, self.profile.obstacle_far_m - self.p.cell_m, 0.0)))
             w, h = self.profile.obstacle_native_wh
             wedge = self._wedges(origin, dirs.reshape(h, w, 3), length.reshape(h, w), False)
-            free_c = self._cell_set(np.concatenate([self._ray_samples(origin, dirs, length), wedge]))
-            occ_c = self._cell_set(self._hits(origin, dirs[hit], d[hit]))
+            free_c = self._cell_mask(np.concatenate([self._ray_samples(origin, dirs, length), wedge]))
+            occ_c = self._cell_mask(self._hits(origin, dirs[hit], d[hit]))
         else:
             reasons.append("CAMERA_OBSTACLE_DEPTH_NOT_INTEGRATED")
         if n_near:
             self.near_warning_s = stamp; reasons.append("NEAR_CLIPPED_RETURNS")
-        key = lambda a: set(map(tuple, a))
-        occ = key(occ_l) | key(occ_c)
-        free = (key(free_l) | key(free_c)) - occ                      # within a frame occupancy wins
-        conflict = (key(free_l) & key(occ_c)) | (key(free_c) & key(occ_l))
-        for cells, arr in ((free, self.free_s), (occ, self.occ_s), (conflict, self.conf_s)):
-            if cells:
-                ij = np.array(sorted(cells)); arr[ij[:, 0], ij[:, 1]] = stamp
+        occ = occ_l | occ_c
+        free = (free_l | free_c) & ~occ                               # within a frame occupancy wins
+        conflict = (free_l & occ_c) | (free_c & occ_l)
+        self.free_s[free] = stamp; self.occ_s[occ] = stamp; self.conf_s[conflict] = stamp
         self.last_stamp_s, self.frames = stamp, self.frames + 1
-        return FrameReceipt(True, tuple(reasons), stamp, n_l, n_c, len(free), len(occ), len(conflict), n_near)
+        return FrameReceipt(True, tuple(reasons), stamp, n_l, n_c, int(free.sum()), int(occ.sum()), int(conflict.sum()), n_near)
 
     # --- queries -----------------------------------------------------------------------------
     def _state_cells(self, ij, inside, now_s):

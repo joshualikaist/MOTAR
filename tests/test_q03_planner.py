@@ -75,6 +75,13 @@ class PlannerTests(unittest.TestCase):
         cands, status, why = plan(())                                      # target already visible: nothing to gain
         self.assertEqual(status, rp.NO_FEASIBLE_PLAN)
 
+    def test_field_of_view_recovery_counts_as_view_gain(self):
+        cands, status, _ = plan((), b=belief((3.0, 6.0)))                   # belief outside the 87 deg FOV
+        rot = by_kind(cands, "ROTATE")[0]
+        self.assertIsNone(status)
+        self.assertEqual(rot.l2_kinematic_check, rp.PASS); self.assertNotIn("NO_VISIBILITY_GAIN", rot.reasons)
+        self.assertGreater(rot.visibility_score + rot.visibility_unknown_share, 0.0)
+
     def test_excessive_velocity_change_or_yaw(self):
         cands, _, _ = plan(((4.0, 0.0, 0.3),), vel=(0.0, -2.5, 0.0))       # moving fast to the right
         self.assertTrue(all("EXCESSIVE_VELOCITY_CHANGE" in c.reasons for c in by_kind(cands, "LEFT")))

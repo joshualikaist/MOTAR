@@ -153,7 +153,7 @@ def plan(m, position, yaw, velocity, belief, now_s, camera=FROZEN_F_CAMERA, limi
     los_dir = mean[:2] - pos[:2]; dist_t = float(np.linalg.norm(los_dir))
     u = los_dir / max(dist_t, 1e-9); left = np.array([-u[1], u[0]])
     face = lambda xy: math.atan2(mean[1] - xy[1], mean[0] - xy[0])
-    current_vis, _, current_blk = _view(m, pos[:2], yaw, pos[2], pts, w, now_s, camera, params)
+    current_vis, current_unk, current_blk = _view(m, pos[:2], yaw, pos[2], pts, w, now_s, camera, params)
     specs = [("ROTATE", pos[:2])]
     specs += [("LEFT", pos[:2] + d * left) for d in params.lateral_m] + [("RIGHT", pos[:2] - d * left) for d in params.lateral_m]
     specs += [("ADVANCE", pos[:2] + d * u) for d in params.advance_m] + [("RETREAT", pos[:2] - d * u) for d in params.retreat_m]
@@ -192,9 +192,11 @@ def plan(m, position, yaw, velocity, belief, now_s, camera=FROZEN_F_CAMERA, limi
         l2 = PASS if (l1 == PASS and not kin) else FAIL
         why += kin
         vis, vis_unk, vis_blk = _view(m, xy, heading, pos[2], pts, w, now_s, camera, params)
-        # Gain = more sigma points with a CLEAR line of sight, or fewer BLOCKED ones (turning a blocked view into
-        # an unknown one is a possible information gain, never a certified view).
-        if not (vis > current_vis + params.min_score_gain or vis_blk < current_blk - params.min_score_gain):
+        # Gain = more sigma points with a CLEAR line of sight, or more VIEWABLE ones (inside the FOV and not blocked:
+        # CLEAR or UNKNOWN). The latter covers FOV recovery and turning a blocked view into an unknown one; both are
+        # possible information gains, never certified views.
+        if not (vis > current_vis + params.min_score_gain
+                or vis + vis_unk > current_vis + current_unk + params.min_score_gain):
             why.append("NO_VISIBILITY_GAIN")
         n = max(1, int(math.ceil(travel / params.dt_s)))
         traj = []
