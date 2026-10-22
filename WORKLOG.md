@@ -22695,3 +22695,24 @@ The permitted Q02-B scope is defined: non-control CPU development; footprint sup
 Record: `docs/evidence/q02a_v26_opus_review_2026-10-22/`. Beads motar-3p3.27 closed (acceptance: P0/P1 resolved, independent pass).
 Q02-B (motar-3p3.26) is eligible to resume in a separate step under the stated scope; it is not started. GPU NOT_RUN, G5 HOLD.
 Next (separate approval): H1/H2/H4 minimal follow-up, then Q02-B WIP fixes at `history.py:112` and `shadow.py:177`.
+
+## 2026-10-22 — Q02-B Phase 1: WIP integrated against the Q02A-v2.6 identity contract (CPU)
+
+The 11 staged WIP files were copied into the worktree; the originals are untouched (hashes checked at the end of the package).
+Copied: `motar_eval/q02/{history,belief,localmap,candidates,timing,shadow,pipeline}.py` and `tests/test_q02b_timing.py`.
+Adaptations:
+- (Re)acquisition counts only a camera flag with geometry FOOTPRINT_CONSISTENT, identity verdict CONSISTENT_NOT_CONFIRMED,
+  and the tracker continuity gate. Acquisition is labelled PROVISIONAL_FOOTPRINT_CONSISTENT_NOT_IDENTITY_CONFIRMED.
+- An AMBIGUOUS / CONTRADICTED verdict is identity-suspect. A flagged NOT_TESTABLE detection abstains as IDENTITY_UNVERIFIED.
+- The caller lineage must match the record's `detector_provenance` (ORACLE_PROXY ↔ ORACLE_TRUE_POSE_RASTER); other lineages are refused.
+- Shadow records carry identity_verdict, geometry_support, detector_provenance and runtime. Timing features read the v2.6
+  `SensorRays` plus a new `identity_evidence` feature.
+
+| Check (CPU) | Result |
+| --- | --- |
+| `tests/test_q02b_timing.py` | 29 OK (25 WIP tests: 24 unchanged, test_12 adapted from the v1 reason; 4 new identity-contract tests) |
+| `tests/test_q02_evidence.py` | 49 OK (unchanged module) |
+| H1-class residual fixture (corner, wrong track on the blend sphere) | reaches the history as a PROVISIONAL hit: known P2, pinned by test |
+| H2 fixture (15 m target, TOO_FEW_INLIERS) | not a hit, never acquired (fail-safe) |
+
+No P0/P1 found in the Phase 1 scope. GPU NOT_RUN, G5 HOLD. Next: Phase 2, the Q03 local obstacle map.
