@@ -22580,3 +22580,20 @@ box and ≥ 50 % coverage. E4 (lock file) is reported, not changed: it is out of
 Records: `docs/evidence/q02a_v24_repair_2026-10-22/` (REPAIR.md, compare_v23_v24.py/.json,
 identity_attack.py, summarize_attack.py, identity_attack_summary.json). Q02-B WIP unchanged. GPU
 NOT_RUN, G5 HOLD. Next: Fable confirmation of this commit; Q02-B stays blocked until it reports.
+
+## 2026-10-22 — Q02-A v2.4 confirmation review (Fable 5.1, 8eea494): HOLD_P0_P1_REMAINS (F1)
+
+Read-only CPU confirmation (stopped once on the API session limit, resumed after the reset). No P0. E1 is fixed and
+every re-run v2.4 number reproduces (10-family summary byte-identical, 42 OK, compare JSON identical).
+
+| ID | Sev | Finding |
+| --- | --- | --- |
+| F1 | P1 | Pasted pixels farther than the track are ignored: a front bar's top corner inside the target silhouette puts bar pixels (cells unobserved) in `foreign`. A track at the bar face is then SUPPORTED with 0 target pixels at range: M1 121/1,836, `bars_h3` corner 146/492, far targets 89/384 |
+| F2 | P2 | Diagonal track error: box-corner pixels alone in the envelope: M4 48/630, random scenes 3/1,881 |
+| N1–N3 | NOTE | E1 test covers far tracks only; "24 pixels" is the test path (production 20); lock file present |
+
+Hypothesis "counting nearer pasted pixels against at-range pixels closes the box-pixel class" rejected: measured
+356/2,712 false in near-track corner geometries. Reviewer's S1 (`at > near and at > far`): 46 false and 10 lost on 17,803.
+Record: `docs/evidence/q02a_v24_fable_confirmation_review_2026-10-22/` (REVIEW.md, probes/). GPU NOT_RUN, G5 HOLD.
+Next: replace the pixel-count rules with the root fix (declared target sphere), as Q02A-v2.5. From now on, reviews
+use Opus 5.5 (user instruction).
