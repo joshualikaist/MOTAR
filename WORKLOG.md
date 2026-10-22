@@ -20007,3 +20007,16 @@ the authorized remote push.
   No raw/checkpoint/runtime/PPO modifications. No GPU experiment. The prior website
   deployment authorization continues for publishing this corrective redesign; research
   main merge and research-code publication are outside this work. Q02-B/Q03 and G5 HOLD.
+
+
+## 2026-10-23 — Correct publication-figure path contract in public CI
+
+- Pages successfully published f9c1772; HTTPS checks matched all twenty figure artifacts.
+  The separate public CPU workflow failed because one README test still allowed only
+  the pre-redesign `final/` figure directory.
+- Updated only that test to require the new approved family AND its manifest SHA-256.
+  Historical nine-figure preservation and the two-image README limit remain enforced.
+- Pinned Python 3.8.20: nineteen public tests and expanded 177-test documentation/figure
+  suite PASS, zero failures/errors. No page, figure, runtime or measurement changed.
+- Evidence: `docs/evidence/website_figure_rebuild_2026-10-22/CI_FOLLOWUP.md` and
+  `ci_followup_tests.json`. Main WIP/stash and research source remain preserved.

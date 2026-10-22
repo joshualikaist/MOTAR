@@ -1,0 +1,23 @@
+{
+  "run": 177,
+  "failures": 0,
+  "errors": 0,
+  "python": "3.8.20",
+  "status": "PASS",
+  "modules": [
+    "test_project_page",
+    "test_boia_progress_docs",
+    "test_canonical_docs",
+    "test_research_overview",
+    "test_paper_figures_final",
+    "test_browser_capture_provenance",
+    "test_site_comparison_evidence",
+    "test_repository_claims",
+    "test_target_algorithm_documentation",
+    "test_quantitative_positioning",
+    "test_site_quantitative_positioning",
+    "test_public_docs_consistency",
+    "test_public_tools"
+  ],
+  "details": []
+}
