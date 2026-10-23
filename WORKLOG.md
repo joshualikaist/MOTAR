@@ -22930,3 +22930,14 @@ resume approved B1-R implementation/stages. No GPU processes remain; G5 HOLD.
 Main status/WIP hashes, stash and protected draft unchanged; Policy F pinned SHA PASS.
 Historical raw was not rehashed. Changed files: this appended WORKLOG and four new
 evidence files only; no source/test/production change, push or merge.
+
+## 2026-10-24 — motar-6nn.5 minimal Warp test isolation repair: PASS
+
+Scoped `_DET.wp` mock only during DetectReduction render; original Warp state is
+restored. Existing 34 test bodies/assertions unchanged (AST comparison). Real Warp
+first: 4 errors before, 34 PASS after; standalone 34 PASS. PUBLIC_CPU 3,177 tests,
+0 failures / 0 errors, 10 skipped, 5 existing profile exclusions.
+Evidence and exact diff: `docs/evidence/b1r_warp_isolation_fix_2026-10-24/`.
+Changed source: `tests/test_navrl_detect_resolution.py` only; other changes are this
+WORKLOG and new verification evidence. Prior failure records preserved. No production,
+policy, raw, GPU, push or merge changes. Resume approved B1-R implementation; G5 HOLD.

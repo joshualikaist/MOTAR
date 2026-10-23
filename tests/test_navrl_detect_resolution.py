@@ -39,6 +39,7 @@ from pathlib import Path
 import sys
 import types
 import unittest
+from unittest import mock
 
 import torch
 
@@ -253,7 +254,10 @@ class DetectReduction(unittest.TestCase):
 
     def _run(self, stub):
         _DET.DETECT_CHANNEL.clear()
-        _DET.NavRLTargetDetector._render_detect(stub)
+        # Discovery may already have imported real Warp. Scope the no-op launch
+        # to this detector reference; never mutate the shared Warp module.
+        with mock.patch.object(_DET, "wp", _warp):
+            _DET.NavRLTargetDetector._render_detect(stub)
         return _DET.DETECT_CHANNEL.consume()
 
     def test_count_centroid_and_range(self):

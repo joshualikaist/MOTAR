@@ -1,0 +1,70 @@
+.......FFFF.......................
+======================================================================
+FAIL: test_bounding_box_and_empty_convention (test_navrl_detect_resolution.DetectReduction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 285, in test_bounding_box_and_empty_convention
+    self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4160, in launch
+    assert_initialized()
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3148, in assert_initialized
+    assert runtime is not None, "Warp not initialized, call wp.init() before use"
+AssertionError: Warp not initialized, call wp.init() before use
+
+======================================================================
+FAIL: test_count_centroid_and_range (test_navrl_detect_resolution.DetectReduction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 268, in test_count_centroid_and_range
+    frame = self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4160, in launch
+    assert_initialized()
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3148, in assert_initialized
+    assert runtime is not None, "Warp not initialized, call wp.init() before use"
+AssertionError: Warp not initialized, call wp.init() before use
+
+======================================================================
+FAIL: test_frame_carries_the_rendered_target_colour_and_far_plane (test_navrl_detect_resolution.DetectReduction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 293, in test_frame_carries_the_rendered_target_colour_and_far_plane
+    frame = self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4160, in launch
+    assert_initialized()
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3148, in assert_initialized
+    assert runtime is not None, "Warp not initialized, call wp.init() before use"
+AssertionError: Warp not initialized, call wp.init() before use
+
+======================================================================
+FAIL: test_the_frame_carries_no_image_sized_tensor (test_navrl_detect_resolution.DetectReduction)
+The hand-off must stay a per-env summary: an image or a mask would be a semantic
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 306, in test_the_frame_carries_no_image_sized_tensor
+    frame = self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4160, in launch
+    assert_initialized()
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3148, in assert_initialized
+    assert runtime is not None, "Warp not initialized, call wp.init() before use"
+AssertionError: Warp not initialized, call wp.init() before use
+
+----------------------------------------------------------------------
+Ran 34 tests in 0.068s
+
+FAILED (failures=4)
