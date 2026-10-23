@@ -23033,3 +23033,17 @@ B-PN 115 bars, against a limit of 0.10. The maximum no-belief share was 0.188, a
 
 **Next:** Stage C-PN (28 cells), then C-PP.
 Changed: this WORKLOG entry and two evidence JSON files (docs only). No push or merge. G5 HOLD.
+
+## 2026-10-24 — B1-R Stage C-PN COMPLETE (integrity only)
+
+C-PN ran at `386d95e`: B-PN with N=8 and v_nom=1.5, 28 evaluation cells over seeds 4301–4307 and four
+densities.
+- Cells: 28 of 28 COMPLETE, 0 issues.
+- Resources: 3.07 wall-h, 1.31 GB.
+- The checkpoint is unchanged.
+
+No outcomes are inspected or recorded here; the analysis runs once after C-PP (§8).
+Record: `docs/evidence/b1r_v1/stage_C-PN.json`.
+
+**Next:** C-PP.
+Changed: this WORKLOG entry and one evidence JSON file (docs only).
