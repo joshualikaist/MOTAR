@@ -22999,3 +22999,37 @@ shadow computation does not interfere with the run. Every sidecar was written at
 
 **Next:** Stage B preflight (seed census) → tuning, 32 cells.
 Changed: this WORKLOG entry and one evidence JSON (docs only). No push or merge. G5 HOLD.
+
+## 2026-10-24 — B1-R Stage B tuning COMPLETE; selection frozen; G1 PASS
+
+Stage B ran at `6460fff`: 32 tuning cells at seed 4390, densities 115 and 205, quota 2. It took
+1.95 wall-h and wrote 0.85 GB. There were 0 cell issues, and the checkpoint is unchanged. The seed
+census in the preflight found 0 hits in 10,421 files (26 dangling links recorded).
+
+Selection, by maximum total capture with the tie-breaks of §5 (counts out of 512 over two cells):
+
+| Controller | Selected | Capture | Crash | Timeout | Capture at 115 bars |
+| --- | --- | --- | --- | --- | --- |
+| B-PN | N=8, v_nom=1.5 | 312 | 115 | 85 | 0.695 |
+| B-PP | v_nom=2.5 | 425 | 82 | 5 | 0.930 |
+
+**G1.** No defect signature was found (D0–D3). The maximum in-view stand-off share was 0.070, at
+B-PN 115 bars, against a limit of 0.10. The maximum no-belief share was 0.188, against a limit of
+0.50.
+
+**Scene disjointness.** The tuning scenes do not overlap the OCC-P2 scenes for seeds 4301–4307
+(26,628 vs 27,804 scenes, 0 shared). The selection is therefore PASS.
+
+**Observations (descriptive, tuning seed only):**
+- B-PN capture rises monotonically with N: N=3 is the worst setting and N=8 the best. The selected
+  N=8 lies on the edge of the grid, so a larger N might do better. That is a limitation to report;
+  no re-tuning is allowed.
+- B-PP beats every B-PN configuration on the tuning seed.
+
+**Records:**
+- `docs/evidence/b1r_v1/selection_binding.json` (the SHA binding for the Stage C preflights)
+- `docs/evidence/b1r_v1/stage_B_selection.json`
+- Raw: `../aerial_gym_simulator/results/b1r_classical_baseline_v1/{B,selection.json}`
+
+**Next:** Stage C-PN (28 cells), then C-PP.
+Changed: this WORKLOG entry and two evidence JSON files (docs only). No push or merge. G5 HOLD.
