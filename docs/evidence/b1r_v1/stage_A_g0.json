@@ -1,0 +1,18 @@
+{
+  "cells": 28,
+  "checkpoint_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "g0_match": 28,
+  "gate": "G0",
+  "ledger_rows_sha256_equal": 28,
+  "output_bytes": 380247818,
+  "prereg_sha256": "e4607aa21c638f8498676f00e4a5c6b868df3b1aff083874f1ce07e9570636e3",
+  "raw_manifest_sha256": "31fbb9b89a88ea117eec751d0de7c04265d9080d5cf2da4e0adc40c30c6ef759",
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A",
+  "run_report_sha256": "0e7d0df7cb67e955c31d66e672d388d8481983f77276d9bccccd5fe05fb75772",
+  "run_report_verdict": "COMPLETE",
+  "schema": "motar.b1r-stage-record.v1",
+  "source_commit": "61a3c59958e202b5e6af08623a255432691a3b9e",
+  "stage": "A",
+  "verdict": "PASS",
+  "wall_hours": 0.6961116732619445
+}

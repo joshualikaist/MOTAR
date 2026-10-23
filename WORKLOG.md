@@ -22974,3 +22974,28 @@ Next: Stage A preflight at this commit, then run Stage A (G0, F_SHADOW, 28 cells
 
 Changed files: the six new B1-R source and test files, four new evidence files, and this WORKLOG
 entry. No production, raw, checkpoint or prereg change. No push or merge. G5 HOLD.
+
+## 2026-10-24 — B1-R Stage A (G0) PASS: F_SHADOW reproduces OCC-P2 exactly, 28/28 cells
+
+Stage A ran at `61a3c59`: Policy F, with the B-PN N=5 v=2.5 baseline computed in shadow through the
+opt-in player hook.
+
+| Check | Result |
+| --- | --- |
+| Cells | 28 of 28 COMPLETE, 0 issues |
+| `historical_match` against the same OCC-P2 cell | MATCH in 28 of 28 (512 ledger rows and 512 recorder records each; no missing or extra recorder keys) |
+| Ledger `rows_sha256` equal to OCC-P2 | 28 of 28 |
+| Quota counts | equal in every cell |
+| Resources | 0.70 wall-h, 0.38 GB |
+| Policy F checkpoint SHA | unchanged |
+
+**Meaning.** At HEAD and through the hook, the task path reproduces OCC-P2 bit for bit, so the
+shadow computation does not interfere with the run. Every sidecar was written at `player_run_exit`.
+
+**Record and raw.**
+- Record: `docs/evidence/b1r_v1/stage_A_g0.json`.
+- Raw: `../aerial_gym_simulator/results/b1r_classical_baseline_v1/A` (RAW_MANIFEST.json SHA in the
+  record).
+
+**Next:** Stage B preflight (seed census) → tuning, 32 cells.
+Changed: this WORKLOG entry and one evidence JSON (docs only). No push or merge. G5 HOLD.
