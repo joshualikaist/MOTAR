@@ -22897,3 +22897,22 @@ are on HOLD, and Q04-D0 changes from READY_FOR_PREREG to HOLD.
 delta review.
 
 GPU NOT_RUN, PPO NOT_RUN, G5 HOLD.
+
+## 2026-10-24 — B1-R exact preregistration and explicit execution authorization
+
+User approved local preregistration commit, implementation, CPU validation and GPU
+Stage A → B → C-PN → C-PP, proceeding only after the specified gates pass.
+The user explicitly removed the obligation to finish before the 2026-10-28 Freeze;
+all stage wall-clock limits remain. This authorization resolves the separate-approval
+wording and O5 question without changing the frozen candidate bytes. It supersedes
+the older AGENTS no-current-GPU-authorization statement for these gated stages only.
+Push, merge, PPO, preregistration amendments and retries remain unauthorized.
+
+Copied `docs/plans/prereg_b1r_classical_baseline_v1.md` byte-for-byte from the handoff.
+SHA-256: `e4607aa21c638f8498676f00e4a5c6b868df3b1aff083874f1ce07e9570636e3`.
+Base HEAD: `fde21cdf969a7df380aa1c4deddc1824cb524506`.
+The protected untracked draft is not part of this commit. No runtime changes or GPU runs.
+Before implementation, reproduce the known PUBLIC_CPU blocker (`motar-6nn.5`)
+on this source: the required zero-error gate is not waived for pre-existing errors.
+Changed files: this WORKLOG and the exact preregistration only. Validation: source/destination
+SHA equality and diff review; execution and controller validation remain NOT_TESTED.
