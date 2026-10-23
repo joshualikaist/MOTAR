@@ -22916,3 +22916,17 @@ Before implementation, reproduce the known PUBLIC_CPU blocker (`motar-6nn.5`)
 on this source: the required zero-error gate is not waived for pre-existing errors.
 Changed files: this WORKLOG and the exact preregistration only. Validation: source/destination
 SHA equality and diff review; execution and controller validation remain NOT_TESTED.
+
+## 2026-10-24 — B1-R blocked at existing PUBLIC_CPU gate
+
+On source `2acc2d5`, PUBLIC_CPU ran 3,177 tests in 252.701 s: 0 failures, 4 errors,
+10 skipped and 5 profile exclusions; exit 1. All errors are DetectReduction real-Warp
+argument conversion errors, consistent with existing issue `motar-6nn.5`.
+Fresh-process detect-resolution alone: 34 PASS. This is not a B1-R controller result.
+Evidence: `docs/evidence/b1r_cpu_gate_2026-10-24/` (report, two receipts, JSON SHA bindings).
+Decision: BLOCKED before implementation/GPU; no gate exemption. B1-R issue `motar-3ka`.
+Next: request scope for existing test-only isolation repair, then rerun full CPU and
+resume approved B1-R implementation/stages. No GPU processes remain; G5 HOLD.
+Main status/WIP hashes, stash and protected draft unchanged; Policy F pinned SHA PASS.
+Historical raw was not rehashed. Changed files: this appended WORKLOG and four new
+evidence files only; no source/test/production change, push or merge.

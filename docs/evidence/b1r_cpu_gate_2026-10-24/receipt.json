@@ -1,0 +1,30 @@
+{
+  "source_commit": "2acc2d5f4365e83e036f45e8fa6570029e859eb5",
+  "base_commit": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+  "command": "PYTHONNOUSERSITE=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py",
+  "exit_code": 1,
+  "profile": "PUBLIC_CPU",
+  "status": "FAIL",
+  "ran": 3177,
+  "failures": 0,
+  "errors": 4,
+  "skipped": 10,
+  "excluded": 5,
+  "test_seconds": 252.701,
+  "isolated_detect_resolution": {
+    "ran": 34,
+    "status": "PASS",
+    "exit_code": 0
+  },
+  "receipt_sha256": {
+    "public_cpu_receipt.txt": "eae36458af258084b2ff0cc93f6da59b5a73503abe7952f9c914af95e74bcf43",
+    "detect_isolated_receipt.txt": "8b24f5aa82316b96501f1b51bc238b155e3ce9ffeae7027076c0b79aa40ea597"
+  },
+  "main_head_and_status_unchanged": true,
+  "main_wip_and_draft_sha256_unchanged": true,
+  "stash_unchanged": true,
+  "gpu": "NOT_RUN",
+  "implementation": "NOT_STARTED",
+  "raw_integrity": "No intentional raw writes; historical raw not rehashed in this CPU gate check",
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+}
