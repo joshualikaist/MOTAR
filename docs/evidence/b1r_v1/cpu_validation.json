@@ -1,0 +1,22 @@
+{
+  "PUBLIC_CPU": {
+    "errors": 0,
+    "excluded": 5,
+    "failures": 0,
+    "ran": 3219,
+    "skipped": 10,
+    "status": "PASS"
+  },
+  "prereg_sha256": "e4607aa21c638f8498676f00e4a5c6b868df3b1aff083874f1ce07e9570636e3",
+  "receipt": "docs/evidence/b1r_v1/public_cpu_receipt.txt",
+  "receipt_sha256": "25097e8d37face87af148f186ca3b1801cd4cf32bdca9188e1d95292d014f34e",
+  "schema": "motar.b1r-cpu-validation.v1",
+  "source_sha256": {
+    "motar_eval/classical_baseline.py": "cd0446e68ec23ffd1d0812642a28f881f900462c78a78331252f4601c3d352c0",
+    "tests/test_b1r_classical_baseline.py": "4da3c035162cc254e2b1bcd28eec0e47776ab351d34beda0a6878dd9de466cbd",
+    "tools/b1r_analysis.py": "13d6460046e861861aec3a224192d0f56712624f5f5b3727e08315a089553367",
+    "tools/b1r_hook.py": "fcf9283b2d3756df6c6a66fbd6db400c0fa1bbf929568013e75574935c2005cd",
+    "tools/b1r_run.py": "b9f4d1f67f1b8476d8617bcbec990440630c1f74303574a0cb9b0a49a776b010",
+    "tools/b1r_site/sitecustomize.py": "e2f3666cd92222002f95606d1a0b974452b2169a53a4a177508cc0043605ed61"
+  }
+}

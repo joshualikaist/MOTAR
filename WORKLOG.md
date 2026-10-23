@@ -22941,3 +22941,36 @@ Evidence and exact diff: `docs/evidence/b1r_warp_isolation_fix_2026-10-24/`.
 Changed source: `tests/test_navrl_detect_resolution.py` only; other changes are this
 WORKLOG and new verification evidence. Prior failure records preserved. No production,
 policy, raw, GPU, push or merge changes. Resume approved B1-R implementation; G5 HOLD.
+
+## 2026-10-24 — B1-R implementation completed and CPU-validated; ready for Stage A
+
+Resumed from `8633dce`. The six untracked B1-R files were kept and extended, not regenerated.
+Audit against the frozen prereg (`2acc2d5`, SHA `e4607aa2…`):
+`docs/evidence/b1r_v1/IMPLEMENTATION_AUDIT.md`. All items are COMPLETE except the ones below.
+
+Repairs made before any GPU run:
+1. **Sidecar write time.** The sidecar is now written when `player.run` exits (the quota
+   SystemExit). Before, it was written only at `atexit`, which reads GPU counters after possible
+   simulator teardown.
+2. **Scene-hash count.** The rule is now ≥ num_envs. The old rule required == num_envs, but a cell
+   holds one hash per reset (1,156 in OCC-P2), so the old rule would always have stopped after
+   Stage B.
+3. **Census.** Dangling symlinks are recorded separately and still checked by name and target text.
+   All 26 census "errors" were dangling VOID or foreign links; the census itself found 0 hits in
+   10,419 files in 31 s.
+4. **New commands.** `record-cpu` (accepts a relative path) and `bind-selection` were added.
+
+R01: R01_SOURCE_UNCOMMITTED. The method exists only in session 35a63340's scratch code, and a copy is
+kept outside the repo. The endpoint is Exploratory, so it is not computed and not invented. It is
+reported as NOT_ANALYSED until an amendment freezes it, and it is not a GPU blocker.
+
+CPU results:
+- B1-R tests: 42 PASS.
+- PUBLIC_CPU: 3,219 ran, 0 failures, 0 errors, 10 skipped, 5 excluded.
+- Receipt and source-SHA binding: `docs/evidence/b1r_v1/{public_cpu_receipt.txt,cpu_validation.json}`.
+- Dry Stage A preflight: only the commit and evidence items were missing; everything else passed.
+
+Next: Stage A preflight at this commit, then run Stage A (G0, F_SHADOW, 28 cells, cap 2 h).
+
+Changed files: the six new B1-R source and test files, four new evidence files, and this WORKLOG
+entry. No production, raw, checkpoint or prereg change. No push or merge. G5 HOLD.
