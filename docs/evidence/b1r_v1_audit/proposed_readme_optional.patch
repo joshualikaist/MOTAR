@@ -1,0 +1,21 @@
+diff --git a/README.md b/README.md
+index aeee742..038819d 100644
+--- a/README.md
++++ b/README.md
+@@ -27,6 +27,7 @@ chain. Preregistrations and deviations are linked from [`docs/EVIDENCE.md`](docs
+ | Measured perception error → policy | **−4.57 pp** capture, 95 % CI [−6.32, −2.82] | Policy F; episode-level interval from two evaluation seeds at one density; one injector |
+ | Readaptation under that error | **+0.73 pp**, 95 % CI [−1.04, +2.50] | **INCONCLUSIVE**: no net benefit established; 3 training seeds |
+ | Safety-filter geometry | **−1.4903 pp** crash; seed-level 95 % CI [−2.42, −0.57] | Policy F, 3 evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Geometry and stopping law change together; not a safety guarantee |
++| Classical baselines (B1-R) | vs pure pursuit **+8.87 pp** · vs PN **+30.38 pp** capture | Preregistered, policy F, 7 seeds (7/7); reactive baselines, not a planner, not Class A |
+ | Observation contract | **−48.967 pp** capture | **MATERIAL_LOSS**; causality **NOT_TESTED**; policy R (a different checkpoint), 3 evaluation seeds |
+ | Perception range error on real footage | **6.2 %** median of 9 block medians | One flight (9 blocks of 15 s; 3,107 frames, not independent samples); apparent-size proxy |
+ 
+@@ -60,7 +61,7 @@ All three preregistered directional contrasts replicated (7/7 seeds in the same
+ 
+ The aggregate E2−H contrast replicated, but its positive direction was not uniformly expressed at the two highest obstacle densities: 5/7 seeds at 160 bars and 4/7 at 205 bars. Density-specific analyses remain exploratory.
+ 
+-The original campaign (18 September, n=3, legacy pooled window), the bias audit and canary, and the replication (25–26 September, n=7) are never pooled. Within the same seven seeds the legacy window attenuated all three contrasts toward zero; with different seed sets, the estimator change alone does not explain the gap between campaigns.
++The original campaign (n=3, legacy pooled window) and the replication (n=7) are never pooled; details are in the full record.
+ 
+ [Figure 4](docs/assets/paper/final/fig4-target-motion.svg) shows every seed and both campaigns. [Full record](results/target_motion_replication_7seed/README.md) · [Canonical status](results/target_motion_replication_7seed/summary.json) · [Analysis](results/target_motion_replication_7seed/analysis.json).
+ 

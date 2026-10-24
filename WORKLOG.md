@@ -23109,3 +23109,66 @@ Total GPU time: A 0.70 + B 1.95 + C-PN 3.07 + C-PP 1.78 = 7.50 wall-h. Total out
 
 Changed: this WORKLOG entry and two evidence JSON files (docs only). README, site and EVIDENCE were
 not updated. No push or merge. G5 HOLD.
+
+## 2026-10-24 — B1-R publication audit: result verified; B-PN arena exits found; public-doc patches proposed (not applied)
+
+This audit was read-only and ran on the CPU (`tools/b1r_publication_audit.py` → `docs/evidence/b1r_v1_audit/audit.json`).
+There was no GPU work and no re-tuning. Raw data, the prereg and the existing evidence were not
+changed. Opus 5.5 reviewed it: PASS_WITH_CHANGES, and every finding was adopted.
+
+**Verification.**
+- The four stage raw manifests verify, and analysis.json and selection.json match their bindings.
+- The primary values recomputed from ledger rows equal analysis.json (maximum difference 0).
+- C1/C2 means, exact p and Holm p are reproduced exactly.
+- An independent scipy BCa matches, and changes by about 1e-4 under a different bootstrap seed.
+
+**Finding (review P1).** Most of B-PN's crashes are arena exits, not bar contacts:
+
+| Density (bars) | Out-of-arena crashes, B-PN | Share |
+| --- | ---: | ---: |
+| 70 | 253/301 | 0.84 |
+| 115 | 367/563 | 0.65 |
+| 160 | 507/1012 | 0.50 |
+| 205 | 474/1380 | 0.34 |
+
+These counts are from the LEGACY_STEP_WINDOW crash causes. For comparison, B-PP's out-of-arena share
+is ≤ 0.04 and F's ≤ 0.01. Neither B arm has an arena-boundary input, so C1 partly reflects arena
+exits. C2 (F − B-PP) is the obstacle-relevant contrast.
+
+**Exploratory (descriptive, not causal).**
+- *F − B-PP capture gap by density* (bars):
+
+  | 70 | 115 | 160 | 205 |
+  | ---: | ---: | ---: | ---: |
+  | +1.00 pp | +4.27 pp | +11.05 pp | +19.17 pp |
+
+  The gap is carried by crashes: F 9.54 % vs B-PP 27.68 % at 205 bars.
+- *Speed.* F requests 3.23 m/s and flies at 2.71–2.45 m/s. B-PP flies at 2.02–1.65 m/s.
+- *Pre-crash speed* (last recorded frame): F 1.94–1.98 m/s vs B-PP 1.29–1.32 m/s, so B-PP's excess
+  crashes are not explained by speed.
+- *RMTC60:* F 4.84 → 10.05 s and B-PP 8.33 → 24.01 s, so F is lower on both time and crash.
+- *Camera-loss frames before crashes* are enriched in all arms (F 1.8–4.9×, B-PP 2.8–7.1×). This is
+  post hoc and **not** the R01 analysis, which stays NOT_ANALYSED; any R01 amendment is no longer
+  blind.
+- *Tuning limits:* B-PN capture rises monotonically with N, so the selected N = 8 is on the grid
+  edge. The B-PP pick was a near-tie (425 vs 422).
+
+**TF32.**
+- B1-R placement uses `navrl_task.py:133`, which has one query point per batch row (the low-error
+  shape). The general-target site `:2745` is bypassed under the KROC initial view.
+- Exact start clearance: minimum 0.7245–0.7394 m for every arm and density, quantiles agree across
+  arms, and 160 bars shows no anomaly.
+- Excluding 160 bars (a partial sensitivity) gives C1 +0.2839 and C2 +0.0815, 7/7 seeds the same
+  sign, Holm p 0.03125. The preregistered reading is unchanged.
+
+**Public docs.** Two patches are proposed. **Neither is applied**; both need the user's decision.
+- `proposed_public_docs_core.patch`: EVIDENCE row, exploratory paragraph and not-established
+  bullets; a site row and a limitation bullet; number binding in check_public_docs; a numeric test.
+- `proposed_readme_optional.patch`: a README row. It needs a trim of the target-motion caveat to
+  stay under the 1,500-word limit (README is at 1,498 now).
+
+Both patches apply cleanly, and in a scratch mirror the doc, site and figure checks pass. The real
+repo's PUBLIC_CPU gives 3,219 PASS, 0 failures, 0 errors (`docs/evidence/b1r_v1_audit/public_cpu_receipt.txt`).
+
+Changed: new files only — the tool, audit.json, AUDIT_REPORT.md, two patch files and the receipt —
+plus this WORKLOG entry. No push or merge. G5 HOLD.
