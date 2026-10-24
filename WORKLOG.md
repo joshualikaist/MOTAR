@@ -23047,3 +23047,65 @@ Record: `docs/evidence/b1r_v1/stage_C-PN.json`.
 
 **Next:** C-PP.
 Changed: this WORKLOG entry and one evidence JSON file (docs only).
+
+## 2026-10-24 — B1-R complete: F beats both classical sensor-based baselines (C1, C2 SUPERIOR)
+
+C-PP ran at `96aa55a`: B-PP with v_nom=2.5, 28 cells, all COMPLETE with 0 issues. It took 1.78
+wall-h and wrote 0.67 GB, and the checkpoint is unchanged. The preregistered analysis then ran once,
+over stages A, B, C-PN and C-PP, all qualified. Its output is `analysis.json` (SHA in the summary
+record).
+
+Primary endpoint: the mean quota capture rate over the four densities, per seed (n = 7).
+
+| Arm | Seed-level mean | Range over seeds |
+| --- | --- | --- |
+| F (F_SHADOW) | 0.9533 | 0.949–0.957 |
+| B-PN (N=8, v=1.5) | 0.6496 | 0.642–0.660 |
+| B-PP (v=2.5) | 0.8646 | 0.861–0.873 |
+
+| Contrast | Mean | Exact sign-flip p | Holm p | BCa 95 % CI | Reading |
+| --- | --- | --- | --- | --- | --- |
+| C1 F − B-PN | +0.3038 | 0.0156 | 0.0312 | [0.2995, 0.3084] | SUPERIOR |
+| C2 F − B-PP | +0.0887 | 0.0156 | 0.0312 | [0.0854, 0.0923] | SUPERIOR |
+| C3 B-PN − B-PP | −0.2151 | 0.0156 (unadjusted) | — | [−0.2187, −0.2121] | descriptive |
+
+Every seed difference has the same sign, so the pre-declared statement holds: "F outperforms both
+classical sensor-based baselines under this contract".
+
+Per-density pooled results (capture / crash / timeout):
+
+| Arm | 70 bars | 115 bars | 160 bars | 205 bars |
+| --- | --- | --- | --- | --- |
+| F | .985 / .015 / 0 | .976 / .024 / 0 | .947 / .053 / 0 | .905 / .095 / 0 |
+| B-PP | .975 / .023 / .002 | .933 / .062 / .004 | .837 / .157 / .007 | .713 / .277 / .010 |
+| B-PN | .828 / .093 / .079 | .711 / .152 / .136 | .584 / .272 / .144 | .475 / .361 / .164 |
+
+**Pattern.** F's margin over B-PP is driven by crashes, and it grows with density: from about 0 at
+70 bars to +0.19 in capture at 205 bars.
+
+Secondary endpoints (means over cells):
+
+| Arm | Time to capture | RMTC60 | Requested / executed / actual speed | Camera detection fraction |
+| --- | --- | --- | --- | --- |
+| F | 4.4 s | 7.0 s | 3.23 / 2.96 / 2.59 m/s | 0.784 |
+| B-PP | 8.5 s | 15.4 s | 2.08 / 2.02 / 1.83 m/s | 0.774 |
+| B-PN | 15.5 s | 31.0 s | 1.30 / 1.30 / 1.24 m/s | 0.611 |
+
+**Limits that must travel with the result:**
+- The B arms fly the line of sight at ≤ 2.5 m/s, while F requests 3.2 m/s (the disclosed
+  asymmetry).
+- The selected B-PN (N=8) lies on the edge of the grid.
+- Tuning used a single seed.
+- This is simulation only, and "capture" is the simulator's swept < 0.5 m test.
+- The R01 exploratory endpoint is NOT_ANALYSED (R01_SOURCE_UNCOMMITTED).
+
+**Prereg compliance.** No deviation: all gates passed, the evaluation seeds were never used for
+tuning, the analysis ran once, and nothing was retried or re-tuned.
+
+**Records:** `docs/evidence/b1r_v1/{stage_C-PP.json,analysis_summary.json}`; raw in
+`../aerial_gym_simulator/results/b1r_classical_baseline_v1/`.
+
+Total GPU time: A 0.70 + B 1.95 + C-PN 3.07 + C-PP 1.78 = 7.50 wall-h. Total output: 3.2 GB.
+
+Changed: this WORKLOG entry and two evidence JSON files (docs only). README, site and EVIDENCE were
+not updated. No push or merge. G5 HOLD.
