@@ -66,6 +66,7 @@
 <tr><td>Readaptation</td><td class="num-cell">+0.73 pp</td><td><span class="tag">INCONCLUSIVE</span> 95% CI [−1.04, +2.50] over three training seeds: no net benefit established.</td></tr>
 <tr><td>Safety geometry</td><td class="num-cell">−1.4903 pp crash</td><td>Arc clearance vs riskcap on policy F. Seed-level 95% CI [−2.42, −0.57] over three evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Geometry and stopping law change together; this is not an isolated geometry effect or a safety guarantee.</td></tr>
 <tr><td>Target motion</td><td class="num-cell">E0 −5.37 · E2 +1.35 pp</td><td>Vs the training target H (E1 −3.45 pp). Independent bias-corrected replication on policy F: seven fresh seeds, 229,376 primary episodes; all three contrasts replicated. The obstacle-aware gain was not uniform at high obstacle density.</td></tr>
+<tr><td>Classical baselines</td><td class="num-cell">+8.87 pp vs pure pursuit</td><td>Policy F against two sensor-based classical reactive controllers that share a LiDAR approach filter, in the same simulator and evaluation contract; each controller uses its own online inputs. Pure pursuit is the obstacle-relevant comparison; proportional navigation (+30.38 pp) is partly arena exits. Preregistered B1-R, seven evaluation seeds (7/7 same sign). Not a trajectory planner and not a Class A comparison; tuned on one seed; the baselines fly the line of sight at ≤ 2.5 m/s. Capture is the simulator's swept close-approach test, not a physical capture.</td></tr>
 <tr><td>Observation contract</td><td class="num-cell">−48.967 pp</td><td><span class="tag loss">MATERIAL_LOSS</span> Causality not tested. Frozen policy R, three paired evaluation seeds.</td></tr>
 </tbody>
 </table>
@@ -154,6 +155,7 @@
 <li>Target-motion inference uses seven independent evaluation seeds; density-specific E2 effects are exploratory.</li>
 <li>Minimum-distance results are WITHHELD_SEMANTIC_MISMATCH: capture tests swept closest approach within a step; the recorded distance samples step ends.</li>
 <li>Several raw datasets and artifacts remain outside normal Git; no full cross-machine bitwise reproducibility is established.</li>
+<li>B1-R baselines are reactive controllers: no trajectory-planner baseline has run and no new algorithmic contribution is claimed. The R01 tracking-state hazard analysis is NOT_ANALYSED.</li>
 <li>Readaptation is INCONCLUSIVE. The D8b cause is NOT_TESTED. Persistent identity and metric range are BLOCKED by missing ground truth.</li>
 </ul>
 </div>

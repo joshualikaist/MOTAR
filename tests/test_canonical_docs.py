@@ -144,6 +144,48 @@ class EvidencePageTest(unittest.TestCase):
                                    "results/dynamic_mesh_policy_sensitivity_d8b_2026-09-13/README.md",
                                    ("**-48.967 pp**", "[-50.113, -47.821]", "MATERIAL_LOSS"))
 
+    def test_classical_baseline_b1r(self):
+        self.assert_doc_and_source(("**+8.87 pp**", "[+8.54, +9.23]", "**+30.38 pp**", "[+29.95, +30.84]",
+                                    "95.33 %", "86.46 %", "64.96 %", "**not Class A**", "**NOT_ANALYSED**",
+                                    "34–84 % of its crashes", "`LEGACY_STEP_WINDOW` crash causes",
+                                    "The inputs are not identical", "not a strong trajectory planner",
+                                    "not a physical capture and not collision-free", "The F − B-PN result is kept",
+                                    "associations only, not causal effects",
+                                    "does not lift the historical TF32 caveat"),
+                                   "docs/evidence/b1r_v1/analysis_summary.json",
+                                   ('"reading": "SUPERIOR"', '"statement": "F outperforms both classical'))
+        record = json_record("docs/evidence/b1r_v1/analysis_summary.json")
+        rows = {c["contrast"]: c for c in record["contrasts"]}
+        self.assertEqual(round(100 * rows["F_SHADOW - B-PP"]["mean"], 2), 8.87)
+        self.assertEqual(round(100 * rows["F_SHADOW - B-PN"]["mean"], 2), 30.38)
+        self.assertEqual([round(100 * x, 2) for x in rows["F_SHADOW - B-PP"]["bca95"]], [8.54, 9.23])
+        self.assertEqual([round(100 * x, 2) for x in rows["F_SHADOW - B-PN"]["bca95"]], [29.95, 30.84])
+        arms = {}
+        for key, rate in record["primary"].items():
+            arms.setdefault(key.split("|")[0], []).append(rate)
+        self.assertEqual({k: round(100 * sum(v) / len(v), 2) for k, v in arms.items()},
+                         {"F_SHADOW": 95.33, "B-PP": 86.46, "B-PN": 64.96})
+        rmtc = {k: round(v["rmtc60_s"]["mean"], 2) for k, v in record["secondary_per_density"].items()}
+        self.assertEqual((rmtc["F_SHADOW|70"], rmtc["F_SHADOW|205"], rmtc["B-PP|70"], rmtc["B-PP|205"]),
+                         (4.84, 10.05, 8.33, 24.01))
+        audit = json_record("docs/evidence/b1r_v1_audit/audit.json")
+        dens = audit["verification"]["density_pooled"]
+        self.assertEqual({b: round(100 * (dens["F|%d" % b]["capture"] - dens["B-PP|%d" % b]["capture"]), 2)
+                          for b in (70, 205)}, {70: 1.0, 205: 19.17})
+        self.assertEqual((round(100 * dens["F|205"]["crash"], 2), round(100 * dens["B-PP|205"]["crash"], 2)),
+                         (9.54, 27.68))
+        oob = [audit["exploratory"]["arm_density"]["B-PN|%d" % b]["LEGACY_STEP_WINDOW_crash_causes"]["out_of_bounds_share"]
+               for b in (70, 115, 160, 205)]
+        self.assertEqual((round(100 * min(oob)), round(100 * max(oob))), (34, 84))
+        site = read("docs/status/index.html")
+        for phrase in ("Pure pursuit is the obstacle-relevant comparison", "partly arena exits",
+                       "each controller uses its own online inputs", "not a physical capture", "NOT_ANALYSED"):
+            self.assertIn(phrase, site)
+        evidence = read("docs/EVIDENCE.md")
+        for phrase in ("+1.00 pp at 70 bars to +19.17 pp at 205 bars", "F 9.54 %, B-PP 27.68 %",
+                       "F 4.84 → 10.05 s, B-PP 8.33 → 24.01 s"):
+            self.assertIn(phrase, evidence)
+
     def test_class_a_is_zero(self):
         text = read("docs/EVIDENCE.md")
         self.assertIn("**Class A = 0**", text)

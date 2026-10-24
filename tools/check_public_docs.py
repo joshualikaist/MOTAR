@@ -176,6 +176,21 @@ def headline_values(root=ROOT):
                     continue       # failed its semantic check; never a headline value
                 values.add(100 * row["mean_diff"])
                 values.update(100 * bound for bound in row["bca95"])
+    # Classical baselines (B1-R): preregistered contrasts and arm means, bound to their analysis record.
+    b1r = root / "docs/evidence/b1r_v1/analysis_summary.json"
+    if b1r.is_file():
+        rec = json.loads(b1r.read_text())
+        for row in rec["contrasts"]:
+            values.add(100 * row["mean"])
+            values.update(100 * bound for bound in row["bca95"])
+        arms = {}
+        for key, rate in rec["primary"].items():
+            arms.setdefault(key.split("|")[0], []).append(rate)
+        values.update(100 * sum(v) / len(v) for v in arms.values())
+        # The baselines' per-axis speed bound is a frozen contract value (prereg §12 controller block).
+        prereg = (root / "docs/plans/prereg_b1r_classical_baseline_v1.md").read_text(encoding="utf-8")
+        block = re.search(r"```json\n(.*?)\n```", prereg.split("## 12.", 1)[1], flags=re.S).group(1)
+        values.add(float(json.loads(block)["controller"]["max_velocity"]))
     audit = json.loads((root / "docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.json").read_text())
     for row in audit["per_arm_outcome"].values():
         values.add(100 * row["never_acquired_rate"])

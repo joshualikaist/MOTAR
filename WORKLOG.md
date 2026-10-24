@@ -23172,3 +23172,56 @@ repo's PUBLIC_CPU gives 3,219 PASS, 0 failures, 0 errors (`docs/evidence/b1r_v1_
 
 Changed: new files only — the tool, audit.json, AUDIT_REPORT.md, two patch files and the receipt —
 plus this WORKLOG entry. No push or merge. G5 HOLD.
+
+## 2026-10-24 — B1-R public docs: core patch applied (EVIDENCE + site); README unchanged
+
+The user approved the core patch from the `a2b13f0` audit and declined the optional README patch,
+which would have trimmed the target-motion caveat. README.md is unchanged.
+
+**Changed files** (core patch, refined to meet the approval conditions):
+- `docs/EVIDENCE.md`:
+  - **B1-R row.** C2 F − B-PP **+8.87 pp** [+8.54, +9.23] is the obstacle-relevant classical
+    comparison. C1 F − B-PN **+30.38 pp** [+29.95, +30.84] is kept, with its limit: B-PN's gap is
+    partly arena exits, 34–84 % of its crashes, from the `LEGACY_STEP_WINDOW` crash causes. Also
+    stated: n = 7, 7/7 same sign, exact p 0.015625, Holm p 0.03125, and seed-level means
+    95.33 / 86.46 / 64.96 %.
+  - **Explicitly stated in the row:** inputs differ although the simulator and evaluation contract
+    are the same; the baselines are reactive controllers, not a strong trajectory planner; the
+    0.5 m swept close approach is not a physical capture and not collision-free; R01 is
+    NOT_ANALYSED.
+  - **Separate exploratory density paragraph:** associations only.
+  - **TF32 paragraph:** the historical caveat is kept.
+  - **Sources row, registry relation and not-established bullets:** planner, new algorithm, R01.
+- `docs/status/index.html`: a B1-R findings row and a limitation bullet.
+- `tools/check_public_docs.py`: B1-R values bound to `analysis_summary.json`, and the 2.5 m/s bound
+  bound to the prereg §12 `controller.max_velocity`. Before this, the site's 2.5 matched only by
+  coincidence.
+- `tests/test_canonical_docs.py`: `test_classical_baseline_b1r`, with numeric checks against
+  `analysis_summary.json` and `audit.json` and phrase checks on EVIDENCE and the site.
+
+**Refinements beyond the patch file**, within the approved scope:
+- the LEGACY_STEP_WINDOW source label;
+- the statement that inputs are not identical;
+- the not-physical / not-collision-free wording;
+- the TF32 paragraph;
+- "mirrors the crash difference" in place of "carried by";
+- the explicit 2.5 m/s binding.
+
+**Validation:**
+
+| Check | Result |
+| --- | --- |
+| `check_public_docs` | PASS |
+| Doc, site and figure tests | 97 OK (1 pre-existing raw-archive skip) |
+| Site contract and interception JS | PASS |
+| `build_paper_figures --check` | no problems |
+| PUBLIC_CPU | 3,220 ran, 0 failures, 0 errors, 10 skipped |
+
+**Integrity:**
+- The four B1-R raw manifests verify.
+- The `analysis.json` and `selection.json` SHAs match their bindings.
+- The Policy F checkpoint and the prereg SHA are unchanged.
+- The untracked draft is unchanged (`3886be89`).
+- `docs/evidence`, `docs/plans`, `results` and the runtime code are unchanged against HEAD.
+
+No GPU work, push or merge. G5 HOLD.
