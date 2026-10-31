@@ -23225,3 +23225,73 @@ which would have trimmed the target-motion caveat. README.md is unchanged.
 - `docs/evidence`, `docs/plans`, `results` and the runtime code are unchanged against HEAD.
 
 No GPU work, push or merge. G5 HOLD.
+
+## 2026-10-31 — Repository cleanup (PLAN_v4): VS Code changes 1,494 → 0, branches 19 → 6, worktrees 11 → 6; AGENTS.md cleanup bans removed
+
+The user asked for the uncommitted backlog and the branch list to be cleaned up, with a plan and
+three audits before any deletion. Opus audited it three times (`audit_r1`–`audit_r3`). The user then
+approved PLAN_v4 (D1, D2, D3, D5), the worktree removals, and the deletion of the cleanup bans from
+`AGENTS.md`. D4 (remote branches, push) is out of scope. Record:
+`/home/fair/motar_tmp/cleanup_20261031/` (PLAN_v4.md, audits, `run/`).
+
+**`AGENTS.md`** (user instruction). Four clauses removed:
+- "do not merge or delete a worktree as automatic session cleanup";
+- "Do not reset, stash, or incorporate another person's WIP; if it conflicts, stop and report";
+- "do not clean it up by deleting or resetting work" (Git Traceability);
+- "no deletion/reset of WIP" in the session-handoff precedence.
+
+Kept: stage only your own approved files; no `git add .` or `-A`; merge to `main` and push only with
+approval. `docs/research_git_traceability_protocol.md` is not edited.
+
+**Main checkout** (`main` f74390a; HEAD unchanged):
+- B1-R raw (1,406 untracked paths): one line, `/results/b1r_classical_baseline_v1/`, added to the
+  main-only display exclude `.git/motar_main_display_exclude`. The files are unchanged.
+- User WIP (82 paths: the 2026-10-01 professor deck with its tests, plus 3 modified files):
+  - archived as commit `refs/archive/2026-10-31/main-wip` (0613942);
+  - deck copied to `aerial_gym_ws/archives/presentations/professor_2026-10-01/`, 78 sha256 verified;
+  - then the 3 files were restored and the 79 untracked originals removed.
+- `stash@{0}` 23ddb33: kept as `refs/archive/2026-10-31/stash-20261015`, then dropped.
+
+**Branches 19 → 6.** Kept: `main`, `codex/mt-p1` and the 4 frozen branches. 13 deleted:
+- merged, deleted with `-d`: `kroc2027-phase1`, `codex/distractor-envelope`,
+  `paper/quantitative-positioning-20260918`, `codex/motar-docs-pages-20261022`;
+- unique commits, each kept as a ref under `refs/archive/2026-10-31/`:
+  - `codex/motar-figure-redesign-20261022` → `published-site`;
+  - `codex/motar-docs-q02-progress` → `docs-q02-progress`;
+  - `ablation/yaw-off`, `codex/global-target-route-planner`, `codex/recovery-braking-probe`,
+    `codex/recovery-v2-evaluator`, `codex/route-safety-blockers`, `codex/status-target-motion`,
+    `codex/two-envelope-recovery` → refs under their own names.
+
+There are 11 archive refs. They are local only: not listed by VS Code and not pushed.
+
+**Worktrees 11 → 6:**
+- Removed after an exact status check: `kroc2027-phase1`, `distractor_envelope`,
+  `MOTAR-docs-pages-20261022`, `MOTAR-docs-q02-progress`, `MOTAR-paper-positioning-20260918`.
+  `distractor_envelope`'s one untracked prereg is byte-identical to its blob in b0b11ef.
+- Locked with `git worktree lock`, branches kept: `braking_route_v3`, `route_recovery_forensics`,
+  `two_envelope_recovery_integration`, `kroc2027-phase2`. Their raw evidence is bound to these paths.
+  `kroc2027-phase2` got a worktree-only display exclude for its untracked B0/B1 raw and `runs`.
+
+**Workspace root:** 3 loose files moved to `aerial_gym_ws/archives/ws_root_loose_2026-10-31/`.
+
+**Checks** (part A step 6):
+- refs: 6 heads, 3 tags, 11 archive refs, stash empty;
+- the removed heads are exactly the 13 above, with no other ref changes;
+- `main` and the 4 frozen worktrees have empty status;
+- only the 3 known broken symlinks remain;
+- disk: 89 → 87 GB used.
+
+Step 6 attempt 1 failed on an assertion bug: blank head names were read from worktree and config
+lines. The filter was fixed and the step rerun; the records are in `run/step6_attempt1/`.
+
+**This commit:**
+- `AGENTS.md`;
+- this entry;
+- `docs/plans/b1r_classical_baseline_prereg_DRAFT_2026-10-23.md`: line 9 of
+  `prereg_b1r_classical_baseline_v1.md` cites it at SHA-256 3886be89…f50d; content unchanged.
+
+**Validation:**
+- `tests.test_canonical_docs` + `tests.test_branch_policy`: 30 OK.
+- PUBLIC_CPU not run: the host is on hardware hold (machine-check errors under all-core load).
+
+No GPU, PPO, push or merge. `results/`, raw and checkpoints are untouched.

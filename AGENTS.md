@@ -68,11 +68,9 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
   verifying its history/security prerequisites against the intended HEAD. The sensor-contract
   correction preserves that authorization; it does not certify that those checks have passed.
 - `main` is the only long-lived branch (root `OPERATIONS.md` §0). Short-lived agent worktrees or review
-  branches merge back to `main` only with approval; do not merge or delete a worktree as automatic
-  session cleanup.
+  branches merge back to `main` only with approval.
 - Several agent sessions may work in this repository at once. An uncommitted change may belong to
   someone else, so stage only your own approved files. Never use `git add .` or `git add -A`.
-  Do not reset, stash, or incorporate another person's WIP; if it conflicts, stop and report.
 - Read-only audits may create and locally commit approved new reports, analysis evidence and
   appended WORKLOG entries. Existing source and raw remain unchanged. Large raw/checkpoints stay
   outside Git; commit compact records, paths, manifests and SHA-256 bindings instead.
@@ -137,8 +135,8 @@ Never cut the WORKLOG entry to save time; it is what makes the next session chea
 
 Every completion report ends with **Git Traceability**: Branch, Base SHA, New Commit SHA, Changed
 Files, Tests, Working Tree, Remote Push YES/NO, Main Merge YES/NO, and Raw/Checkpoint Integrity.
-If a commit cannot be made, explain why and list every remaining uncommitted path; do not clean
-it up by deleting or resetting work. Link GitHub commits/branches only after a successful push.
+If a commit cannot be made, explain why and list every remaining uncommitted path. Link GitHub
+commits/branches only after a successful push.
 
 ## Session deadline and handoff
 
@@ -152,8 +150,8 @@ it up by deleting or resetting work. Link GitHub commits/branches only after a s
   any owned process still running (PID, log, output, cap and safe next action), and exactly where
   the next session resumes. Commit verified authorized work; explicitly label incomplete work.
 - Follow `.claude/skills/session-handoff/SKILL.md` with this precedence: no push without explicit
-  authorization, no deletion/reset of WIP, and no tracked edits during a GPU run. If a process
-  cannot finish before the deadline, report its actual state rather than claiming completion.
+  authorization and no tracked edits during a GPU run. If a process cannot finish before the
+  deadline, report its actual state rather than claiming completion.
 
 ## Commands
 
