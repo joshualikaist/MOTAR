@@ -76,7 +76,7 @@ Kept on purpose; each still has its folder or record. A selection of the most co
 | 08-22→23 | Detection-range stage 1 | RANGE_INCONCLUSIVE_AT_THIS_BUDGET |
 | 08-25→09-01 | Routed physical-target gates (four rounds) | FAIL_ROUTE_MECHANISM |
 | 09-02 | Detector colour shortcut with distractors | COLOR_SHORTCUT_CONFIRMED |
-| 09-05→06 | Five safety-filter runs with source or HEAD drift | VOID ×5 |
+| 09-05→06 | Five safety-filter runs: four with source, source-bundle or HEAD drift, one with a search-state restore defect | VOID ×5 |
 | 09-09 | C3 "co-adaptation decides the law" explanation | WITHDRAWN (0/2 training seeds) |
 | 09-10 | E3-P attitude decomposition | ATTITUDE_NOT_RELIABLE → BLOCKED |
 | 09-11 | P10 readaptation | INCONCLUSIVE |

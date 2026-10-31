@@ -196,7 +196,8 @@ class EvidencePageTest(unittest.TestCase):
 # registry and its generated positioning document, and the text of the final figures.
 CURRENT_SURFACES = [
     "README.md", "PROJECT.md", "ARCHITECTURE.md", "AGENTS.md", "DESIGN_SYSTEM.md", "CITATION.cff",
-    "docs/README.md", "docs/EVIDENCE.md", "docs/HISTORY.md", "docs/OPERATIONS.md", "docs/REPRODUCIBILITY.md",
+    "docs/README.md", "docs/EVIDENCE.md", "docs/EXPERIMENTS.md", "docs/HISTORY.md", "docs/OPERATIONS.md",
+    "docs/REPRODUCIBILITY.md",
     "docs/status/index.html", "docs/status/evidence.html",
     "docs/paper_outline_2026-09-19.md", "docs/paper_evidence_spine_2026-09-19.md",
     "docs/paper_claim_evidence_matrix_2026-09-19.md",

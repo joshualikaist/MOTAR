@@ -85,6 +85,8 @@ issues remain open. Broader programme priorities below are retained, not executi
 
 - **Commands, test profiles and run rules:** [`OPERATIONS.md`](OPERATIONS.md). The default check is
   `python -B tools/run_tests.py`.
+- **Experiment families** (what belongs together, what to read first, what compares):
+  [`EXPERIMENTS.md`](EXPERIMENTS.md).
 - **Plans:** [`plans/`](plans/). **Evidence:** [`evidence/`](evidence/). **Long-term direction:**
   [`ROADMAP.md`](ROADMAP.md).
 - **Tasks:** Beads (`bd ready`, `bd show <id>`). The database is untracked and local, in the main

@@ -9,6 +9,7 @@
 | How does the system work? | [`ARCHITECTURE.md`](../ARCHITECTURE.md) |
 | How should agents modify it? | [`AGENTS.md`](../AGENTS.md) |
 | What results are established? | [`docs/EVIDENCE.md`](EVIDENCE.md) |
+| Which experiments belong together, and which can be compared? | [`docs/EXPERIMENTS.md`](EXPERIMENTS.md) |
 | How do I reproduce it? | [`docs/REPRODUCIBILITY.md`](REPRODUCIBILITY.md) |
 | How do I operate it? | [`docs/OPERATIONS.md`](OPERATIONS.md) |
 | What happened historically? | [`docs/HISTORY.md`](HISTORY.md) |
@@ -30,6 +31,9 @@ the conflict rather than working around it.
 - [Project page](status/index.html) and its [full evidence page](status/evidence.html).
 
 ## Research evidence
+
+Every experiment family, with the file to read first and which families can be compared, is in
+[`EXPERIMENTS.md`](EXPERIMENTS.md). The table below lists only the tracks behind the headline results.
 
 | Track | Result record | Preregistration |
 | --- | --- | --- |

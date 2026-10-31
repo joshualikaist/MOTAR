@@ -41,6 +41,7 @@ jobs:
           "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_research_overview.py'
           "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_project_page.py'
           "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_canonical_docs.py'
+          "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_experiment_index.py'
           "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_paper_figures_final.py'
           "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_site_*.py'
           "$RUNNER_TEMP/renderer-env/bin/python" -B -m unittest discover -s tests -p 'test_target_algorithm_documentation.py'

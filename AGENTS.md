@@ -15,8 +15,10 @@ Expired exceptions are removed here and remain in git history.
 2. [`README.md`](README.md) and [`PROJECT.md`](PROJECT.md): what MOTAR is, its intent and scope.
 3. [`ARCHITECTURE.md`](ARCHITECTURE.md): how the system connects, and which directories may change.
 4. [`docs/EVIDENCE.md`](docs/EVIDENCE.md): what is established, with its limits.
-5. [`docs/DECISIONS.md`](docs/DECISIONS.md): the user's standing decisions and their reasons.
-6. [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md): if the site or any figure is involved.
+5. [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md): which experiments belong together, the file to
+   read first for each, and which can be compared.
+6. [`docs/DECISIONS.md`](docs/DECISIONS.md): the user's standing decisions and their reasons.
+7. [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md): if the site or any figure is involved.
 
 For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for history,
 [`docs/HISTORY.md`](docs/HISTORY.md) and the bottom of [`WORKLOG.md`](WORKLOG.md).
@@ -224,6 +226,34 @@ Use this form:
 - Refuted hypotheses, stated as refuted: "hypothesis X rejected: measured Y".
 
 Never cut the WORKLOG entry to save time; it is what makes the next session cheap.
+
+Keep experiment records connected and few (D-2026-10-31-1):
+- **Connect every new record.**
+  - In the same commit, add each new preregistration, plan, evidence folder or result folder to
+    its family in [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md), by name.
+  - Or add a family with every field: *Period*, *Question*, *Policy*, *Status*, *Read first*,
+    *Lineage*, *Compare with* and *Members*.
+  - `tests/test_experiment_index.py` fails when a record in its scope is in no family, in two
+    families, or, if first committed on or after 2026-10-31, is matched only by a wildcard.
+  - The test cannot check *Lineage* order or *Status* wording. Update them by hand, and update
+    *Status* whenever a family's verdict or GO/HOLD state changes.
+- **One evidence folder per unit.**
+  - A unit's evidence goes in one folder, `docs/evidence/<unit>_<first date>/`, with a subfolder
+    per gate if needed.
+  - The independent reviewer still writes to its own audit directory. The committed copy of each
+    review or repair round goes into the unit's folder as a numbered file (`REVIEW_r1.md`,
+    `REPAIR_r1.md`, …), not into a new folder. Q02-A's seven repair rounds and eight reviews took
+    15 folders.
+- **No separate handoff files.**
+  - A handoff goes in the WORKLOG entry and Beads, not in a tracked `HANDOFF.md`. This also applies
+    to the output of a handoff skill.
+  - During a GPU freeze, write the handoff outside the repository and tell the user where.
+- **Prefer extending a file to creating one.** Before adding a Markdown file, check whether the
+  family's report or plan can carry the text.
+- **Committed records stay where they are.**
+  - Path-contract files never move.
+  - Other records are not moved or merged to tidy up without a reviewed plan and the user's
+    approval (*Plans for broad or destructive changes*). The index connects them in place.
 
 Every completion report ends with **Git Traceability**: Branch, Base SHA, New Commit SHA, Changed
 Files, Tests, Working Tree, Remote Push YES/NO, Main Merge YES/NO, and Raw/Checkpoint Integrity.

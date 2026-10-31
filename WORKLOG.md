@@ -23391,3 +23391,123 @@ Added:
 
 Beads: `motar-lp5.4` claimed. It stays open, because `PROJECT.md`'s phase line (dated 2026-09-26) is
 still stale. No GPU, push or merge; results, raw and checkpoints untouched.
+
+## 2026-10-31 — Experiment index: every record in one family; growth rules for new records
+
+The user asked whether the Markdown files could be reduced, and said that similar experiments should
+be checked together:
+
+> "md파일 같은게 엄청나게 지금 많잖아. 줄일 필요가 있어. 그런 부분들 줄이고, 비슷한 실험같은 경우는
+> 연결성 있게 확인해보는게 중요하지 않겠어?"
+
+In English: there are far too many Markdown files and they need reducing; similar experiments should
+be checked in a connected way.
+
+**Inventory (read-only).** Script and output: `~/motar_tmp/docs_consolidation_20261031/inventory.py`,
+`inventory.csv` and `summary.txt`. There are 574 tracked Markdown files, 86,313 lines.
+
+| Class | Files | Moving or deleting them |
+| --- | ---: | --- |
+| Immutable evidence, preregistrations and their amendments, path-bound files | 277 | forbidden by the path contracts |
+| Canonical documents | 13 | kept; they are the entry points |
+| Cited by a test or code file | 78 | breaks a test or a run |
+| Cited only by results, JSON records or other machine-readable files | 169 | breaks the record's path or hash |
+| Linked from other Markdown only | 35 | possible, with link fixes |
+| Not referenced | 2 | possible |
+
+The rows sum to 574.
+
+- Markdown files grew by 193 in October alone.
+- Q02-A's seven repair rounds and eight reviews took 15 evidence folders.
+
+The user chose the recommended option: connect, do not delete. No committed record was moved,
+renamed or deleted.
+
+**Added:**
+- `docs/EXPERIMENTS.md`:
+  - 24 families from July to October, each with Period, Question, Policy, Status, Read first,
+    Lineage, Compare with and Members;
+  - the Policy lines come from the checkpoint SHA-256 values in each family's records
+    (`~/motar_tmp/docs_consolidation_20261031/family_facts.py` for JSON receipts, and a plain
+    prefix search for the rest);
+  - seven comparable groups, each stating what is shared and what to check before comparing:
+    Policy F frozen evaluations, Policy R versus F, the speed-filter chain, injected versus
+    measured perception error, the occlusion line, the sensor-fusion lineages, and physical target
+    versus the geometry correction;
+  - the four `origin/main` publication paths the pending merge must add to a family.
+- `tests/test_experiment_index.py`:
+  - every record in scope (472 units: result, evidence and research folders and their loose files,
+    plans, specs, audits, generated results, external baselines, and top-level preregistrations,
+    result notes and tables) is in exactly one family;
+  - a record first committed on or after 2026-10-31 must be named literally, not only through a
+    wildcard;
+  - every family has all eight fields, and its Read first file is its own or outside the scope;
+  - every member pattern matches something;
+  - every Read first and Lineage path exists;
+  - Compare with is `none` or backticked ids of known families;
+  - a result and its manifest preregistration share a family (13 comparisons, asserted non-zero);
+  - the links resolve.
+- `.github/workflows/cpu-validation.yml` runs the new test.
+- `tests/test_canonical_docs.py`: `docs/EXPERIMENTS.md` joins `CURRENT_SURFACES`, so the claim-audit
+  wording guards apply to it.
+
+**Rules (`AGENTS.md`, "Recording work"; D-2026-10-31-1):**
+- connect each new record in the same commit, by name;
+- one evidence folder per unit, with numbered review and repair rounds inside it;
+- no separate `HANDOFF.md`;
+- prefer extending a file to creating one;
+- committed records stay in place.
+
+The read list gains `docs/EXPERIMENTS.md`. `docs/README.md` (source-of-truth table and evidence
+section) and `docs/PROJECT_STATE.md` point to it.
+
+**Correction found by the review:** `docs/HISTORY.md` said all five 09-05→06 safety-filter VOIDs were
+drift. One is a search-state restore defect
+(`results/VOID_20260905_a8_eval_search_state_restore_bug/VOID.md`, "코드 결함": code defect). The row
+now says four drift and one defect; the VOID count is unchanged.
+
+**Review.** Opus 5.5, fresh context, read-only (`~/motar_tmp/docs_consolidation_20261031/audit/REVIEW.md`):
+NOT_READY, with 1 P0, 10 P1 and about 30 P2.
+- **P0:** the "Policy F" comparable group was wrong. Receipts show that A3–A8 (except the 205-bar
+  A7 cell, seed 49), the contact-geometry and arc seeds 491/509, the D1/D4/R0 grids and R-C ran on
+  Policy R or its retrained descendants.
+  So the C3 withdrawal is a Policy R result. Each family now has a Policy line.
+- **P1, all fixed:**
+  - the coverage claim was overstated;
+  - the test would fail on the `origin/main` merge, which is now recorded;
+  - four records were misplaced: S1 shadow and depth-noise order (moved to perception),
+    `air2air_zeroshot` (moved to perception), v5a smoke (moved to `policy-f`: a legacy-vehicle run
+    that the 2026-08-13 record keeps out of the ref5in lineage);
+  - the VOID reason;
+  - the S-L1A review claim;
+  - the task-diagnostics and public-release verdict words;
+  - the BOIA Read-first conflict, recorded with `motar-lp5.4`;
+  - an unscoped "the frozen policy";
+  - the AGENTS overstatement;
+  - the DECISIONS denominator, the upper bound and this missing entry.
+- **P2:**
+  - most applied: Lineage order, Read-first choices, Status limits, periods, cross-references,
+    test hardening and the AGENTS wording.
+  - `navrl_v2_geometry_*.csv` moved to `policy-f`, because they were committed on 2026-08-05 with
+    the ep24000 audit.
+  - Not applied: the optional `fnmatch` segment rule (P2-T6) and a PROJECT_STATE freshness test
+    (P2-X3).
+- **Delta review:** Opus 5.5, fresh context (`audit/DELTA_REVIEW.md`): READY_WITH_FIXES, with three
+  P1s and 14 P2s, all fixed.
+  - The P1s: P10's adapted arms are a retrained descendant of F, not F; the v5a lineage; this
+    entry's inventory table.
+  - It confirmed both deviations from the first review: the geometry CSVs and the D8c citation.
+  - The test now also requires records first committed on 2026-10-31 to be named, and rejects an
+    unbackticked Compare with.
+
+**Validation:**
+- `test_experiment_index` 9, `test_canonical_docs` 26, `test_branch_policy` 4,
+  `test_repository_claims` 12, `test_checkpoint_reference_audit` 7, `test_public_docs_consistency` 7:
+  all OK under Python 3.8.
+- `check_public_docs`: PASS.
+- In-memory mutations (an unlisted record, a late wildcard-only record, a missing field, a bad
+  heading, a foreign Read first, an empty Lineage, a merge-added loose file, an unknown or
+  unbackticked Compare with) each fail the test.
+- PUBLIC_CPU not run: the host is on hardware hold. The kernel crash count stayed at 79.
+
+No GPU, push or merge. Results, raw data and checkpoints are untouched.

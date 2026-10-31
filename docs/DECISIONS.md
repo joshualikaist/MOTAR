@@ -181,3 +181,35 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Reversal:** the user restores the rules.
 - **Sources:** the user's instructions of 2026-10-31 ("agents.md파일에 그런 내용을 삭제해", "2번 규칙도
   삭제해도 될거같아"); [`WORKLOG.md`](../WORKLOG.md) 2026-10-31.
+
+## D-2026-10-31-1 — Experiment records are connected by an index, not reduced by deletion
+
+- **Decision:** the user chose to keep every committed Markdown record in place and add
+  [`EXPERIMENTS.md`](EXPERIMENTS.md), which puts every experiment record in its scope (result,
+  evidence and research folders, plans, specs, audits, and top-level preregistrations and result
+  notes) in exactly one family. `tests/test_experiment_index.py` checks that each record in that
+  scope is in exactly one family and that a record first committed on or after 2026-10-31 is named
+  literally.
+  `AGENTS.md` ("Recording work") limits future growth: one evidence folder per unit with numbered
+  review and repair rounds inside it, and no separate handoff files.
+- **Why:**
+  - Of 574 tracked Markdown files on 2026-10-31, 277 were immutable evidence, preregistrations or
+    path-bound files, and 13 were canonical documents.
+  - Tests, code or machine-readable records cite 247 of the other 284 by path.
+  - At most 37 more could have been moved or deleted without breaking a test, code or record
+    binding. Some of those are still cited by immutable Markdown, such as the B1-R draft, which
+    `plans/prereg_b1r_classical_baseline_v1.md` binds by SHA-256.
+  - Tracked Markdown files grew from 381 to 574 in October (the base is `2da5b12`, the last
+    commit before 2026-10-01 KST).
+- **Alternatives:** also move the at most 37 unbound files to `docs/archive/` (a separate plan,
+  review and approval); delete records (rejected, because it breaks receipts and tests).
+- **Reversal:** the user asks to remove the index or the growth rules.
+- **Sources:**
+  - the user's question of 2026-10-31 ("md파일 같은게 엄청나게 지금 많잖아. 줄일 필요가 있어 …
+    비슷한 실험같은 경우는 연결성 있게 확인해보는게 중요하지 않겠어?": there are far too many
+    Markdown files, they need reducing, and similar experiments should be checked together), and
+    their choice of the recommended option;
+  - [`WORKLOG.md`](../WORKLOG.md) 2026-10-31, the experiment-index entry;
+  - the inventory `~/motar_tmp/docs_consolidation_20261031/inventory.csv` (SHA-256
+    `412a6df6bd6a3ac66ea598c26e6cff62d72a3c06b22af81329a9152242749a5d`), made by `inventory.py`
+    (`6d3d1f23cebf17a72dff84b3e6a5b6eebf8c6340dcbb654e40b98bbf86dc97e6`).
