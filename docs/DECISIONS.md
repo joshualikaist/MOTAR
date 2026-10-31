@@ -38,7 +38,7 @@ first recorded, and that source stays authoritative.
 - **Impact:**
   - Backups are not proposed again and are not used as a precondition for Git cleanup.
   - **This does not authorise deleting anything.** Raw data, checkpoints, Policy F, the WIP and stash,
-    and the symlinks are all preserved.
+    and the symlinks are all preserved. (WIP/stash clause superseded by D-2026-10-31-0.)
 - **Reversal:** the user names a destination.
 - **Sources:** the user's 2026-10-19 instruction. It supersedes the "external backup NOT_ESTABLISHED,
   destination pending" notes in WORKLOG and in
@@ -107,7 +107,9 @@ first recorded, and that source stays authoritative.
 
 - **Decision:** Policy F (ep25000 riskcap) is the only policy, with no new PPO training. The capture
   metric `capture_0p5m` is primary.
-- **Source:** [`AGENTS.md`](../AGENTS.md), the temporary KROC2027 exception.
+- **Source:** the temporary KROC2027 Phase 1 exception, formerly in [`AGENTS.md`](../AGENTS.md)
+  (added in `01c5b19`). It expired at the 2026-10-28 freeze and was removed on 2026-10-31; its text
+  is in `git show 5f5a768:AGENTS.md`.
 
 ## Earlier decisions
 
@@ -127,7 +129,8 @@ Decisions before October 2026 are recorded in:
 - **Disk amendment:** the user's subsequent instruction explicitly supersedes the attachment's8GB
   floor with **3,000,000,000 bytes**. Initial startup stopped at7,975,260,160bytes; the user removed
   files and requested resume. Resume check measured9,547,649,024bytes. No agent data deletion or
-  backup/bundle action was taken. Preserve PDFs, historical raw, symlinks, main WIP and stash.
+  backup/bundle action was taken. Preserve PDFs, historical raw, symlinks, main WIP and stash. (WIP/stash clause superseded by
+  D-2026-10-31-0.)
 - **Boundary:** G4 unit tests do not qualify performance, safety, calibration or recovery. G5 and
   above need separate user approval. Session quota deadline is unknown; conservative wrap-up17:38KST.
 
@@ -149,7 +152,8 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Research entry point:** [BOIA Master Plan](research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md)
   for current direction; it preserves old evidence/specs instead of overwriting them.
 - **Git:** source8689efcd preserved; verified research/P1 changes committed separately from Git
-  administration/master docs. Main WIP3/stash/Raw/results/checkpoints/symlinks are protected.
+  administration/master docs. Main WIP3/stash/Raw/results/checkpoints/symlinks are protected. (WIP/stash clause superseded by
+  D-2026-10-31-0.)
   Only169verified nonRawCPython caches receive anchored local info/exclude rules; no Raw hiding.
 - **Safety:** utility failure must not erase a valid current backup. Independent env/episode/decision/
   candidate/version/time/model/provenance and complete-prefix/backup bindings are now required,
@@ -158,3 +162,22 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   G5HOLD. Current instruction supersedes earlier PART C no-auto-local-commit only for this scope.
 - **Evidence:** [R1 report](evidence/boia_g4r4_2026-10-20/R1_REPORT.md),
   [Git audit](evidence/boia_g4r4_2026-10-20/GIT_HYGIENE_REPORT.md).
+
+## D-2026-10-31-0 — Cleanup bans removed from AGENTS.md and the traceability protocol
+
+- **Decision:** the user removed the rules against deleting a worktree as session cleanup, against
+  resetting, stashing or incorporating another person's WIP, and against deleting, resetting or
+  hiding work to produce a clean status. Worktree and branch lifecycle rules are in
+  [`AGENTS.md`](../AGENTS.md) ("Git rules"). Push, merge into `main`, path contracts and staging by
+  name are unchanged.
+- **Alternatives:** keep the rules and approve each cleanup as a one-off exception, as PLAN_v4 did.
+- **Supersedes:** the WIP/stash preservation clauses of D-2026-10-19-1, D-2026-10-19-3 and
+  D-2026-10-21-0. The main WIP is kept as `refs/archive/2026-10-31/main-wip` and the stash as
+  `refs/archive/2026-10-31/stash-20261015` (local refs, not pushed).
+- **Also recorded:** the user's 2026-10-16 instruction to carry recommended steps through and report
+  once at the end ("이제부터는 너가 자동으로 나머지 과정까지 다 한다음에 나 불러주면 좋겠어": from now
+  on, do the remaining steps yourself and call me when done). `AGENTS.md` states it under "What
+  needs the user, and what does not"; reserved decisions still need the user.
+- **Reversal:** the user restores the rules.
+- **Sources:** the user's instructions of 2026-10-31 ("agents.md파일에 그런 내용을 삭제해", "2번 규칙도
+  삭제해도 될거같아"); [`WORKLOG.md`](../WORKLOG.md) 2026-10-31.

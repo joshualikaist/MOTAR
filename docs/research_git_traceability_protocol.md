@@ -6,6 +6,10 @@ and Codex, and to all subsequent authorized MOTAR work. The canonical entry poin
 wait for separate approval before each local commit of completed authorized work. It grants no
 new implementation, GPU, training, push or merge authorization.
 
+Amended on 2026-10-31 at the user's instruction: the bans on deleting, resetting or hiding work to
+produce a clean status, on changing user WIP or a stash, and on deleting branches or worktrees were
+removed. Worktree and branch lifecycle rules are in `AGENTS.md` ("Git rules").
+
 ## Completion requires a local commit
 
 When an approved research unit is complete and verified, record it in a local Git commit before
@@ -24,8 +28,7 @@ Keep independent units in separate commits where practical. The required sequenc
 
 Do not silently leave finished verified work uncommitted. If a conflict, failing check, hook,
 missing identity or other condition prevents a commit, report the concrete reason and all
-remaining uncommitted paths. Do not delete, reset or hide work to produce a clean status.
-Incomplete or unverified work must not be reported as completed.
+remaining uncommitted paths. Incomplete or unverified work must not be reported as completed.
 
 For GPU experiments, commit source and preregistration before measurement. Keep source HEAD and
 all tracked files, including WORKLOG, docs and tests, unchanged during execution. Write only to
@@ -47,19 +50,18 @@ do not relabel them as audit PASS. A plausible but unverified explanation remain
 
 - Prefer an isolated short-lived worktree/research branch where practical. Record the branch and
   base SHA before editing. Main merge is separately authorized, never automatic cleanup.
-- Do not modify, stage or commit user WIP, an existing stash, another agent's unfinished work,
-  frozen Policy F or an unauthorized checkpoint, historical raw, original results or manifests.
+- Do not stage or commit another agent's unfinished work. Do not modify frozen Policy F or an
+  unauthorized checkpoint, historical raw, original results or manifests.
 - Stage explicit paths. Never use `git add .`, `git add -A` or a broad path that includes unrelated
   files. Review the staged diff and exact staged path list before committing.
-- On conflict with existing user changes, stop and report. Do not force-reset, stash or overwrite
-  the conflicting work. Preserve all existing path/hash contracts and preregistrations.
+- Preserve all existing path/hash contracts and preregistrations.
 
 ## Local history and GitHub access
 
 A local commit is not visible through GitHub. Report whether a remote push actually completed;
 provide a GitHub commit/branch URL only after a successful authorized push. If remote review is
 needed, propose pushing the named dedicated research branch and wait for explicit authorization.
-Main merge, GitHub push and branch/worktree deletion are not implied by completing a local unit.
+Main merge and GitHub push are not implied by completing a local unit.
 If the user later authorizes automatic push of a particular branch, apply it only within that
 stated scope. Preserve current remote state otherwise.
 
@@ -98,8 +100,8 @@ freeze is active merely to write a handoff; use scratch and tell the user where 
 process remains, append the verified handoff to WORKLOG and include it in the local commit.
 
 The repository's [session-handoff skill](../.claude/skills/session-handoff/SKILL.md) supports this
-workflow. Its older push, revert and concurrent-edit suggestions do not override this user
-directive: no unauthorized push, no destruction of WIP, and no tracked edits during GPU runs.
+workflow. Its older push and concurrent-edit suggestions do not override this user
+directive: no unauthorized push and no tracked edits during GPU runs.
 
 ## Required final block
 

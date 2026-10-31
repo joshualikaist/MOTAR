@@ -37,8 +37,8 @@ claim and no state-of-the-art claim.
 - **Success condition:** a submitted paper whose numbers all come from committed records.
 - **Status:** H-A supported; H-A2/I_A and H-B inconclusive
   ([record](evidence/mt_precision_review_2026-10-16/README.md)).
-- **Precondition:** the Phase 1 exception in [`AGENTS.md`](../AGENTS.md) ends at the freeze or at the
-  merge, whichever comes first.
+- **Precondition:** the Phase 1 exception ended at the 2026-10-28 freeze and was removed from
+  [`AGENTS.md`](../AGENTS.md) on 2026-10-31 (text: `git show 5f5a768:AGENTS.md`).
 
 ### M2 — H-R3 active visibility recovery (epic `motar-6nn`, label `h-r3`)
 

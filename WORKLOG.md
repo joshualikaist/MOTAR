@@ -23295,3 +23295,99 @@ lines. The filter was fixed and the step rerun; the records are in `run/step6_at
 - PUBLIC_CPU not run: the host is on hardware hold (machine-check errors under all-core load).
 
 No GPU, PPO, push or merge. `results/`, raw and checkpoints are untouched.
+
+## 2026-10-31 — AGENTS.md brought up to current practice; the remaining cleanup bans removed from the traceability protocol
+
+The user asked for two things after the repository cleanup above:
+
+> "2번 규칙도 삭제해도 될거같아. 이제 이 연구에 알맞은 agents.md를 현재 우리가 해온 과정을 보면서
+> 최신 내용으로 맞춰줄 수 있을까? 우리가 너무 오래된 규칙이 많았던 것같아."
+
+In English: also delete rule 2 (the protocol's "do not delete, reset or hide work to produce a
+clean status"), and bring `AGENTS.md` up to date with how this research is actually done now,
+because too many rules were old.
+
+This supersedes the line "`docs/research_git_traceability_protocol.md` is not edited" in the
+cleanup entry above.
+
+**`docs/research_git_traceability_protocol.md`.** The protocol now carries a dated amendment note.
+Removed, matching the `AGENTS.md` clauses the user removed earlier today:
+- "Do not delete, reset or hide work to produce a clean status." (the user's rule 2);
+- "user WIP, an existing stash" from the do-not-modify list, and "modify" for another agent's
+  unfinished work. "Do not stage or commit another agent's unfinished work" is kept;
+- "On conflict with existing user changes, stop and report. Do not force-reset, stash or overwrite
+  the conflicting work.";
+- "branch/worktree deletion" from the things not implied by completing a unit;
+- "no destruction of WIP" and "revert" in the session-handoff override.
+
+**`AGENTS.md` rewritten** (the Beads block and the path-contract table are byte-identical).
+
+Removed as expired:
+- the KROC2027 Phase 1 temporary exception, which ended at the 2026-10-28 freeze (its text is in
+  `git show 5f5a768:AGENTS.md`);
+- "`main` is the only long-lived branch". Research commits are on `codex/mt-p1`, which has 142
+  commits that are not in `main`;
+- the sensor-contract sentence attached to the spent conditional push authorization;
+- the archived Cursor skill note.
+
+Added:
+- a "What needs the user" section. Reserved: GPU, new PPO (excluded by D-2026-10-14-0), Policy F
+  and checkpoints, the next gate, push and merge. Committed preregistrations, results, raw and
+  failure evidence are never edited, even with approval. The section also states the
+  carry-through-and-report-at-the-end preference (2026-10-16);
+- Policy F as the only learned policy; correction layers default to OFF, with OFF = native shown
+  first;
+- gates report the verdict their preregistration fixes, and are CONDITIONAL at most until the
+  independent review finishes;
+- independent fresh-context review before GO (Opus 5.5 in Claude Code);
+- non-vacuous checks: a guard that rejects every valid input is a FAIL;
+- runs during a rising kernel crash count are void;
+- the branch facts and the known conflict with the frozen `CLAUDE.md` / root `OPERATIONS.md` §0;
+- the worktree lifecycle: check unique content and path bindings, then remove or lock, with archive
+  refs under `refs/archive/<date>/`. The four locked worktrees are named, and `MOTAR-mt-p1`, whose
+  two `results/` symlinks are protected, is not removed without the user;
+- keep Source Control at zero (main-only display exclude, per-worktree excludes, no untracked decks);
+- the freeze also applies to guarded CPU runners; worktree runs fail closed on `PYTHONPATH`; every
+  long run is bounded (`timeout -k`, crash count, the `multiprocessing.Pool` hang);
+- persistent evidence outside the repo, because `/tmp` was wiped on 2026-10-28;
+- a backup is never a precondition (D-2026-10-19-1);
+- plans with independent review and approval for broad or destructive changes;
+- pitfalls: host machine-check faults since 2026-10-28; TF32 in `torch.cdist`, stated as not a
+  safe-density whitelist; PUBLIC_CPU single-process pollution; git 2.25 porcelain without `locked`;
+  `LC_ALL=C`; the shared stash stack;
+- talk to the user in Korean; the navrl skill is limited to read-only diagnosis.
+
+**Companion edits:**
+- `docs/OPERATIONS.md` §1–2: GPU authority wording, and the branch facts in place of "deletion is
+  not automatic session cleanup".
+- `docs/PROJECT_STATE.md`:
+  - the stale-docs bullet;
+  - the work branch as the current research branch;
+  - the three `origin/main` publication commits (`7689664`, `f9c1772`, `a32932f`) that the merge
+    must integrate.
+- `docs/DECISIONS.md`:
+  - new D-2026-10-31-0;
+  - WIP/stash clauses of D-2026-10-19-1, D-2026-10-19-3 and D-2026-10-21-0 marked superseded;
+  - D-2026-10-14-0's source re-pointed.
+- `docs/ROADMAP.md`: the M1 precondition re-pointed.
+
+**Review.** Opus 5.5, fresh context, read-only, report in
+`~/motar_tmp/agents_rewrite_20261031/audit/REVIEW.md`: READY_WITH_FIXES (0 P0, 8 P1, 19 P2).
+- All eight P1s fixed.
+- P2-1–6, 8–10, 11 (in part), 12–15 and 17–19 applied. P2-7 is reported to the user, and P2-16
+  (auto-memory) updated.
+- Delta re-review (`audit/DELTA_REVIEW.md`): READY_WITH_FIXES.
+  - All P1s are resolved.
+  - The WORKLOG draft wrongly said P1-4's symlink clause had no record. The record is the G4-R7
+    entry of 2026-10-21 and D-2026-10-21-0, so the clause is now in `AGENTS.md`.
+  - The workstation scoping of the display-exclude bullet and the actor-replacement citation were
+    corrected.
+
+**Validation:**
+- `tests.test_canonical_docs`, `test_branch_policy`, `test_repository_claims` and
+  `test_checkpoint_reference_audit`: 49 OK.
+- `check_public_docs`: PASS.
+- PUBLIC_CPU not run: the host is on hardware hold.
+
+Beads: `motar-lp5.4` claimed. It stays open, because `PROJECT.md`'s phase line (dated 2026-09-26) is
+still stale. No GPU, push or merge; results, raw and checkpoints untouched.

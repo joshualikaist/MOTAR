@@ -33,8 +33,10 @@ Each item is verified only within the scope stated in its record.
 
 ## Current branch and phase
 
-- **Work branch:** `codex/mt-p1`. It is a short-lived worktree branch and is not yet merged into
-  `main`. A merge needs user review (`motar-lp5.2`).
+- **Work branch:** `codex/mt-p1`. It is the current research branch (worktree `src/MOTAR-mt-p1`) and
+  is not yet merged into `main`. A merge needs user review (`motar-lp5.2`). `origin/main` carries
+  three publication commits from 2026-10-22/23 (`7689664`, `f9c1772`, `a32932f`) that are in neither
+  local `main` nor `codex/mt-p1`; the approved merge must integrate them.
 - **Phase:** G4-R7 (CPU only) prepared the Q01-V2 passive shadow run; executing it needs a
   separate GPU approval (`motar-3p3.22`). Measured-evidence/continuation/mission work needs approval. KROC2027 freeze remains2026-10-28;
   H-R3 stays PROVISIONAL. BOIA has no qualified episode or online system yet.
@@ -49,8 +51,8 @@ Each item is verified only within the scope stated in its record.
 
 - **H-R3 attribution is INCONCLUSIVE.** Confirmation is on HOLD until the estimand is chosen
   (`motar-6nn.1`).
-- **Stale docs.** `PROJECT.md` (phase dated 2026-09-26), `AGENTS.md` and `OPERATIONS.md` still say no
-  GPU run is authorised. They predate the October approved runs (`motar-lp5.4`).
+- **Stale docs.** `PROJECT.md` (phase dated 2026-09-26) predates the October approved runs
+  (`motar-lp5.4`). `AGENTS.md` and `docs/OPERATIONS.md` §1–2 were updated on 2026-10-31.
 - **TF32 caveat missing from public claims.** Historical moving-target cells are TF32-exposed, and the
   public target-motion claims do not say so yet (`motar-lp5.3`).
 - **No physical-safety claim.** P-L1 and G-L1 are not done (`motar-tbx`).

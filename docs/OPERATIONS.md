@@ -7,9 +7,10 @@ are **not** approvals to run again.
 
 ## 1. Authority — read before running anything heavy
 
-- **No GPU evaluation and no PPO training is authorised.** Every GPU run so far had an explicit,
-  single-use approval; the last one was the H/E0/E1/E2 evaluation of 2026-09-18. A new run needs the
-  user's explicit approval **and** a preregistration committed before execution.
+- **No GPU evaluation and no PPO training is authorised at present.** Every GPU run, including the
+  approved October 2026 units recorded in [`WORKLOG.md`](../WORKLOG.md), had an explicit user
+  approval naming that run or its unit. A new run needs the user's explicit approval **and** a preregistration committed before
+  execution.
 - Frozen experiments stay frozen. Do not change rewards, the controller, target definitions,
   termination values, observation schemas or checkpoints to "fix" a result.
 - `python tools/check_research_authority.py --json` checks the frozen authority record
@@ -19,12 +20,12 @@ are **not** approvals to run again.
 
 ## 2. Branch and site rules
 
-- `main` is the only long-lived branch; it is both the working and the publishing branch. GitHub Pages
-  serves `/docs` from `main`, so the public site is `docs/status/`. Short-lived branches (agent
-  worktrees under `.codex_worktrees/`, or a review branch the user asks for) may merge back into
-  `main` only after explicit approval; deletion is not automatic session cleanup. The historical
-  branch rule is in root [`OPERATIONS.md`](../OPERATIONS.md) §0,
-  and `tests/test_branch_policy.py` keeps the documents consistent.
+- `main` is the publishing branch. GitHub Pages serves `/docs` from `main`, so the public site is
+  `docs/status/`. Research commits currently land on `codex/mt-p1` (worktree `src/MOTAR-mt-p1`) and
+  reach `main` only by an approved merge. Worktree and branch lifecycle, archive refs and the
+  main-only display exclude are in [`AGENTS.md`](../AGENTS.md) ("Git rules"). The historical branch
+  rule is in root [`OPERATIONS.md`](../OPERATIONS.md) §0, and `tests/test_branch_policy.py` keeps the
+  frozen documents consistent.
 - Never force-push, `reset --hard`, or rewrite published history. Review the actual diff and stage
   explicitly named approved files. Completed, verified authorized work must receive a local commit
   under the user's 2026-10-17 [Git traceability protocol](research_git_traceability_protocol.md).
