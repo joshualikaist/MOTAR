@@ -23658,3 +23658,43 @@ either. M3 part 1 runs only after M2 (entry condition in the preregistration).
   last bit, so the port reproduces CPython 3.8's `vector_norm`.
 
 Next: when R2' ends, R3' phase 2; then M2; then M3 part 1 on an idle host. No GPU, PPO, push or merge.
+
+## 2026-11-04 — C-Planner M1 complete: R2' CONDITIONAL, independent review R3' PASS → R2' PASS
+
+R2' ([`docs/plans/prereg_cplanner_r2prime_v1.md`](docs/plans/prereg_cplanner_r2prime_v1.md)) ran from a frozen
+`git archive` copy of `b407039` (byte-identical r1 source), 01:17 – 06:07 KST, CPU only, `taskset -c 0-3,8-11,14-23`,
+12 workers. Driver verdict CONDITIONAL: 19/19 commands, every rule true, rule 9 reported, nine determinism
+comparisons true, inputs unchanged, kernel fault count 0 before and after every command, boot id unchanged.
+
+| Rule | Suite | Result |
+| --- | --- | --- |
+| 1-2, 4 | `check_static`, `check_r1_core` | pass; core 7 tests, 0 failures, 0 baseline false certificates |
+| 4 | `attacks_p0r` | SAFETY 106/106, CONTRACT 10/10, CONTROL 1/1 |
+| 6/8 | `scenarios_p0r` | 114 segments, 0 failures, FALSE_CERT 0; open scene 200/200 on both layouts |
+| 7 | `map_invariants` | I1-I7 0 violations; 60 sequences, 115,831,788 cell checks |
+| 5C | `check_r1_temporal` | focused checks pass |
+| 3/8 | `regress_v7` | inputs, flags and reasons identical to v7; 0 false certifications |
+| 5A | `ni_A` | 20,000 scenes, 160,000 segments; camera / track+camera identical, track gain 0, false cert 0 |
+| 5B | `ni_B` | 2,000 sequences, 112,000 segments; track gain 0, track loss 1,833 (MAP_VETO_CONFLICT), false cert 0 in four runs |
+| 11 | duplicates | deterministic suites identical; 5A seeds 0-1999, 5B seeds 0-199 equal per-seed digests |
+| 9 | `timing_p0r` | reported: verbatim certify of 8 segments p95 612 ms (MOTAR-72x4) |
+
+The duplicates of 5A/5B are seed prefixes (rule 11), which is why they took 1,057 s and 296 s against 11,081 s and
+3,012 s for the full runs (the full 5A also ran under concurrent development load).
+
+R3' (Claude Opus 5.5, fresh context, Agent `model: "opus"`; read-only copies in `~/motar_tmp/cplanner_r3p_20261104/`,
+writes only to `audit/`): **PASS**, no in-scope P0-blocking finding under charter §5. So R2' is PASS (its
+preregistered label) and M1 is complete, within the charter §4 assumptions. Important findings: none. Minor M1-M8 and
+limitations L1-L5 stay open; the new one is M8: cpu 4 and 5 were taken offline by hand at 01:46 KST during 5A
+(hotplug, not a fault record; the driver does not compare the online CPU list). L3 restates that verbatim
+certification is far from the 50 ms G-beta budget. The reviewer's own fuzz with an independent caster and oracle:
+0 FALSE_CERT in 3,825 certificates; three unsound mutants caught; 84 seeds outside the duplicate range re-run with
+84/84 equal digests.
+
+Evidence: [`docs/evidence/cplanner_2026-11-04/`](docs/evidence/cplanner_2026-11-04/README.md) (`r2prime/`: compact
+records, `REVIEW_r1.md`, `REVIEW_r1_phase1.md`, manifests binding the 63 raw files, the 35-file frozen tree and the
+68 audit files). Raw: `~/motar_tmp/cplanner_r2p_20261104/r2prime/`. Beads `motar-3p3.31` closed.
+
+Next: M2 (V1, G-alpha) started at 06:22 KST from the frozen copy of `a5b7022`
+(`~/motar_tmp/cplanner_m2_20261104/run/`); then its independent review; then M3 part 1 on an idle host. No GPU, PPO,
+push or merge.

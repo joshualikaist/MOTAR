@@ -1,0 +1,45 @@
+{
+ "rules": {
+  "1-2": true,
+  "4": true,
+  "6/8": true,
+  "7": true,
+  "5C": true,
+  "3/8": true,
+  "5A": true,
+  "5B": true
+ },
+ "timing_rule_9": [
+  "REPORTED"
+ ],
+ "determinism": {
+  "check_static": true,
+  "check_r1_core": true,
+  "attacks_p0r": true,
+  "scenarios_p0r": true,
+  "map_invariants": true,
+  "check_r1_temporal": true,
+  "regress_v7": true,
+  "ni_A": true,
+  "ni_B": true
+ },
+ "duplicate_runs_pass": true,
+ "inputs_unchanged": true,
+ "changed_inputs": [],
+ "host_void": false,
+ "commands_run": 19,
+ "commands_expected": 19,
+ "verdict": "CONDITIONAL",
+ "verdict_scope": "rules 1-8 + 5A/5B/5C + determinism + host + inputs; PASS only after the independent R3' review under docs/plans/cplanner_charter_v1.md",
+ "host_end": {
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "fault_events": [],
+  "fault_count": 0,
+  "online": "0-3,6-23",
+  "offline": "4-5",
+  "bios": "0806",
+  "loadavg": "1.12 2.43 5.67 1/2566 2476111",
+  "time": "2026-11-04T06:07:55.610968+09:00"
+ },
+ "finished": "2026-11-04T06:07:55.610981+09:00"
+}

@@ -1,0 +1,27 @@
+{
+ "pass": true,
+ "violations": {
+  "I1": 0,
+  "I2": 0,
+  "I3": 0,
+  "I4": 0,
+  "I5": 0,
+  "I6": 0,
+  "I7": 0
+ },
+ "invariants": {
+  "I1": "STATIC never leaves STATIC/CONFLICT",
+  "I2": "CONFLICT is permanent",
+  "I3": "occupied -> FREE only after >= K_FREE complete packets",
+  "I4": "an incomplete/refused packet adds no FREE",
+  "I5": "camera labels never change a map state",
+  "I6": "time alone never changes a map state (label TTL only)",
+  "I7": "never-observed cells are UNKNOWN"
+ },
+ "checked": {
+  "sequences": 60,
+  "steps": 1800,
+  "cell_checks": 115831788
+ },
+ "examples": []
+}

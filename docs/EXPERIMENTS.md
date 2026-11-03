@@ -677,19 +677,21 @@ family that is in the test's scope.
 - **Policy:** a new CPU planner and certificate (no learned policy); compared later with Policy F and
   B-PP. Frozen Policy F is unchanged.
 - **Status:**
-  - M1 R2' running; qualification NOT_QUALIFIED until R2' and the independent review R3' finish.
-  - M2 (V1, G-alpha) and M3 part 1 (native coverage E1/E2, G-beta) preregistered; not measured.
+  - M1 complete: R2' CONDITIONAL, independent review R3' PASS (Opus 5.5) → R2' PASS within the charter §4
+    assumptions; minor findings and limitations open (`docs/evidence/cplanner_2026-11-04/`).
+  - M2 (V1, G-alpha) running; M3 part 1 (native coverage E1/E2, G-beta) preregistered, not measured.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.
 - **Read first:** [`docs/plans/cplanner_charter_v1.md`](plans/cplanner_charter_v1.md)
 - **Lineage:**
   - P0 v1–v7, P0-R and r1, outside the repository (see below)
   - → `docs/plans/cplanner_charter_v1.md`
-  - → `docs/plans/prereg_cplanner_r2prime_v1.md`
+  - → `docs/plans/prereg_cplanner_r2prime_v1.md` → `docs/evidence/cplanner_2026-11-04/` (R2', R3')
   - → `docs/plans/prereg_cplanner_m2_v1.md`
   - → `docs/plans/prereg_cplanner_m3_v1.md`
 - **Compare with:** `b1r-classical-baseline`, `boia`
 - **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`,
-  `docs/plans/prereg_cplanner_m2_v1.md`, `docs/plans/prereg_cplanner_m3_v1.md`
+  `docs/plans/prereg_cplanner_m2_v1.md`, `docs/plans/prereg_cplanner_m3_v1.md`,
+  `docs/evidence/cplanner_2026-11-04/`
 
 ## Not yet in the repository
 

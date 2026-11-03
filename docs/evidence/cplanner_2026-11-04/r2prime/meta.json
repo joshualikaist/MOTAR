@@ -1,0 +1,13 @@
+{
+ "tree": "/home/fair/motar_tmp/cplanner_r2p_20261104/frozen/cplanner",
+ "python": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+ "python_version": "3.8.20",
+ "allowed_cpus": "0-3,8-11,14-23",
+ "workers": "12",
+ "started": "2026-11-04T01:17:15.723493+09:00",
+ "argv": [
+  "/home/fair/motar_tmp/cplanner_r2p_20261104/frozen/cplanner/tools/run_gate.py",
+  "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime"
+ ],
+ "frozen_commit": "b407039 b407039347243225cb76ed0dcdaa718a60571924"
+}

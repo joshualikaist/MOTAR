@@ -1,0 +1,393 @@
+[
+ {
+  "label": "check_static",
+  "name": "check_static",
+  "rule": "1-2",
+  "argv": [
+   "check_static.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/check_static.json"
+  ],
+  "timeout_s": 300,
+  "exit": 0,
+  "elapsed_s": 0.12174236298596952,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "2.45 2.66 1.86 3/2706 2006602",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/check_static.json",
+  "output_sha256": "ef25b06abe80363744d8d32aff9f2b7012966916478b848bfa53345e2056775b",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "check_r1_core",
+  "name": "check_r1_core",
+  "rule": "4",
+  "argv": [
+   "check_r1_core.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/check_r1_core.json"
+  ],
+  "timeout_s": 300,
+  "exit": 0,
+  "elapsed_s": 0.5414865880011348,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "2.45 2.66 1.86 2/2711 2006626",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/check_r1_core.json",
+  "output_sha256": "3327616c453474f98b7ee89f1116f1d578c04e41f196cea70643ccc06a1da494",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "attacks_p0r",
+  "name": "attacks_p0r",
+  "rule": "4",
+  "argv": [
+   "attacks_p0r.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/attacks_p0r.json"
+  ],
+  "timeout_s": 900,
+  "exit": 0,
+  "elapsed_s": 3.6344987509946804,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "2.49 2.67 1.86 2/2709 2006728",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/attacks_p0r.json",
+  "output_sha256": "8e7e55fa9827fe3d5d2929e3dceddf768f44db0045908f48a810f3bdc9a8fbdb",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "scenarios_p0r",
+  "name": "scenarios_p0r",
+  "rule": "6/8",
+  "argv": [
+   "scenarios_p0r.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/scenarios_p0r.json"
+  ],
+  "timeout_s": 1200,
+  "exit": 0,
+  "elapsed_s": 37.85757537200698,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.88 2.49 1.83 1/2653 2007966",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/scenarios_p0r.json",
+  "output_sha256": "b3a8e84538b3bfbe704d0e9745cd786a23b7eb4be50754329cc54df360307d77",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "map_invariants",
+  "name": "map_invariants",
+  "rule": "7",
+  "argv": [
+   "map_invariants.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/map_invariants.json"
+  ],
+  "timeout_s": 2400,
+  "exit": 0,
+  "elapsed_s": 305.3802577669994,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.33 1.93 1.79 1/2664 2022204",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/map_invariants.json",
+  "output_sha256": "c0ef00638ddf14925d8c5e5941c5b108f6ad6321bfeb6cedac83c32d7fe39120",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "check_r1_temporal",
+  "name": "check_r1_temporal",
+  "rule": "5C",
+  "argv": [
+   "check_r1_temporal.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/check_r1_temporal.json"
+  ],
+  "timeout_s": 900,
+  "exit": 0,
+  "elapsed_s": 20.195511691999855,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "2.03 2.03 1.83 1/2653 2022905",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/check_r1_temporal.json",
+  "output_sha256": "21594e947669a8f93f45b7214e70fa60d3ee085088dceeb5feddb8fd4810d690",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "regress_v7",
+  "name": "regress_v7",
+  "rule": "3/8",
+  "argv": [
+   "regress_v7.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/regress_v7.json"
+  ],
+  "timeout_s": 2400,
+  "exit": 0,
+  "elapsed_s": 343.52872569100873,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "2.21 2.01 1.88 2/2701 2035658",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/regress_v7.json",
+  "output_sha256": "85bdda3eb105b74843b4e74133d73e5fdce74ea1363082da847e2f0e2e959500",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "ni_A",
+  "name": "ni_A",
+  "rule": "5A",
+  "argv": [
+   "noninterference_v2.py",
+   "A",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/ni_A.json",
+   "20000",
+   "12"
+  ],
+  "timeout_s": 21600,
+  "exit": 0,
+  "elapsed_s": 11081.087131278997,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.10 2.52 6.14 1/2565 2364179",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/ni_A.json",
+  "output_sha256": "bb48192bf86f2f80935c5ed7050c038c0a0a238c18e4eaf6d6c64122d1c6fe20",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "ni_B",
+  "name": "ni_B",
+  "rule": "5B",
+  "argv": [
+   "noninterference_v2.py",
+   "B",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/ni_B.json",
+   "2000",
+   "12"
+  ],
+  "timeout_s": 10800,
+  "exit": 0,
+  "elapsed_s": 3012.198810243979,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "3.12 7.45 10.01 1/2563 2423817",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/ni_B.json",
+  "output_sha256": "476f007f7040effd22be1ee1432ea58733a149b0befbe93c857f6949ca31ff84",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_check_static",
+  "name": "check_static",
+  "rule": "1-2",
+  "argv": [
+   "check_static.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/check_static.json"
+  ],
+  "timeout_s": 300,
+  "exit": 0,
+  "elapsed_s": 0.1189430879894644,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "3.12 7.45 10.01 1/2553 2423831",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/check_static.json",
+  "output_sha256": "ef25b06abe80363744d8d32aff9f2b7012966916478b848bfa53345e2056775b",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_check_r1_core",
+  "name": "check_r1_core",
+  "rule": "4",
+  "argv": [
+   "check_r1_core.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/check_r1_core.json"
+  ],
+  "timeout_s": 300,
+  "exit": 0,
+  "elapsed_s": 0.5432304049900267,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "3.12 7.45 10.01 1/2553 2423844",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/check_r1_core.json",
+  "output_sha256": "3327616c453474f98b7ee89f1116f1d578c04e41f196cea70643ccc06a1da494",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_attacks_p0r",
+  "name": "attacks_p0r",
+  "rule": "4",
+  "argv": [
+   "attacks_p0r.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/attacks_p0r.json"
+  ],
+  "timeout_s": 900,
+  "exit": 0,
+  "elapsed_s": 3.4490087770100217,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "3.19 7.39 9.98 1/2550 2423917",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/attacks_p0r.json",
+  "output_sha256": "8e7e55fa9827fe3d5d2929e3dceddf768f44db0045908f48a810f3bdc9a8fbdb",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_scenarios_p0r",
+  "name": "scenarios_p0r",
+  "rule": "6/8",
+  "argv": [
+   "scenarios_p0r.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/scenarios_p0r.json"
+  ],
+  "timeout_s": 1200,
+  "exit": 0,
+  "elapsed_s": 37.09010909299832,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "2.22 6.68 9.64 1/2565 2424810",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/scenarios_p0r.json",
+  "output_sha256": "b3a8e84538b3bfbe704d0e9745cd786a23b7eb4be50754329cc54df360307d77",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_map_invariants",
+  "name": "map_invariants",
+  "rule": "7",
+  "argv": [
+   "map_invariants.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/map_invariants.json"
+  ],
+  "timeout_s": 2400,
+  "exit": 0,
+  "elapsed_s": 297.4016575140122,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.12 3.18 7.29 1/2557 2430679",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/map_invariants.json",
+  "output_sha256": "c0ef00638ddf14925d8c5e5941c5b108f6ad6321bfeb6cedac83c32d7fe39120",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_check_r1_temporal",
+  "name": "check_r1_temporal",
+  "rule": "5C",
+  "argv": [
+   "check_r1_temporal.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/check_r1_temporal.json"
+  ],
+  "timeout_s": 900,
+  "exit": 0,
+  "elapsed_s": 19.716399668017402,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.09 3.04 7.16 1/2559 2431076",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/check_r1_temporal.json",
+  "output_sha256": "446d21709cdd867ea7053a53bc4d96d81576a0a4c8a60a3dbe6070cdb412d5cc",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_regress_v7",
+  "name": "regress_v7",
+  "rule": "3/8",
+  "argv": [
+   "regress_v7.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/regress_v7.json"
+  ],
+  "timeout_s": 2400,
+  "exit": 0,
+  "elapsed_s": 335.52541179500986,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.16 1.76 5.33 1/2547 2437692",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/regress_v7.json",
+  "output_sha256": "b4faafa3874d9fede5a4c5b7515fe2e1f932196d67831e88b94094a7ca5b04f1",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_ni_A",
+  "name": "ni_A",
+  "rule": "5A",
+  "argv": [
+   "noninterference_v2.py",
+   "A",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/ni_A.json",
+   "2000",
+   "12"
+  ],
+  "timeout_s": 3600,
+  "exit": 0,
+  "elapsed_s": 1056.9066532520228,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "4.55 9.35 9.09 1/2558 2458593",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/ni_A.json",
+  "output_sha256": "a72248618056432118f9dd1ea7c9560915275326b1346ad7c4fe30480bb20957",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "dup_ni_B",
+  "name": "ni_B",
+  "rule": "5B",
+  "argv": [
+   "noninterference_v2.py",
+   "B",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/ni_B.json",
+   "200",
+   "12"
+  ],
+  "timeout_s": 3600,
+  "exit": 0,
+  "elapsed_s": 295.61390264399233,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "8.80 10.39 9.70 1/2547 2464475",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/dup/ni_B.json",
+  "output_sha256": "bf4782932a4cace26c121f616504c614201200cb207841955609d3e7c78dbeab",
+  "verdict_value": true,
+  "verdict": "PASS"
+ },
+ {
+  "label": "timing_p0r",
+  "name": "timing_p0r",
+  "rule": "9",
+  "argv": [
+   "timing_p0r.py",
+   "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/timing_p0r.json"
+  ],
+  "timeout_s": 3600,
+  "exit": 0,
+  "elapsed_s": 588.5203438559838,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "1.12 2.43 5.67 1/2566 2476106",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_r2p_20261104/r2prime/timing_p0r.json",
+  "output_sha256": "3fda66860373a089021180be8cea715d385e6f7c4853e17122e6197a17b74448",
+  "verdict": "REPORTED"
+ }
+]
