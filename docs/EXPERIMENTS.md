@@ -114,8 +114,9 @@ Families: `learned-detector`, `perception-pipeline`, `eth-ds5`.
 
 ### Occlusion, re-observation and reacquisition
 
-Families, in date order: `occlusion-occ` → `h-r3` → `boia` → `q02-reacquisition`, then the
-C-Planner P0 package ([Not yet in the repository](#not-yet-in-the-repository)).
+Families, in date order: `occlusion-occ` → `h-r3` → `boia` → `q02-reacquisition` → `c-planner`
+(its P0 history before 2026-11-04 is outside the repository; see
+[Not yet in the repository](#not-yet-in-the-repository)).
 
 - These are studies of the same occlusion problem.
 - None of them changes Policy F; each later study adds an opt-in layer or an offline module.
@@ -668,15 +669,35 @@ family that is in the test's scope.
 - **Compare with:** `occlusion-occ`, `safety-filter-attribution`, `external-baseline`
 - **Members:** `docs/evidence/b1r_*`, `docs/plans/*b1r*`, `docs/plans/b1r_classical_baseline_prereg_DRAFT_2026-10-23.md`
 
+### `c-planner` — Certified predictive planner (C-Planner)
+
+- **Period:** 2026-11-04 – (P0 history from 2026-10-28 is outside the repository).
+- **Question:** How much capture does a sound static-bar certificate from a sparse 72x4 LiDAR scan cost,
+  and how much collision risk does it remove, for a planner that intercepts a moving target among bars?
+- **Policy:** a new CPU planner and certificate (no learned policy); compared later with Policy F and
+  B-PP. Frozen Policy F is unchanged.
+- **Status:**
+  - M1 R2' preregistered; qualification NOT_QUALIFIED until R2' and the independent review R3' finish.
+  - No closed-loop result; C-Planner capture is NOT_RECORDED.
+- **Read first:** [`docs/plans/cplanner_charter_v1.md`](plans/cplanner_charter_v1.md)
+- **Lineage:**
+  - P0 v1–v7, P0-R and r1, outside the repository (see below)
+  - → `docs/plans/cplanner_charter_v1.md`
+  - → `docs/plans/prereg_cplanner_r2prime_v1.md`
+- **Compare with:** `b1r-classical-baseline`, `boia`
+- **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`
+
 ## Not yet in the repository
 
-- **C-Planner P0** (2026-10-29 →): its task did not allow commits, so the repository holds no record
-  of it yet, not even a WORKLOG entry.
+- **C-Planner P0 before 2026-11-04** (2026-10-28 → 2026-11-03): its tasks did not allow commits, so
+  the repository holds no record of v1–v7, P0-R or the r1 repair; family `c-planner` starts on
+  2026-11-04 with byte-identical copies of the r1 source in `cplanner/`.
   - Its records are outside the repository, in `~/motar_tmp/` ([`AGENTS.md`](../AGENTS.md),
     *Work and evidence outside the repository*): `p0_v6_20261029/`, `p0_v7_20261029/`,
-    `p0r_20261029/` and their `*_independent_*` reviews.
-  - State: v7 FAIL. In the P0-R redesign, R2 attempt 1 was aborted by host hardware faults.
-  - It joins the occlusion group when its first record is committed.
+    `p0r_20261029/`, `p0r_r1_20261103/` and their `*_independent_*` reviews.
+  - State: v7 FAIL. In the P0-R redesign, R2 attempt 1 was aborted by host hardware faults, attempt
+    2 passed rules 1-8, and the independent review R3 failed (F1 planar sensor height). The r1 repair
+    review is REPAIR_READY_WITH_LIMITATIONS / NOT_QUALIFIED.
 - **Merging `origin/main`:** its three publication commits add
   `docs/evidence/website_boia_progress_2026-10-22/`, `docs/evidence/website_figure_rebuild_2026-10-22/`,
   `docs/research/boia-progress.md` and `docs/research/figure-redesign-2026-10-22.md`. The merge

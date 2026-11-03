@@ -23511,3 +23511,38 @@ NOT_READY, with 1 P0, 10 P1 and about 30 P2.
 - PUBLIC_CPU not run: the host is on hardware hold. The kernel crash count stayed at 79.
 
 No GPU, push or merge. Results, raw data and checkpoints are untouched.
+
+## 2026-11-04 — C-Planner S1: charter, `cplanner/dev` branch, R2' preregistration (no measurement yet)
+
+The user approved the 2026-11-03 C-Planner roadmap (D1–D8) and declined the BIOS update
+(`D-2026-11-04-0`, [`docs/plans/cplanner_charter_v1.md`](docs/plans/cplanner_charter_v1.md)).
+Branch `cplanner/dev` (worktree `src/MOTAR-cplanner`) from `codex/mt-p1` `62e59c0`.
+
+- **Code:** `cplanner/` holds byte-identical copies of the r1 repair unit
+  (`~/motar_tmp/p0r_r1_20261103/`: `src/`, the test harness and suites, the snapshot oracle, the
+  design docs). New: `tests/noninterference_v2.py` (R2' rules 5A/5B) and `tools/run_gate.py` (R2' driver).
+  Not collected by PUBLIC_CPU.
+- **Host (no BIOS update):** boot 2026-11-02 13:48, cpu4/5 online again, BIOS 0806, microcode 0x12f,
+  0 kernel fault records in this boot. `sudo` is unavailable in agent sessions (`nosuid`), so cores are
+  avoided with `taskset -c 0-3,8-11,14-23` (excludes cores 2, 3, 6 = every MCE record since 2026-10-28).
+- **Facts checked read-only:** every B1-R receipt has `NAVRL_BAR_POOL=bars_h3`; the `aerialgym`
+  env's Warp 1.0.0 initialises with the CPU device (P1 replay path).
+- **R2' preregistration** [`docs/plans/prereg_cplanner_r2prime_v1.md`](docs/plans/prereg_cplanner_r2prime_v1.md):
+  historical rules kept; 5A camera non-interference with random sensor height (20,000 scenes); new 5B
+  30-packet temporal sequences with non-vacuity thresholds (2,000); r1 temporal witness; full map
+  invariants; determinism duplicates with per-seed digests; host voiding; fail-closed verdicts.
+- **Calibration dry runs (seeds 900,000+, not evidence):**
+
+  | Run | n | Result |
+  | --- | --- | --- |
+  | 5B | 40 sequences, 90 s, 8 workers | all checks true; STATIC 35/40, CONFLICT 7/40, track loss 6/40 sequences (23 segments, all `MAP_VETO_CONFLICT`); FALSE_CERT 0 in all runs |
+  | 5A | 80 scenes, 54 s, 8 workers | all checks true; FALSE_CERT 0; VALID 183 (72x1) / 196 (72x4) |
+  | driver smoke | reduced sizes | CONDITIONAL; negative control (missing verdict key) gave FAIL, exit 1 |
+
+- **Prior-art check (G1b-lite):** an Opus 5.5 subagent is screening the narrow certificate candidate;
+  report target `~/motar_tmp/cplanner_roadmap_20261103/prior_art/G1B_LITE_PRIOR_ART.md`.
+- **Next:** run R2' from a frozen `git archive` copy of this commit
+  (`~/motar_tmp/cplanner_r2p_20261104/`), then the independent review R3' (charter §5), then M2 (V1
+  hit bit and CPU warp replay).
+
+No GPU, PPO, push or merge. Results, raw data, checkpoints and the r1 unit are untouched.

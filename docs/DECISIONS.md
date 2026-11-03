@@ -213,3 +213,37 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   - the inventory `~/motar_tmp/docs_consolidation_20261031/inventory.csv` (SHA-256
     `412a6df6bd6a3ac66ea598c26e6cff62d72a3c06b22af81329a9152242749a5d`), made by `inventory.py`
     (`6d3d1f23cebf17a72dff84b3e6a5b6eebf8c6340dcbb654e40b98bbf86dc97e6`).
+
+## D-2026-11-04-0 — C-Planner charter: hybrid track, review scope, approvals, no BIOS update
+
+- **Decision:** the user approved the C-Planner roadmap of 2026-11-03 and its decisions D1–D8, fixed in
+  [`plans/cplanner_charter_v1.md`](plans/cplanner_charter_v1.md):
+  - D1: the KRoC 2027 manuscript does not include C-Planner results.
+  - D2: hybrid track. A predictive planner (C-OFF) runs with the static-bar certificate as a logged
+    label; the certificate filters execution (C-FILTER) only after the G-alpha gate.
+  - D3: independent reviews use the charter's scope (cooperative caller, trust model A of
+    2026-10-29). In-process adversarial Python and false adapter declarations are recorded
+    limitations, never P0-blocking.
+  - D4: development on branch `cplanner/dev` with local commits; no push, no merge.
+  - D5: CPU work of milestones M1–M3 proceeds through its gates without intermediate approvals; each
+    verdict is reported; a FAIL stops at the stop rule.
+  - D6: a DEV GPU envelope (eval-only, Frozen F unchanged, no PPO, at most 16 environments and 2 GPU-h
+    in total, results labelled DEV, a committed preregistration per run).
+  - D7: eval-only instrumentation (`collision_free_capture`, per-step control logs), opt-in and OFF by
+    default, with F and B-PP re-measured for the matched comparison.
+  - D8: the user declined the BIOS update ("호스트 복구 안해도 될거같은데?"). It is replaced by pinning
+    C-Planner processes off cores 2, 3 and 6, at most 12 workers, voiding a run on any kernel fault
+    record, and duplicate determinism checks (charter §7).
+- **Why:** 0 of 12 C-Planner components are connected to MOTAR data; the largest unknowns (certifiable
+  rate on real 72x4 scans, compute, competitiveness with B-PP and F) are cheapest to remove in order.
+  The P0 review loop (v1–v7, P0-R, r1) repeatedly stopped on in-process adversarial findings outside
+  the chosen trust model. A first matched comparison cannot meet the KRoC dates (2026-11-13,
+  2026-11-26).
+- **Alternatives:** certificate-centric Track A first (no closed-loop number for 6–11+ weeks); a
+  practical predictive planner without the certificate (no method candidate left to test); BIOS update
+  before any run (declined).
+- **Reversal:** the user changes the track, the review scope or the approvals; a G-alpha result below
+  20 % pauses the certificate as a filter by the charter's own rule.
+- **Sources:** the user's messages of 2026-11-03 ("이거 관련해서, 다음 계획을 어떤거를 세워야되고 …")
+  and 2026-11-04 ("오케이 다른건 괜찮은데, 호스트 복구 안해도 될거같은데? … 다 진행해. D세션");
+  `~/motar_tmp/cplanner_roadmap_20261103/ROADMAP_PROPOSAL.md`.

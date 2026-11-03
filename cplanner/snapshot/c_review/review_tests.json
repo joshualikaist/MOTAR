@@ -1,0 +1,143 @@
+{
+ "moving_target_trail": {
+  "cell_5.0": "CONFLICT",
+  "cell_5.8": "CONFLICT",
+  "approach_4.5_6.5_after_3_more_empty_scans": "OCCUPANCY_OR_CONFLICT"
+ },
+ "camera_loss_target": {
+  "cell_5.8": "CONFLICT",
+  "occupied": true,
+  "approach": "OCCUPANCY_OR_CONFLICT"
+ },
+ "slow_target_two_hits": "MEASURED_FREE",
+ "min_range_cells_marked_free": [
+  "MEASURED_FREE",
+  "MEASURED_FREE",
+  "MEASURED_FREE"
+ ],
+ "terminal_approach": {
+  "target_centre_x": 1.2,
+  "target_radius": 0.2,
+  "max_certified_path_end_x": 0.69,
+  "closest_certified_centre_distance_m": 0.51,
+  "capture_threshold_m": 0.5
+ },
+ "budget": {
+  "max_nodes_50": {
+   "certified": false,
+   "reason": "NODE_BUDGET_UNKNOWN",
+   "nodes": 113
+  },
+  "resolution_0.5": {
+   "certified": false,
+   "reason": "UNRESOLVED_CENTER_CELL",
+   "nodes": 1197,
+   "shape_halfsize": [
+    0.24,
+    0.20145
+   ],
+   "cell": [
+    1.3925,
+    0.325725,
+    1.69,
+    0.65145
+   ]
+  },
+  "default": {
+   "certified": true,
+   "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+   "nodes": 1984
+  }
+ },
+ "timing_fixed": {
+  "empty_1m": {
+   "certified": true,
+   "nodes": 1984,
+   "p50_ms": 21.684418999939226,
+   "p95_ms": 21.797000998049043,
+   "p99_ms": 22.10218599793734,
+   "max_ms": 23.260763999132905,
+   "reps": 300
+  },
+  "corridor_1m": {
+   "certified": true,
+   "nodes": 1984,
+   "p50_ms": 21.01725600005011,
+   "p95_ms": 21.18930000142427,
+   "p99_ms": 21.503176998521667,
+   "max_ms": 22.1997549997468,
+   "reps": 300
+  }
+ },
+ "timing_length": {
+  "0.5": {
+   "certified": true,
+   "nodes": 1480,
+   "p50_ms": 16.507557997101685,
+   "p95_ms": 16.660183002386475,
+   "p99_ms": 16.660183002386475,
+   "max_ms": 16.660183002386475,
+   "reps": 20
+  },
+  "1.0": {
+   "certified": true,
+   "nodes": 1984,
+   "p50_ms": 21.72597900062101,
+   "p95_ms": 21.816444001160562,
+   "p99_ms": 21.816444001160562,
+   "max_ms": 21.816444001160562,
+   "reps": 20
+  },
+  "2.0": {
+   "certified": true,
+   "nodes": 2664,
+   "p50_ms": 30.152089002513094,
+   "p95_ms": 30.35725700101466,
+   "p99_ms": 30.35725700101466,
+   "max_ms": 30.35725700101466,
+   "reps": 20
+  },
+  "4.0": {
+   "certified": true,
+   "nodes": 6500,
+   "p50_ms": 97.45569599908777,
+   "p95_ms": 97.78415700202459,
+   "p99_ms": 97.78415700202459,
+   "max_ms": 97.78415700202459,
+   "reps": 20
+  },
+  "6.0": {
+   "certified": false,
+   "nodes": 1830,
+   "p50_ms": 27.55971800070256,
+   "p95_ms": 27.664910001476528,
+   "p99_ms": 27.664910001476528,
+   "max_ms": 27.664910001476528,
+   "reps": 20
+  }
+ },
+ "real_layouts": {
+  "70": {
+   "trials": 480,
+   "certified": 456,
+   "plan_feasible": 456,
+   "FALSE_CERT_plan": 0,
+   "feasible_not_certified": 0,
+   "ms_p50": 25.398236997716594,
+   "ms_p95": 47.54056300225784,
+   "ms_p99": 55.9327850023692,
+   "ms_max": 84.3494090004242
+  },
+  "205": {
+   "trials": 480,
+   "certified": 382,
+   "plan_feasible": 387,
+   "FALSE_CERT_plan": 0,
+   "feasible_not_certified": 5,
+   "ms_p50": 22.454285001003882,
+   "ms_p95": 46.21228199903271,
+   "ms_p99": 54.83703400022932,
+   "ms_max": 65.3690609979094
+  }
+ }
+}

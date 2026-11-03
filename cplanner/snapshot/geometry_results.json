@@ -1,0 +1,526 @@
+{
+  "bar_count": 40,
+  "bars": [
+    {
+      "asset": "bar_000.urdf",
+      "size_m": [
+        0.7096,
+        0.5756,
+        3.0
+      ],
+      "inradius_m": 0.2878,
+      "circumradius_m": 0.4568499534858245,
+      "sha256": "896f777b87f967b8cb85fe8c3d533b78c5a40be5a474c61a62cd1cf552294bad"
+    },
+    {
+      "asset": "bar_001.urdf",
+      "size_m": [
+        0.7434,
+        0.6789,
+        3.0
+      ],
+      "inradius_m": 0.33945,
+      "circumradius_m": 0.503375796498004,
+      "sha256": "fb605550822b1705669fd711d8c90f691e93db2ef6aca0d36974960d41ecc791"
+    },
+    {
+      "asset": "bar_002.urdf",
+      "size_m": [
+        0.4377,
+        0.7902,
+        3.0
+      ],
+      "inradius_m": 0.21885,
+      "circumradius_m": 0.451662852689924,
+      "sha256": "8d27f46fc7563adceafcca4b0a56432abf6814baded247c3a738aee23ecc20be"
+    },
+    {
+      "asset": "bar_003.urdf",
+      "size_m": [
+        0.7045,
+        0.7144,
+        3.0
+      ],
+      "inradius_m": 0.35225,
+      "circumradius_m": 0.5016691165499427,
+      "sha256": "bb4d50cd3ee096b077b6269e66b74851c9465b80104b8baf43f6c88cc5044ca0"
+    },
+    {
+      "asset": "bar_004.urdf",
+      "size_m": [
+        0.4512,
+        0.5802,
+        3.0
+      ],
+      "inradius_m": 0.2256,
+      "circumradius_m": 0.3674960816117636,
+      "sha256": "4a4901ba22c55244895c446dededbbe43bdf7f44a2b9bc529dabd28d9962e60d"
+    },
+    {
+      "asset": "bar_005.urdf",
+      "size_m": [
+        0.5483,
+        0.7707,
+        3.0
+      ],
+      "inradius_m": 0.27415,
+      "circumradius_m": 0.47291949103415054,
+      "sha256": "4e26f33d1a31061580f2a22a35d720e57756eee9a9615c6d80ffa1ec4a646c00"
+    },
+    {
+      "asset": "bar_006.urdf",
+      "size_m": [
+        0.6575,
+        0.7291,
+        3.0
+      ],
+      "inradius_m": 0.32875,
+      "circumradius_m": 0.49089027796443474,
+      "sha256": "bb11603e0aadad593f6827502311ea623a4abf6c0bf862666b50454a67629c1c"
+    },
+    {
+      "asset": "bar_007.urdf",
+      "size_m": [
+        0.5774,
+        0.4909,
+        3.0
+      ],
+      "inradius_m": 0.24545,
+      "circumradius_m": 0.3789371880668352,
+      "sha256": "29bd091ee23db9dd7adaab0b8cedf322dd169ecd3054d3779b22301454940e16"
+    },
+    {
+      "asset": "bar_008.urdf",
+      "size_m": [
+        0.6218,
+        0.4255,
+        3.0
+      ],
+      "inradius_m": 0.21275,
+      "circumradius_m": 0.3767245313222912,
+      "sha256": "8347fd20ef2870c6c9171b62d00b49675a5283715eb4388abe617a7e80fce777"
+    },
+    {
+      "asset": "bar_009.urdf",
+      "size_m": [
+        0.7311,
+        0.6527,
+        3.0
+      ],
+      "inradius_m": 0.32635,
+      "circumradius_m": 0.4900317591748518,
+      "sha256": "48406ab2f589359ecb9b36e75e93f678e9a6b82e4d6e0909728893f15da7d97a"
+    },
+    {
+      "asset": "bar_010.urdf",
+      "size_m": [
+        0.7032,
+        0.5418,
+        3.0
+      ],
+      "inradius_m": 0.2709,
+      "circumradius_m": 0.44385737574135237,
+      "sha256": "d593ff8cde8a06230412d2daff92546cfbc357567aa18cbec6d6150bb4a88691"
+    },
+    {
+      "asset": "bar_011.urdf",
+      "size_m": [
+        0.7883,
+        0.7572,
+        3.0
+      ],
+      "inradius_m": 0.3786,
+      "circumradius_m": 0.5465273849497388,
+      "sha256": "5dfc84aa4de180d57de7f4b9702849eee1a3edb77e207ad9d090f48eb0407166"
+    },
+    {
+      "asset": "bar_012.urdf",
+      "size_m": [
+        0.7114,
+        0.4779,
+        3.0
+      ],
+      "inradius_m": 0.23895,
+      "circumradius_m": 0.4285085675922945,
+      "sha256": "893b3b0a22d46d7efc97b8176d0cb65759e44ad02897ad2313ff974115491151"
+    },
+    {
+      "asset": "bar_013.urdf",
+      "size_m": [
+        0.5867,
+        0.4175,
+        3.0
+      ],
+      "inradius_m": 0.20875,
+      "circumradius_m": 0.36004275440564004,
+      "sha256": "c14f1ec447aaaefe0c643ed0341918cfaf5607c66f6002759228f4aa496df8d7"
+    },
+    {
+      "asset": "bar_014.urdf",
+      "size_m": [
+        0.4617,
+        0.6732,
+        3.0
+      ],
+      "inradius_m": 0.23085,
+      "circumradius_m": 0.4081559536500724,
+      "sha256": "c971e87054d10088637be57c46cbae425426e91e7a8513050ade2d3ab2873c61"
+    },
+    {
+      "asset": "bar_015.urdf",
+      "size_m": [
+        0.6979,
+        0.787,
+        3.0
+      ],
+      "inradius_m": 0.34895,
+      "circumradius_m": 0.5259356923617183,
+      "sha256": "6c8f4407dfef20fccba73fe6e669f05c1e7401333781a5c2fa33ad7bb8a98bdf"
+    },
+    {
+      "asset": "bar_016.urdf",
+      "size_m": [
+        0.5303,
+        0.5482,
+        3.0
+      ],
+      "inradius_m": 0.26515,
+      "circumradius_m": 0.3813598464704956,
+      "sha256": "c08a2a5b71fd705273a1447bed18f8a9c90147323597ea5b8261941bab4b554d"
+    },
+    {
+      "asset": "bar_017.urdf",
+      "size_m": [
+        0.5878,
+        0.4758,
+        3.0
+      ],
+      "inradius_m": 0.2379,
+      "circumradius_m": 0.37811852639086596,
+      "sha256": "ca3815c7c8ec0fe4f102f4503edf87f8e2c7440c9189dab41f3ba90eddb9454e"
+    },
+    {
+      "asset": "bar_018.urdf",
+      "size_m": [
+        0.452,
+        0.5903,
+        3.0
+      ],
+      "inradius_m": 0.226,
+      "circumradius_m": 0.3717385136086925,
+      "sha256": "cacbd74acffcd753ca19d3c19550497e9f0e9f744c53ac2053739616ae02484b"
+    },
+    {
+      "asset": "bar_019.urdf",
+      "size_m": [
+        0.4908,
+        0.6679,
+        3.0
+      ],
+      "inradius_m": 0.2454,
+      "circumradius_m": 0.41441979018864433,
+      "sha256": "198345c0fa94524afc3dbbd2fab427a7cc3acbb96efb5ff5e6388ae80ed92b33"
+    },
+    {
+      "asset": "bar_020.urdf",
+      "size_m": [
+        0.5749,
+        0.7331,
+        3.0
+      ],
+      "inradius_m": 0.28745,
+      "circumradius_m": 0.46581799557337844,
+      "sha256": "52ebe828e74d96c99875dc76659a3f247c1334dcedb79748a1383a5e89dfdeb4"
+    },
+    {
+      "asset": "bar_021.urdf",
+      "size_m": [
+        0.6801,
+        0.5249,
+        3.0
+      ],
+      "inradius_m": 0.26245,
+      "circumradius_m": 0.42955093411608364,
+      "sha256": "767bd1abb736a56786555527866ed964802ebcd7d9e6f5cec3eef17e2fce50b1"
+    },
+    {
+      "asset": "bar_022.urdf",
+      "size_m": [
+        0.7329,
+        0.7219,
+        3.0
+      ],
+      "inradius_m": 0.36095,
+      "circumradius_m": 0.5143641754632606,
+      "sha256": "8e3adb89bd9d3fe93877e6b3e57c3cc2454df964f01062d71c97814cd91e96f6"
+    },
+    {
+      "asset": "bar_023.urdf",
+      "size_m": [
+        0.555,
+        0.5153,
+        3.0
+      ],
+      "inradius_m": 0.25765,
+      "circumradius_m": 0.37866842025708985,
+      "sha256": "3a2cca0a9839c5e526c02947befe7796e0598e4de0a75e4d30dc6e45a5283687"
+    },
+    {
+      "asset": "bar_024.urdf",
+      "size_m": [
+        0.673,
+        0.4559,
+        3.0
+      ],
+      "inradius_m": 0.22795,
+      "circumradius_m": 0.4064399740429084,
+      "sha256": "fa1e883ff6b4ce5ec01921bc9cbda1d6c37f3211901ba3a2956030aec66ce934"
+    },
+    {
+      "asset": "bar_025.urdf",
+      "size_m": [
+        0.48,
+        0.4029,
+        3.0
+      ],
+      "inradius_m": 0.20145,
+      "circumradius_m": 0.31334023440981845,
+      "sha256": "abeb31bfdd91e996c441c55b6ebbedbedd5fb04b4deb4ad3eee39bbb1821c0d7"
+    },
+    {
+      "asset": "bar_026.urdf",
+      "size_m": [
+        0.7148,
+        0.6659,
+        3.0
+      ],
+      "inradius_m": 0.33295,
+      "circumradius_m": 0.4884572268889058,
+      "sha256": "a74383b5ed85b9a0e7267029697859adc433db03bd1a1d28332a06acef779e57"
+    },
+    {
+      "asset": "bar_027.urdf",
+      "size_m": [
+        0.6821,
+        0.7123,
+        3.0
+      ],
+      "inradius_m": 0.34105,
+      "circumradius_m": 0.49311045922795027,
+      "sha256": "4f9950282cef87676ef3438836669ea19394416ea902d6eb66015db0bf09dcce"
+    },
+    {
+      "asset": "bar_028.urdf",
+      "size_m": [
+        0.5836,
+        0.6275,
+        3.0
+      ],
+      "inradius_m": 0.2918,
+      "circumradius_m": 0.4284697218007359,
+      "sha256": "3b26064ab6630a7542835110ab2779de1e5ec0b8c963f725b97d772b22873674"
+    },
+    {
+      "asset": "bar_029.urdf",
+      "size_m": [
+        0.4559,
+        0.4458,
+        3.0
+      ],
+      "inradius_m": 0.2229,
+      "circumradius_m": 0.3188190905513658,
+      "sha256": "3ae91ecf08aaafcc5dc83d4a01ae416f9f34ebb6f34b2e69bb6710e105c0e246"
+    },
+    {
+      "asset": "bar_030.urdf",
+      "size_m": [
+        0.6674,
+        0.5884,
+        3.0
+      ],
+      "inradius_m": 0.2942,
+      "circumradius_m": 0.4448700147234021,
+      "sha256": "2b2d361965104d93daa53e4f7700e9f041f5aa349f27581ceba7c79f31a0407e"
+    },
+    {
+      "asset": "bar_031.urdf",
+      "size_m": [
+        0.6261,
+        0.706,
+        3.0
+      ],
+      "inradius_m": 0.31305,
+      "circumradius_m": 0.4718149027955772,
+      "sha256": "05a49b383eebf8db8273713db17225a2b618f4f9ab054472a8731864331d88f3"
+    },
+    {
+      "asset": "bar_032.urdf",
+      "size_m": [
+        0.6539,
+        0.6214,
+        3.0
+      ],
+      "inradius_m": 0.3107,
+      "circumradius_m": 0.4510330281697783,
+      "sha256": "7debe22813435ef813094a9f55599435f0ef11b0a907a17382780c49da3a14fb"
+    },
+    {
+      "asset": "bar_033.urdf",
+      "size_m": [
+        0.6237,
+        0.5216,
+        3.0
+      ],
+      "inradius_m": 0.2608,
+      "circumradius_m": 0.4065305185345867,
+      "sha256": "0d3d246780795574ddcf948f89a827cd4c32020216fcbdde1b44d742d7f34ef5"
+    },
+    {
+      "asset": "bar_034.urdf",
+      "size_m": [
+        0.4123,
+        0.5747,
+        3.0
+      ],
+      "inradius_m": 0.20615,
+      "circumradius_m": 0.35364932489685313,
+      "sha256": "62eebbd3140325e4874af6c4957935d06278377bf9359292a5678ff783dedfd4"
+    },
+    {
+      "asset": "bar_035.urdf",
+      "size_m": [
+        0.4858,
+        0.5634,
+        3.0
+      ],
+      "inradius_m": 0.2429,
+      "circumradius_m": 0.3719614227309063,
+      "sha256": "e8f52021e3c84bee85916a64def2d0ffba25c17886277f6bb39149c5f246c3ec"
+    },
+    {
+      "asset": "bar_036.urdf",
+      "size_m": [
+        0.7414,
+        0.4936,
+        3.0
+      ],
+      "inradius_m": 0.2468,
+      "circumradius_m": 0.44534113890364985,
+      "sha256": "dbe14d4132c20dcf78f9a5aa689803314b5876f63dc5440ea636d26aaf5654b0"
+    },
+    {
+      "asset": "bar_037.urdf",
+      "size_m": [
+        0.4233,
+        0.5126,
+        3.0
+      ],
+      "inradius_m": 0.21165,
+      "circumradius_m": 0.33239346037489964,
+      "sha256": "77fb75b86e89b285cbba420afe685bc2f1549d0b6372c9a9063236e2301b15b3"
+    },
+    {
+      "asset": "bar_038.urdf",
+      "size_m": [
+        0.5174,
+        0.6648,
+        3.0
+      ],
+      "inradius_m": 0.2587,
+      "circumradius_m": 0.42120713431754686,
+      "sha256": "af2967f3587856557f0ec5a8a8f8ef8effcf637df1ca1dc846d6636e47c08963"
+    },
+    {
+      "asset": "bar_039.urdf",
+      "size_m": [
+        0.6228,
+        0.7136,
+        3.0
+      ],
+      "inradius_m": 0.3114,
+      "circumradius_m": 0.47357808226310477,
+      "sha256": "61901652b1f62a7c1a5193c3da9480a7d219d99a4764ec630113d884d7cba120"
+    }
+  ],
+  "minimum_inradius": {
+    "asset": "bar_025.urdf",
+    "size_m": [
+      0.48,
+      0.4029,
+      3.0
+    ],
+    "inradius_m": 0.20145,
+    "circumradius_m": 0.31334023440981845,
+    "sha256": "abeb31bfdd91e996c441c55b6ebbedbedd5fb04b4deb4ad3eee39bbb1821c0d7"
+  },
+  "maximum_circumradius": {
+    "asset": "bar_011.urdf",
+    "size_m": [
+      0.7883,
+      0.7572,
+      3.0
+    ],
+    "inradius_m": 0.3786,
+    "circumradius_m": 0.5465273849497388,
+    "sha256": "5dfc84aa4de180d57de7f4b9702849eee1a3edb77e207ad9d090f48eb0407166"
+  },
+  "maximum_half_side_m": 0.3951,
+  "quad_path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/resources/robots/quad/quad_navrl_collide.urdf",
+  "quad_size": [
+    0.28,
+    0.28,
+    0.08
+  ],
+  "quad_level_radius_m": 0.19798989873223333,
+  "quad_any_attitude_ball_m": 0.20199009876724155,
+  "ideal_angular_radius_m": 4.58511712521067,
+  "ideal_eroded_radius_m": 3.57511712521067,
+  "5m_half_bin_ray_distance_m": 0.21809693682668,
+  "height_examples_at_sensor_z1": {
+    "up20_slant_m": 5.847608800326175,
+    "up20_horizontal_m": 5.494954838909245,
+    "down10_slant_m": 5.758770483143634,
+    "down10_horizontal_m": 5.671281819617709
+  },
+  "corridors": [
+    {
+      "gap_m": 0.6,
+      "physical_ball_clearance_per_side_m": 0.09800990123275843,
+      "plan_disk_clearance_per_side_m": -0.15000000000000002,
+      "actual_bar_center_offset_m": 0.50145,
+      "certificate_pass": false,
+      "failure_class": "MAP_CERTIFICATION_CONSERVATISM; not SEARCH"
+    },
+    {
+      "gap_m": 0.75,
+      "physical_ball_clearance_per_side_m": 0.17300990123275845,
+      "plan_disk_clearance_per_side_m": -0.07500000000000001,
+      "actual_bar_center_offset_m": 0.57645,
+      "certificate_pass": false,
+      "failure_class": "MAP_CERTIFICATION_CONSERVATISM; not SEARCH"
+    },
+    {
+      "gap_m": 0.9,
+      "physical_ball_clearance_per_side_m": 0.24800990123275846,
+      "plan_disk_clearance_per_side_m": 0.0,
+      "actual_bar_center_offset_m": 0.65145,
+      "certificate_pass": false,
+      "failure_class": "MAP_CERTIFICATION_CONSERVATISM; not SEARCH"
+    },
+    {
+      "gap_m": 1.0,
+      "physical_ball_clearance_per_side_m": 0.29800990123275845,
+      "plan_disk_clearance_per_side_m": 0.04999999999999999,
+      "actual_bar_center_offset_m": 0.70145,
+      "certificate_pass": false,
+      "failure_class": "MAP_CERTIFICATION_CONSERVATISM; not SEARCH"
+    }
+  ],
+  "assumptions": [
+    "Upright unscaled static bars; arbitrary yaw allowed",
+    "Free segments at heights within the bar, before first hit, not inferred through invalid measurements",
+    "Ideal angular bound ignores near blind zone, pose error and occlusion",
+    "Certificate is sufficient, not necessary, for physical safety",
+    "No continuous set containment implementation or runtime tests performed"
+  ]
+}
