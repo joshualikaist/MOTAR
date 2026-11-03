@@ -104,7 +104,7 @@ concurrent workers).
   (42 files), bound with the frozen tree in [`m3/SHA256_MANIFEST.json`](m3/SHA256_MANIFEST.json).
 - Driver verdict ([`m3/m3_summary.json`](m3/m3_summary.json)): **CONDITIONAL**. 11/11 commands; E1 PASS twice with
   identical results; E2 seven suites PASS; G-beta PASS_K16 twice; inputs unchanged; host fault count 0, boot id
-  unchanged. The label stays CONDITIONAL until the independent review.
+  unchanged. After the independent review below: **M3 part 1 PASS**.
 
 ### E1 native equivalence: **PASS** ([`m3/e1.json`](m3/e1.json))
 
@@ -137,6 +137,31 @@ Mean time per segment, verbatim vs native: 33.6 vs 0.26 ms (S), 46.9 vs 0.30 ms 
 | total, K = 8 | 16.2 | 17.8 | 18.7 | 40.0 |
 | total, K = 16 | 18.7 | **20.7** | 21.5 | 40.8 |
 
-Limit 50 ms (charter §3). The duplicate run read PASS_K16 with p95 total_16 20.6 ms. `core.step` (verbatim Python)
+Limit 50 ms (charter §3). The duplicate run read PASS_K16 with p95 total_16 20.6 ms. Scope of the reading: one
+process on cpu 8, the host's fastest P-core, on an idle host; it is not the per-decision cost inside a parallel
+evaluation (the preregistration's development run on an E-core under load read 49.3 ms). `core.step` (verbatim Python)
 is now the larger share. Reported only: the skeleton planner's `act()` p95 19.5 ms (OFF) and 23.4 ms (FILTER) on
 the same scans, with the recorded target state as a stand-in belief (a timing input, not evidence).
+
+### Independent review: **PASS** (`m3/REVIEW_r1.md`)
+
+- Reviewer: Claude Opus 5.5 (`claude-opus-5-5`), fresh context, read-only copies (`~/motar_tmp/cplanner_m3_20261104/review/`),
+  writing only to its `audit/` directory (one stray scratch file outside it was deleted at once and is disclosed in
+  the report). Request, manifests and the 92 audit files are bound in
+  [`m3/REVIEW_r1_MANIFEST.json`](m3/REVIEW_r1_MANIFEST.json). Host fault count 0 before and after its probes.
+- Verdict: E1 PASS and E2 PASS stand; the G-beta reading PASS_K16 stands as computed. No blocking finding: no input
+  the core can produce on which the C port and `_coverage_B` differ was found, the dispatch never falls back
+  silently, and no existing configuration changes.
+- Important findings, none of which changes this gate:
+  - I1: G-beta ran on the fastest P-core of an idle host; quote it with that scope (above).
+  - I2: E1 cannot detect three mutant classes (a different depth limit, a changed prune margin, a reordered
+    covered-box calculation); the port is identical there line by line, and the reviewer's 4,000 extra jobs at arena
+    scale (473 depth-limit outcomes) gave 0 mismatches. E1 must be strengthened before it qualifies another build or
+    an edit of the C file.
+  - I3: `coverage_native.load()` loads whatever library is at the path, with no SHA-256 or version check; the M3
+    driver binds it, later planner or simulator use must.
+- Minor m1-m7 and limitations L1-L3 (build and Python version bound; replay trajectories and G-alpha candidates; last-
+  bit covered-box arithmetic rests on review) are in the report.
+- The reviewer's probes: a byte-identical rebuild with no FMA or x87 instructions, about 2.6 million primitive
+  comparisons on other distributions, 26 mutants, E1 parts R and C replicated on 9 episodes plus 2,008 random-start
+  segments: 0 mismatches for the unmodified source.

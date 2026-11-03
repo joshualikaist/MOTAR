@@ -23755,3 +23755,21 @@ KST on frozen copies (`~/motar_tmp/cplanner_m2_20261104/review/`, `~/motar_tmp/c
 
 Next: record the two reviews; then the user decides the V1 amendment and the FILTER arm, and M3's remaining parts
 (planner, simulator arm, DEV smoke) or M4. No GPU, PPO, push or merge.
+
+## 2026-11-04 — C-Planner M3 part 1 independent review PASS → M3 part 1 PASS
+
+Reviewer Claude Opus 5.5 (fresh context, Agent `model: "opus"`), read-only copies in
+`~/motar_tmp/cplanner_m3_20261104/review/`, 07:20 – 07:50 KST, host fault count 0 before and after its probes.
+**PASS**: E1 and E2 PASS stand, G-beta PASS_K16 stands as computed (p95 total_16 20.70 / 20.63 ms). No blocking
+finding. Important, open, none changes the gate:
+
+| Id | Finding | Follow-up |
+| --- | --- | --- |
+| I1 | G-beta was timed on cpu 8, the fastest P-core, on an idle host; the preregistration's E-core dev run under load read 49.3 ms | quote the reading with that scope; size parallel evaluations separately |
+| I2 | E1 cannot detect a different depth limit, a changed prune margin or a reordered covered-box calculation (mutants pass); the actual port is identical there, 4,000 extra reviewer jobs 0 mismatches | strengthen E1 before re-qualifying another build or an edit of `coverage_b.c` |
+| I3 | `coverage_native.load()` has no SHA-256 / version check of the library | bind the library hash before planner or simulator use |
+
+Minor m1-m7 and limitations L1-L3 in the report. Evidence: `docs/evidence/cplanner_2026-11-04/m3/REVIEW_r1.md` and
+`REVIEW_r1_MANIFEST.json` (92 audit files). Beads follow-up `motar-3p3.34`.
+
+Next: record the M2 review (running); then the user's decisions. No GPU, PPO, push or merge.
