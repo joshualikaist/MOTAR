@@ -1,0 +1,14 @@
+{
+  "source": "/home/fair/motar_tmp/cplanner_m3_20261104/frozen/cplanner/src/core.py",
+  "tests": 7,
+  "failures": 0,
+  "errors": 0,
+  "pass": true,
+  "counts": {
+    "height_cases": 16,
+    "valid_height_certificates": 6,
+    "baseline_false_certificate": 0,
+    "callback_positive_controls": 2,
+    "internal_exceptions": 0
+  }
+}

@@ -92,3 +92,51 @@ grazing, so V1 stays FAIL. Any amendment would be a new dated preregistration an
 This reading comes from a run whose verdict is FAIL (V1). It was computed as preregistered, but it does not by
 itself clear the FILTER arm. Reported, not gated: verbatim `certify` of 16 segments p50 597 ms, p95 1,379 ms (12
 concurrent workers).
+
+## M3 part 1 — exact native coverage port E1, R2' suites E2, compute G-beta (`m3/`)
+
+- Preregistration: [`docs/plans/prereg_cplanner_m3_v1.md`](../../plans/prereg_cplanner_m3_v1.md). Entry condition
+  met: R2' CONDITIONAL, R3' with no in-scope P0-blocking finding, M2 finished without STOP_FALSE_CERT.
+- Code: frozen `git archive` copy of `265b244`, run by `cplanner/tools/run_m3.py`, 2026-11-04 06:37 – 07:19 KST,
+  CPU only, `taskset -c 0-3,8-11,14-23`, 12 workers for E1, one process pinned to cpu 8 for G-beta, otherwise
+  idle host. Library built in the output directory (gcc 9.4.0, fixed flags; source sha256 `d559bce4…`, library
+  `afbd3e68…`, [`m3/native_build.json`](m3/native_build.json)). Raw: `~/motar_tmp/cplanner_m3_20261104/run/`
+  (42 files), bound with the frozen tree in [`m3/SHA256_MANIFEST.json`](m3/SHA256_MANIFEST.json).
+- Driver verdict ([`m3/m3_summary.json`](m3/m3_summary.json)): **CONDITIONAL**. 11/11 commands; E1 PASS twice with
+  identical results; E2 seven suites PASS; G-beta PASS_K16 twice; inputs unchanged; host fault count 0, boot id
+  unchanged. The label stays CONDITIONAL until the independent review.
+
+### E1 native equivalence: **PASS** ([`m3/e1.json`](m3/e1.json))
+
+| Part | Compared | Mismatches |
+| --- | --- | --- |
+| H primitives | 200,000 `hypot`, 50,000 `point_segment`, 50,000 `segment_box_distance`, 100,000 `crosses` | 0 |
+| T thresholds | 80,000 strict-margin probes (crossings true and false), 16,800 parallel, 12 surface (8 hit, 4 miss) | 0 |
+| S synthetic | 2,000 scenes, 108,000 segments at the qualified, budget-60 and 0.004 m settings plus no-free / no-surface cases | 0 |
+| R replay | 18 episodes, 718 decision steps, 11,488 segments | 0 |
+| C core differential | 1,471 steps, 11,488 segments, 5,925 certified (verbatim core vs native core) | 0 |
+
+Mean time per segment, verbatim vs native: 33.6 vs 0.26 ms (S), 46.9 vs 0.30 ms (R).
+
+### E2: the seven R2' suites on the changed tree, all **PASS** ([`m3/records.json`](m3/records.json))
+
+`check_static`, `check_r1_core`, `attacks_p0r`, `scenarios_p0r`, `map_invariants`, `check_r1_temporal` and
+`regress_v7` each wrote their verdict key true and exited 0.
+
+### G-beta reading: **PASS_K16** ([`m3/gbeta.json`](m3/gbeta.json))
+
+84 episodes (3 per cell from the 28 G-alpha cells), 6,591 frames, 3,152 decision steps, one process on cpu 8,
+`MOTAR-72x4-RUNTIME-NATIVE`:
+
+| Component (ms) | p50 | p95 | p99 | max |
+| --- | --- | --- | --- | --- |
+| adapter | 0.033 | 0.048 | 0.058 | 0.088 |
+| `core.step` | 13.9 | 15.8 | 17.4 | 39.3 |
+| certify, 8 segments | 2.2 | 3.6 | 4.0 | 5.6 |
+| certify, 16 segments | 4.6 | 6.9 | 7.4 | 26.8 |
+| total, K = 8 | 16.2 | 17.8 | 18.7 | 40.0 |
+| total, K = 16 | 18.7 | **20.7** | 21.5 | 40.8 |
+
+Limit 50 ms (charter §3). The duplicate run read PASS_K16 with p95 total_16 20.6 ms. `core.step` (verbatim Python)
+is now the larger share. Reported only: the skeleton planner's `act()` p95 19.5 ms (OFF) and 23.4 ms (FILTER) on
+the same scans, with the recorded target state as a stand-in belief (a timing input, not evidence).

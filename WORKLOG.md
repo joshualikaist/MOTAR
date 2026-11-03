@@ -23730,3 +23730,28 @@ Evidence: [`docs/evidence/cplanner_2026-11-04/m2/`](docs/evidence/cplanner_2026-
 
 Next: M3 part 1 result, then independent reviews of M2 and M3; user decisions: the V1 amendment and the FILTER arm.
 No GPU, PPO, push or merge.
+
+## 2026-11-04 — C-Planner M3 part 1: E1 PASS, E2 PASS, G-beta PASS_K16 (p95 20.7 ms); CONDITIONAL until review
+
+M3 part 1 ([`docs/plans/prereg_cplanner_m3_v1.md`](docs/plans/prereg_cplanner_m3_v1.md)) ran from a frozen copy of
+`265b244`, 06:37 – 07:19 KST, on an otherwise idle host (no reviewer probes); library built in the output directory
+(gcc 9.4.0, fixed flags). **Driver verdict CONDITIONAL**: 11/11 commands, determinism true for E1 and G-beta,
+inputs unchanged, 0 kernel fault records.
+
+| Gate | Result |
+| --- | --- |
+| E1 (x2, identical) | PASS: H 400,000 primitive calls, T 96,812 threshold probes, S 108,000 segments on 2,000 scenes, R 11,488 replay segments, C 1,471 core steps / 11,488 segments (5,925 certified): 0 mismatches; positive controls present |
+| E2 | the seven R2' suites PASS on the changed tree |
+| G-beta (x2) | **PASS_K16**: p95 total_16 20.7 ms (dup 20.6), total_8 17.8 ms; components p95 adapter 0.05, step 15.8, certify_16 6.9 ms; 84 episodes, 3,152 decision steps, cpu 8 |
+
+Native vs verbatim time per segment: 0.26 vs 33.6 ms (synthetic), 0.30 vs 46.9 ms (replay). `core.step`
+(verbatim Python per-beam loop) is now about three quarters of the budget. Skeleton planner `act()` p95 19.5 ms OFF,
+23.4 ms FILTER (information only). Hypothesis "G-beta needs the per-packet exclusion grid" rejected: the exact port
+reaches p95 20.7 ms at K = 16.
+
+Evidence: [`docs/evidence/cplanner_2026-11-04/m3/`](docs/evidence/cplanner_2026-11-04/README.md). Raw:
+`~/motar_tmp/cplanner_m3_20261104/run/`. Independent reviews of M2 and M3 (Opus 5.5, fresh context) started 07:20
+KST on frozen copies (`~/motar_tmp/cplanner_m2_20261104/review/`, `~/motar_tmp/cplanner_m3_20261104/review/`).
+
+Next: record the two reviews; then the user decides the V1 amendment and the FILTER arm, and M3's remaining parts
+(planner, simulator arm, DEV smoke) or M4. No GPU, PPO, push or merge.

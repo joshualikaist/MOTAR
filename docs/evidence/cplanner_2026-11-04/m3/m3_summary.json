@@ -1,0 +1,61 @@
+{
+ "build_ok": true,
+ "preflight_pass": true,
+ "e1": "PASS",
+ "dup_e1": "PASS",
+ "e2": {
+  "check_static": "PASS",
+  "check_r1_core": "PASS",
+  "attacks_p0r": "PASS",
+  "scenarios_p0r": "PASS",
+  "map_invariants": "PASS",
+  "check_r1_temporal": "PASS",
+  "regress_v7": "PASS"
+ },
+ "gbeta_reading_first": "PASS_K16",
+ "dup_gbeta_reading": "PASS_K16",
+ "gbeta_total16": {
+  "n": 3152,
+  "p50": 18.69534404249862,
+  "p95": 20.702746987808496,
+  "p99": 21.487761987373233,
+  "max": 40.77453800709918
+ },
+ "dup_gbeta_total16": {
+  "n": 3152,
+  "p50": 18.62319398787804,
+  "p95": 20.633905980503187,
+  "p99": 21.359931968618184,
+  "max": 40.834016021108255
+ },
+ "gbeta_total8": {
+  "n": 3152,
+  "p50": 16.192537994356826,
+  "p95": 17.805629991926253,
+  "p99": 18.68737197946757,
+  "max": 39.98547702212818
+ },
+ "determinism": {
+  "e1": true,
+  "gbeta": true
+ },
+ "inputs_unchanged": true,
+ "changed_inputs": [],
+ "host_void": false,
+ "commands_run": 11,
+ "commands_expected": 11,
+ "gbeta_reading": "PASS_K16",
+ "verdict": "CONDITIONAL",
+ "verdict_scope": "E1 native equivalence + E2 R2' suites on the changed tree + G-beta reading + build + determinism + host + inputs; decided only after an independent review",
+ "host_end": {
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "fault_events": [],
+  "fault_count": 0,
+  "online": "0-3,6-23",
+  "offline": "4-5",
+  "bios": "0806",
+  "loadavg": "1.38 1.32 2.60 1/2558 2572806",
+  "time": "2026-11-04T07:19:16.208470+09:00"
+ },
+ "finished": "2026-11-04T07:19:16.208482+09:00"
+}

@@ -1,0 +1,574 @@
+{
+ "gate": "M3 G-beta",
+ "reading": "PASS_K16",
+ "limit_ms": 50.0,
+ "timing_ms": {
+  "adapter": {
+   "n": 6591,
+   "p50": 0.03296099021099508,
+   "p95": 0.048411020543426275,
+   "p99": 0.057940982514992356,
+   "max": 0.08760299533605576
+  },
+  "step": {
+   "n": 6591,
+   "p50": 13.882954022847116,
+   "p95": 15.81049498054199,
+   "p99": 17.40335999056697,
+   "max": 39.31327900500037
+  },
+  "cert8": {
+   "n": 3152,
+   "p50": 2.1584799978882074,
+   "p95": 3.621098992880434,
+   "p99": 4.017796978587285,
+   "max": 5.622100026812404
+  },
+  "cert16": {
+   "n": 3152,
+   "p50": 4.570735996821895,
+   "p95": 6.942378997337073,
+   "p99": 7.353724999120459,
+   "max": 26.756642007967457
+  },
+  "total8": {
+   "n": 3152,
+   "p50": 16.192537994356826,
+   "p95": 17.805629991926253,
+   "p99": 18.68737197946757,
+   "max": 39.98547702212818
+  },
+  "total16": {
+   "n": 3152,
+   "p50": 18.69534404249862,
+   "p95": 20.702746987808496,
+   "p99": 21.487761987373233,
+   "max": 40.77453800709918
+  },
+  "act_OFF": {
+   "n": 6591,
+   "p50": 17.401446006260812,
+   "p95": 19.52800201252103,
+   "p99": 21.331472002202645,
+   "max": 37.98457400989719
+  },
+  "act_FILTER": {
+   "n": 6591,
+   "p50": 17.962060985155404,
+   "p95": 23.43817299697548,
+   "p99": 28.058891010005027,
+   "max": 41.49385500932112
+  }
+ },
+ "stats": {
+  "episodes": 84,
+  "frames": 6591,
+  "decision_steps": 3152,
+  "certified8": 11993,
+  "certified16": 26631,
+  "segments16": 50432,
+  "reasons16": {
+   "ALL_COLLIDING_CENTER_CELLS_EXCLUDED": 26631,
+   "OBSERVED_SURFACE_INTERSECTION": 272,
+   "MAP_VETO_OBSERVED_HIT": 23142,
+   "UNRESOLVED_CENTER_CELL": 222,
+   "ARENA_BOUNDARY": 133,
+   "INCOMPLETE_ACQUISITION_PACKET": 32
+  },
+  "planner_counts": {
+   "OFF": {
+    "steps": 6591,
+    "search": 0,
+    "terminal": 334,
+    "brake": 111,
+    "executed_certified": 4049,
+    "executed_uncertified": 2097,
+    "certify_calls": 6146,
+    "segments_certified_queries": 30730,
+    "packet_refused": 0,
+    "no_admissible": 111,
+    "escape": 273,
+    "filter_exhausted": 0
+   },
+   "FILTER": {
+    "steps": 6591,
+    "search": 0,
+    "terminal": 334,
+    "brake": 1162,
+    "executed_certified": 5095,
+    "executed_uncertified": 0,
+    "certify_calls": 14616,
+    "segments_certified_queries": 73080,
+    "packet_refused": 0,
+    "no_admissible": 111,
+    "escape": 273,
+    "filter_exhausted": 1051
+   }
+  }
+ },
+ "config": "MOTAR-72x4-RUNTIME-NATIVE",
+ "library": "/home/fair/motar_tmp/cplanner_m3_20261104/run/native/libcoverage_b.so",
+ "affinity": [
+  8
+ ],
+ "sample_seed": 20261107,
+ "episodes_per_cell": 3,
+ "cells": [
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4302",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4303",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4304",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4305",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4306",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4307",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4302",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4303",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4304",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4305",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4306",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4307",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4302",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4303",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4304",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4305",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4306",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4307",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4302",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4303",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4304",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4305",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4306",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4307"
+ ],
+ "items": [
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4301",
+   85,
+   7
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4301",
+   99,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4301",
+   7,
+   4
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4302",
+   20,
+   6
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4302",
+   100,
+   3
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4302",
+   83,
+   1
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4303",
+   52,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4303",
+   40,
+   1
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4303",
+   35,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4304",
+   89,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4304",
+   9,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4304",
+   72,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4305",
+   72,
+   8
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4305",
+   15,
+   4
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4305",
+   36,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4306",
+   53,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4306",
+   99,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4306",
+   19,
+   3
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4307",
+   42,
+   3
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4307",
+   119,
+   2
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__160bars__seed4307",
+   28,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+   49,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+   24,
+   4
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+   81,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4302",
+   34,
+   7
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4302",
+   43,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4302",
+   101,
+   1
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4303",
+   107,
+   7
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4303",
+   25,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4303",
+   59,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4304",
+   100,
+   1
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4304",
+   103,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4304",
+   125,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4305",
+   106,
+   5
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4305",
+   78,
+   1
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4305",
+   101,
+   3
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4306",
+   4,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4306",
+   11,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4306",
+   125,
+   1
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4307",
+   124,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4307",
+   125,
+   0
+  ],
+  [
+   "F_SHADOW/E2_obstacle_aware__205bars__seed4307",
+   55,
+   4
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4301",
+   34,
+   4
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4301",
+   121,
+   9
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4301",
+   7,
+   13
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4302",
+   123,
+   6
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4302",
+   84,
+   3
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4302",
+   102,
+   9
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4303",
+   7,
+   8
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4303",
+   78,
+   1
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4303",
+   92,
+   5
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4304",
+   28,
+   4
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4304",
+   108,
+   5
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4304",
+   25,
+   2
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4305",
+   29,
+   8
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4305",
+   116,
+   3
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4305",
+   16,
+   4
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4306",
+   87,
+   5
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4306",
+   122,
+   5
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4306",
+   77,
+   1
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4307",
+   116,
+   0
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4307",
+   98,
+   11
+  ],
+  [
+   "B-PP/E2_obstacle_aware__160bars__seed4307",
+   85,
+   9
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4301",
+   14,
+   0
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4301",
+   127,
+   7
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4301",
+   111,
+   7
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4302",
+   85,
+   5
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4302",
+   114,
+   0
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4302",
+   79,
+   4
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4303",
+   29,
+   1
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4303",
+   19,
+   10
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4303",
+   8,
+   15
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4304",
+   124,
+   0
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4304",
+   98,
+   2
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4304",
+   44,
+   6
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4305",
+   21,
+   6
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4305",
+   2,
+   1
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4305",
+   48,
+   8
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4306",
+   60,
+   4
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4306",
+   53,
+   10
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4306",
+   123,
+   3
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4307",
+   60,
+   3
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4307",
+   122,
+   5
+  ],
+  [
+   "B-PP/E2_obstacle_aware__205bars__seed4307",
+   98,
+   7
+  ]
+ ],
+ "failure": null,
+ "planner_params": {
+  "MAX_FILTER_TRIES": 8,
+  "N_POINTS": 5
+ },
+ "wall_s": 390.40011835098267
+}

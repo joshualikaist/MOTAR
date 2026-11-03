@@ -1,0 +1,107 @@
+{
+ "gate": "M3 native coverage equivalence",
+ "pass": true,
+ "checks": {
+  "library_loaded": true,
+  "completed": true,
+  "H_identical": true,
+  "T_identical": true,
+  "T_controls": true,
+  "S_identical": true,
+  "R_identical": true,
+  "C_core_identical": true,
+  "S_controls": true,
+  "R_controls": true
+ },
+ "H": {
+  "hypot": 200000,
+  "hypot_mismatch": 0,
+  "point_segment": 50000,
+  "ps_mismatch": 0,
+  "sbd": 50000,
+  "sbd_mismatch": 0,
+  "crosses": 100000,
+  "crosses_mismatch": 0,
+  "examples": []
+ },
+ "T": {
+  "strict": 80000,
+  "strict_mismatch": 0,
+  "strict_true": 14400,
+  "strict_false": 25600,
+  "parallel": 16800,
+  "parallel_mismatch": 0,
+  "surface": 12,
+  "surface_mismatch": 0,
+  "surface_hit": 8,
+  "surface_miss": 4,
+  "examples": []
+ },
+ "S": {
+  "scenes": 2000,
+  "skipped_incomplete": 0,
+  "segments": 108000,
+  "mismatch": 0,
+  "ms_V": 3624652.5312557938,
+  "ms_N": 28039.85502445721,
+  "reasons": {
+   "qualified:ALL_COLLIDING_CENTER_CELLS_EXCLUDED": 25166,
+   "budget60:ALL_COLLIDING_CENTER_CELLS_EXCLUDED": 8151,
+   "budget60:NODE_BUDGET_UNKNOWN": 17366,
+   "res0.004:ALL_COLLIDING_CENTER_CELLS_EXCLUDED": 25157,
+   "nofree:NO_VALID_RAYS": 4000,
+   "nosurf:ALL_COLLIDING_CENTER_CELLS_EXCLUDED": 6553,
+   "qualified:OBSERVED_SURFACE_INTERSECTION": 6385,
+   "qualified:UNRESOLVED_CENTER_CELL": 449,
+   "budget60:OBSERVED_SURFACE_INTERSECTION": 6385,
+   "budget60:UNRESOLVED_CENTER_CELL": 98,
+   "res0.004:OBSERVED_SURFACE_INTERSECTION": 6385,
+   "res0.004:UNRESOLVED_CENTER_CELL": 458,
+   "nosurf:UNRESOLVED_CENTER_CELL": 1447
+  },
+  "examples": []
+ },
+ "R": {
+  "episodes": 18,
+  "decision_steps": 718,
+  "segments": 11488,
+  "mismatch": 0,
+  "ms_V": 538979.918985191,
+  "ms_N": 3482.867356244242,
+  "reasons": {
+   "qualified:ALL_COLLIDING_CENTER_CELLS_EXCLUDED": 6570,
+   "qualified:OBSERVED_SURFACE_INTERSECTION": 4599,
+   "qualified:UNRESOLVED_CENTER_CELL": 319
+  },
+  "examples": [],
+  "core_steps": 1471,
+  "core_step_mismatch": 0,
+  "core_segments": 11488,
+  "core_certified": 5925,
+  "core_certify_mismatch": 0
+ },
+ "n_scenes": 2000,
+ "cells": [
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__70bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__115bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4301"
+ ],
+ "episodes_per_cell": 3,
+ "sample_seed": 20261106,
+ "library": "/home/fair/motar_tmp/cplanner_m3_20261104/run/native/libcoverage_b.so",
+ "failure": null,
+ "mean_ms_per_segment": {
+  "S": {
+   "V": 33.56159751162772,
+   "N": 0.2596282872634927
+  },
+  "R": {
+   "V": 46.91677567768028,
+   "N": 0.3031743868597007
+  }
+ },
+ "wall_s": 530.0684103965759
+}
