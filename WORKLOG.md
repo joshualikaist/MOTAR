@@ -23587,3 +23587,34 @@ measurement; M2 runs only after R2' is CONDITIONAL and R3' finds no in-scope P0-
 
 Next: when R2' finishes, R3' independent review (request `~/motar_tmp/cplanner_r3p_20261104/REVIEW_REQUEST.md`);
 then V1 and G-alpha runs. No GPU, PPO, push or merge.
+
+## 2026-11-04 — C-Planner M2 gate driver (`cplanner/tools/run_m2.py`): fail-closed, bar-pool preflight, duplicates
+
+R2' is still executing from its frozen copy (`~/motar_tmp/cplanner_r2p_20261104/`; rules 1-8 PASS so far, 5A
+running, 0 kernel fault records); this entry changes nothing it reads. The independent review R3' runs in two
+phases: phase 1 (code, tests, driver, design) started 02:00 on a read-only `git archive` copy of `b407039`
+(`~/motar_tmp/cplanner_r3p_20261104/review_copy`, manifest `SHA256_MANIFEST_review_copy.json` sha256 `17c7790a…`,
+37 files; phases in `REVIEW_PHASES.md`); phase 2 checks the run's outputs after R2' ends.
+
+- **Why a driver:** the M2 preregistration requires the kernel fault record before and after every command
+  (charter §7), and the charter §4 requires the bar pool to be read from each run's receipt and any pool other than
+  `bars_h3` to be refused; `v1_hitbit.py` and `galpha_replay.py` do neither themselves. The driver adds both
+  without changing the preregistered scripts or their parameters.
+- **What it runs** (from a frozen `git archive` copy holding `cplanner/`, `motar_eval/` and the Warp LiDAR kernel):
+  V1 (400 frames x 6 cells) and G-alpha (6 episodes x 28 cells), 12 workers, `taskset -c 0-3,8-11,14-23`, each
+  twice; the duplicate must equal the first after removing `wall_s`, `ms_*` and `timing_ms`. It reuses the R2'
+  driver's host, environment and command helpers. Fail-closed: preflight (receipt `env_snapshot_navrl.NAVRL_BAR_POOL
+  == "bars_h3"` and trace files present for all 30 cells), V1 `pass: true` and exit 0, a G-alpha reading with
+  `stats.false_cert == 0`, inputs hashed before and after, a host fault voids and stops the run. Label at most
+  CONDITIONAL until an independent review.
+- **Smoke and negative controls** (reduced sizes, 2 workers; `~/motar_tmp/cplanner_m2_20261104/smoke/`, not
+  evidence):
+
+  | Run | Result |
+  | --- | --- |
+  | smoke (V1 3 frames x 1 cell; G-alpha 1 episode x 2 cells) | CONDITIONAL; V1 PASS; G-alpha FILTER_ARM_RETAINED (0.75); duplicates identical |
+  | negative: required pool changed to `bars` | FAIL, preflight refuses, 0 commands run |
+  | negative: `timing_ms` not stripped | FAIL, G-alpha determinism false |
+
+Next: R3' phase 2 after R2' ends; M2 runs only if R2' is CONDITIONAL and R3' has no in-scope P0-blocking finding.
+No GPU, PPO, push or merge.
