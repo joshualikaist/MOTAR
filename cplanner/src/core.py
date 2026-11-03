@@ -12,7 +12,9 @@ later trusts, and neither raises on an argument value (R-4): errors become refus
 Certificate (STATIC_BAR_CERTIFIED) for segment s and packet P iff:
   1. P is complete (every manifest beam validated as HIT or NO_HIT; R-1 fail-closed);
   2. `coverage_b._coverage_B` (verbatim, AST-identical to v3-v7) certifies s with P's free rays and P's HIT points as
-     surfaces (every HIT, whatever the camera says) for the catalog shapes at plan radius R;
+     surfaces (every HIT, whatever the camera says) for the catalog shapes at plan radius R; a configuration with
+     coverage NATIVE_EXACT calls its exact C port instead (`coverage_native`, M3), which must return identical
+     results; a missing native library refuses (NATIVE_COVERAGE_UNAVAILABLE);
   3. the evidence map has no veto cell near s (veto only);
   4. if the config declares an arena, the swept disc of s stays inside it;
   5. the config's range_error_bound is 0 (R-6).
@@ -28,6 +30,7 @@ import numpy as np
 
 import boundary as B
 import coverage_b as CB
+import coverage_native as CN
 import registry as REG
 from evidence_map import EvidenceMap, WIDTH, TRACK_FRESH
 from labels import TargetLabelLayer
@@ -292,8 +295,11 @@ class CertifierCore:
         veto, n = self.map.veto_near(np.array(a), np.array(b), R, cur[0])
         if veto is not None:
             return result(k, "MAP_VETO_" + veto, "OCCUPIED", map_veto_cells=n)
-        r = CB._coverage_B((a, b), list(cur[3]), list(cur[4]), REG.BAR_HALF_SIZES, R, self.cfg.resolution,
-                           self.cfg.max_nodes)
+        coverage = {"VERBATIM_PY": CB._coverage_B, "NATIVE_EXACT": CN.coverage_B_native}.get(self.cfg.coverage)
+        if coverage is None:
+            return result(k, "COVERAGE_IMPL_NOT_QUALIFIED", "SAFE_REJECT")
+        r = coverage((a, b), list(cur[3]), list(cur[4]), REG.BAR_HALF_SIZES, R, self.cfg.resolution,
+                     self.cfg.max_nodes)
         cat = ("CERTIFIED_STATIC_BARS" if r["certified"] else "OCCUPIED"
                if r["reason"] == "OBSERVED_SURFACE_INTERSECTION" else "UNKNOWN"
                if r["reason"] == "NO_VALID_RAYS" else "SAFE_REJECT")

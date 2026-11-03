@@ -677,7 +677,8 @@ family that is in the test's scope.
 - **Policy:** a new CPU planner and certificate (no learned policy); compared later with Policy F and
   B-PP. Frozen Policy F is unchanged.
 - **Status:**
-  - M1 R2' preregistered; qualification NOT_QUALIFIED until R2' and the independent review R3' finish.
+  - M1 R2' running; qualification NOT_QUALIFIED until R2' and the independent review R3' finish.
+  - M2 (V1, G-alpha) and M3 part 1 (native coverage E1/E2, G-beta) preregistered; not measured.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.
 - **Read first:** [`docs/plans/cplanner_charter_v1.md`](plans/cplanner_charter_v1.md)
 - **Lineage:**
@@ -685,9 +686,10 @@ family that is in the test's scope.
   - → `docs/plans/cplanner_charter_v1.md`
   - → `docs/plans/prereg_cplanner_r2prime_v1.md`
   - → `docs/plans/prereg_cplanner_m2_v1.md`
+  - → `docs/plans/prereg_cplanner_m3_v1.md`
 - **Compare with:** `b1r-classical-baseline`, `boia`
 - **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`,
-  `docs/plans/prereg_cplanner_m2_v1.md`
+  `docs/plans/prereg_cplanner_m2_v1.md`, `docs/plans/prereg_cplanner_m3_v1.md`
 
 ## Not yet in the repository
 

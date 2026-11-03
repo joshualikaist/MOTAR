@@ -13,6 +13,10 @@ by `cplanner/tools/run_gate.py` or by hand, never by `tools/run_tests.py`. The m
 | `motar/replay.py`, `motar/adapter.py` | M2: CPU replay of the B1-R 72x4 LiDAR with MOTAR's own Warp kernel; normalised scan -> P0-R packet with explicit beam status | new |
 | `tests/v1_hitbit.py`, `tests/galpha_replay.py` | M2 gates V1 (status mapping vs an independent ray caster) and G-alpha (certifiability on replay) | new |
 | `tools/run_gate.py` | R2' gate driver (fail-closed, host-fault voiding, determinism duplicates) | new |
+| `tools/run_m2.py`, `tools/run_m3.py` | M2 and M3 part 1 drivers (same helpers; bar-pool preflight; M3 builds the native library in its output) | new |
+| `native/coverage_b.c`, `native/build.py`, `src/coverage_native.py` | M3: exact C port of `_coverage_B` (opt-in config `MOTAR-72x4-RUNTIME-NATIVE`; never build the library inside the repository) | new |
+| `tests/m3_native_equivalence.py`, `tests/gbeta_timing.py` | M3 gates E1 (whole-result identity with the verbatim Python) and G-beta (compute on replay) | new |
+| `planner/c_planner.py`, `tests/planner_unit.py` | M3 predictive planner skeleton (C-OFF / C-FILTER) and its development checks (not a gate) | new |
 | `tools/run_focused.py` | r1 single-command runner, kept for provenance; its empty-check behaviour is superseded by `run_gate.py` | r1 copy |
 | `docs/` | R0 architecture, r1 contract and amendments, historical R2 rules, research plan, terminal-approach spec | r1 copies, historical |
 

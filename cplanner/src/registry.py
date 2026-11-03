@@ -88,11 +88,14 @@ def directions(layout):
 # ---------------------------------------------------------------- sensor/certificate configurations
 Config = namedtuple("Config", "name layout min_range max_range no_hit_fill range_error_bound dt "
                               "allow_synthetic_health nearest_hit_assured plan_radius resolution max_nodes "
-                              "orientation_prior arena map_bounds")
+                              "orientation_prior arena map_bounds coverage")
 
 _BASE = dict(min_range=0.2, max_range=12.0, no_hit_fill=12.0, range_error_bound=0.0, dt=0.1,
              allow_synthetic_health=True, nearest_hit_assured=True, plan_radius=0.45, resolution=0.002,
-             max_nodes=100000, orientation_prior="AXIS_ALIGNED_CATALOG", arena=None, map_bounds=(-16.0, 16.0))
+             max_nodes=100000, orientation_prior="AXIS_ALIGNED_CATALOG", arena=None, map_bounds=(-16.0, 16.0),
+             coverage="VERBATIM_PY")
+# coverage: VERBATIM_PY = coverage_b._coverage_B (qualified, R2'); NATIVE_EXACT = coverage_native.coverage_B_native,
+# the exact C port (M3 candidate; qualified only by the M3 equivalence gate, docs/plans/prereg_cplanner_m3_v1.md).
 
 
 def _cfg(name, **kw):
@@ -110,4 +113,7 @@ CONFIGS = types.MappingProxyType({c.name: c for c in (
     # near-range semantics; arena 0..40 m in x and y (navrl_bars_env.py:104-107).
     _cfg("MOTAR-72x4-RUNTIME", layout="MOTAR-72x4", allow_synthetic_health=False, nearest_hit_assured=False,
          arena=(0.0, 40.0, 0.0, 40.0), map_bounds=(-2.0, 42.0)),
+    # M3: the same configuration with the native coverage port (identical results required by the M3 gate).
+    _cfg("MOTAR-72x4-RUNTIME-NATIVE", layout="MOTAR-72x4", allow_synthetic_health=False, nearest_hit_assured=False,
+         arena=(0.0, 40.0, 0.0, 40.0), map_bounds=(-2.0, 42.0), coverage="NATIVE_EXACT"),
 )})

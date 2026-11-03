@@ -23618,3 +23618,43 @@ phases: phase 1 (code, tests, driver, design) started 02:00 on a read-only `git 
 
 Next: R3' phase 2 after R2' ends; M2 runs only if R2' is CONDITIONAL and R3' has no in-scope P0-blocking finding.
 No GPU, PPO, push or merge.
+
+## 2026-11-04 — C-Planner M3 part 1 preregistered: exact native port of the coverage proof, G-beta; planner fixes
+
+R2' still executing from its frozen copy (0 kernel fault records); R3' phase 1 running. Nothing here is read by
+either. M3 part 1 runs only after M2 (entry condition in the preregistration).
+
+- **Problem (dev profile, one 205-bar replay episode, under load):** 16 G-alpha candidates cost 1.34 s with the
+  verbatim `_coverage_B`, 0.69 s with the indexed traversal and 0.105 s with indexed + Pareto-minimal shapes
+  (identical certificates on 224 segments). G-beta needs adapter + step + certify <= 50 ms at p95. Profile:
+  ~370 nodes per segment, time spread over Python-level `crosses`, `segment_box_distance` and NumPy masking; no
+  NumPy-level change reaches 50 ms, and numba is not installed.
+- **Decision:** exact C port of `_coverage_B` (`cplanner/native/coverage_b.c`, ctypes wrapper
+  `cplanner/src/coverage_native.py`, fixed-flag build `cplanner/native/build.py`) instead of the roadmap's per-packet
+  exclusion grid: identical results instead of a new approximation with its own soundness argument. Opt-in only:
+  registry field `coverage` (default `VERBATIM_PY`, every existing configuration unchanged), new configuration
+  `MOTAR-72x4-RUNTIME-NATIVE`, a dispatch in `core._certify_one` that refuses an unknown implementation. The
+  indexed / Pareto candidates of the previous session are superseded and moved out of the repository
+  (`~/motar_tmp/cplanner_m3_20261104/superseded/`).
+- **Preregistration** [`docs/plans/prereg_cplanner_m3_v1.md`](docs/plans/prereg_cplanner_m3_v1.md): E1 native
+  equivalence (parts H, T, S, R, C; whole-result identity, positive controls), E2 the seven R2' suites on the
+  changed tree, G-beta (3 episodes x 28 cells, one process on cpu 8, readings PASS_K16 / PASS_K8_ONLY / FAIL /
+  UNSTABLE); driver `cplanner/tools/run_m3.py`.
+- **Development runs (not evidence; `~/motar_tmp/cplanner_m3_20261104/dev/`):**
+
+  | Run | Result |
+  | --- | --- |
+  | E1 dev, 40 scenes + 1 replay episode | all identical; native 0.33 / 0.50 ms per segment vs verbatim 38.6 / 69.3 ms |
+  | E1 dev with core differential, 1 episode | C: 704 segments, 404 certified, identical |
+  | 4 mutants of the C port | the first test missed a strict-margin mutant, so threshold probes (part T) were added; the final test kills all four (margin, libm `hypot`, push order, surface `<`) |
+  | G-beta dev, 1 episode under load | p95 total_16 49.3 ms, total_8 42.4 ms; `core.step` p50 29.9 ms dominates |
+
+- **Planner skeleton fixes** (`cplanner/planner/c_planner.py`, dev, not gated): obstacle points are every HIT of
+  all four rows projected horizontally (as the classical arms) plus NEAR_CLIPPED beams at 0.2 m, with the optional
+  `target_like` mask; escape rule when already inside R_SAFE; C-FILTER = C-OFF's selection plus the certificate
+  condition, at most `MAX_FILTER_TRIES` = 8 certify calls; fixed a refusal of every certificate when the caller's
+  step is a NumPy integer (`for_step` now comes from the step report). `cplanner/tests/planner_unit.py`: 19/19.
+- Hypothesis "the libm `hypot` is interchangeable with Python's" rejected: 61,778 of 200,000 pairs differ in the
+  last bit, so the port reproduces CPython 3.8's `vector_norm`.
+
+Next: when R2' ends, R3' phase 2; then M2; then M3 part 1 on an idle host. No GPU, PPO, push or merge.
