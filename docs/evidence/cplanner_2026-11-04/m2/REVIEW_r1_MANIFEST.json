@@ -1,0 +1,35 @@
+{
+ "review_dir": "/home/fair/motar_tmp/cplanner_m2_20261104/review",
+ "reviewer": "Claude Opus 5.5 (claude-opus-5-5), fresh context, Agent model=opus",
+ "verdict": "FAIL (confirms the recorded V1 FAIL; no new blocking reason)",
+ "request": {
+  "REVIEW_REQUEST.md": "6504c101ed21cf892ee7ea4a0667f707c79a6c66c0cd1752abc33cd3f98fd769",
+  "SHA256_MANIFEST.json": "2b922aeabdad2c2dfbbbec5333519be16e264cdf1b37f12b25ca9945b1faa826",
+  "run_driver.log": "fe1d069521dde5f5660733609bdfd5d282ff9595151120e11d2cff0c12c9dcad"
+ },
+ "audit": {
+  "REVIEW.md": "83d87ddd8c1563cbe0f084502e4fa93bde67e410ad4ddf8930f0451689dc3e2a",
+  "common.py": "18e41b65f1d6d08705053a2f2773a5d2c07d98926aba4c7b41d0a9e872939183",
+  "dirkernel.py": "9fc0efc06b185c6483ef49d2a9ba6cb5e8c65e6710bf3b0fd34c3162b27e7dbe",
+  "galpha_indep.json": "cf7de8a81840c8a94de90c3c8e548148db48b8c67c522e25819822bf6cb18f9c",
+  "probe_catalog.py": "788c5f4c958bcd540e85894f19b68f8ae984e9705cb2dc0caeba15bd60dc8b49",
+  "probe_galpha_indep.log": "38b9d47fd342e0ccb42c552476b95a18fcc3ed6229610ac3271d33ce433dc698",
+  "probe_galpha_indep.py": "98af43449321f6ed457ca6045a56ce84343797488a14f0d5530d0a6ba45f0614",
+  "probe_segdist.log": "c1e0f8a63910cc809c5610a5bb080264afe27a93160dbc43b9e0780b2e441c06",
+  "probe_segdist.py": "702c04cd840c77d72c53c473d8525f3ae16a011e0a461514da4adce34c9c7358",
+  "probe_trimesh_box.py": "72ef46ed3850f21f2d9c39f4000455b76760cca7fccca17af7d31af8b460745e",
+  "probe_v1_full.log": "f962b782a6bb92b0dd2f5ae3096d39cc095efa555cf13bcf8243a0d00ef73432",
+  "probe_v1_full.py": "20ebf46e452cc5478450840b8248176de3c4614f86a27d03ef564a8041329c8c",
+  "probe_v1_kdir.py": "022e2f7ec053cd06230d90cb63dcde6cbf89a3be96a23694b6a1672099da2a1f",
+  "probe_v1_mechanism.py": "62de0301956f9dc73140045a1a0567dc51ecc7d26129b61504a3e1c24a8ae46e",
+  "probe_v1_violation.py": "c4f880cb604d568912f6c1530409ae06422e13c38dbe2b8af1f2a39553c98366",
+  "v1_full.json": "8e565196561014b8ae017f04c3cc9768d6a96b482573319cfedecfb00379090d",
+  "v1_violation.json": "48d4ec2bbcde5127d19e1ff9835ceaeb299dbe2b94df4b8b9da5a5f233f45727",
+  "warpcache/bin/wp_dirkernel.cpu.hash": "f2440ea8df1a0b5d2d0b7f896872153dcd8231705f038fa57d606ef21c3482d8",
+  "warpcache/bin/wp_dirkernel.o": "42a58853c30c126a47a989f389ffeb470805a273c008f12897edb08398f91d66",
+  "warpcache/bin/wp_motar_warp_lidar_kernels.cpu.hash": "cf92417da5439ef9811830271f48e080892fbdc74c02fa17965fa82dc4e4ddb1",
+  "warpcache/bin/wp_motar_warp_lidar_kernels.o": "05092186daf3d74d8644357f5c0caefd9e045cea047fefb399e1311b92543da0",
+  "warpcache/gen/wp_dirkernel.cpp": "af1dc17b88131816c5bd424046a42db7d454573a0539b7214c7f86cf10fffcc3",
+  "warpcache/gen/wp_motar_warp_lidar_kernels.cpp": "7b79d8c0a1a50cd54acfb9527a8f1edcf3027ed7d75c2df0d395b109723250c0"
+ }
+}

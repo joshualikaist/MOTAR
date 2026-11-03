@@ -71,8 +71,11 @@ ranges beyond the oracle distance, 3 band cases, positive controls present. One 
 
 Post-hoc diagnosis, not gate evidence ([`m2/v1_violation_diagnosis.json`](m2/v1_violation_diagnosis.json), script
 `m2/v1_violation_diagnosis.py`): the ray clips the bottom edge of bar 59. It enters the side face 2.2e-8 m above the
-bar's bottom (z = 0) and leaves through the bottom face; the chord inside the box is 1.3e-7 m. The float32 Warp mesh
-misses it and the float64 box hits it. This is the exact boundary grazing that charter §5 lists as out of scope. The
+bar's bottom (z = 0) and leaves through the bottom face; the chord inside the box is 1.3e-7 m. This first
+diagnosis attributed the miss to the float32 mesh. *Corrected by the independent review (I1, below):* the kernel's
+own float32 ray passes 3.3e-8 m below the edge and misses; the certifier's float64 manifest direction, 9.7e-8 rad
+away, clips the corner. Cast exactly along the kernel's rays, all 691,200 beams agree. This is exact boundary
+grazing in the sense of charter §5. The
 certifier cuts the free interval of a downward beam at z = 0 (`core._extent`), here at 6.09912 m, so the free
 segment reaches 6.6e-8 m into the bar footprint. The V1 rule exempts only a 0.1 mm range band at 0.2 m and 12 m, not
 grazing, so V1 stays FAIL. Any amendment would be a new dated preregistration and is the user's decision.
@@ -92,6 +95,33 @@ grazing, so V1 stays FAIL. Any amendment would be a new dated preregistration an
 This reading comes from a run whose verdict is FAIL (V1). It was computed as preregistered, but it does not by
 itself clear the FILTER arm. Reported, not gated: verbatim `certify` of 16 segments p50 597 ms, p95 1,379 ms (12
 concurrent workers).
+
+### Independent review: **FAIL**, confirming the recorded FAIL (`m2/REVIEW_r1.md`)
+
+- Reviewer: Claude Opus 5.5 (`claude-opus-5-5`), fresh context, read-only copies (`~/motar_tmp/cplanner_m2_20261104/review/`),
+  writing only to its `audit/` directory; request, manifests and the 23 audit files are bound in
+  [`m2/REVIEW_r1_MANIFEST.json`](m2/REVIEW_r1_MANIFEST.json). Host fault count 0 before, between and after its probes.
+- Verdict: FAIL, because V1 failed. It adds no new blocking reason. V1 and G-alpha are both computed as preregistered;
+  the reviewer's own loop over all 168 episodes reproduces every G-alpha count (closest certified segment to a bar
+  0.4556 m) and its separate oracle reproduces the V1 violation.
+- B1 (blocking, the recorded FAIL): the V1 violation above.
+- I1 (important): the cause is the beam-direction difference between the kernel's float32 rays and the certifier's
+  float64 manifest, not the replay or the adapter. Along the kernel's exact rays there are 0 violations; production box
+  faces and the 95 parked boxes do not change it. V1 has no band at bar edges, so a rerun of the same design is
+  expected to fail at a similar rate, about 1 per 7e5 beams. G-alpha's 3.6e6 replayed beams probably held a few such
+  beams; its FALSE_CERT, measured against ground truth, is 0.
+- I2 (important, Q6): the certifier's input is more permissive than the scene for such a beam: here the free ray
+  reaches 1.27e-7 m into bar 59's footprint. For every beam of this kind the intrusion is at most about 2e-5 m at 12 m.
+  A shifted-bar argument then keeps every certified segment at least about 0.45 - 3e-5 m from the bar. It has three
+  stated exceptions that the reviewer could not exclude: a second near-tangent free ray on the same bar in the same
+  packet, intrusions from opposite faces, and a HIT beam within about 2 deg of grazing. Charter §4 assumes true
+  declared statuses; this is a violation at the 1e-7 rad level, inside V1's scope.
+- Minor: M1 the replay's box triangulation differs from production's `trimesh.creation.box` on 3 of 6 faces,
+  undisclosed (re-cast with production faces: 0 status differences); M2 G-alpha's terminal zone uses the 2-D distance
+  (3-D gives the same 6,089 decision steps); M3 the driver does not hash `frozen/docs`, site-packages or the Warp
+  cache; M4 the V1 oracle shares the trace reader and `sensor_yaw` with the replay; M5 the 3 band cases are only counted.
+- Limitations: CPU and GPU float32 can differ by ulps, so the GPU status of this beam is unknown; certifiable rate
+  0.42 at 0.9-2 m from the target; verbatim certify far from the G-beta budget (resolved by M3's native port).
 
 ## M3 part 1 — exact native coverage port E1, R2' suites E2, compute G-beta (`m3/`)
 

@@ -679,8 +679,9 @@ family that is in the test's scope.
 - **Status:**
   - M1 complete: R2' CONDITIONAL, independent review R3' PASS (Opus 5.5) → R2' PASS within the charter §4
     assumptions; minor findings and limitations open (`docs/evidence/cplanner_2026-11-04/`).
-  - M2 FAIL: V1 FAIL (one grazing beam in 691,200); G-alpha reading FILTER_ARM_RETAINED (0.816), 0 FALSE_CERT,
-    from the FAIL run, so not a cleared FILTER arm; independent review pending.
+  - M2 FAIL, confirmed by independent review: V1 FAIL (one beam in 691,200 grazes a bar edge along the float64
+    manifest but not along the kernel's float32 ray); G-alpha reading FILTER_ARM_RETAINED (0.816), 0 FALSE_CERT,
+    from the FAIL run, so not a cleared FILTER arm. The V1 repair is a user decision.
   - M3 part 1 PASS after independent review (Opus 5.5): E1 native equivalence PASS, E2 PASS, G-beta PASS_K16
     (p95 20.7 ms at K = 16, fastest P-core, idle host); important findings I1-I3 open.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.

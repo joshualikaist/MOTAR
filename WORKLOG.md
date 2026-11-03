@@ -23773,3 +23773,33 @@ Minor m1-m7 and limitations L1-L3 in the report. Evidence: `docs/evidence/cplann
 `REVIEW_r1_MANIFEST.json` (92 audit files). Beads follow-up `motar-3p3.34`.
 
 Next: record the M2 review (running); then the user's decisions. No GPU, PPO, push or merge.
+
+## 2026-11-04 — C-Planner M2 independent review FAIL (confirms V1 FAIL); diagnosis corrected; cycle M1-M3 part 1 ends
+
+Reviewer Claude Opus 5.5 (fresh context, Agent `model: "opus"`), read-only copies in
+`~/motar_tmp/cplanner_m2_20261104/review/`, 07:20 – 08:00 KST, host fault count 0 throughout. **FAIL**, confirming
+the recorded V1 FAIL without a new blocking reason. V1 and G-alpha are computed as preregistered; the reviewer's own
+loop over the 168 episodes reproduces every G-alpha count (closest certified segment to a bar 0.4556 m).
+
+- **Correction of the earlier post-hoc diagnosis** (entry above, "the float32 mesh misses what the float64 box
+  hits"): refuted. The kernel's own float32 ray passes 3.3e-8 m below the bar's edge and misses; the certifier's
+  float64 manifest direction, 9.7e-8 rad away, clips the corner. Along the kernel's exact rays all 691,200 beams
+  agree (review I1). The replay, its mesh and the adapter mapping are not the cause; production box faces give the
+  same single violation.
+- **I1:** V1 has no band at bar edges, so a rerun of the same design is expected to fail at about 1 per 7e5 beams.
+- **I2 (Q6):** for such a beam the certifier's input is more permissive than the scene (here 1.27e-7 m into the
+  footprint, at most about 2e-5 m at 12 m for the class). A shifted-bar argument keeps certified segments at least
+  about 0.45 - 3e-5 m from the bar, with three exceptions it cannot exclude: a second near-tangent free ray on the
+  same bar in the same packet, opposite-face intrusions, and a HIT beam within about 2 deg of grazing.
+- Minor M1-M5: the replay's box triangulation differs from production's on 3 of 6 faces (undisclosed in the M2
+  preregistration; 0 status differences when re-cast), 2-D terminal distance, unhashed docs / site-packages / Warp
+  cache, shared reader and `sensor_yaw` between oracle and replay, band cases only counted.
+
+State: M1 PASS, M2 FAIL (G-alpha FILTER_ARM_RETAINED 0.816, 0 FALSE_CERT, from the FAIL run), M3 part 1 PASS. The
+D5 envelope (M1-M3 CPU work through its gates) has no further gate that does not depend on a user decision, so the
+cycle stops here. Beads `motar-3p3.35` (P1) holds the V1 decision and its options; `motar-3p3.33` and
+`motar-3p3.34` hold the driver and native follow-ups. Evidence: `docs/evidence/cplanner_2026-11-04/m2/REVIEW_r1.md`.
+
+Next (user decisions): how to repair the direction/grazing gap in V1 (new dated preregistration) or keep the
+certificate as a label only; whether M3's remaining parts (planner, simulator arm, DEV smoke) proceed. No GPU, PPO,
+push or merge.
