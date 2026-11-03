@@ -23698,3 +23698,35 @@ records, `REVIEW_r1.md`, `REVIEW_r1_phase1.md`, manifests binding the 63 raw fil
 Next: M2 (V1, G-alpha) started at 06:22 KST from the frozen copy of `a5b7022`
 (`~/motar_tmp/cplanner_m2_20261104/run/`); then its independent review; then M3 part 1 on an idle host. No GPU, PPO,
 push or merge.
+
+## 2026-11-04 — C-Planner M2: V1 FAIL (one grazing beam in 691,200), G-alpha FILTER_ARM_RETAINED with 0 FALSE_CERT
+
+M2 ([`docs/plans/prereg_cplanner_m2_v1.md`](docs/plans/prereg_cplanner_m2_v1.md)) ran from a frozen copy of `a5b7022`,
+06:22 – 06:36 KST, CPU only, 12 workers; bar-pool preflight pass, both commands twice with identical results,
+inputs unchanged, 0 kernel fault records. **Driver verdict FAIL** (V1).
+
+| Gate | Result |
+| --- | --- |
+| V1 | **FAIL**: 691,200 beams over 2,400 frames; range error max 2.48e-4 m (tol 5e-4), direction difference max 1.41e-7 rad, 0 adapter mismatches, positive controls present; **1 violation** `v_nohit_but_oracle_hit` |
+| G-alpha | **FILTER_ARM_RETAINED** as computed: certifiable rate 4,969 / 6,089 = 0.816 (F_SHADOW 0.885 / 0.868, B-PP 0.758 / 0.823 at 160 / 205 bars); 97,424 segments, 49,999 certified, **0 FALSE_CERT** |
+
+The violation: `A/F_SHADOW` 205 bars seed 4301, env 0 episode 1 frame 28, beam 269 (row 3, -10 deg); kernel no
+hit, oracle hit on bar 59 at 6.0991 m. Post-hoc diagnosis (not gate evidence): the ray clips the bar's bottom edge
+(z = 0) with a chord of 1.3e-7 m, entering the side face 2.2e-8 m above z = 0. This is exact boundary grazing (charter
+§5 out of scope); the float32 mesh misses what the float64 box hits. The certifier cuts this beam's free interval at
+z = 0 (6.09912 m), so its free segment reaches 6.6e-8 m into the footprint. The preregistered V1 band covers only
+the range ends (0.1 mm at 0.2 m and 12 m), so V1 is FAIL as recorded. Hypothesis "the replay misses bars" is not
+supported: the only disagreement in 691,200 beams is a 0.13 um corner clip.
+
+Stop rule: not an in-scope structural defect (grazing is out of scope), so the cycle is not stopped. A V1 amendment
+(a geometric grazing band, a fresh sample) would be a post-measurement criterion change. It is left to the user and
+not run. The G-alpha reading comes from a FAIL run and does not by itself clear the FILTER arm. M3 part 1's entry
+condition (M2 finished without STOP_FALSE_CERT) is met; M3 started at 06:37 KST on an otherwise idle host. The
+independent review of M2 runs after M3 (no reviewer probes during G-beta timing).
+
+Evidence: [`docs/evidence/cplanner_2026-11-04/m2/`](docs/evidence/cplanner_2026-11-04/README.md). Raw:
+`~/motar_tmp/cplanner_m2_20261104/run/`; diagnosis `~/motar_tmp/cplanner_m2_20261104/diag_v1/`. Beads
+`motar-3p3.33` filed for the R3' driver minors.
+
+Next: M3 part 1 result, then independent reviews of M2 and M3; user decisions: the V1 amendment and the FILTER arm.
+No GPU, PPO, push or merge.

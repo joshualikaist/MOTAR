@@ -679,7 +679,9 @@ family that is in the test's scope.
 - **Status:**
   - M1 complete: R2' CONDITIONAL, independent review R3' PASS (Opus 5.5) → R2' PASS within the charter §4
     assumptions; minor findings and limitations open (`docs/evidence/cplanner_2026-11-04/`).
-  - M2 (V1, G-alpha) running; M3 part 1 (native coverage E1/E2, G-beta) preregistered, not measured.
+  - M2 FAIL: V1 FAIL (one grazing beam in 691,200); G-alpha reading FILTER_ARM_RETAINED (0.816), 0 FALSE_CERT,
+    from the FAIL run, so not a cleared FILTER arm; independent review pending.
+  - M3 part 1 (native coverage E1/E2, G-beta) running.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.
 - **Read first:** [`docs/plans/cplanner_charter_v1.md`](plans/cplanner_charter_v1.md)
 - **Lineage:**

@@ -1,0 +1,40 @@
+{
+ "preflight_pass": true,
+ "v1": "FAIL",
+ "galpha_reading": "FILTER_ARM_RETAINED",
+ "galpha_verdict": "REPORTED",
+ "galpha_false_cert": 0,
+ "certifiable_rate": 0.8160617506979799,
+ "certifiable_rate_by_group": {
+  "F_SHADOW:160": 0.8846611177170036,
+  "F_SHADOW:205": 0.8683274021352313,
+  "B-PP:160": 0.7576961271102284,
+  "B-PP:205": 0.822668339606859
+ },
+ "duplicates": {
+  "dup_v1": "FAIL",
+  "dup_galpha": "REPORTED"
+ },
+ "determinism": {
+  "v1": true,
+  "galpha": true
+ },
+ "inputs_unchanged": true,
+ "changed_inputs": [],
+ "host_void": false,
+ "commands_run": 4,
+ "commands_expected": 4,
+ "verdict": "FAIL",
+ "verdict_scope": "V1 rules 1-4 + G-alpha reading (charter \u00a73) + preflight bar pool + determinism + host + inputs; decided only after an independent review",
+ "host_end": {
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "fault_events": [],
+  "fault_count": 0,
+  "online": "0-3,6-23",
+  "offline": "4-5",
+  "bios": "0806",
+  "loadavg": "4.79 8.88 7.39 1/2568 2519219",
+  "time": "2026-11-04T06:36:15.477583+09:00"
+ },
+ "finished": "2026-11-04T06:36:15.477596+09:00"
+}

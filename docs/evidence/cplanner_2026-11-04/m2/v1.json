@@ -1,0 +1,63 @@
+{
+ "gate": "M2 V1",
+ "pass": false,
+ "checks": {
+  "completed": true,
+  "zero_violations": false,
+  "positive_hits": true,
+  "positive_no_hits": true,
+  "positive_target_hits": true,
+  "range_error_below_half_margin": true
+ },
+ "stats": {
+  "frames": 2400,
+  "beams": 691200,
+  "nonfinite": 0,
+  "hit": 291027,
+  "no_hit": 400119,
+  "near": 54,
+  "target_hits": 4936,
+  "v_nohit_but_oracle_hit": 1,
+  "v_near_but_oracle_far": 0,
+  "v_hit_range_mismatch": 0,
+  "v_hit_but_oracle_none": 0,
+  "v_oracle_hit_missed": 0,
+  "band_cases": 3,
+  "adapter_range_beyond_true": 0,
+  "adapter_status_mismatch": 0,
+  "max_abs_range_err_m": 0.0002477802016631614,
+  "max_dir_angle_rad": 1.4057727354849297e-07,
+  "max_lateral_offset_12m": 1.6869272825819103e-06,
+  "examples": [
+   {
+    "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+    "k": 10752,
+    "beam": 269,
+    "v": 1.0,
+    "t_oracle": 6.099120738045306,
+    "owner": 59,
+    "kind": "v_nohit_but_oracle_hit"
+   }
+  ],
+  "bars_per_frame_min_max": [
+   70,
+   205
+  ]
+ },
+ "failure": null,
+ "cells": [
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__70bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__115bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4301",
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4301"
+ ],
+ "frames_per_cell": 400,
+ "sample_seed": 20261104,
+ "tol_range_m": 0.0005,
+ "band_m": 0.0001,
+ "hit_margin_m": 0.001,
+ "kernel_file_sha256": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be",
+ "wall_s": 15.032561779022217
+}

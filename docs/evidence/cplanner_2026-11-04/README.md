@@ -48,3 +48,47 @@ Committed copies of independent reviews are numbered `REVIEW_r<n>.md` inside the
 - The reviewer's own checks include an independent ray caster and oracle fuzz (0 FALSE_CERT in 3,825 certificates;
   it catches three unsound mutants), recomputed determinism (5A 2,000/2,000 and 5B 200/200 digests) and 84 seeds
   re-run outside the duplicate range (84/84 digests equal).
+
+## M2 — MOTAR 72x4 status mapping V1 and certifiability on replay G-alpha (`m2/`)
+
+- Preregistration: [`docs/plans/prereg_cplanner_m2_v1.md`](../../plans/prereg_cplanner_m2_v1.md). Entry condition met
+  (R2' CONDITIONAL, R3' no in-scope P0-blocking finding).
+- Code: frozen `git archive` copy of `a5b7022`, run by `cplanner/tools/run_m2.py`, 2026-11-04 06:22 – 06:36 KST,
+  CPU only, `taskset -c 0-3,8-11,14-23`, 12 workers. Raw: `~/motar_tmp/cplanner_m2_20261104/run/` (19 files),
+  bound with the frozen tree in [`m2/SHA256_MANIFEST.json`](m2/SHA256_MANIFEST.json).
+- Driver verdict ([`m2/m2_summary.json`](m2/m2_summary.json)): **FAIL**, because V1 failed. Bar-pool preflight
+  pass; both commands ran twice with identical results; inputs unchanged; host fault count 0, boot id unchanged.
+
+### V1: **FAIL** ([`m2/v1.json`](m2/v1.json))
+
+2,400 frames, 691,200 beams (HIT 291,027, NO_HIT 400,119, NEAR_CLIPPED 54, target-sphere hits 4,936). Range error
+max 2.48e-4 m (tolerance 5e-4 m), beam-direction difference max 1.41e-7 rad, 0 adapter status mismatches, 0 declared
+ranges beyond the oracle distance, 3 band cases, positive controls present. One violation, so rule 1 fails:
+
+- `v_nohit_but_oracle_hit`: cell `A/F_SHADOW/E2_obstacle_aware__205bars__seed4301`, trace index 10752 (env 0,
+  episode 1, frame 28), beam 269 (row 3 at -10 deg elevation, column 53). The kernel returned no hit; the float64
+  oracle hits bar 59 at 6.0991 m.
+
+Post-hoc diagnosis, not gate evidence ([`m2/v1_violation_diagnosis.json`](m2/v1_violation_diagnosis.json), script
+`m2/v1_violation_diagnosis.py`): the ray clips the bottom edge of bar 59. It enters the side face 2.2e-8 m above the
+bar's bottom (z = 0) and leaves through the bottom face; the chord inside the box is 1.3e-7 m. The float32 Warp mesh
+misses it and the float64 box hits it. This is the exact boundary grazing that charter §5 lists as out of scope. The
+certifier cuts the free interval of a downward beam at z = 0 (`core._extent`), here at 6.09912 m, so the free
+segment reaches 6.6e-8 m into the bar footprint. The V1 rule exempts only a 0.1 mm range band at 0.2 m and 12 m, not
+grazing, so V1 stays FAIL. Any amendment would be a new dated preregistration and is the user's decision.
+
+### G-alpha reading: **FILTER_ARM_RETAINED**, FALSE_CERT 0 ([`m2/galpha.json`](m2/galpha.json))
+
+168 episodes, 12,636 frames, 6,089 decision steps, 97,424 candidate segments; 49,999 certified, 0 FALSE_CERT,
+0 exceptions. Certifiable rate 4,969 / 6,089 = 0.816 (threshold 0.60):
+
+| Group (arm : bars) | Certifiable rate |
+| --- | --- |
+| F_SHADOW : 160 | 0.885 |
+| F_SHADOW : 205 | 0.868 |
+| B-PP : 160 | 0.758 |
+| B-PP : 205 | 0.823 |
+
+This reading comes from a run whose verdict is FAIL (V1). It was computed as preregistered, but it does not by
+itself clear the FILTER arm. Reported, not gated: verbatim `certify` of 16 segments p50 597 ms, p95 1,379 ms (12
+concurrent workers).

@@ -1,0 +1,107 @@
+{
+ "status": "POST_HOC_DIAGNOSIS_NOT_GATE_EVIDENCE",
+ "question": "why does the single V1 violation (v_nohit_but_oracle_hit) occur?",
+ "command": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES= taskset -c 3 python -B v1_violation_diagnosis.py <b1r>/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301 10752 269",
+ "script_sha256": "fd0319da193d73ecf02681994317966ca49a27a75cfdb12e184dc0c58297bf38",
+ "stdout_file": {
+  "path": "/home/fair/motar_tmp/cplanner_m2_20261104/diag_v1/diag_beam_out.json",
+  "sha256": "831455699e221cb4ba1f3ef4fd7fa774e4d15bbee38cd63aa6e25abd0a001819"
+ },
+ "output": {
+  "frame": 28,
+  "env": 0,
+  "episode": 1,
+  "row": 3,
+  "col": 53,
+  "p_pos": [
+   6.789251804351807,
+   10.214232444763184,
+   1.0591012239456177
+  ],
+  "yaw": 2.5048773288726807,
+  "kernel_raw_m": 1000.0,
+  "seg": -2,
+  "oracle_cert_dir": [
+   6.099120738045306,
+   59
+  ],
+  "oracle_kernel_dir": [
+   6.099120976621828,
+   59
+  ],
+  "bar": {
+   "center": [
+    10.165929794311523,
+    15.439138412475586,
+    1.5
+   ],
+   "half": [
+    0.23999999463558197,
+    0.20145000517368317,
+    1.5
+   ],
+   "quat": [
+    0.0,
+    0.0,
+    0.0,
+    1.0
+   ]
+  },
+  "slab_cert": {
+   "tmin": 6.099120738045306,
+   "tmax": 6.099120867119319,
+   "chord_m": 1.2907401281125885e-07,
+   "entry_axis": 0,
+   "exit_axis": 2,
+   "entry_local": [
+    -0.23999999463558197,
+    -0.10252082250740369,
+    -1.499999977586533
+   ],
+   "exit_local": [
+    -0.23999992825492944,
+    -0.10252071410377717,
+    -1.5
+   ],
+   "entry_margin_to_faces": [
+    0.0,
+    0.09892918266627948,
+    2.2413467082316174e-08
+   ],
+   "exit_margin_to_faces": [
+    6.638065253028458e-08,
+    0.098929291069906,
+    0.0
+   ]
+  },
+  "slab_kern": {
+   "tmin": 6.099120976621828,
+   "tmax": 6.099121269764295,
+   "chord_m": 2.9314246674516653e-07,
+   "entry_axis": 0,
+   "exit_axis": 2,
+   "entry_local": [
+    -0.23999999463558197,
+    -0.10252053254853699,
+    -1.499999949096348
+   ],
+   "exit_local": [
+    -0.23999984387721396,
+    -0.10252028635097687,
+    -1.5
+   ],
+   "entry_margin_to_faces": [
+    0.0,
+    0.09892947262514618,
+    5.090365196025459e-08
+   ],
+   "exit_margin_to_faces": [
+    1.5075836801159426e-07,
+    0.09892971882270629,
+    0.0
+   ]
+  },
+  "ray_z_at_oracle": 2.2413467082316174e-08,
+  "t_ground_z0": 6.099120867119319
+ }
+}
