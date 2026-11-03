@@ -23546,3 +23546,44 @@ Branch `cplanner/dev` (worktree `src/MOTAR-cplanner`) from `codex/mt-p1` `62e59c
   hit bit and CPU warp replay).
 
 No GPU, PPO, push or merge. Results, raw data, checkpoints and the r1 unit are untouched.
+
+## 2026-11-04 — C-Planner M2 preparation: CPU replay of the B1-R LiDAR, adapter, V1 and G-alpha preregistered
+
+R2' is running from the frozen copy of `b407039` (`~/motar_tmp/cplanner_r2p_20261104/`); this entry changes
+nothing it reads. M2 code and its preregistration
+[`docs/plans/prereg_cplanner_m2_v1.md`](docs/plans/prereg_cplanner_m2_v1.md) are committed before any M2
+measurement; M2 runs only after R2' is CONDITIONAL and R3' finds no in-scope P0-blocking defect.
+
+- **Replay** (`cplanner/motar/replay.py`): MOTAR's own kernel `draw_optimized_kernel_range_segmentation_target`
+  loaded by file path (importing `aerial_gym` imports Isaac Gym) runs on the Warp 1.0.0 CPU device. Probe: a box
+  face at 2.85 m read 2.8500001 m; the target sphere at 4.8 m read 4.799998 m.
+- **Fidelity survey** (Explore subagent, read-only; `~/motar_tmp/cplanner_m2_20261104/FIDELITY_SURVEY.md`): the
+  B1-R Warp scene is bars only; inactive slots sit at (-1000, -1000, -1000); LiDAR target radius 0.20 m (the
+  trace's 0.15 m is the camera proxy); far plane 12 m; sensor = `p_pos` with yaw-only `p_quat` (`p_vehicle_quat`
+  lags one substep); frame k is rendered from the recorded state. The replay copies the production float32 yaw
+  computation (`sensor_yaw`).
+- **Adapter** (`cplanner/motar/adapter.py`): 1.0 -> NO_HIT, -1.0 -> NEAR_CLIPPED, non-finite -> SENSOR_ERROR,
+  else HIT at 12 v - 1 mm. The margin exists because float32 range error reached 5.2e-5 m in development, more
+  than the certificate's internal 1e-7 m.
+- **Development runs (not evidence):**
+
+  | Run | Result |
+  | --- | --- |
+  | V1, 20 frames of `A/F_SHADOW` 160 bars seed 4301 (5,760 beams) | status mapping consistent; adapter range never beyond the true distance; max range error 5.3e-5 m; max direction difference 1.1e-7 rad (first run with a 1e-5 m tolerance failed on 6 beams at 6.4-8.9 m: tolerance too tight, not a mapping error) |
+  | G-alpha, 2 episodes of `A/F_SHADOW` 205 bars seed 4301 | 50 decision steps, certifiable 0.94, FALSE_CERT 0; refusals mostly `MAP_VETO_OBSERVED_HIT`; certify of 16 segments p50 570 ms, p95 892 ms under concurrent load |
+  | G-alpha, 1 episode of `C-PP/B-PP` 160 bars seed 4302 | 21 decision steps, certifiable 0.95, FALSE_CERT 0 |
+
+- **Prior-art check G1b-lite** (Opus 5.5 subagent, about 40 works screened;
+  `~/motar_tmp/cplanner_roadmap_20261103/prior_art/G1B_LITE_PRIOR_ART.md`): NARROW_DISTINCTION. Closest: Jackson et
+  al., Certified Control (arXiv 2104.06178), the same free-return logic with a single minimum obstacle size;
+  Wong, Kaelbling & Lozano-Pérez ICRA 2014 (free space eliminates object locations, probabilistic); Jaulin 2011
+  and Desrochers & Jaulin 2017 (set-membership free rays). Expected baselines: inflated known-free maps,
+  a minimum-size density rule, scan-polygon erosion, safe flight corridors, an exact polygon-union oracle.
+- **Catalog check (follows from the review's dominance argument):** only 4 of the 40 `bars_h3` half-size pairs are
+  Pareto-minimal: (0.20615, 0.28735), (0.21165, 0.2563), (0.22795, 0.2229), (0.24, 0.20145). Excluding these
+  excludes every larger box, so the certificate is in effect a minimum-footprint prior with four aspect ratios.
+  This is a candidate exact speed-up for G-beta (M3; needs an equivalence test) and narrows the novelty wording.
+- **Compute observation:** at about 35 ms per segment, 16 candidates take about 0.57 s; G-beta needs 50 ms.
+
+Next: when R2' finishes, R3' independent review (request `~/motar_tmp/cplanner_r3p_20261104/REVIEW_REQUEST.md`);
+then V1 and G-alpha runs. No GPU, PPO, push or merge.

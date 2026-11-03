@@ -684,8 +684,10 @@ family that is in the test's scope.
   - P0 v1–v7, P0-R and r1, outside the repository (see below)
   - → `docs/plans/cplanner_charter_v1.md`
   - → `docs/plans/prereg_cplanner_r2prime_v1.md`
+  - → `docs/plans/prereg_cplanner_m2_v1.md`
 - **Compare with:** `b1r-classical-baseline`, `boia`
-- **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`
+- **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`,
+  `docs/plans/prereg_cplanner_m2_v1.md`
 
 ## Not yet in the repository
 
