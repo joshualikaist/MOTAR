@@ -38,7 +38,19 @@ for k in ("NAVRL_GAIN_RAND", "NAVRL_GAIN_RAND_SCALE", "NAVRL_GAIN_RAND_SEED"):
 from isaacgym import gymapi  # noqa: E402,F401  (Isaac Gym before torch)
 import torch  # noqa: E402
 
+import subprocess  # noqa: E402
+
+import aerial_gym  # noqa: E402
 from aerial_gym.sim.sim_builder import SimBuilder  # noqa: E402
+
+TREE = pathlib.Path(__file__).resolve().parents[1]
+if not str(pathlib.Path(aerial_gym.__file__).resolve()).startswith(str(TREE) + os.sep):
+    raise SystemExit("aerial_gym resolves outside this tree: %s (set PYTHONPATH=%s)" % (aerial_gym.__file__, TREE))
+
+
+def host_faults():
+    j = subprocess.run(["journalctl", "-k", "-b", "0", "--no-pager"], capture_output=True, text=True).stdout
+    return sum(1 for line in j.splitlines() if any(k in line for k in ("Machine check", "segfault", "general protection")))
 
 DT_ACTION = 0.1
 ALT = 1.0
@@ -86,6 +98,9 @@ def metrics(ts, vs, t0, v0, v1, T):
 
 
 def main():
+    faults0 = host_faults()
+    git = lambda *a: subprocess.run(["git", "-C", str(TREE), *a], capture_output=True, text=True).stdout.strip()  # noqa: E731
+    head, dirty = git("rev-parse", "HEAD"), bool(git("status", "--porcelain"))
     em = SimBuilder().build_env(sim_name="base_sim", env_name="navrl_bars_env", robot_name="navrl_quad",
                                 controller_name="lee_velocity_control_navrl", args=None, device="cuda:0",
                                 num_envs=NUM_ENVS, headless=True, use_warp=True)
@@ -134,7 +149,8 @@ def main():
         res["envs"] = len(dicts)
         return res
 
-    out = {"unit": "G9", "phys_dt_s": phys_dt, "substeps_per_action": n_sub, "num_envs": NUM_ENVS,
+    out = {"unit": "G9", "commit": head, "dirty": dirty, "aerial_gym_origin": str(aerial_gym.__file__),
+           "host_faults_before": faults0, "phys_dt_s": phys_dt, "substeps_per_action": n_sub, "num_envs": NUM_ENVS,
            "controller": "lee_velocity_control_navrl", "robot": "navrl_quad", "alt_target_m": ALT, "A3": {}, "A4": []}
     prev = {"x": 0.0, "y": 0.0}
     for name, t0, vx, vy, wz, dur in marks:
@@ -156,6 +172,7 @@ def main():
                          "tilt_max_deg_per_env": [max(rec["tilt"][j][i] for j in sel) for i in range(NUM_ENVS)]}
     hov = [i for i, tt in enumerate(rec["t"]) if 1.0 <= tt <= 3.0]
     out["hover_alt_mean_m_per_env"] = [sum(rec["z"][j][i] for j in hov) / len(hov) for i in range(NUM_ENVS)]
+    out["host_faults_after"] = host_faults()
     OUT.write_text(json.dumps(out, indent=1) + "\n")
     print(json.dumps({"A3": {ax: [(st["from"], st["to"], st["median_over_envs"]) for st in v] for ax, v in out["A3"].items()},
                       "A4": [(a["cmd_rad_s"], a["median_over_envs"]) for a in out["A4"]], "A5": out["A5"]}, indent=1))
