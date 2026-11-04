@@ -24232,3 +24232,15 @@ No push or merge.
     `no_lidar_in_fov` TOLERANT.
 - **Next:** the G7 run follows GR-1b evaluation in the queue.
 
+## 2026-11-05 — G8 amendment 1 (before any run): an opt-in state recorder for an exact bridge check
+
+The dump and the occlusion trace lack three inputs of F's observation: the body yaw rate, `prev_action`, and the
+global history phase.
+- **Fix:** a new read-only hook, `tools/staterec_hook.py` with `tools/staterec_site/sitecustomize.py`. At every
+  action request it records the observation's source tensors and the policy action, and returns the action
+  unchanged.
+- **Wiring:** `tools/sitl_g8_ref_dump.py` puts the site directory on `PYTHONPATH` and requires the per-cell npz.
+- **Amendment:** `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`.
+- **Tests:** `tests/test_staterec_hook.py` (3) pass.
+- **Unchanged:** the noninterference gate, which would expose any effect on outcomes.
+

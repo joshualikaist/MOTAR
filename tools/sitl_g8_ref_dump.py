@@ -25,6 +25,9 @@ import camonly_run as C                                     # noqa: E402
 
 G, K = C.G, C.K
 PREREG = "docs/plans/prereg_sitl_reference_g8g9_v1.md"
+AMENDMENT = "docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md"
+SITE = ROOT / "tools/staterec_site"
+HOOK_FILES = ("tools/staterec_hook.py", "tools/staterec_site/sitecustomize.py")
 CELLS = ((70, 4501), (205, 4501))
 QUOTA = 1
 REF = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/gr0_main/S00")
@@ -50,14 +53,16 @@ def main():
     out_root = pathlib.Path(args.out).resolve()
     protocol = json.loads(K.PROTOCOL.read_text())
     head, problems, origins = C.preflight(protocol, args.approved_commit, out_root)
-    if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", PREREG], capture_output=True).returncode:
-        problems.append("%s is not committed" % PREREG)
+    for rel in (PREREG, AMENDMENT) + HOOK_FILES:
+        if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
+            problems.append("%s is not committed" % rel)
     for d, s in CELLS:
         if not (REF / ("E2_obstacle_aware__%dbars__seed%d" % (d, s)) / "episodes.jsonl").is_file():
             problems.append("reference missing %d/%d" % (d, s))
     module_sha = G.sha(ROOT / C.MODULE)
     start = G.host()
-    report = {"unit": "G8", "prereg": PREREG, "commit": head, "started": G.now(), "host_start": start,
+    report = {"unit": "G8", "prereg": PREREG, "amendment": AMENDMENT,
+              "hook_sha256": {f: G.sha(ROOT / f) for f in HOOK_FILES}, "commit": head, "started": G.now(), "host_start": start,
               "import_origins": origins, "preflight_problems": problems, "quota": QUOTA}
     if problems:
         report["reading"] = "PREFLIGHT_FAIL"
@@ -71,8 +76,10 @@ def main():
             report["budget_exhausted"] = True
             break
         dump = out_root / ("obs_dump_%dbars_seed%d.npz" % (d, s))
+        staterec = out_root / ("state_record_%dbars_seed%d.npz" % (d, s))
         extra = {"NAVRL_SENSOR_ABLATION": "full", "CAMONLY_PY": str(C.WRAPPER), "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
-                 "NAVRL_OBS_DUMP": str(dump), "NAVRL_OBS_DUMP_STRIDE": "1", "NAVRL_OBS_DUMP_MAX": "80000"}
+                 "NAVRL_OBS_DUMP": str(dump), "NAVRL_OBS_DUMP_STRIDE": "1", "NAVRL_OBS_DUMP_MAX": "80000",
+                 "PYTHONPATH": "%s:%s" % (ROOT, SITE), "MOTAR_STATE_RECORD": str(staterec)}
         rec = G.run_cell(ROOT, protocol, out_root, "full", d, s, QUOTA, "SITL-G8", None, head, start, records,
                          G.CELL_TIMEOUT_S, extra, C.LAUNCHER, G.F_SHA)
         cell_dir = out_root / "full" / rec["cell_id"]
@@ -80,6 +87,8 @@ def main():
             extra_problems = C.ablation_problems(cell_dir, "full", module_sha)
             if not dump.is_file():
                 extra_problems.append("observation dump missing")
+            if not staterec.is_file():
+                extra_problems.append("state record missing")
             if extra_problems:
                 rec["problems"].extend(extra_problems)
                 rec["verdict"] = "FAIL"
@@ -91,8 +100,10 @@ def main():
                   "pass": len(a) == len(b) == protocol["evaluation"]["num_envs"] and not diff}
             rec["dump_sha256"] = hashlib.sha256(dump.read_bytes()).hexdigest()
             rec["dump_bytes"] = dump.stat().st_size
+            rec["state_record_sha256"] = hashlib.sha256(staterec.read_bytes()).hexdigest()
         cells.append({"density": d, "seed": s, "dir": str(cell_dir), "verdict": rec["verdict"], "noninterference": ni,
-                      "dump": str(dump), "dump_sha256": rec.get("dump_sha256"), "dump_bytes": rec.get("dump_bytes")})
+                      "dump": str(dump), "dump_sha256": rec.get("dump_sha256"), "dump_bytes": rec.get("dump_bytes"),
+                      "state_record": str(staterec), "state_record_sha256": rec.get("state_record_sha256")})
         print("   G8", d, s, rec["verdict"], ni, flush=True)
         if rec["verdict"] != "OK":
             void = rec["verdict"] == "VOID_HOST_FAULT"

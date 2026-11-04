@@ -785,10 +785,12 @@ family that is in the test's scope.
   - → `docs/plans/sitl_validation_plan_v1.md`
   - → `docs/evidence/sitl_2026-11-05/` (S1/S2 offboard tests, vehicle files)
   - → `docs/plans/prereg_sitl_reference_g8g9_v1.md` (G8 reference dump, G9 Isaac velocity response)
+  - → `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md` (G8 adds a state recorder; before any run)
   - → `docs/plans/prereg_actionhold_g7_v1.md` (G7: F under held / delayed actions; chunking premise and latency budget)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
-  `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_actionhold_g7_v1.md`
+  `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
+  `docs/plans/prereg_actionhold_g7_v1.md`
 
 ## Not yet in the repository
 
