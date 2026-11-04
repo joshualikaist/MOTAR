@@ -23677,3 +23677,27 @@ Evidence: `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md`
 
 Next: `gr1repro`, then `gr1eval` for both arms, then `tools/gr1_analyse.py` and an independent review. No push or
 merge.
+
+## 2026-11-04 — GR-1 gr1repro attempt 1 stopped before any cell (runner bug); fixed and smoke-tested
+
+- **Attempt 1** (`results/gain_randomization_gr1_v1/repro`, commit `6d8ee65`) raised
+  `AttributeError: 'Namespace' object has no attribute 'policy'` right after creating its output folder.
+  - No cell ran and no GPU process started. The folder is empty and stays as recorded.
+- **Cause.** Amendment 1 replaced `--policy` / `--ckpt` / `--ckpt-sha` with `--train-report`, but the run id line
+  still read `args.policy` on the gr1repro path. That path had not been executed before the commit. The synthetic
+  controls covered only the analysis script.
+- **Fix.** The three values are set to None after parsing and are filled from the training report in gr1eval only.
+  gr1repro's run id is again `GR1-F`, as in the preregistered stage.
+- **Smoke test** (`gr1_design/smoke_gr_run_main.py`, CPU, no simulator).
+  - It runs `main()` with only `preflight()` and `run_cell()` stubbed. `run_cell` copies the real GR-0 cells.
+  - Fixed runner (sha256 `397e5512…`): PASS on all 7 checks:
+    - gr1repro PASS, with run id `GR1-F` and the second cell through the GR-1 launcher with Policy F's SHA;
+    - perturbed episodes give GR1_REPRO_FAIL;
+    - a missing train report and a missing repro report each give PREFLIGHT_FAIL;
+    - each arm's gr1eval gives COMPLETE, with 36 cells bound to its training report;
+    - a failing cell gives INCOMPLETE.
+  - Known-bad control, the `6d8ee65` runner: the same AttributeError on both gr1repro cases, so the smoke test
+    detects this bug class.
+
+Next: gr1repro into `results/gain_randomization_gr1_v1/repro_02` on the fixed commit, then gr1eval for both arms. No
+push or merge.

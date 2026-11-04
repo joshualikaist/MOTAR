@@ -1,0 +1,111 @@
+{
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+ "gr_run_sha256": "397e5512aa0de5427f0a7c0b19554b7c8ee53123754312810f8307562c564d99",
+ "results": {
+  "repro_ok": {
+   "rc": 0,
+   "verdict": "GR1_REPRO_PASS",
+   "calls": [
+    {
+     "level": "S40",
+     "density": 205,
+     "seed": 4501,
+     "run_id": "GR1-F",
+     "scale": 0.4,
+     "extra": null,
+     "launcher": null,
+     "ckpt_sha": null,
+     "quota": 16
+    },
+    {
+     "level": "S40_gr1launcher",
+     "density": 205,
+     "seed": 4501,
+     "run_id": "GR1-F",
+     "scale": 0.4,
+     "extra": {
+      "GR1_CKPT": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+      "GR1_CKPT_SHA": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+     },
+     "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_gr1_arms.sh",
+     "ckpt_sha": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+     "quota": 16
+    }
+   ],
+   "error": null
+  },
+  "repro_perturbed": {
+   "rc": 1,
+   "verdict": "GR1_REPRO_FAIL",
+   "error": null
+  },
+  "eval_no_train_report": {
+   "rc": 2,
+   "error": null
+  },
+  "eval_no_repro": {
+   "rc": 2,
+   "error": null
+  },
+  "eval_rand40": {
+   "rc": 0,
+   "verdict": "COMPLETE",
+   "n_calls": 36,
+   "policy": "rand40",
+   "sha": "3f122b47f08c638b963d99a432fef2767d06c37505dbfa18030ca2d820cfa6c5",
+   "error": null,
+   "first_call": {
+    "level": "S00",
+    "density": 70,
+    "seed": 4501,
+    "run_id": "GR1-RAND40",
+    "scale": null,
+    "extra": {
+     "GR1_CKPT": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/train_rand40/checkpoint/last_gen_ppo_ep_26000_rew_40.864136.pth",
+     "GR1_CKPT_SHA": "3f122b47f08c638b963d99a432fef2767d06c37505dbfa18030ca2d820cfa6c5"
+    },
+    "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_gr1_arms.sh",
+    "ckpt_sha": "3f122b47f08c638b963d99a432fef2767d06c37505dbfa18030ca2d820cfa6c5",
+    "quota": 16
+   }
+  },
+  "eval_ctrl": {
+   "rc": 0,
+   "verdict": "COMPLETE",
+   "n_calls": 36,
+   "policy": "ctrl",
+   "sha": "0f6ca010c2900bb0b0e06197f68730d21f5444449288675ce48f73ec084ed137",
+   "error": null,
+   "first_call": {
+    "level": "S00",
+    "density": 70,
+    "seed": 4501,
+    "run_id": "GR1-CTRL",
+    "scale": null,
+    "extra": {
+     "GR1_CKPT": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/train_ctrl/checkpoint/last_gen_ppo_ep_26000_rew_55.227463.pth",
+     "GR1_CKPT_SHA": "0f6ca010c2900bb0b0e06197f68730d21f5444449288675ce48f73ec084ed137"
+    },
+    "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_gr1_arms.sh",
+    "ckpt_sha": "0f6ca010c2900bb0b0e06197f68730d21f5444449288675ce48f73ec084ed137",
+    "quota": 16
+   }
+  },
+  "eval_cell_fail": {
+   "rc": 1,
+   "verdict": "INCOMPLETE",
+   "n_calls": 5,
+   "error": null
+  }
+ },
+ "checks": {
+  "repro_ok": true,
+  "repro_perturbed": true,
+  "eval_no_train_report": true,
+  "eval_no_repro": true,
+  "eval_rand40": true,
+  "eval_ctrl": true,
+  "eval_cell_fail": true
+ },
+ "pass": true
+}

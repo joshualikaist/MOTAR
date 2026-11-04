@@ -254,6 +254,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-hours", type=float, default=None)
     args = ap.parse_args()
+    args.policy = args.ckpt = args.ckpt_sha = None              # set from --train-report in gr1eval only
     out_root = pathlib.Path(args.out).resolve()
     protocol = json.loads(K.PROTOCOL.read_text())
     head, problems, origins = preflight(ROOT, protocol, args.approved_commit, out_root,
