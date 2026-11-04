@@ -24296,3 +24296,30 @@ global history phase.
 - **Next:** dev batches at 70 and 205 bars (running); the target motion model in the bridge; G9 matching; a
   preregistered S3b on an idle host.
 
+## 2026-11-05 — S3b dev: sensors were rendered from PX4's estimate (0.6 m off the truth); fixed to render from truth
+
+- **Dev batch 02** (B1-R F_SHADOW seed 4301, envs 0-9, sensors rendered from PX4's EKF pose). Isaac captured all
+  20 episodes.
+
+  | Bars | SITL capture | SITL crash (reason) | Harness failures at step 1 |
+  | --- | --- | --- | --- |
+  | 70 | 6 | 3 (bar 1, altitude 1, bounds 1) | 1 |
+  | 205 | 1 | 7 (bar 5, altitude 2) | 2 |
+
+  - The step-1 "crashes" had RTF 0.00 / 3.15. The episode started before the vehicle state was valid, so they are
+    harness failures, not policy outcomes.
+- **Cause found** (dev03, with `HIL_STATE_QUATERNION` ground truth): after take-off PX4's EKF is 0.57-0.69 m off the
+  truth horizontally and holds the truth at 1.35-1.39 m when it believes 1.0 m (SITL GPS/baro bias).
+  - The bridge had rendered MOTAR's LiDAR and camera from the EKF pose, so every obstacle appeared shifted by about
+    0.6 m. A real sensor measures from the real body, so this error does not exist on hardware; it was an artefact.
+- **Fix** (`tools/sitl_bridge.py`, `tools/sitl_s3b_closed_loop.py`):
+  - The sensors are rendered from the simulator's true pose (`render_pos/render_vquat`). Perception receives the
+    EKF pose and velocity, as onboard. Capture, crash and bounds use the truth.
+  - Episodes start only when armed, in offboard, at EKF altitude 1.0 ± 0.3 m and truth altitude 0.3-2.5 m; else
+    HARNESS_INVALID.
+  - Each episode records the EKF-truth error.
+- **Real-flight relevance:** F's actor sees no absolute position; its perception's target track is in the estimator's
+  world frame, which only needs to be smooth. The estimator altitude bias (about 0.4 m in SITL) matters only for the
+  floor and ceiling limits.
+- **Next:** dev batch 04 with truth rendering (running).
+

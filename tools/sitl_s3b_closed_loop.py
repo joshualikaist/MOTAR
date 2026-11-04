@@ -105,6 +105,8 @@ class Link:
         self.lock = threading.Lock()
         self.pos = None          # (sim_t, x, y, z, vx, vy, vz) NED
         self.att = None          # (sim_t, roll, pitch, yaw, p, q, r)
+        self.truth = None        # (wall_t, lat_deg, lon_deg, alt_m, qw, qx, qy, qz, vn, ve, vd)  HIL_STATE_QUATERNION
+        self.hb = None           # (base_mode, custom_mode)
         self.stop = False
 
     def rx(self):
@@ -115,6 +117,12 @@ class Link:
             k = msg.get_type()
             if k == "LOCAL_POSITION_NED":
                 self.pos = (msg.time_boot_ms * 1e-3, msg.x, msg.y, msg.z, msg.vx, msg.vy, msg.vz)
+            elif k == "HIL_STATE_QUATERNION":
+                q = msg.attitude_quaternion
+                self.truth = (time.time(), msg.lat * 1e-7, msg.lon * 1e-7, msg.alt * 1e-3, q[0], q[1], q[2], q[3],
+                              msg.vx * 1e-2, msg.vy * 1e-2, msg.vz * 1e-2)
+            elif k == "HEARTBEAT" and msg.get_srcSystem() == self.m.target_system:
+                self.hb = (msg.base_mode, msg.custom_mode)
             elif k == "ATTITUDE":
                 self.att = (msg.time_boot_ms * 1e-3, msg.roll, msg.pitch, msg.yaw, msg.rollspeed, msg.pitchspeed,
                             msg.yawspeed)
@@ -168,10 +176,10 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
         th = threading.Thread(target=L.rx, daemon=True)
         th.start()
         mu = L.mu.mavlink
-        for mid in (mu.MAVLINK_MSG_ID_LOCAL_POSITION_NED, mu.MAVLINK_MSG_ID_ATTITUDE):
+        for mid in (mu.MAVLINK_MSG_ID_LOCAL_POSITION_NED, mu.MAVLINK_MSG_ID_ATTITUDE, mu.MAVLINK_MSG_ID_HIL_STATE_QUATERNION):
             L.cmd(mu.MAV_CMD_SET_MESSAGE_INTERVAL, mid, 20000)
         t0 = time.time()
-        while time.time() - t0 < 90 and (L.pos is None or L.att is None):
+        while time.time() - t0 < 90 and (L.pos is None or L.att is None or L.truth is None):
             time.sleep(0.2)
         time.sleep(10)                                                  # estimator settles (S1/S2: about 10 s)
         for k, v in PARAMS.items():
@@ -179,6 +187,16 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
                    mu.MAV_PARAM_TYPE_REAL32)
             time.sleep(0.05)
         x0n, y0e = L.pos[1], L.pos[2]
+        lat0, lon0, alt0 = L.truth[1], L.truth[2], L.truth[3]          # truth origin: the vehicle on the ground at spawn
+        R_E = 6371000.0
+
+        def truth_local():
+            tr = L.truth
+            dn = math.radians(tr[1] - lat0) * R_E
+            de = math.radians(tr[2] - lon0) * R_E * math.cos(math.radians(lat0))
+            w, x, y, z = tr[4], tr[5], tr[6], tr[7]
+            yaw_ned = math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))
+            return de, dn, tr[3] - alt0, yaw_ned                        # ENU-local x (east), y (north), up, NED yaw
 
         def hold(seconds):
             n = int(round(seconds / DT))
@@ -190,6 +208,14 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
         hold(1.0)
         L.cmd(mu.MAV_CMD_COMPONENT_ARM_DISARM, 1)
         hold(10.0)
+        armed = bool(L.hb and (L.hb[0] & 128))
+        offboard = bool(L.hb and ((L.hb[1] >> 16) & 0xFF) == 6)
+        tx, ty, tz, _ = truth_local()
+        res["start_check"] = {"armed": armed, "offboard": offboard, "truth_alt_m": tz, "ekf_alt_m": -L.pos[3],
+                              "ekf_minus_truth_xy_m": float(math.hypot(L.pos[2] - tx, L.pos[1] - ty))}
+        # PX4 holds the altitude in its estimator's frame; the truth altitude is recorded (SITL baro/GPS bias)
+        if not (armed and offboard and abs(-L.pos[3] - ALT) < 0.3 and 0.3 < tz < 2.5):
+            raise RuntimeError("HARNESS_INVALID start state %s" % res["start_check"])
         ep = B.Episode(centers, halves, quats)
         prev = np.zeros(4, np.float32)
         outcome, prev_rel = "timeout", None
@@ -208,9 +234,15 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
             v = np.array([vwx, vwy, -pn[6]])
             yaw = yaw0 + (math.pi / 2 - at[3])
             vq = np.array([0.0, 0.0, math.sin(yaw / 2), math.cos(yaw / 2)])
+            tgx, tgy, tgz, tyaw_ned = truth_local()                    # simulator truth: sensors and termination
+            twx, twy = rot(yaw0, tgx, tgy)
+            p_true = np.array([p0[0] + twx, p0[1] + twy, tgz])
+            yaw_true = yaw0 + (math.pi / 2 - tyaw_ned)
+            vq_true = np.array([0.0, 0.0, math.sin(yaw_true / 2), math.cos(yaw_true / 2)])
             tpos = np.asarray(ttraj[min(k, len(ttraj) - 1)], float)
             s = {"pos": p, "vel": v, "vquat": vq, "fquat": vq, "angvel": np.array([0.0, 0.0, -at[6]]), "tpos": tpos,
-                 "tquat": None, "prev_action": prev, "bounds_min": bmin, "bounds_max": bmax}
+                 "tquat": None, "prev_action": prev, "bounds_min": bmin, "bounds_max": bmax,
+                 "render_pos": p_true, "render_vquat": vq_true, "render_fquat": vq_true}
             c0 = time.time()
             obs, diag, lidar = ep.observe(s)
             act = policy.act(obs)[0].numpy()
@@ -220,29 +252,32 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
             gex, gey = rot(-yaw0, vwx2, vwy2)                           # world -> Gazebo ENU-local
             L.setpoint(TM_POS_Z_VEL_XY_YAWRATE, 0, 0, -ALT, gey, gex, -wz)
             compute_ms = 1e3 * (time.time() - c0)
-            rel = p - tpos
+            rel = p_true - tpos
             dist = float(np.linalg.norm(rel))
             sweep = seg_min_dist(prev_rel, rel) if prev_rel is not None else dist
             min_dist = min(min_dist, sweep)
             prev_rel = rel
-            hit, clr = box_hit(p, centers, halves)
+            hit, clr = box_hit(p_true, centers, halves)
             steps_log.append([k, pn[0], *p.tolist(), *v.tolist(), yaw, *act.tolist(), float(gov[0]), float(gov[1]), wz,
-                              *tpos.tolist(), dist, clr, compute_ms, bool(diag["visible"][0])])
+                              *tpos.tolist(), dist, clr, compute_ms, bool(diag["visible"][0]), *p_true.tolist(), yaw_true])
             if sweep < CAPTURE_M:
                 outcome = "capture"
                 break
-            if hit or p[2] < 0.1 or p[2] > 4.0 or (p[:2] < bmin[:2]).any() or (p[:2] > bmax[:2]).any():
+            pt = p_true
+            if hit or pt[2] < 0.1 or pt[2] > 4.0 or (pt[:2] < bmin[:2]).any() or (pt[:2] > bmax[:2]).any():
                 outcome = "crash"
-                res["crash_reason"] = "bar" if hit else ("altitude" if (p[2] < 0.1 or p[2] > 4.0) else "bounds")
+                res["crash_reason"] = "bar" if hit else ("altitude" if (pt[2] < 0.1 or pt[2] > 4.0) else "bounds")
                 break
         res["real_time_factor"] = (L.pos[0] - sim_start) / max(1e-9, time.time() - wall_start)
+        est_err = [math.hypot(r[2] - r[23], r[3] - r[24]) for r in steps_log]
+        res["ekf_vs_truth_xy_err_m"] = {"median": float(np.median(est_err)), "max": float(max(est_err))} if est_err else None
         res.update(outcome=outcome, steps=len(steps_log), min_dist_m=min_dist,
                    compute_ms_median=float(np.median([r[-3] for r in steps_log])) if steps_log else None,
                    compute_ms_max=float(max(r[-3] for r in steps_log)) if steps_log else None)
         L.cmd(mu.MAV_CMD_DO_SET_MODE, 1, 4, 6)
         time.sleep(1)
     except Exception as e:                                               # noqa: BLE001
-        res["outcome"] = "ERROR"
+        res["outcome"] = "HARNESS_INVALID" if "HARNESS_INVALID" in str(e) else "ERROR"
         res["error"] = "%s: %s" % (e.__class__.__name__, e)
     finally:
         if L is not None:

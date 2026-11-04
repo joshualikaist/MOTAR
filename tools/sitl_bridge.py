@@ -145,14 +145,20 @@ class Episode:
 
     def observe(self, s, step_count=None):
         """s: dict of 1-D float arrays: pos, vel, vquat, fquat, angvel, tpos, tquat (optional), prev_action,
-        bounds_min, bounds_max. step_count: the perception module's global history counter before this call."""
+        bounds_min, bounds_max. step_count: the perception module's global history counter before this call.
+        Optional render_pos / render_vquat / render_fquat: the pose the sensors are rendered from (SITL: the
+        simulator's true pose, as a real sensor measures from the real body), while perception receives pos /
+        vquat (the estimator's pose, as onboard). Without them both are the same (Isaac replay)."""
         torch = self.torch
         T = lambda x: torch.as_tensor(x, dtype=torch.float32).reshape(1, -1)          # noqa: E731
         if step_count is not None:
             self.perception.step_count = int(step_count)
         tq = T(s["tquat"]) if s.get("tquat") is not None else None
-        rgb, depth = self.detector.render_raw_rgbd(T(s["pos"]), T(s["vquat"]), T(s["tpos"]), tq)
-        lidar = self.lidar_m(s["pos"], s["fquat"], s["tpos"])
+        rpos = s.get("render_pos", s["pos"])
+        rvq = s.get("render_vquat", s["vquat"])
+        rfq = s.get("render_fquat", s["fquat"])
+        rgb, depth = self.detector.render_raw_rgbd(T(rpos), T(rvq), T(s["tpos"]), tq)
+        lidar = self.lidar_m(rpos, rfq, s["tpos"])
         obs, diag = self.perception.observe(
             rgb=rgb, depth=depth, lidar_m=lidar, drone_pos_w=T(s["pos"]), drone_vel_w=T(s["vel"]),
             vehicle_quat=T(s["vquat"]), yaw_rate=T(s["angvel"])[:, 2] / float(self.tc.yaw_rate_max),
