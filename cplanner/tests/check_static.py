@@ -75,7 +75,7 @@ cert_refs = (names_in(meths["_certify"]) | names_in(meths["certify"]) | names_in
 em_tree = ast.parse((SRC / "evidence_map.py").read_text())
 em_refs = names_in(em_tree)
 imports = {}
-for f in ("evidence_map.py", "coverage_b.py", "boundary.py", "registry.py"):
+for f in ("evidence_map.py", "coverage_b.py", "boundary.py", "registry.py", "coverage_native.py"):
     t = ast.parse((SRC / f).read_text())
     imports[f] = sorted({a.name for n in ast.walk(t) if isinstance(n, ast.Import) for a in n.names}
                         | {n.module for n in ast.walk(t) if isinstance(n, ast.ImportFrom)})

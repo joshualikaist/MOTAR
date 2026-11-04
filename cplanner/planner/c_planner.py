@@ -141,7 +141,9 @@ def min_clearance(path, pts):
 
 
 class CPlanner:
-    def __init__(self, env_id, episode_id, mode="OFF", config="MOTAR-72x4-RUNTIME"):
+    # Default = the direction-bound-repaired configuration (D-2026-11-04-2; repair PASS, D1-F PASS). The unrepaired
+    # MOTAR-72x4-RUNTIME stays V1 FAIL and is selectable only by name.
+    def __init__(self, env_id, episode_id, mode="OFF", config="MOTAR-72x4-RUNTIME-DIR"):
         if mode not in MODES:
             raise ValueError("mode must be OFF or FILTER")
         self.mode = mode

@@ -1,0 +1,83 @@
+{
+ "coverage_ast": {
+  "v3_run4": {
+   "_coverage_B": true,
+   "point_segment": true,
+   "crosses": true,
+   "segment_box_distance": true
+  },
+  "v4_run5": {
+   "_coverage_B": true,
+   "point_segment": true,
+   "crosses": true,
+   "segment_box_distance": true
+  },
+  "v5_run6": {
+   "_coverage_B": true,
+   "point_segment": true,
+   "crosses": true,
+   "segment_box_distance": true
+  },
+  "v6_run7": {
+   "_coverage_B": true,
+   "point_segment": true,
+   "crosses": true,
+   "segment_box_distance": true
+  },
+  "v7_run8": {
+   "_coverage_B": true,
+   "point_segment": true,
+   "crosses": true,
+   "segment_box_distance": true
+  }
+ },
+ "coverage_ast_identical": true,
+ "catalog": {
+  "n": 40,
+  "equals_snapshot": true,
+  "equals_urdf": true,
+  "urdf_rpy_all_zero": true,
+  "bar_z_extent": [
+   0.0,
+   3.0
+  ]
+ },
+ "catalog_ok": true,
+ "manifest_max_abs_diff": {
+  "P0R-72x1": 0.0,
+  "MOTAR-72x4": 0.0
+ },
+ "manifest_ok": true,
+ "noninterference_static": {
+  "certify_path_forbidden_refs": [],
+  "evidence_map_forbidden_refs": [],
+  "imports": {
+   "evidence_map.py": [
+    "math",
+    "numpy"
+   ],
+   "coverage_b.py": [
+    "math"
+   ],
+   "boundary.py": [
+    "numpy"
+   ],
+   "registry.py": [
+    "collections",
+    "math",
+    "numpy",
+    "types"
+   ],
+   "coverage_native.py": [
+    "ctypes",
+    "hashlib",
+    "numpy",
+    "os",
+    "pathlib"
+   ]
+  },
+  "map_and_core_modules_do_not_import_labels": true
+ },
+ "noninterference_static_ok": true,
+ "pass": true
+}

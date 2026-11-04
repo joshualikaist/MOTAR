@@ -1,0 +1,70 @@
+{
+ "suite": "M3 planner development checks (not a gate)",
+ "pass": true,
+ "checks": {
+  "intercept_stationary": true,
+  "intercept_unreachable_caps_tau": true,
+  "flown_path_steady": true,
+  "scan_points_geometry": true,
+  "scan_points_mask_positive_control": true,
+  "escape_admissible": true,
+  "escape_toward_refused": true,
+  "outside_keep_r_safe": true,
+  "empty_OFF_certified_direct": 1.0,
+  "empty_FILTER_certified_direct": 1.0,
+  "blocked_OFF_avoids_bar": true,
+  "blocked_FILTER_avoids_bar": true,
+  "blocked_FILTER_certified_is_valid": true,
+  "inside_r_safe_escapes": true,
+  "incomplete_OFF_executes_uncertified": true,
+  "incomplete_FILTER_brakes_after_cap": true,
+  "no_belief_searches": true,
+  "terminal_uncertified_pursuit": 1.0
+ },
+ "notes": {
+  "empty": {
+   "OFF": {
+    "behaviour": "NAVIGATE",
+    "certified": true,
+    "offset": 0.0,
+    "speed": 2.5
+   },
+   "FILTER": {
+    "behaviour": "NAVIGATE",
+    "certified": true,
+    "offset": 0.0,
+    "speed": 2.5
+   }
+  },
+  "blocked_OFF": {
+   "behaviour": "NAVIGATE",
+   "certified": true,
+   "offset": 50.0,
+   "bar_clearance_minus_R": 0.6253020437515546,
+   "filter_tries": null
+  },
+  "blocked_FILTER": {
+   "behaviour": "NAVIGATE",
+   "certified": true,
+   "offset": 50.0,
+   "bar_clearance_minus_R": 0.6253020437515546,
+   "filter_tries": 1
+  },
+  "inside": {
+   "clearance_now": 0.35999998451648096,
+   "offset": 100.0,
+   "end": [
+    19.862636911537386,
+    20.779024786284563
+   ]
+  }
+ },
+ "params": {
+  "R_SAFE": 0.45,
+  "EXCLUDE_M": 0.5,
+  "MAX_FILTER_TRIES": 8,
+  "HORIZON_S": 1.0,
+  "N_POINTS": 5,
+  "TAU_V": 0.4
+ }
+}

@@ -23971,3 +23971,27 @@ fault count of 0. **PASS**: D1-F stands as computed and is valid evidence at the
 
 Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/d1f/REVIEW_r1.md`. Beads `motar-3p3.36`: I1 closed; M1-M8
 and m1-m4 remain. No push or merge.
+
+## 2026-11-04 — C-Planner hardening: native library bound by SHA-256 (M3 review I3); planner default = repaired config
+
+These are code changes with development checks, not a gate. They ran on the CPU on cores 6, 7, 12 and 13, beside the
+GR-1 evaluation; the host fault count was 0 before and after.
+
+| Change | Check | Result |
+| --- | --- | --- |
+| `coverage_native.load()` refuses a library whose SHA-256 is not the qualified `afbd3e68…`, unless that build's own hash is declared in `CPLANNER_COVERAGE_SO_SHA256`; adds `load_problem()`, `loaded_sha256()` and `expected_sha256()` | `cplanner/tests/native_binding.py` | 8 / 8 PASS: rebuild = qualified hash; loads and equals verbatim (certified and uncertified case); tampered and missing refused (fail-closed `NATIVE_COVERAGE_UNAVAILABLE`); declared candidate loads; wrong declared hash refuses |
+| `check_static.py` import check includes `coverage_native.py` (M3 review m3) | `check_static.py` | PASS |
+| `CPlanner` default config `MOTAR-72x4-RUNTIME` → `MOTAR-72x4-RUNTIME-DIR` (D-2026-11-04-2) | `planner_unit.py`, old and new default | both PASS, 48 / 48 values identical; the default object carries eps 0.001 |
+
+- planner_unit cannot tell the two configurations apart: its synthetic clearances are far above 1 mm. The repair
+  itself is gated by D2-A1 and D1-F, not by planner_unit.
+- No committed preregistration, gate driver or frozen copy changed. Gate drivers that already ran keep their
+  recorded libraries, all with the qualified hash.
+
+Evidence: `docs/evidence/cplanner_2026-11-04/hardening/`; work `~/motar_tmp/cplanner_hardening_20261104/`.
+
+Next:
+- G-beta on `-DIR-NATIVE` on an idle host.
+- E1 strengthening (M3 review I2) before any other native build.
+- `motar-3p3.33` and `motar-3p3.36` minors.
+- C-Planner next step (the M3 remainder or M4): user decision.

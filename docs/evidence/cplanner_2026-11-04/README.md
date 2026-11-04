@@ -315,3 +315,37 @@ D1-F answers review I1. Preregistration:
       155 segments.
     - m3: the family has no offsets along the beam.
     - m4: the non-vacuity check is coarse.
+
+## Hardening after the M3 and repair reviews (`hardening/`)
+
+Not a gate. These are code changes with development checks, 2026-11-04, CPU only, on cores 6, 7, 12 and 13 beside the
+GR-1 evaluation (host fault count 0 before and after).
+
+- **M3 review I3: native library bound by SHA-256.**
+  - `src/coverage_native.py` `load()` now refuses any library whose SHA-256 is not the qualified `afbd3e68…`
+    ([`m3/native_build.json`](m3/native_build.json)). The only exception is a hash declared in
+    `CPLANNER_COVERAGE_SO_SHA256`, which is how a run qualifying a new candidate build names it explicitly.
+  - A refusal makes `coverage_B_native` return the existing fail-closed `NATIVE_COVERAGE_UNAVAILABLE`.
+  - [`hardening/native_binding_01.json`](hardening/native_binding_01.json) passes 8 of 8 checks:
+    - a fresh rebuild reproduces the qualified hash;
+    - it loads and returns the verbatim `_coverage_B` result on a certified and an uncertified case;
+    - a copy with one byte changed is refused, and so is a missing file;
+    - the tampered copy loads only when its own hash is declared;
+    - a wrong declared hash refuses the qualified library.
+- **M3 review m3.** `tests/check_static.py` now includes `coverage_native.py` in its import check. It passes
+  ([`hardening/check_static_01.json`](hardening/check_static_01.json)).
+- **Planner default.** `planner/c_planner.py` defaults to the repaired `MOTAR-72x4-RUNTIME-DIR` (eps 1 mm, verbatim
+  Python coverage), so no binary is needed. The unrepaired `MOTAR-72x4-RUNTIME` is selectable only by name.
+  - `tests/planner_unit.py` passes on the new default
+    ([`hardening/planner_unit_dir_01.json`](hardening/planner_unit_dir_01.json)).
+  - Its 48 output values are identical to the previous default's
+    ([`hardening/planner_unit_runtime_head_01.json`](hardening/planner_unit_runtime_head_01.json), run on a
+    `git archive` copy of `42285d1`). The synthetic scenes have clearances far above 1 mm, so planner_unit does
+    not tell the two configurations apart. A direct check shows the default object carries `direction_error_m`
+    0.001.
+- **Still open:**
+  - M3 review I2: E1 cannot detect three mutant classes. It must be strengthened before it qualifies another build.
+  - G-beta on `-DIR-NATIVE`: needs an idle host.
+  - The repair review's M1-M8 (Beads `motar-3p3.36`).
+  - The R3' minors (`motar-3p3.33`).
+

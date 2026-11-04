@@ -687,7 +687,12 @@ family that is in the test's scope.
     (Opus 5.5) PASS, so the repair is PASS: FILTER_ARM_RETAINED (0.816) holds for `MOTAR-72x4-RUNTIME-DIR`. D1 is
     not evidence of eps-scale soundness (review I1).
   - M3 part 1 PASS after independent review (Opus 5.5): E1 native equivalence PASS, E2 PASS, G-beta PASS_K16
-    (p95 20.7 ms at K = 16, fastest P-core, idle host); important findings I1-I3 open.
+    (p95 20.7 ms at K = 16, fastest P-core, idle host). Of its important findings, I3 is closed by the native
+    library's SHA-256 binding (2026-11-04, `hardening/`); I1 (reporting scope) and I2 (E1 mutant blind spots) are
+    open. G-beta was not re-measured on `MOTAR-72x4-RUNTIME-DIR-NATIVE`.
+  - D1-F (full-bound direction adversary) PASS after independent review (Opus 5.5): repaired 0 FALSE_CERT, eps = 0
+    caught (`dirbound/d1f/`), which closes review I1 of the repair.
+  - The planner skeleton's default configuration is the repaired `MOTAR-72x4-RUNTIME-DIR` since 2026-11-04.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.
 - **Read first:** [`docs/plans/cplanner_charter_v1.md`](plans/cplanner_charter_v1.md)
 - **Lineage:**

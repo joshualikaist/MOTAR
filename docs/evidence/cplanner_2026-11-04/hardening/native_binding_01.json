@@ -1,0 +1,278 @@
+{
+ "build": {
+  "cmd": [
+   "gcc",
+   "-O2",
+   "-fPIC",
+   "-shared",
+   "-std=c99",
+   "-ffp-contract=off",
+   "-fno-fast-math",
+   "-mfpmath=sse",
+   "-fno-strict-aliasing",
+   "-Wall",
+   "-Werror",
+   "-o",
+   "/home/fair/motar_tmp/cplanner_hardening_20261104/native_binding_work/libcoverage_b.so",
+   "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-cplanner/cplanner/native/coverage_b.c",
+   "-lm"
+  ],
+  "exit": 0,
+  "stderr": "",
+  "gcc": "gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0",
+  "src_sha256": "d559bce44a51adbe60117b34cf641c3fed37d425798ff890c07e1990c4f42566",
+  "so_sha256": "afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+  "so": "/home/fair/motar_tmp/cplanner_hardening_20261104/native_binding_work/libcoverage_b.so"
+ },
+ "qualified": {
+  "loaded": true,
+  "problem": null,
+  "loaded_sha256": "afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+  "expected_sha256": "afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+  "cases": {
+   "dense": {
+    "py": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "native": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "equal": true
+   },
+   "sparse": {
+    "py": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "native": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "equal": true
+   }
+  }
+ },
+ "tampered": {
+  "loaded": false,
+  "problem": "library SHA-256 9c146c05e07ea9ed4e4e9f92c7197c1281a28018540dbcf7b3ca5165e5e2114b is not the expected afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+  "loaded_sha256": null,
+  "expected_sha256": "afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+  "cases": {
+   "dense": {
+    "py": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "native": {
+     "certified": false,
+     "reason": "NATIVE_COVERAGE_UNAVAILABLE",
+     "nodes": 0
+    },
+    "equal": false
+   },
+   "sparse": {
+    "py": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "native": {
+     "certified": false,
+     "reason": "NATIVE_COVERAGE_UNAVAILABLE",
+     "nodes": 0
+    },
+    "equal": false
+   }
+  }
+ },
+ "missing": {
+  "loaded": false,
+  "problem": "library unreadable: [Errno 2] No such file or directory: '/home/fair/motar_tmp/cplanner_hardening_20261104/native_binding_work/no_such_library.so'",
+  "loaded_sha256": null,
+  "expected_sha256": "afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+  "cases": {
+   "dense": {
+    "py": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "native": {
+     "certified": false,
+     "reason": "NATIVE_COVERAGE_UNAVAILABLE",
+     "nodes": 0
+    },
+    "equal": false
+   },
+   "sparse": {
+    "py": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "native": {
+     "certified": false,
+     "reason": "NATIVE_COVERAGE_UNAVAILABLE",
+     "nodes": 0
+    },
+    "equal": false
+   }
+  }
+ },
+ "declared_tampered": {
+  "loaded": true,
+  "problem": null,
+  "loaded_sha256": "9c146c05e07ea9ed4e4e9f92c7197c1281a28018540dbcf7b3ca5165e5e2114b",
+  "expected_sha256": "9c146c05e07ea9ed4e4e9f92c7197c1281a28018540dbcf7b3ca5165e5e2114b",
+  "cases": {
+   "dense": {
+    "py": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "native": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "equal": true
+   },
+   "sparse": {
+    "py": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "native": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "equal": true
+   }
+  }
+ },
+ "declared_wrong": {
+  "loaded": false,
+  "problem": "library SHA-256 afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa is not the expected 0000000000000000000000000000000000000000000000000000000000000000",
+  "loaded_sha256": null,
+  "expected_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "cases": {
+   "dense": {
+    "py": {
+     "certified": true,
+     "reason": "ALL_COLLIDING_CENTER_CELLS_EXCLUDED",
+     "nodes": 1560
+    },
+    "native": {
+     "certified": false,
+     "reason": "NATIVE_COVERAGE_UNAVAILABLE",
+     "nodes": 0
+    },
+    "equal": false
+   },
+   "sparse": {
+    "py": {
+     "certified": false,
+     "reason": "UNRESOLVED_CENTER_CELL",
+     "nodes": 33,
+     "shape_halfsize": [
+      0.3548,
+      0.2878
+     ],
+     "cell": [
+      1.2677789062500002,
+      0.610990625,
+      1.2688578125000003,
+      0.6124316406250001
+     ]
+    },
+    "native": {
+     "certified": false,
+     "reason": "NATIVE_COVERAGE_UNAVAILABLE",
+     "nodes": 0
+    },
+    "equal": false
+   }
+  }
+ },
+ "checks": {
+  "rebuild_has_qualified_sha": true,
+  "qualified_loads": true,
+  "qualified_equals_verbatim": true,
+  "qualified_cases_nonvacuous": true,
+  "tampered_refused": true,
+  "missing_refused": true,
+  "declared_candidate_loads": true,
+  "declared_wrong_refuses_qualified": true
+ },
+ "pass": true
+}
