@@ -172,3 +172,14 @@ This is three cells. It does not cover the other 47 overlapped evaluation cells 
   approval and a preregistration.
 - The training overlap cannot be checked that way. A second training seed (GR-1b) would test the reading against
   training variance.
+
+**Follow-up (2026-11-05): T-LOAD.** The load-invariance test (`camonly/dev` `26a4a57`,
+`docs/evidence/tload_2026-11-05/` there) read **LOAD_INVARIANT**. On three cells, every load arm was byte-identical
+to idle:
+- 4 disjoint cores plus a 1 GB disk stressor;
+- 17 of the runner's own 18 cores, which made the cells 57-72 % slower;
+- the real Warp job.
+
+Two of this unit's loaded cells are among them: GR-0 S00 205/4501 (one-process same-core probe) and 70/4501 (the
+heavy D2-A1 gate, 95 s of overlap). Both equal the idle runs. The idle rerun of the remaining overlapped cells is now
+optional; the readings stand.

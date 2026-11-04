@@ -684,7 +684,9 @@ family that is in the test's scope.
   proposed (amendment 1). Found afterwards: the author's CPU jobs ran alongside 23 of GR-0's 36 cells (on the
   GPU job's own cores), 25 of GR-1's 72 evaluation cells (on disjoint cores) and both trainings. This was not
   disclosed in either record. It is recorded as a deviation in `load_overlap/`; the readings stand as recorded,
-  and an idle-host byte-compare rerun awaits the user. Compare with `policy-r-ref5in`
+  and an idle-host byte-compare rerun awaits the user. Follow-up 2026-11-05: T-LOAD (`camonly/dev` `26a4a57`) read
+  LOAD_INVARIANT, and the loaded GR-0 cells 205/4501 and 70/4501 equal idle reruns, so the rerun is optional. GR-1b
+  (second training seed) preregistered. Compare with `policy-r-ref5in`
   (the failed 2026-08 airframe adaptation) and `b1r-classical-baseline` (the F condition GR-0's S00 mirrors).
 - **Read first:** [`docs/evidence/gain_randomization_2026-11-04/README.md`](evidence/gain_randomization_2026-11-04/README.md)
 - **Lineage:**
@@ -695,10 +697,12 @@ family that is in the test's scope.
   - → `docs/plans/prereg_gain_randomization_gr1_v1.md` (GR-1 training, after GR-0 GAIN_SENSITIVE)
   - → `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md` (after both trainings, before evaluation)
   - → `docs/evidence/gain_randomization_2026-11-04/load_overlap/` (deviation found afterwards: CPU load during GR-0/GR-1)
+  - → `docs/plans/prereg_gain_randomization_gr1b_v1.md` (GR-1b: a second training seed per arm; user approval 2026-11-05)
 - **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
 - **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`,
   `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`,
-  `docs/plans/prereg_gain_randomization_gr1_v1.md`, `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md`
+  `docs/plans/prereg_gain_randomization_gr1_v1.md`, `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md`,
+  `docs/plans/prereg_gain_randomization_gr1b_v1.md`
 
 ## Not yet in the repository
 

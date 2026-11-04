@@ -23807,3 +23807,22 @@ Records: `docs/evidence/gain_randomization_2026-11-04/gr1/`; raw `results/gain_r
   are recorded on `camonly/dev`, like D-2026-11-04-2 on `cplanner/dev`.
 - **User instruction (2026-11-05):** "동시 실행 정의 난 괜찮아. 반영해도 돼." and "AGENTS.md … 문구 수정이
   필요합니다. -> 수정해."
+
+## 2026-11-05 — GR-1b preregistered (second training seed per arm); T-LOAD follow-up on the load deviation
+
+- **User approval:** the GPU session ("이거 하고 gpu 세션 바로 시작하자"); the queue (Beads `motar-g9a`) names GR-1b
+  as G5.
+- **GR-1b** (`docs/plans/prereg_gain_randomization_gr1b_v1.md`): GR-1 with training seed 2 (gain seed 2) for both
+  arms.
+  - New files: `train_navrl_gr1b.sh` (a copy of `train_navrl_gr1.sh`) and `tools/gr1b_train.py` (a copy of
+    `tools/gr1_train.py`). Only the seeds, the run-tag suffix `-s2`, the session-log prefix and the messages change.
+  - Evaluation is `gr_run.py gr1repro` / `gr1eval`, unchanged.
+  - Analysis is `gr1_analyse.py`, unchanged, plus the confirmation reading CONFIRMED / NOT_CONFIRMED / MIXED.
+- **Smoke:** `NAVRL_PREFLIGHT_ONLY=1 train_navrl_gr1b.sh` reads PREFLIGHT PASS for rand40 and ctrl. It reports
+  `seed 2`, gain seed 2 and the runner's `seed=2`, with aerial_gym resolving inside this worktree. Run on cores
+  6,7,12,13 with no CUDA.
+- **T-LOAD follow-up:** T-LOAD read LOAD_INVARIANT (`camonly/dev` `26a4a57`). The loaded GR-0 cells 205/4501 and
+  70/4501 equal idle reruns. The note was added to this unit's README; the idle rerun of the other overlapped cells
+  is optional.
+- **Next:** GR-1b training, rand40 then ctrl.
+
