@@ -1,0 +1,42 @@
+{
+ "unit": "S3b v0",
+ "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__70bars__seed4301",
+ "params": {
+  "MC_ROLLRATE_P": 0.013,
+  "MC_ROLLRATE_I": 0.017,
+  "MC_ROLLRATE_D": 0.00026,
+  "MC_PITCHRATE_P": 0.013,
+  "MC_PITCHRATE_I": 0.017,
+  "MC_PITCHRATE_D": 0.00026,
+  "MPC_XY_VEL_P_ACC": 2.5,
+  "MPC_XY_VEL_I_ACC": 0.1,
+  "MPC_XY_VEL_D_ACC": 0.0,
+  "THR_MDL_FAC": 1.0
+ },
+ "episodes": [
+  {
+   "episode": 0,
+   "env": 0,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_00",
+   "outcome": "capture",
+   "steps": 68,
+   "min_dist_m": 0.4225171647660349,
+   "compute_ms_median": 2.950036647291087,
+   "compute_ms_max": 5.767363668649798,
+   "isaac_steps": 34
+  },
+  {
+   "episode": 1,
+   "env": 1,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_01",
+   "outcome": "capture",
+   "steps": 57,
+   "min_dist_m": 0.4763278880496855,
+   "compute_ms_median": 2.638681883415993,
+   "compute_ms_max": 5.380094151636828,
+   "isaac_steps": 33
+  }
+ ]
+}

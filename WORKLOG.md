@@ -24269,3 +24269,30 @@ global history phase.
   - The new tests pass.
 - **Next:** G8 (GPU), then S3a on its dump.
 
+## 2026-11-05 — S3b v0: Policy F closes the loop through PX4 SITL for the first time (development runs)
+
+- **Runner:** `tools/sitl_s3b_closed_loop.py`. Per episode taken from a recorded Isaac trace, it:
+  - writes a Gazebo world of the episode's bars, aligned to the spawn point and the start yaw;
+  - starts PX4 v1.14.3 SITL with navrl_quad (airframe 10090, the S2 parameter set);
+  - takes off to 1.0 m, then runs 10 Hz in PX4 sim time: PX4 state → MOTAR frame → `tools/sitl_bridge.py`
+    (MOTAR's sensors against the known world, production perception, Policy F, riskcap) → PX4 offboard velocity
+    and yaw rate, with the altitude held by PX4;
+  - ends on MOTAR's rules (capture 0.5 m swept, bar footprint, altitude, bounds).
+  - pymavlink comes from the px4 env (Python 3.8) through a package link.
+- **First two episodes** (B1-R F_SHADOW 70 bars, seed 4301, envs 0-1):
+
+  | Env | Isaac | SITL | Speed mean (m/s) | Altitude (m) | Target visible | Min bar clearance |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | 0 | capture, 34 steps | **capture, 68 steps** | 2.78 | 0.98-1.18 | 90 % | 1.06 m |
+  | 1 | capture, 33 steps | **capture, 57 steps** | 2.56 | 0.87-1.11 | 86 % | 0.57 m |
+
+  - Bridge compute is 2.6-3.0 ms per step.
+- **Approximations (v0):**
+  - The target replays its Isaac trajectory and stops when the recording ends.
+  - The start range was 11.55 m against Isaac's 10 m (cause not yet checked).
+  - The sensors are MOTAR's.
+  - The S2 gains are not yet matched to G9.
+  - So step counts are not comparable to Isaac. These are development runs, not a gate.
+- **Next:** dev batches at 70 and 205 bars (running); the target motion model in the bridge; G9 matching; a
+  preregistered S3b on an idle host.
+
