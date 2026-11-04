@@ -1,0 +1,33 @@
+{
+ "effect": {
+  "reading": "GR1_SUPPORTED",
+  "error": null,
+  "P1": -3.22265625,
+  "P3": 3.22265625
+ },
+ "null": {
+  "reading": "GR1_NOT_SUPPORTED",
+  "error": null,
+  "P1": 0.0,
+  "P3": 0.0
+ },
+ "swapped": {
+  "reading": "EVAL_BINDING_FAIL",
+  "error": null,
+  "P1": 3.22265625,
+  "P3": -3.22265625
+ },
+ "same_folder_twice": {
+  "reading": "EVAL_BINDING_FAIL",
+  "error": null,
+  "P1": 0.0,
+  "P3": 0.0
+ },
+ "crash_to_timeout": {
+  "reading": "INCONCLUSIVE",
+  "error": null,
+  "P1": -3.22265625,
+  "P3": 0.0
+ },
+ "pass": true
+}

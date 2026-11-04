@@ -678,7 +678,8 @@ family that is in the test's scope.
   checkpoint (GR-1, not yet preregistered) would be a new policy compared with F (D-2026-11-04-1).
 - **Status:** identity_01 IDENTITY_FAIL (runner placement, no comparison made); amendment 1 (A3 placement);
   identity_02 IDENTITY_PASS. GR-0 COMPLETE and independently reviewed (PASS): S20 GAIN_ROBUST, S40
-  GAIN_SENSITIVE (crash +3.69 pp). GR-1 (training) preregistered, not run. Compare with `policy-r-ref5in`
+  GAIN_SENSITIVE (crash +3.69 pp). GR-1: both arms TRAINED on `8f64631`; amendment 1 (bindings, claim, controls)
+  after the design review AMEND_FIRST; evaluation not run. Compare with `policy-r-ref5in`
   (the failed 2026-08 airframe adaptation) and `b1r-classical-baseline` (the F condition GR-0's S00 mirrors).
 - **Read first:** [`docs/evidence/gain_randomization_2026-11-04/README.md`](evidence/gain_randomization_2026-11-04/README.md)
 - **Lineage:**
@@ -687,10 +688,11 @@ family that is in the test's scope.
   - → `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md` (A3 placement after identity_01)
   - → `docs/evidence/gain_randomization_2026-11-04/`
   - → `docs/plans/prereg_gain_randomization_gr1_v1.md` (GR-1 training, after GR-0 GAIN_SENSITIVE)
+  - → `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md` (after both trainings, before evaluation)
 - **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
 - **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`,
   `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`,
-  `docs/plans/prereg_gain_randomization_gr1_v1.md`
+  `docs/plans/prereg_gain_randomization_gr1_v1.md`, `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md`
 
 ## Not yet in the repository
 

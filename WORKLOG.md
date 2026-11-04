@@ -23646,3 +23646,34 @@ GAIN_ROBUST, S40 GAIN_SENSITIVE) stand as computed.
 Evidence: `docs/evidence/gain_randomization_2026-11-04/REVIEW_r1.md`. Beads `motar-3dn.1` closed.
 
 Next: GR-1 training (rand40, then ctrl). No push or merge.
+
+## 2026-11-04 — GR-1 both arms TRAINED; amendment 1 (bindings, claim, controls) before evaluation
+
+Both GR-1 continuations of Policy F trained on commit `8f64631`, 1,000 epochs each, verdict TRAINED, no problems:
+- `rand40` (gains ±40 %): checkpoint sha256 `3f122b47…a6c5`, 70 min;
+- `ctrl` (gains nominal): checkpoint sha256 `0f6ca010…d137`, 65 min.
+
+The `ctrl` runner environment matched the `rand40` reference on all 128 keys, apart from the three `NAVRL_GAIN_RAND*`
+variables and the run tag (ENV_MATCH).
+
+A pre-measurement design review (Claude Opus 5.5, fresh context) read **AMEND_FIRST**. Amendment 1 answers it before
+any GR-1 evaluation cell:
+- **H1:** `gr1eval` reads the arm, checkpoint and SHA from `--train-report`. The analysis checks labels, SHAs and
+  receipts against both training reports, and that both reports share one commit.
+- **H2:** no GR-1 cell may equal the matching GR-0 Policy F cell, and no `rand40` cell may equal its `ctrl` cell.
+  `gr1repro` reruns one GR-0 cell through both the pinned launcher and the GR-1 launcher copy with Policy F.
+- **M1:** a new P3 (capture at S40 must not fall: crashes turned into timeouts do not count) and DiD (wording).
+- **M3:** a drift qualifier.
+- **L1-L3:** power figures, t-intervals and the pinned launcher SHA.
+- **M2:** a crash-cause table, reported and not gated.
+
+Second training seed: none now (user, 2026-11-04). It is proposed only after a SUPPORTED or INCONCLUSIVE reading.
+
+Synthetic known-good and known-bad controls of the amended analysis pass (SUPPORTED, NOT_SUPPORTED, two
+EVAL_BINDING_FAIL cases, timeout case not SUPPORTED). These are disclosed development, not evidence.
+
+Evidence: `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md`,
+`docs/evidence/gain_randomization_2026-11-04/gr1_design/`.
+
+Next: `gr1repro`, then `gr1eval` for both arms, then `tools/gr1_analyse.py` and an independent review. No push or
+merge.

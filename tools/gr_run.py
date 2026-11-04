@@ -35,6 +35,11 @@ PREREG = "docs/plans/prereg_gain_randomization_gr0_v1.md"
 AMENDMENT = "docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md"
 GR1_PREREG = "docs/plans/prereg_gain_randomization_gr1_v1.md"
 GR1_LAUNCHER = "aerial_gym/rl_training/rl_games/eval_navrl_gr1_arms.sh"
+GR1_LAUNCHER_SHA = "418433eb0f023f5b0f6db1a5d20d2f3d83cff039893654edadd3f66953d0c2cd"   # amendment 1 (review L3): the copy is pinned
+GR1_AMENDMENT = "docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md"
+F_CKPT_REL = ("aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/"
+              "last_gen_ppo_ep_25000_rew_39.742134.pth")
+F_SHA = "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
 REF_TREE = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1")
 REF_COMMIT = "62e59c031ad2"
 ARM = "E2_obstacle_aware"
@@ -215,9 +220,11 @@ def identity_compare(a_dir, b_dir, drop_gain=False):
 
 def preflight(root, protocol, approved, out_root, gr1=False):
     head, problems = tree_problems(root, approved)
-    if gr1 and subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", GR1_PREREG],
-                              capture_output=True).returncode:
-        problems.append("preregistration %s is not committed" % GR1_PREREG)
+    for rel in ((GR1_PREREG, GR1_AMENDMENT) if gr1 else ()):
+        if subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
+            problems.append("preregistration %s is not committed" % rel)
+    if gr1 and (not (root / GR1_LAUNCHER).is_file() or sha(root / GR1_LAUNCHER) != GR1_LAUNCHER_SHA):
+        problems.append("GR-1 launcher copy missing or not the pinned SHA %s" % GR1_LAUNCHER_SHA[:12])
     if K.git("rev-parse", "--abbrev-ref", "HEAD", root=root).strip() != "gainrand/dev":
         problems.append("branch is not gainrand/dev")
     for rel in (PREREG, AMENDMENT):
@@ -241,9 +248,7 @@ def preflight(root, protocol, approved, out_root, gr1=False):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("stage", choices=("identity", "gr0", "gr1repro", "gr1eval"))
-    ap.add_argument("--policy", choices=("rand40", "ctrl"), default=None)
-    ap.add_argument("--ckpt", default=None)
-    ap.add_argument("--ckpt-sha", default=None)
+    ap.add_argument("--train-report", default=None, help="gr1eval: train_<arm>/train_report.json (amendment 1, H1)")
     ap.add_argument("--gr0-dir", default=None)
     ap.add_argument("--approved-commit", required=True)
     ap.add_argument("--out", required=True)
@@ -254,7 +259,10 @@ def main():
     head, problems, origins = preflight(ROOT, protocol, args.approved_commit, out_root,
                                         gr1=args.stage.startswith("gr1"))
     start = host()
-    records, report = [], {"stage": args.stage, "tree": str(ROOT), "commit": head, "prereg": PREREG,
+    if args.stage.startswith("gr1") and args.max_hours is None:
+        args.max_hours = 3.0                                    # amendment 1 (review L3): default cap
+    records, report = [], {"stage": args.stage, "tree": str(ROOT), "commit": head,
+                           "prereg": GR1_PREREG if args.stage.startswith("gr1") else PREREG,
                            "started": now(), "host_start": start, "import_origins": origins,
                            "preflight_problems": problems}
     if args.stage == "identity":
@@ -274,10 +282,16 @@ def main():
     if args.stage == "gr1repro" and not (args.gr0_dir and (pathlib.Path(args.gr0_dir) / "gr0_run_report.json").is_file()):
         problems.append("gr1repro needs --gr0-dir with gr0_run_report.json")
     if args.stage == "gr1eval":
-        if not (args.policy and args.ckpt and args.ckpt_sha):
-            problems.append("gr1eval needs --policy, --ckpt and --ckpt-sha")
+        # amendment 1 (review H1): arm label, checkpoint and SHA come from the training report, never the caller
+        tr = json.loads(pathlib.Path(args.train_report).read_text()) if args.train_report and \
+            pathlib.Path(args.train_report).is_file() else {}
+        ck = tr.get("checkpoint") or {}
+        args.policy, args.ckpt, args.ckpt_sha = tr.get("arm"), ck.get("copy"), ck.get("copy_sha256")
+        if tr.get("verdict") != "TRAINED" or args.policy not in ("rand40", "ctrl") or ck.get("sha256") != args.ckpt_sha:
+            problems.append("gr1eval needs --train-report of a TRAINED arm with a matching checkpoint copy")
         elif not pathlib.Path(args.ckpt).is_file() or sha(args.ckpt) != args.ckpt_sha:
             problems.append("checkpoint missing or SHA mismatch: %s" % args.ckpt)
+        report["train_report"] = str(pathlib.Path(args.train_report).resolve()) if args.train_report else None
         if not (ROOT / GR1_LAUNCHER).is_file():
             problems.append("missing %s" % GR1_LAUNCHER)
         rp = None
@@ -319,16 +333,24 @@ def main():
         report["verdict"] = "VOID_HOST_FAULT" if void else ("IDENTITY_PASS" if ok else "IDENTITY_FAIL")
         name = "identity_report.json"
     elif args.stage == "gr1repro":
-        # Policy F, the S40 / 205 bars / seed 4501 GR-0 cell, rerun on this commit: must equal GR-0's cell
-        rec = run_cell(ROOT, protocol, out_root, "S40", 205, 4501, 16, run_id, 0.4, head, start, records,
-                       CELL_TIMEOUT_S)
-        void = rec["verdict"] == "VOID_HOST_FAULT"
+        # Policy F, the S40 / 205 bars / seed 4501 GR-0 cell, rerun on this commit twice: through the pinned launcher
+        # and (amendment 1, review H2b) through the GR-1 launcher copy with GR1_CKPT = Policy F. Both must equal GR-0.
+        f_extra = {"GR1_CKPT": str(ROOT / F_CKPT_REL), "GR1_CKPT_SHA": F_SHA}
+        plan = [("S40", None, None), ("S40_gr1launcher", GR1_LAUNCHER, f_extra)]
         cid = "%s__205bars__seed4501" % ARM
-        comp = identity_compare(pathlib.Path(args.gr0_dir) / "S40" / cid, out_root / "S40" / cid, drop_gain=True) \
-            if rec["verdict"] == "OK" else {}
+        comp, void = {}, False
+        for level, launcher, extra in plan:
+            rec = run_cell(ROOT, protocol, out_root, level, 205, 4501, 16, run_id, 0.4, head, start, records,
+                           CELL_TIMEOUT_S, extra, launcher, F_SHA if launcher else None)
+            if rec["verdict"] == "VOID_HOST_FAULT":
+                void = True
+                break
+            if rec["verdict"] == "OK":
+                comp[level] = identity_compare(pathlib.Path(args.gr0_dir) / "S40" / cid, out_root / level / cid,
+                                               drop_gain=True)
         report["gr0_dir"] = str(pathlib.Path(args.gr0_dir).resolve())
         report["comparison"] = comp
-        ok = bool(comp) and comp["result_equal"] and comp["episodes_equal"]
+        ok = len(comp) == 2 and all(c["result_equal"] and c["episodes_equal"] for c in comp.values())
         report["verdict"] = "VOID_HOST_FAULT" if void else ("GR1_REPRO_PASS" if ok else "GR1_REPRO_FAIL")
         name = "gr1repro_report.json"
     else:
