@@ -1,0 +1,166 @@
+{
+ "unit": "S3b v0",
+ "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+ "params": {
+  "MC_ROLLRATE_P": 0.013,
+  "MC_ROLLRATE_I": 0.017,
+  "MC_ROLLRATE_D": 0.00026,
+  "MC_PITCHRATE_P": 0.013,
+  "MC_PITCHRATE_I": 0.017,
+  "MC_PITCHRATE_D": 0.00026,
+  "MPC_XY_VEL_P_ACC": 2.5,
+  "MPC_XY_VEL_I_ACC": 0.1,
+  "MPC_XY_VEL_D_ACC": 0.0,
+  "THR_MDL_FAC": 1.0
+ },
+ "episodes": [
+  {
+   "episode": 0,
+   "env": 0,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_00",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.3700000000000045,
+    "ekf_alt_m": 1.0607136487960815,
+    "ekf_minus_truth_xy_m": 0.6070520900549663
+   },
+   "crash_reason": "bounds",
+   "real_time_factor": 0.9473407943624232,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.6099137153817674,
+    "max": 0.6099137153817674
+   },
+   "outcome": "crash",
+   "steps": 1,
+   "min_dist_m": 12.271239246808854,
+   "compute_ms_median": 5.0891899974588535,
+   "compute_ms_max": 5.0891899974588535,
+   "isaac_steps": 56
+  },
+  {
+   "episode": 1,
+   "env": 1,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_01",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.2460000000000377,
+    "ekf_alt_m": 1.0557712316513062,
+    "ekf_minus_truth_xy_m": 0.6393286335016859
+   },
+   "real_time_factor": 1.0019105769512777,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.23422765380538654,
+    "max": 0.7102480796695396
+   },
+   "outcome": "capture",
+   "steps": 55,
+   "min_dist_m": 0.45564702157730747,
+   "compute_ms_median": 15.107926032345205,
+   "compute_ms_max": 21.405353676364697,
+   "isaac_steps": 36
+  },
+  {
+   "episode": 2,
+   "env": 2,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_02",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.228999999999985,
+    "ekf_alt_m": 1.0504711866378784,
+    "ekf_minus_truth_xy_m": 0.6499774129645144
+   },
+   "crash_reason": "bar",
+   "real_time_factor": 0.9999867338850552,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.21269168083890075,
+    "max": 0.7193970661259643
+   },
+   "outcome": "crash",
+   "steps": 113,
+   "min_dist_m": 6.915543438090466,
+   "compute_ms_median": 19.21395402327719,
+   "compute_ms_max": 28.713893398836852,
+   "isaac_steps": 55
+  },
+  {
+   "episode": 3,
+   "env": 3,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_03",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.3840000000000146,
+    "ekf_alt_m": 1.0565924644470215,
+    "ekf_minus_truth_xy_m": 0.6541610622758338
+   },
+   "crash_reason": "bounds",
+   "real_time_factor": 0.0,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.6764710862868177,
+    "max": 0.6764710862868177
+   },
+   "outcome": "crash",
+   "steps": 1,
+   "min_dist_m": 12.22653207629455,
+   "compute_ms_median": -0.6764474999731793,
+   "compute_ms_max": -0.6764474999731793,
+   "isaac_steps": 55
+  },
+  {
+   "episode": 4,
+   "env": 4,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_04",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.3640000000000327,
+    "ekf_alt_m": 1.053955316543579,
+    "ekf_minus_truth_xy_m": 0.6151253998217086
+   },
+   "crash_reason": "bar",
+   "real_time_factor": 1.0006818202860437,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.2280638367331167,
+    "max": 0.7882457601972384
+   },
+   "outcome": "crash",
+   "steps": 66,
+   "min_dist_m": 2.561011533577155,
+   "compute_ms_median": 20.38503244349637,
+   "compute_ms_max": 22.340111128593932,
+   "isaac_steps": 42
+  },
+  {
+   "episode": 5,
+   "env": 5,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_05",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.3710000000000377,
+    "ekf_alt_m": 1.0628219842910767,
+    "ekf_minus_truth_xy_m": 0.5943459844580066
+   },
+   "real_time_factor": 1.0009052429492362,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.25190791000070767,
+    "max": 0.6784684139710204
+   },
+   "outcome": "capture",
+   "steps": 88,
+   "min_dist_m": 0.3816270318497047,
+   "compute_ms_median": 27.33838908435986,
+   "compute_ms_max": 36.517726542859805,
+   "isaac_steps": 61
+  }
+ ]
+}

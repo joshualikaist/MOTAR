@@ -24335,3 +24335,23 @@ global history phase.
   `tests/test_zeroaction_hook.py` (2), amendment
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment2_2026-11-05.md`.
 
+## 2026-11-05 — S3b dev: three more harness fixes (start pose, OOB margin, command yaw)
+
+- **Dev04** (truth rendering, 205 bars). I stopped it after 6 episodes because it still had a harness defect.
+  - 1 capture, 1 bar crash, 2 step-1 "bounds" crashes. The partial report is kept as `dev04_205_partial_s3b_report.json`.
+- **Causes:**
+  - The A3 spawns sit at the arena edge (x = 39.95, y ≈ 0). The true vehicle stood about 0.6 m from the spawn after
+    take-off, because PX4 holds its EKF estimate.
+  - The runner applied the arena bounds without MOTAR's 1.0 m out-of-bounds margin (navrl_task.py 6101).
+  - Separately, PX4's yaw estimate is a constant 0.15 rad below the truth in SITL. A vehicle-frame command rotated to
+    NED with the EKF yaw then acts 8.6° off the body frame the sensors were rendered in.
+- **Fixes** (`tools/sitl_s3b_closed_loop.py`):
+  - Before the episode, three position-correction passes put the true vehicle within 0.25 m of the spawn; otherwise
+    HARNESS_INVALID.
+  - Out of bounds now means beyond the arena by more than 1.0 m, as in MOTAR.
+  - The command yaw is selectable (`S3B_COMMAND_YAW`). The default is `truth`, the dynamics test; `ekf` gives the
+    onboard heading-error case, an S3c-style condition.
+- **Real flight:** heading-estimate error enters body-frame commands on hardware too. Its size there is the compass /
+  VIO's, not SITL's.
+- **Next:** dev05 (all fixes) running.
+

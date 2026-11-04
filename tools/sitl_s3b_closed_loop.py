@@ -43,6 +43,10 @@ DT = 0.1
 MAX_STEPS = 600
 CAPTURE_M = 0.5
 FOOT_HALF = 0.14
+OOB_MARGIN = 1.0           # navrl_task: out of bounds only beyond the arena by more than vis_cfg.oob_margin (1.0 m)
+# Which yaw turns the policy's vehicle-frame command into NED: "truth" (the dynamics test: the command acts in the true
+# body frame the sensors were rendered in) or "ekf" (as onboard: PX4's heading estimate; SITL's is ~0.15 rad off).
+COMMAND_YAW = os.environ.get("S3B_COMMAND_YAW", "truth")
 PARAMS = {"MC_ROLLRATE_P": 0.013, "MC_ROLLRATE_I": 0.017, "MC_ROLLRATE_D": 0.00026, "MC_PITCHRATE_P": 0.013,
           "MC_PITCHRATE_I": 0.017, "MC_PITCHRATE_D": 0.00026, "MPC_XY_VEL_P_ACC": 2.5, "MPC_XY_VEL_I_ACC": 0.1,
           "MPC_XY_VEL_D_ACC": 0.0, "THR_MDL_FAC": 1.0}
@@ -208,13 +212,25 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
         hold(1.0)
         L.cmd(mu.MAV_CMD_COMPONENT_ARM_DISARM, 1)
         hold(10.0)
+        # put the TRUE vehicle at the spawn point (the episode's start position): PX4's estimate is off by ~0.6 m
+        for _ in range(3):
+            tx, ty, _, _ = truth_local()
+            off_n, off_e = L.pos[1] - ty, L.pos[2] - tx                # EKF minus truth, NED
+            sp_n, sp_e = off_n, off_e
+
+            def hold_at(seconds):
+                for _ in range(int(round(seconds / DT))):
+                    L.setpoint(TM_POS_XYZ, sp_n, sp_e, -ALT)
+                    time.sleep(DT)
+            hold_at(3.0)
         armed = bool(L.hb and (L.hb[0] & 128))
         offboard = bool(L.hb and ((L.hb[1] >> 16) & 0xFF) == 6)
         tx, ty, tz, _ = truth_local()
         res["start_check"] = {"armed": armed, "offboard": offboard, "truth_alt_m": tz, "ekf_alt_m": -L.pos[3],
-                              "ekf_minus_truth_xy_m": float(math.hypot(L.pos[2] - tx, L.pos[1] - ty))}
+                              "ekf_minus_truth_xy_m": float(math.hypot(L.pos[2] - tx, L.pos[1] - ty)),
+                              "truth_from_spawn_xy_m": float(math.hypot(tx, ty)), "command_yaw": COMMAND_YAW}
         # PX4 holds the altitude in its estimator's frame; the truth altitude is recorded (SITL baro/GPS bias)
-        if not (armed and offboard and abs(-L.pos[3] - ALT) < 0.3 and 0.3 < tz < 2.5):
+        if not (armed and offboard and abs(-L.pos[3] - ALT) < 0.3 and 0.3 < tz < 2.5 and math.hypot(tx, ty) < 0.25):
             raise RuntimeError("HARNESS_INVALID start state %s" % res["start_check"])
         ep = B.Episode(centers, halves, quats)
         prev = np.zeros(4, np.float32)
@@ -248,7 +264,8 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
             act = policy.act(obs)[0].numpy()
             gov, wz, prev_t = ep.command(act, lidar)
             prev = prev_t.numpy()
-            vwx2, vwy2 = rot(yaw, float(gov[0]), float(gov[1]))         # vehicle -> MOTAR world
+            cyaw = yaw_true if COMMAND_YAW == "truth" else yaw
+            vwx2, vwy2 = rot(cyaw, float(gov[0]), float(gov[1]))        # vehicle -> MOTAR world
             gex, gey = rot(-yaw0, vwx2, vwy2)                           # world -> Gazebo ENU-local
             L.setpoint(TM_POS_Z_VEL_XY_YAWRATE, 0, 0, -ALT, gey, gex, -wz)
             compute_ms = 1e3 * (time.time() - c0)
@@ -264,7 +281,8 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
                 outcome = "capture"
                 break
             pt = p_true
-            if hit or pt[2] < 0.1 or pt[2] > 4.0 or (pt[:2] < bmin[:2]).any() or (pt[:2] > bmax[:2]).any():
+            oob = (pt[:2] < bmin[:2] - OOB_MARGIN).any() or (pt[:2] > bmax[:2] + OOB_MARGIN).any()
+            if hit or pt[2] < 0.1 or pt[2] > 4.0 or oob:
                 outcome = "crash"
                 res["crash_reason"] = "bar" if hit else ("altitude" if (pt[2] < 0.1 or pt[2] > 4.0) else "bounds")
                 break
