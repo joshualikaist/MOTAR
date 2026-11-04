@@ -24065,3 +24065,37 @@ preregistered, not reviewed. CPU only, with the GPU idle. The record is
   - a camera-direction control.
 
 No push or merge.
+
+## 2026-11-05 — Concurrent-work rule replaced by a definition (D-2026-11-05-1); stale PPO wording fixed; T-LOAD preregistered
+
+- **User decisions (2026-11-05):**
+  - The definition of concurrent work is accepted ("반영해도 돼").
+  - The stale PPO-ban wording is to be fixed.
+  - After that, start the GPU session.
+- **AGENTS.md:**
+  - "What needs the user" and the research rules now cite D-2026-11-04-1 (new PPO allowed again). Before, they
+    named the superseded ban D-2026-10-14-0 as current.
+  - The one-line concurrent-load rule became "Concurrent work". Forbidden: writing the run's tree or output, CUDA
+    from another job, uncapped jobs, cpu4/5. CPU compute is allowed during PPO training on disjoint cores, and
+    during evaluations only after T-LOAD reads LOAD_INVARIANT.
+- **Other records:** `docs/OPERATIONS.md` sections 1 and 7, and `docs/DECISIONS.md` D-2026-11-05-1.
+- **T-LOAD preregistered** (`docs/plans/prereg_tload_v1.md`, runner `tools/tload_run.py`; new family
+  `load-invariance`).
+  - Cells: `full` 205/4501, `no_lidar` 205/4501 and `full` 70/4501.
+  - Arms: L0a idle, L1 stress-ng on the disjoint cores (CPU and disk), L2 stress-ng on the runner's own cores, L3 the
+    real sensor-check job, L0b idle.
+  - Readout: byte equality of the episode files against L0a and the idle references.
+  - There is a manipulation check of each load's cores.
+- **CPU smoke** (`~/motar_tmp/tload_20261105/`):
+  - The reading function returns all 9 readings on synthetic runs.
+  - Equality controls: C1 `full` = C1_r2 `full` = GR-0 S00, and `full` ≠ `no_lidar`.
+- **Dry run (fake cells, real loads), first attempt: it caught two defects.**
+  - L1's rate was divided by its stop time. Its hdd worker takes about 11 s to exit after SIGINT, so it read 2.5
+    instead of 4.0 cores. Fix: sample the wall time with the CPU.
+  - L3's `python -I` ignores `PYTHONDONTWRITEBYTECODE`, so it wrote `__pycache__` into `motar_eval/` and the
+    cplanner tree (R1). Fix: `-I -B`; the two directories were deleted.
+- **Dry run, second attempt:** L1 4.0, L2 17.98 and L3 1.0 cores; reading LOAD_INVARIANT (fake cells); no leftover
+  process and no new bytecode in either tree.
+- **No pre-launch independent design review.** The runner reuses the reviewed C1/C2 cell path unchanged, and the
+  user asked to start at once. A results review follows.
+- **Next:** T-LOAD on the GPU.

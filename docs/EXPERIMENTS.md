@@ -741,6 +741,22 @@ family that is in the test's scope.
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`
 
+### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
+
+- **Period:** 2026-11-05 –.
+- **Question:** Can CPU or disk load from another process change the per-episode outcome files of an evaluation
+  cell? Its reading decides whether CPU work may run during evaluations (D-2026-11-05-1).
+- **Policy:** Frozen Policy F, unchanged, through the camera-only cell path (`full` and `no_lidar` conditions).
+- **Status:** preregistered (`prereg_tload_v1.md`); GPU approved by the user on 2026-11-05; not run.
+- **Read first:** [`docs/plans/prereg_tload_v1.md`](plans/prereg_tload_v1.md)
+- **Lineage:**
+  - 2026-09-05 A8 `S_off` difference under load (WORKLOG)
+  - → the 2026-11-04 overlaps and twins (recorded on branch gainrand/dev at 352b919, folder load_overlap)
+  - → D-2026-11-05-1 (definition of concurrent work)
+  - → `docs/plans/prereg_tload_v1.md`
+- **Compare with:** `camera-only`, `gain-randomization`
+- **Members:** `docs/plans/prereg_tload_v1.md`
+
 ## Not yet in the repository
 
 - **C-Planner P0** (2026-10-29 →): its task did not allow commits, so the repository holds no record
