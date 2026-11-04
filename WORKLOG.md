@@ -24323,3 +24323,15 @@ global history phase.
   floor and ceiling limits.
 - **Next:** dev batch 04 with truth rendering (running).
 
+## 2026-11-05 — G8 amendment 2 (before any run): zero-action cells for the E2 target's full trajectories
+
+- **Why:** S3b replays the target, but the recorded trajectories end with the Isaac episode (about 3-6 s), and SITL
+  captures take longer. The E2 target does not read the pursuer (`uses_privileged_pursuer_gt: False`).
+- **What:**
+  - G8 now also runs its two cells with the pursuer held at zero action. It hovers to the 600-step timeout, which
+    gives 60 s target trajectories.
+  - A new check requires them to equal the F-flying trajectories exactly on common frames (target independence).
+- **Files:** hook `tools/zeroaction_hook.py` with `tools/zeroaction_site/sitecustomize.py`, tests
+  `tests/test_zeroaction_hook.py` (2), amendment
+  `docs/plans/prereg_sitl_reference_g8g9_v1_amendment2_2026-11-05.md`.
+

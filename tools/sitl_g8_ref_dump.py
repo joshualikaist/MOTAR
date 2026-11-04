@@ -26,8 +26,11 @@ import camonly_run as C                                     # noqa: E402
 G, K = C.G, C.K
 PREREG = "docs/plans/prereg_sitl_reference_g8g9_v1.md"
 AMENDMENT = "docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md"
+AMENDMENT2 = "docs/plans/prereg_sitl_reference_g8g9_v1_amendment2_2026-11-05.md"
+ZSITE = ROOT / "tools/zeroaction_site"
 SITE = ROOT / "tools/staterec_site"
-HOOK_FILES = ("tools/staterec_hook.py", "tools/staterec_site/sitecustomize.py")
+HOOK_FILES = ("tools/staterec_hook.py", "tools/staterec_site/sitecustomize.py", "tools/zeroaction_hook.py",
+              "tools/zeroaction_site/sitecustomize.py")
 CELLS = ((70, 4501), (205, 4501))
 QUOTA = 1
 REF = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/gr0_main/S00")
@@ -53,7 +56,7 @@ def main():
     out_root = pathlib.Path(args.out).resolve()
     protocol = json.loads(K.PROTOCOL.read_text())
     head, problems, origins = C.preflight(protocol, args.approved_commit, out_root)
-    for rel in (PREREG, AMENDMENT) + HOOK_FILES:
+    for rel in (PREREG, AMENDMENT, AMENDMENT2) + HOOK_FILES:
         if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
             problems.append("%s is not committed" % rel)
     for d, s in CELLS:
@@ -108,9 +111,45 @@ def main():
         if rec["verdict"] != "OK":
             void = rec["verdict"] == "VOID_HOST_FAULT"
             break
+    # Amendment 2: the same cells with the pursuer held at zero action (hover to the 600-step timeout), occlusion
+    # trace only, for the E2 target's full trajectories; they must equal the F-flying trajectories on common frames.
+    zero = []
+    if len(cells) == len(CELLS) and all(c["verdict"] == "OK" for c in cells) and not budget.exhausted():
+        OT = __import__("importlib.util").util
+        spec = OT.spec_from_file_location("ot_g8", str(ROOT / "motar_eval/occlusion_trace.py"))
+        otm = OT.module_from_spec(spec)
+        spec.loader.exec_module(otm)
+        for d, s in CELLS:
+            extra = {"NAVRL_SENSOR_ABLATION": "full", "CAMONLY_PY": str(C.WRAPPER), "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+                     "PYTHONPATH": "%s:%s" % (ROOT, ZSITE), "MOTAR_ACTION_ZERO": "1"}
+            rec = G.run_cell(ROOT, protocol, out_root, "zero", d, s, QUOTA, "SITL-G8Z", None, head, start, records,
+                             G.CELL_TIMEOUT_S, extra, C.LAUNCHER, G.F_SHA)
+            zdir, fdir = out_root / "zero" / rec["cell_id"], out_root / "full" / rec["cell_id"]
+            ind = None
+            if rec["verdict"] == "OK":
+                zt, ft = otm.read_trace(zdir), otm.read_trace(fdir)
+                zf, ff = otm.episode_frames(zt["frames"]), otm.episode_frames(ft["frames"])
+                n_env, worst, frames = 0, 0.0, 0
+                for (env, epi), fr in ff.items():
+                    if epi != 0 or (env, 0) not in zf:
+                        continue
+                    zr = zf[(env, 0)]
+                    m = min(len(fr), len(zr))
+                    diff = float(abs(fr["t_pos"][:m] - zr["t_pos"][:m]).max()) if m else 0.0
+                    worst, n_env, frames = max(worst, diff), n_env + 1, frames + m
+                zlen = [len(v) for (env, epi), v in zf.items() if epi == 0]
+                ind = {"envs": n_env, "common_frames": frames, "max_abs_t_pos_diff_m": worst, "pass": n_env > 0 and worst == 0.0,
+                       "zero_episode_frames_min": min(zlen) if zlen else None, "zero_episode_frames_max": max(zlen) if zlen else None}
+            zero.append({"density": d, "seed": s, "dir": str(zdir), "verdict": rec["verdict"], "target_independence": ind})
+            print("   G8 zero", d, s, rec["verdict"], ind, flush=True)
+            if rec["verdict"] != "OK":
+                break
+    report["zero_action_cells"] = zero
     complete = len(cells) == len(CELLS) and all(c["verdict"] == "OK" for c in cells)
-    reading = ("VOID_HOST_FAULT" if void else "INCOMPLETE" if not complete else
-               "DUMP_OK" if all(c["noninterference"]["pass"] for c in cells) else "RECORDER_INTERFERES")
+    zero_ok = len(zero) == len(CELLS) and all(z["verdict"] == "OK" for z in zero)
+    reading = ("VOID_HOST_FAULT" if void else "INCOMPLETE" if not (complete and zero_ok) else
+               "RECORDER_INTERFERES" if not all(c["noninterference"]["pass"] for c in cells) else
+               "TARGET_DEPENDS_ON_PURSUER" if not all(z["target_independence"]["pass"] for z in zero) else "DUMP_OK")
     report.update(reading=reading, cells=cells, records=records, host_end=G.host(), finished=G.now())
     (out_root / "g8_report.json").write_text(json.dumps(report, indent=1, default=str) + "\n")
     print(json.dumps({k: report[k] for k in ("unit", "reading", "commit")}, indent=1))
