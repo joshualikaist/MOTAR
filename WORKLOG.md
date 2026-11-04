@@ -24355,3 +24355,18 @@ global history phase.
   VIO's, not SITL's.
 - **Next:** dev05 (all fixes) running.
 
+## 2026-11-05 — S3b dev05 void: two SITL instances on one UDP port (my process handling); single-instance guard added
+
+- **What happened:** I stopped dev04 by killing its outer shell and its Python. The inner loop shell lived on and
+  started `dev04_70` a moment later. It then ran concurrently with dev05.
+  - Two PX4 instances published on UDP 14540.
+  - The runner saw a mix of both: truth altitude 1.32 m with an EKF altitude of −0.16 m; arm failures; no heartbeat.
+  - All 20 dev05 episodes and the 10 stray `dev04_70` episodes are HARNESS_INVALID or ERROR. Not evidence.
+- **Fix:** `tools/sitl_s3b_closed_loop.py` refuses to start SITL while any `gzserver` or PX4 SITL process runs
+  (HARNESS_INVALID). Between episodes it waits up to 10 s for the previous instance to exit.
+- **Lesson:** to stop a looped batch, kill the whole process group (all shells), then check for no SITL processes
+  before starting another.
+- **Also:** GR-1b `rand40_s2` TRAINED (4003 s, host faults 0, checkpoint `2324419f…`, tree clean at the end). `ctrl_s2`
+  is training.
+- **Next:** dev06 (clean) is running.
+

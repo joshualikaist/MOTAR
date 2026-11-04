@@ -80,7 +80,17 @@ def write_world(name, centers, halves, p0, yaw0):
     (WORLDS / (name + ".world")).write_text(world)
 
 
+def other_sitl():
+    """Any PX4 SITL or Gazebo server already running (two instances share UDP 14540 and corrupt each other)."""
+    out = subprocess.run(["pgrep", "-u", str(os.getuid()), "-a", "-f", "^[^ ]*(gzserver|px4_sitl_default/bin/px4)"],
+                         capture_output=True, text=True).stdout.strip()
+    return out
+
+
 def start_sitl(world, log):
+    other = other_sitl()
+    if other:
+        raise RuntimeError("HARNESS_INVALID another SITL instance is running: %s" % other[:200])
     env = dict(os.environ, HEADLESS="1", NO_PXH="1", CUDA_VISIBLE_DEVICES="")
     cmd = [str(PX4 / "Tools/simulation/gazebo-classic/sitl_run.sh"), str(BUILD / "bin/px4"), "none", "navrl_quad", world,
            str(PX4), str(BUILD)]
@@ -168,8 +178,12 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
     world = "motar_s3b_%02d" % idx
     write_world(world, centers, halves, p0, yaw0)
     log = open(out_dir / ("ep%02d_sitl.log" % idx), "w")
-    proc = start_sitl(world, log)
     res = {"episode": idx, "env": ep_spec["env"], "isaac_outcome": ep_spec["isaac_outcome"], "world": world}
+    for _ in range(10):                                                 # the previous episode's instance must be gone
+        if not other_sitl():
+            break
+        time.sleep(1.0)
+    proc = start_sitl(world, log)
     steps_log = []
     L = None
     try:
