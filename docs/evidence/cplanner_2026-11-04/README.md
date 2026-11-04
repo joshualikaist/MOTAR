@@ -300,3 +300,18 @@ D1-F answers review I1. Preregistration:
 - **Identity.** The verbatim and native configurations agree on 100 scenes (1,579 segments).
 - **What this shows.** D1-F separates the repaired certifier from the unrepaired one at the scale of eps. It is the
   eps-scale evidence that D1 was not. The label is CONDITIONAL until its independent review.
+- **Independent review of D1-F: PASS** ([`dirbound/d1f/REVIEW_r1.md`](dirbound/d1f/REVIEW_r1.md), Claude Opus 5.5,
+  fresh context, bound in [`dirbound/d1f/REVIEW_r1_MANIFEST.json`](dirbound/d1f/REVIEW_r1_MANIFEST.json)).
+  - **Reproduction:** an independent re-run reproduces every gated statistic, and independent casters and
+    clearances agree to 4e-15 m.
+  - **Power:** removing part of the repair is detected, down to a height shrink of 0.98 eps and a radius growth of
+    0.75 mm.
+  - **Stronger adversaries:** a 793-ray family with offsets along the beam, and candidates not starting at the
+    sensor, both give 0 FALSE_CERT.
+  - **D1-F is valid eps-scale evidence, which closes review I1.**
+  - **Minor findings:**
+    - m1: the shape-shrink part of the repair is not tested by D1-F; it rests on the argument.
+    - m2: 95 % of the control's 2,880 FALSE_CERT come from heights within 1 mm of 0 or 3 m; the lateral evidence is
+      155 segments.
+    - m3: the family has no offsets along the beam.
+    - m4: the non-vacuity check is coarse.

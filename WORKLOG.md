@@ -23953,3 +23953,21 @@ showed 0 fault records, the carry-over to `8e2b77d` was byte-identical, and both
   `~/motar_tmp/cplanner_dirbound_20261104/review_d1f/`.
 
 Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/d1f/`. No push or merge.
+
+## 2026-11-04 — C-Planner D1-F independent review PASS (review I1 closed)
+
+The reviewer was Claude Opus 5.5 (fresh context), working 14:09 – 14:44 KST with at most 3 processes and a host
+fault count of 0. **PASS**: D1-F stands as computed and is valid evidence at the scale of eps.
+
+- An independent re-run reproduces every gated number.
+- Partial repairs are detected (height 0.98 eps, radius 0.75 mm).
+- Stronger adversaries give 0 FALSE_CERT on the repaired configuration: 793 rays per beam with offsets along the
+  beam, and candidates that do not start at the sensor.
+- Minor findings, recorded and open:
+  - m1: shape shrink untested;
+  - m2: report false certificates per height band, since the lateral evidence is 155 segments;
+  - m3: no offsets along the beam;
+  - m4: coarse non-vacuity check.
+
+Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/d1f/REVIEW_r1.md`. Beads `motar-3p3.36`: I1 closed; M1-M8
+and m1-m4 remain. No push or merge.
