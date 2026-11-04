@@ -23592,3 +23592,34 @@ Raw data: `aerial_gym_simulator/results/gain_randomization_gr0_v1/` (303 files, 
 
 The independent review (Opus 5.5) started at 13:27 KST in `~/motar_tmp/gainrand_20261104/review/`. Next: record the
 review, then the GR-1 preregistration. No push or merge.
+
+## 2026-11-04 — GR-1 preregistered (training with gain randomization); navrl_task.py restored to base bytes
+
+**Defect found.** The full PUBLIC_CPU suite on `gainrand/dev` showed that the GR-0 commit's edit to `navrl_task.py`
+broke three H-R3 frozen-source tests (`test_h_r3_env_isolation_run`, `test_h_r3_p02_runner`, `test_h_r3_p03_runner`),
+which pin that file's bytes.
+- The edit only added `cfg_gain_rand*` record fields, which are empty when OFF.
+- `navrl_task.py` is now restored to the base bytes (`62e59c0`). The switch stays recorded in each receipt's
+  `NAVRL_GAIN_RAND*` snapshot, which the runner checks. The controller and config changes are unchanged.
+- GR-0's results stand: identity_02 showed OFF bit-identical to the base, and the edit changed no behaviour.
+- The three H-R3 tests now pass. The rest of the suite (3,234 tests) fails only on missing worktree-local raw files:
+  `/tmp/codex_occ` (2), `results/` entries (3) and the ref5in checkpoint (1). One more failure,
+  `test_recovery_observability_contract`, compares against HEAD and clears with this commit.
+
+**GR-1** ([`docs/plans/prereg_gain_randomization_gr1_v1.md`](docs/plans/prereg_gain_randomization_gr1_v1.md)):
+- Two 1,000-epoch continuations of Policy F (epochs 25001-26000) under F's own contract: fixed 205 bars, seed 1,
+  LR 5e-6, riskcap from the same screen summary.
+  - `rand40` trains with gains at ±40 %; `ctrl` without.
+  - New launcher `train_navrl_gr1.sh` (PYTHONPATH pinned, import-origin check) and wrapper `tools/gr1_train.py`. The
+    contract preflight passes.
+- `gr1repro` reruns one GR-0 Policy F cell on the new commit; it must equal GR-0 apart from the record fields.
+- `gr1eval` evaluates each checkpoint on GR-0's 36-cell grid with `eval_navrl_gr1_arms.sh`. This is the pinned
+  launcher with only the checkpoint path and SHA taken from the caller.
+- `tools/gr1_analyse.py` computes:
+  - P1 = crash(rand40, S40) - crash(ctrl, S40);
+  - P2 = capture(rand40, S00) - capture(ctrl, S00);
+  - the readings GR1_SUPPORTED, GR1_MATERIAL_LOSS, GR1_NOT_SUPPORTED and INCONCLUSIVE.
+- The standing prohibition is respected: GR-0 identified a non-density bottleneck, and the remedy is preregistered
+  with a matched control.
+
+Next: GR-1 training starts after GR-0's independent review (running) finds no blocking issue. No push or merge.

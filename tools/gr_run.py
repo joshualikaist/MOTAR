@@ -33,6 +33,8 @@ import kroc2027_eval as K                                  # noqa: E402
 
 PREREG = "docs/plans/prereg_gain_randomization_gr0_v1.md"
 AMENDMENT = "docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md"
+GR1_PREREG = "docs/plans/prereg_gain_randomization_gr1_v1.md"
+GR1_LAUNCHER = "aerial_gym/rl_training/rl_games/eval_navrl_gr1_arms.sh"
 REF_TREE = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1")
 REF_COMMIT = "62e59c031ad2"
 ARM = "E2_obstacle_aware"
@@ -91,7 +93,7 @@ def tree_problems(root, commit_prefix):
     return head, problems
 
 
-def cell_env(root, protocol, density, seed, out_dir, quota, run_id, scale):
+def cell_env(root, protocol, density, seed, out_dir, quota, run_id, scale, extra=None):
     inherited = {k: v for k, v in os.environ.items() if not k.startswith("NAVRL_")}
     # Amendment 1: the KROC2027 A3 placement (moving target, initial view visible at 10 m, spawn clearance and
     # line-of-sight rules), i.e. the B1-R Policy F condition (tools/b1r_run.py view='visible', arm='A3').
@@ -100,10 +102,11 @@ def cell_env(root, protocol, density, seed, out_dir, quota, run_id, scale):
                      arm="A3")
     env.update(BACKEND)
     env.update(gain_env(scale, seed))
+    env.update(extra or {})
     return env
 
 
-def check_cell(cell_dir, root, head, quota, num_envs, scale, seed, start_host):
+def check_cell(cell_dir, root, head, quota, num_envs, scale, seed, start_host, ckpt_sha=None, cond_fields=True):
     problems = []
     rec_host = host()
     for k in ("fault_count", "boot_id", "online"):
@@ -119,6 +122,8 @@ def check_cell(cell_dir, root, head, quota, num_envs, scale, seed, start_host):
         return problems + ["missing or unreadable output: %s" % e], rec_host, None
     if receipt.get("status") != "OK" or receipt.get("git_commit") != head or receipt.get("git_dirty_files") != 0:
         problems.append("receipt status/commit/dirty mismatch")
+    if ckpt_sha is not None and receipt.get("checkpoint_sha256") != ckpt_sha:
+        problems.append("receipt checkpoint %s is not %s" % (receipt.get("checkpoint_sha256"), ckpt_sha))
     snap = receipt.get("env_snapshot_navrl", {})
     want = gain_env(scale, seed)
     got = {k: v for k, v in snap.items() if k.startswith("NAVRL_GAIN_RAND")}
@@ -126,8 +131,11 @@ def check_cell(cell_dir, root, head, quota, num_envs, scale, seed, start_host):
         problems.append("recorded NAVRL_GAIN_RAND* %s != %s" % (got, want))
     cond = result.get("condition", {})
     cond_gain = {k: v for k, v in cond.items() if k.startswith("cfg_gain_rand")}
-    want_cond = {} if scale is None else {"cfg_gain_rand": True, "cfg_gain_rand_scale": float(scale),
-                                          "cfg_gain_rand_seed": int(seed)}
+    # GR-0's commit also recorded the switch in result.json's condition; from GR-1 on navrl_task.py is back to the
+    # base bytes (the H-R3 source pins), so the receipt's environment snapshot is the only record and the condition
+    # must carry no cfg_gain_rand* field.
+    want_cond = {} if (scale is None or not cond_fields) else {"cfg_gain_rand": True, "cfg_gain_rand_scale": float(scale),
+                                                              "cfg_gain_rand_seed": int(seed)}
     if cond_gain != want_cond:
         problems.append("condition cfg_gain_rand* %s != %s" % (cond_gain, want_cond))
     if snap.get("NAVRL_TARGET_DISTANCE_BACKEND") != BACKEND["NAVRL_TARGET_DISTANCE_BACKEND"]:
@@ -148,11 +156,13 @@ def check_cell(cell_dir, root, head, quota, num_envs, scale, seed, start_host):
                                 "duration_s": receipt.get("duration_s"), "result_sha256": receipt.get("result_sha256")}
 
 
-def run_launcher(root, protocol, env, timeout_s):
-    """K.run_launcher, but for the launcher of ``root`` (the identity reference runs the base tree's launcher)."""
+def run_launcher(root, protocol, env, timeout_s, launcher=None):
+    """K.run_launcher, but for the launcher of ``root`` (the identity reference runs the base tree's launcher);
+    ``launcher`` (relative to root) selects the GR-1 copy for a GR-1 checkpoint."""
     import signal
 
-    proc = subprocess.Popen(["bash", str(K.launcher_path(protocol, root))], env=env, start_new_session=True)
+    path = root / launcher if launcher else K.launcher_path(protocol, root)
+    proc = subprocess.Popen(["bash", str(path)], env=env, start_new_session=True)
     try:
         return proc.wait(timeout=timeout_s)
     except subprocess.TimeoutExpired:
@@ -166,16 +176,16 @@ def run_launcher(root, protocol, env, timeout_s):
 
 
 def run_cell(root, protocol, out_root, level, density, seed, quota, run_id, scale, head, start_host, records,
-             timeout_s):
+             timeout_s, extra=None, launcher=None, ckpt_sha=None):
     out_dir = out_root / level
     out_dir.mkdir(parents=True, exist_ok=True)
     cell_id = "%s__%dbars__seed%d" % (ARM, density, seed)
-    env = cell_env(root, protocol, density, seed, out_dir, quota, run_id, scale)
+    env = cell_env(root, protocol, density, seed, out_dir, quota, run_id, scale, extra)
     print("==", level, cell_id, now(), flush=True)
     t0 = time.time()
-    rc = run_launcher(root, protocol, env, timeout_s)
+    rc = run_launcher(root, protocol, env, timeout_s, launcher)
     problems, h, stats = check_cell(out_dir / cell_id, root, head, quota, protocol["evaluation"]["num_envs"], scale,
-                                    seed, start_host)
+                                    seed, start_host, ckpt_sha, cond_fields=not run_id.startswith("GR1"))
     if rc != 0:
         problems.insert(0, "launcher exit %d" % rc)
     rec = {"level": level, "cell_id": cell_id, "tree": str(root), "commit": head, "scale": scale, "seed": seed,
@@ -203,8 +213,11 @@ def identity_compare(a_dir, b_dir, drop_gain=False):
             "outcome_a": ra.get("outcome"), "outcome_b": rb.get("outcome")}
 
 
-def preflight(root, protocol, approved, out_root):
+def preflight(root, protocol, approved, out_root, gr1=False):
     head, problems = tree_problems(root, approved)
+    if gr1 and subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", GR1_PREREG],
+                              capture_output=True).returncode:
+        problems.append("preregistration %s is not committed" % GR1_PREREG)
     if K.git("rev-parse", "--abbrev-ref", "HEAD", root=root).strip() != "gainrand/dev":
         problems.append("branch is not gainrand/dev")
     for rel in (PREREG, AMENDMENT):
@@ -227,14 +240,19 @@ def preflight(root, protocol, approved, out_root):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=("identity", "gr0"))
+    ap.add_argument("stage", choices=("identity", "gr0", "gr1repro", "gr1eval"))
+    ap.add_argument("--policy", choices=("rand40", "ctrl"), default=None)
+    ap.add_argument("--ckpt", default=None)
+    ap.add_argument("--ckpt-sha", default=None)
+    ap.add_argument("--gr0-dir", default=None)
     ap.add_argument("--approved-commit", required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--max-hours", type=float, default=None)
     args = ap.parse_args()
     out_root = pathlib.Path(args.out).resolve()
     protocol = json.loads(K.PROTOCOL.read_text())
-    head, problems, origins = preflight(ROOT, protocol, args.approved_commit, out_root)
+    head, problems, origins = preflight(ROOT, protocol, args.approved_commit, out_root,
+                                        gr1=args.stage.startswith("gr1"))
     start = host()
     records, report = [], {"stage": args.stage, "tree": str(ROOT), "commit": head, "prereg": PREREG,
                            "started": now(), "host_start": start, "import_origins": origins,
@@ -253,13 +271,31 @@ def main():
         if idr is None:
             problems.append("gr0 needs an IDENTITY_PASS identity_report.json on this commit in %s" % out_root.parent)
         report["identity_report"] = str(idr)
+    if args.stage == "gr1repro" and not (args.gr0_dir and (pathlib.Path(args.gr0_dir) / "gr0_run_report.json").is_file()):
+        problems.append("gr1repro needs --gr0-dir with gr0_run_report.json")
+    if args.stage == "gr1eval":
+        if not (args.policy and args.ckpt and args.ckpt_sha):
+            problems.append("gr1eval needs --policy, --ckpt and --ckpt-sha")
+        elif not pathlib.Path(args.ckpt).is_file() or sha(args.ckpt) != args.ckpt_sha:
+            problems.append("checkpoint missing or SHA mismatch: %s" % args.ckpt)
+        if not (ROOT / GR1_LAUNCHER).is_file():
+            problems.append("missing %s" % GR1_LAUNCHER)
+        rp = None
+        for cand in sorted(out_root.parent.glob("*/gr1repro_report.json")):
+            r = json.loads(cand.read_text())
+            if r.get("verdict") == "GR1_REPRO_PASS" and r.get("commit") == head:
+                rp = cand
+        if rp is None:
+            problems.append("gr1eval needs a GR1_REPRO_PASS gr1repro_report.json on this commit in %s" % out_root.parent)
+        report["repro_report"] = str(rp)
+        report.update(policy=args.policy, checkpoint=args.ckpt, checkpoint_sha256=args.ckpt_sha)
     if problems:
         report["verdict"] = "PREFLIGHT_FAIL"
         print(json.dumps(report, indent=1))
         return 2
     out_root.mkdir(parents=True)
     budget = K.GpuBudget(args.max_hours)
-    run_id = "GR0-" + args.stage.upper()
+    run_id = ("GR1-" + (args.policy or "F").upper()) if args.stage.startswith("gr1") else "GR0-" + args.stage.upper()
     void = False
     if args.stage == "identity":
         plan = [("ref", REF_TREE, ref_head, None), ("off", ROOT, head, None), ("s00", ROOT, head, 0.0),
@@ -282,7 +318,24 @@ def main():
         report["comparisons"] = comp
         report["verdict"] = "VOID_HOST_FAULT" if void else ("IDENTITY_PASS" if ok else "IDENTITY_FAIL")
         name = "identity_report.json"
+    elif args.stage == "gr1repro":
+        # Policy F, the S40 / 205 bars / seed 4501 GR-0 cell, rerun on this commit: must equal GR-0's cell
+        rec = run_cell(ROOT, protocol, out_root, "S40", 205, 4501, 16, run_id, 0.4, head, start, records,
+                       CELL_TIMEOUT_S)
+        void = rec["verdict"] == "VOID_HOST_FAULT"
+        cid = "%s__205bars__seed4501" % ARM
+        comp = identity_compare(pathlib.Path(args.gr0_dir) / "S40" / cid, out_root / "S40" / cid, drop_gain=True) \
+            if rec["verdict"] == "OK" else {}
+        report["gr0_dir"] = str(pathlib.Path(args.gr0_dir).resolve())
+        report["comparison"] = comp
+        ok = bool(comp) and comp["result_equal"] and comp["episodes_equal"]
+        report["verdict"] = "VOID_HOST_FAULT" if void else ("GR1_REPRO_PASS" if ok else "GR1_REPRO_FAIL")
+        name = "gr1repro_report.json"
     else:
+        extra = {"GR1_CKPT": str(pathlib.Path(args.ckpt).resolve()), "GR1_CKPT_SHA": args.ckpt_sha} \
+            if args.stage == "gr1eval" else None
+        launcher = GR1_LAUNCHER if args.stage == "gr1eval" else None
+        ckpt_sha = args.ckpt_sha if args.stage == "gr1eval" else None
         for density in DENSITIES:
             for seed in SEEDS:
                 for level, scale in LEVELS.items():
@@ -290,7 +343,7 @@ def main():
                         report["budget_exhausted"] = True
                         break
                     rec = run_cell(ROOT, protocol, out_root, level, density, seed, 16, run_id, scale, head, start,
-                                   records, CELL_TIMEOUT_S)
+                                   records, CELL_TIMEOUT_S, extra, launcher, ckpt_sha)
                     if rec["verdict"] == "VOID_HOST_FAULT":
                         void = True
                         break
@@ -304,13 +357,13 @@ def main():
         complete = len(records) == expected and all(r["verdict"] == "OK" for r in records)
         report["verdict"] = "VOID_HOST_FAULT" if void else ("COMPLETE" if complete else "INCOMPLETE")
         report["cells_expected"] = expected
-        name = "gr0_run_report.json"
+        name = "gr0_run_report.json" if args.stage == "gr0" else "gr1eval_run_report.json"
     report["records"] = records
     report["host_end"] = host()
     report["finished"] = now()
     (out_root / name).write_text(json.dumps(report, indent=1, default=str) + "\n")
     print(json.dumps({k: report[k] for k in ("stage", "verdict", "commit")}, indent=1))
-    return 0 if report["verdict"] in ("IDENTITY_PASS", "COMPLETE") else 1
+    return 0 if report["verdict"] in ("IDENTITY_PASS", "COMPLETE", "GR1_REPRO_PASS") else 1
 
 
 if __name__ == "__main__":

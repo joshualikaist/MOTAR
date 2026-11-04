@@ -686,9 +686,11 @@ family that is in the test's scope.
   - → `docs/plans/prereg_gain_randomization_gr0_v1.md`
   - → `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md` (A3 placement after identity_01)
   - → `docs/evidence/gain_randomization_2026-11-04/`
+  - → `docs/plans/prereg_gain_randomization_gr1_v1.md` (GR-1 training, after GR-0 GAIN_SENSITIVE)
 - **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
 - **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`,
-  `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`
+  `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`,
+  `docs/plans/prereg_gain_randomization_gr1_v1.md`
 
 ## Not yet in the repository
 
