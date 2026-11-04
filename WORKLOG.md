@@ -23847,3 +23847,44 @@ its design review. A GPU run needs the user's approval. No push or merge.
 
 Next: GR-1 analysis when the ctrl evaluation ends, then the C1/C2 preregistration. GPU runs need the user's
 approval. No push or merge.
+
+## 2026-11-04 — Camera-only C1/C2 preregistered (GPU approved by the user); runner and analysis smoke-tested
+
+**Approval.** The user approved the camera-only GPU runs: "카메라 전용 gpu실행 승인할게. ㄱㄱ". This covers C1 and
+C2; C3 and C4 (training) need their own approval.
+
+**Preregistration** `docs/plans/prereg_camonly_c1c2_v1.md`.
+- **C1** has two cells: S00, 205 bars, seed 4501, through the camera-only launcher and entry point.
+  - `full` must equal GR-0's S00 cell exactly (result and episodes).
+  - `no_lidar` must differ from it, which shows the switch takes effect in the simulator.
+- **C2:** five conditions on GR-0's S00 grid (12 blocks, quota 16). `full` is GR-0's S00 cells, admitted by C1.
+- **Analysis:** seven contrasts (total, in_fov, out_fov, interaction, obs_in, gov_in, gov_all), for capture and
+  crash.
+  - Each has a block bootstrap and a t-interval, labelled LOWER, HIGHER or NO_DETECTED_CHANGE.
+  - Contrasts with OOD terms are labelled zero-shot.
+  - Bindings come first. The reading is REPORTED, with no adoption decision.
+
+**Machinery:**
+- `aerial_gym/rl_training/rl_games/eval_navrl_camonly_arms.sh`, sha256 `1eadf8fb…`, pinned in the runner. It is
+  the pinned launcher plus three marked changes; the only line replaced is the `play_navrl.sh` call, which now
+  runs with `PYTHON=CAMONLY_PY`.
+- `tools/camonly_run.py` (stages c1 and c2) reuses `gr_run`'s cell environment, checks and launcher call. Each
+  cell also needs an ablation receipt naming its condition and the committed module SHA, plus a matching receipt
+  snapshot.
+- `tools/camonly_c2_analyse.py`.
+
+**CPU smoke test before launch** (`docs/evidence/camonly_2026-11-04/c1c2/smoke_01.json`): 9 of 9 checks pass.
+- C1 passes with the right launcher, checkpoint SHA, `CAMONLY_PY`, conditions and cell.
+- A switch without effect gives C1_IDENTITY_FAIL.
+- A missing ablation receipt fails the cell.
+- C2 without a C1 pass gives PREFLIGHT_FAIL.
+- A wrong condition at cell 7 stops C2 there (INCOMPLETE).
+- C2 runs complete in density, seed, condition order.
+- The analysis labels the known 30 % capture-to-crash effect LOWER and HIGHER, and the null conditions
+  NO_DETECTED_CHANGE.
+- A receipt naming another condition, and a cell identical to `full`, each give EVAL_BINDING_FAIL.
+
+The raw output folder `results/camonly_c1c2_v1/` has a dated line in the main checkout's display exclude.
+
+Next: C1 on this commit, with the design review in parallel; C2 after C1_IDENTITY_PASS and a design review without
+blocking findings. No push or merge.

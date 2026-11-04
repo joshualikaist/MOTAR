@@ -14,3 +14,12 @@ section, under decision D-2026-11-04-3.
 
 Raw logs are in `~/motar_tmp/camonly_c0_20261104/`: `gate_01/`, the base suite log `public_cpu_base_02.log`, and
 `review/audit/` (the reviewer's probes).
+
+## `c1c2/`: GPU stages C1 (identity) and C2 (zero-shot conditions)
+
+Preregistration: [`docs/plans/prereg_camonly_c1c2_v1.md`](../../plans/prereg_camonly_c1c2_v1.md).
+
+| File | What |
+| --- | --- |
+| `smoke_c1c2.py`, `smoke_01.json` | CPU smoke test of `tools/camonly_run.py` and `tools/camonly_c2_analyse.py` before launch (simulator stubbed, real GR-0 cells copied): 9 of 9 checks pass, covering C1 pass, switch-without-effect fail, missing-receipt fail, C2 needing C1, wrong-condition stop, the complete and ordered C2, the analysis known-good case and two binding failures |
+
