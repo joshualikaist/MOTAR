@@ -74,6 +74,17 @@ in_fov = obs_in + gov_in hold exactly.
   Those two were already fragile (m-2).
 - An idle-host rerun of the two cells, compared byte for byte, would test whether the load changed them. It is a
   GPU run and needs the user's approval; until then the deviation stands as disclosed.
+- **Condition A inherits a larger deviation, found afterwards.** GR-0, whose S00 cells are condition A, also ran
+  alongside the author's CPU jobs, on the GPU job's own cores. 8 of the 12 S00 cells overlapped:
+  - 70 bars: seeds 4501 and 4502;
+  - 115 bars: seeds 4502 and 4503;
+  - 160 bars: seeds 4501, 4502 and 4503;
+  - 205 bars: seed 4501.
+
+  The record is on `gainrand/dev` (`352b919`, `docs/evidence/gain_randomization_2026-11-04/load_overlap/`; also
+  `~/motar_tmp/load_overlap_20261104/overlap.json`, SHA-256 `80eed1ff…`). The 205/4501 cell ran under load, and
+  C1 `full`, run idle twice, is identical to it. The other seven have no idle twin.
+- Every C2 contrast involving A (all but `gov_in` and `gov_all`) therefore depends on cells that ran under load.
 
 **Limits from the review.**
 - **m-1:** `gov_all` includes the K2 rule (C has it, C_gL does not). It measures "the camera governor with K2 in

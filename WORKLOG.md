@@ -24022,3 +24022,19 @@ mean executed speed of 2.17 m/s. For A it is 0.28, 7.99 m and 2.95 m/s.
 3. GR-1b, the second-seed proposal, outside this unit.
 
 No push or merge.
+
+## 2026-11-04 — camera-only: condition A inherits GR-0's CPU-load deviation (found afterwards)
+
+- **How it was found:** after review M-1, I checked the earlier GPU units for the same fault, using a read-only
+  forensic pass (a Claude Code subagent on Opus 5.5).
+- **Finding:** GR-0, whose S00 cells are C2's condition A, ran alongside my CPU jobs on the GPU job's own cores.
+  8 of the 12 S00 cells overlapped. The record is on `gainrand/dev` `352b919`
+  (`docs/evidence/gain_randomization_2026-11-04/load_overlap/`, also in `~/motar_tmp/load_overlap_20261104/`).
+- **Twin evidence:** the overlapped 205/4501 cell is identical to C1 `full`, which ran idle twice. The other seven
+  have no idle twin.
+- **C2 itself:** the forensics confirm 2 of 60 C2 cells overlapped, on cores 6,7,12,13, for about 41
+  process-seconds. C1 and C1_r2 had no overlap.
+- **Consequence:** every C2 contrast involving A depends on cells that ran under load, and that is all of them
+  except `gov_in` and `gov_all`. The reading stays REPORTED with this added limit.
+- **Next:** the user decides on an idle-host byte-compare rerun of the 50 overlapped evaluation cells (GR-0 23,
+  GR-1 25, C2 2), about 2.1 h of GPU. No push or merge.

@@ -719,6 +719,8 @@ family that is in the test's scope.
     - removing only the out-of-FOV LiDAR: +39.25 pp (OOD, includes K2);
     - removing only the in-FOV LiDAR: −0.69 pp, a detected change below the 2 pp band.
   - Read these with the limits and the claim scope in `docs/evidence/camonly_2026-11-04/README.md`.
+  - Found afterwards: 8 of the 12 GR-0 S00 cells used as condition A also ran alongside the author's CPU jobs
+    (`gainrand/dev` `352b919`, `load_overlap/`). An idle-host byte-compare rerun awaits the user.
   - Sensor-level CPU check (exploratory, not a gate): `docs/evidence/camonly_2026-11-04/sensor/`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
