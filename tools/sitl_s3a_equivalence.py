@@ -7,7 +7,9 @@ with the recorded states, and compared step by step with Isaac's dumped observat
   obs_err[slice]   max |bridge obs - dumped obs| per slice: scan 0-287, obstacles 288-767, robot 768-817, target 818-897
   act_err_bridge   max |policy(bridge obs) - recorded action|
   act_err_dumpobs  max |policy(dumped obs) - recorded action|   (isolates the policy's CPU vs GPU numerics)
-Gate (plan S3a): EQUIVALENT if every obs_err <= 1e-3 and act_err_bridge <= 1e-4; otherwise NOT_EQUIVALENT, with the
+  gov_err          max |bridge prev_action from step k (governor on the bridge's LiDAR, recorded action) -
+                   recorded prev_action at step k + 1|   (the governed command path)
+Gate (plan S3a): EQUIVALENT if every obs_err <= 1e-3, act_err_bridge <= 1e-4 and gov_err <= 1e-4; otherwise NOT_EQUIVALENT, with the
 first diverging step and slice reported. Alignment checks: the dump's ep_step equals the record's sim_steps at the
 same call index, and episode 0 of an env is the run of calls from 0 while sim_steps counts up.
 usage: tools/sitl_s3a_equivalence.py G8_RUN_DIR BARS OUT_JSON [N_ENVS]
@@ -55,7 +57,7 @@ def main():
               RUN / ("state_record_%dbars_seed%d.npz" % (BARS, SEED)), cell / "occlusion_layouts.npz"):
         out["inputs_sha256"][p.name] = hashlib.sha256(p.read_bytes()).hexdigest()
     worst = {k: 0.0 for k in SLICES}
-    worst_act_b, worst_act_d = 0.0, 0.0
+    worst_act_b, worst_act_d, worst_gov = 0.0, 0.0, 0.0
     first_div = None
     for e in range(N_ENVS):
         ks = []
@@ -66,7 +68,7 @@ def main():
         c, h, q = OT.layout_arrays(tr["layouts"], look[(e, 0)])
         ep = B.Episode(c, h, q)
         env_worst = {k: 0.0 for k in SLICES}
-        ab, ad = 0.0, 0.0
+        ab, ad, ge = 0.0, 0.0, 0.0
         for k in ks:
             i = index.get((k, e))
             if i is None or int(d_step[i]) != int(steps[k, e]):
@@ -78,7 +80,7 @@ def main():
                  "tquat": rec["target_orientation"][k, e] if "target_orientation" in rec.files else None,
                  "prev_action": rec["prev_action"][k, e], "bounds_min": rec["env_bounds_min"][k, e],
                  "bounds_max": rec["env_bounds_max"][k, e]}
-            obs, _, _ = ep.observe(s, step_count=int(rec["perception_step_count"][k]) - 1)
+            obs, _, lidar = ep.observe(s, step_count=int(rec["perception_step_count"][k]) - 1)
             ref = torch.from_numpy(d_obs[i]).reshape(1, -1)
             diff = (obs - ref).abs()[0]
             for name, (a, b) in SLICES.items():
@@ -90,14 +92,21 @@ def main():
             act_rec = torch.from_numpy(rec["action"][k, e]).reshape(1, -1)
             ab = max(ab, float((policy.act(obs) - act_rec).abs().max()))
             ad = max(ad, float((policy.act(ref) - act_rec).abs().max()))
-        out["envs"][str(e)] = {"steps": len(ks), "obs_err": env_worst, "act_err_bridge": ab, "act_err_dumpobs": ad}
+            if k + 1 in ks:
+                _, _, prev_next = ep.command(rec["action"][k, e], lidar)
+                ge = max(ge, float((prev_next - torch.from_numpy(rec["prev_action"][k + 1, e])).abs().max()))
+        out["envs"][str(e)] = {"steps": len(ks), "obs_err": env_worst, "act_err_bridge": ab, "act_err_dumpobs": ad,
+                               "gov_err": ge}
         for name in SLICES:
             worst[name] = max(worst[name], env_worst[name])
         worst_act_b, worst_act_d = max(worst_act_b, ab), max(worst_act_d, ad)
-        print("env", e, len(ks), {k: "%.2e" % v for k, v in env_worst.items()}, "act %.2e / %.2e" % (ab, ad), flush=True)
-    out["worst"] = {"obs_err": worst, "act_err_bridge": worst_act_b, "act_err_dumpobs": worst_act_d}
+        worst_gov = max(worst_gov, ge)
+        print("env", e, len(ks), {k: "%.2e" % v for k, v in env_worst.items()}, "act %.2e / %.2e gov %.2e" % (ab, ad, ge),
+              flush=True)
+    out["worst"] = {"obs_err": worst, "act_err_bridge": worst_act_b, "act_err_dumpobs": worst_act_d, "gov_err": worst_gov}
     out["first_divergence"] = first_div
-    ok = all(v <= OBS_TOL for v in worst.values()) and worst_act_b <= ACT_TOL and out["alignment_mismatches"] == 0
+    ok = (all(v <= OBS_TOL for v in worst.values()) and worst_act_b <= ACT_TOL and worst_gov <= ACT_TOL
+          and out["alignment_mismatches"] == 0)
     out["reading"] = "EQUIVALENT" if ok else "NOT_EQUIVALENT"
     OUT.write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
     print(json.dumps({"reading": out["reading"], "worst": out["worst"], "first_divergence": first_div,

@@ -67,6 +67,8 @@ def setup(env_snapshot):
                                   ROOT / "aerial_gym/task/navrl_task/navrl_perception.py")
     _LOADED["detector"] = _load("aerial_gym.task.navrl_task.navrl_detector",
                                 ROOT / "aerial_gym/task/navrl_task/navrl_detector.py")
+    _LOADED["governor"] = _load("aerial_gym.task.navrl_task.speed_governor",
+                                ROOT / "aerial_gym/task/navrl_task/speed_governor.py")
     _LOADED["task_config"] = _load("sitl_bridge_navrl_task_config",
                                    ROOT / "aerial_gym/config/task_config/navrl_task_config.py").task_config
     rp = _load("sitl_bridge_cplanner_replay", CPLANNER / "cplanner/motar/replay.py")
@@ -101,6 +103,38 @@ class Episode:
         self.perception = M["perception"].NavRLPerceptionModule(num_envs=1, device=self.device, cfg=tc.perception,
                                                                 step_dt=step_dt, camera_cfg=tc.vision)
         self.perception.reset_idx(torch.tensor([0]))
+
+    def command(self, action, lidar_m):
+        """The task's action path for one env (navrl_task.py transform_action_to_command, vision mode, riskcap):
+        vehicle-frame velocity = clamp(a[0:2]) * max_velocity, then the sensor speed governor on the raw LiDAR with
+        the perception's target-like returns removed; yaw rate = clamp(a[3]) * yaw_rate_max (yaw cap off).
+        Returns (governed vx, vy in m/s, vehicle frame), yaw rate (rad/s), and prev_action for the next step's
+        observation ([governed vx, vy] / max_velocity, clamp(a_z), clamp(a_yaw)))."""
+        torch = self.torch
+        SG = _LOADED["governor"]
+        if not hasattr(self, "_gov_cfg"):
+            self._gov_cfg = SG.SpeedGovernorConfig.from_environ(os.environ)
+            self._bearings = _LOADED["perception"].lidar_bin_bearings(self.device)
+            if self._gov_cfg.yaw_cap_enabled or self._gov_cfg.lateral_channel_enabled or self._gov_cfg.open_width_enabled:
+                raise RuntimeError("bridge implements the Policy F governor contract only (no yaw cap, lateral, open width)")
+            if self._gov_cfg.mode not in ("riskcap", "off"):
+                raise RuntimeError("bridge implements riskcap or off only, got %s" % self._gov_cfg.mode)
+        a = torch.clamp(torch.as_tensor(action, dtype=torch.float32).reshape(1, -1), -1.0, 1.0)
+        vmax = float(self.tc.max_velocity)
+        cmd_xy = a[:, 0:2] * vmax
+        if self._gov_cfg.mode == "riskcap":
+            scan_m = lidar_m.reshape(1, 4, -1)
+            half = SG.speed_dependent_half_width(self._gov_cfg, cmd_xy.norm(dim=1), open_m=None)
+            clearance = SG.directional_lidar_clearance(scan_m, self._bearings, cmd_xy,
+                                                       max_range_m=float(self.tc.lidar_max_range),
+                                                       path_half_width_m=half,
+                                                       target_return_mask=self.perception.last_target_like)
+            governed, _ = SG.apply_speed_governor(cmd_xy, clearance, self._gov_cfg, lateral_clearance_m=None)
+        else:
+            governed = cmd_xy
+        yaw_rate = a[:, 3] * float(self.tc.yaw_rate_max)
+        prev = torch.cat([(governed / vmax).clamp(-1.0, 1.0), a[:, 2:3], a[:, 3:4]], dim=1)
+        return governed[0], float(yaw_rate[0]), prev[0]
 
     def lidar_m(self, pos, full_quat, target_pos):
         rp = _LOADED["replay"]
