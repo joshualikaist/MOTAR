@@ -1,0 +1,52 @@
+[
+ {
+  "label": "d1f",
+  "name": "d1f",
+  "rule": "DIRBOUND-D1F",
+  "argv": [
+   "check_direction_bound_full.py",
+   "/home/fair/motar_tmp/cplanner_dirbound_20261104/run_d1f/d1f.json",
+   "2000",
+   "6",
+   "20261112"
+  ],
+  "timeout_s": 10800,
+  "exit": 0,
+  "elapsed_s": 170.8161451780179,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "6.51 4.19 2.94 3/2952 3283352",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_dirbound_20261104/run_d1f/d1f.json",
+  "output_sha256": "20565ee0a4d451a3f2e2fd72b6cfb3de281084310cec2b0bfab14e430c08a4e8",
+  "verdict": "PASS",
+  "online_before": "0-3,6-23",
+  "online_after": "0-3,6-23",
+  "verdict_value": true
+ },
+ {
+  "label": "dup_d1f",
+  "name": "d1f",
+  "rule": "DIRBOUND-D1F",
+  "argv": [
+   "check_direction_bound_full.py",
+   "/home/fair/motar_tmp/cplanner_dirbound_20261104/run_d1f/dup/d1f.json",
+   "2000",
+   "6",
+   "20261112"
+  ],
+  "timeout_s": 10800,
+  "exit": 0,
+  "elapsed_s": 173.05230913302512,
+  "host_before_count": 0,
+  "host_after_count": 0,
+  "loadavg_after": "6.27 5.38 3.64 2/2911 3289092",
+  "host_valid": true,
+  "output": "/home/fair/motar_tmp/cplanner_dirbound_20261104/run_d1f/dup/d1f.json",
+  "output_sha256": "6c1f502b33fa12340a273c18537760b080f829affb8a191b7a56ec1da06f52eb",
+  "verdict": "PASS",
+  "online_before": "0-3,6-23",
+  "online_after": "0-3,6-23",
+  "verdict_value": true
+ }
+]

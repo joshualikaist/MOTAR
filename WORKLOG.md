@@ -23933,3 +23933,23 @@ The test reads the unchanged certifier of `8e2b77d`, with a carry-over check. Th
 repaired 0 FALSE_CERT and 296 certified; eps = 0 gave 114 FALSE_CERT, 7 of them at ordinary heights.
 
 Next: commit, run from a frozen copy, independent review. No push or merge.
+
+## 2026-11-04 — C-Planner D1-F: repaired 0 FALSE_CERT vs unrepaired 2,880 under a full-bound adversary (CONDITIONAL)
+
+The run used the frozen copy of `37762ab`, 14:02 – 14:08 KST, with 6 workers beside the GR-1 training. The host
+showed 0 fault records, the carry-over to `8e2b77d` was byte-identical, and both runs were PASS and identical.
+
+| Scans | Repaired FALSE_CERT | eps = 0 FALSE_CERT | Repaired certified | eps = 0 certified |
+| --- | --- | --- | --- | --- |
+| adversarial (81 rays per beam within 0.99 eps) | 0 | 2,880 (75 at 0.3-2.7 m) | 4,435 | 8,917 |
+| exact | 0 | 0 | 4,430 | 5,506 |
+
+- The sample is 2,000 scenes and 31,673 segments, 23,673 of them aimed within 1.5 mm of R.
+- Verbatim and native agree on 1,579 segments.
+- Hypothesis "the unrepaired certifier is sound in practice" is rejected: it gave 2,880 FALSE_CERT under an adversary
+  inside the declared bound.
+- The repair holds: 0 FALSE_CERT, while still certifying 4,435 segments.
+- Review I1 is closed pending D1-F's own review. That review (Opus 5.5) started at 14:09 KST in
+  `~/motar_tmp/cplanner_dirbound_20261104/review_d1f/`.
+
+Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/d1f/`. No push or merge.

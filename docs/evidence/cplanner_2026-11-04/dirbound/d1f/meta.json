@@ -1,0 +1,17 @@
+{
+ "tree": "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen_d1f/cplanner",
+ "python": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+ "allowed_cpus": "0-3,8-11,14-23",
+ "workers": "6",
+ "started": "2026-11-04T14:02:27.071218+09:00",
+ "argv": [
+  "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen_d1f/cplanner/tools/run_dirbound_d1f.py",
+  "/home/fair/motar_tmp/cplanner_dirbound_20261104/run_d1f"
+ ],
+ "first_frozen": "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen/cplanner",
+ "carry_over_identical": true,
+ "carry_files": 12,
+ "carry_differences": [],
+ "frozen_commit": "37762ab 37762abb0819fd185869229c784af824b5f92af5",
+ "prereg": "docs/plans/prereg_cplanner_dirbound_d1f_v1.md"
+}

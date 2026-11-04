@@ -1,0 +1,289 @@
+{
+ "gate": "C-Planner direction bound D1-F (full-bound adversary)",
+ "pass": true,
+ "checks": {
+  "library_loaded": true,
+  "completed": true,
+  "adversary_within_bound": true,
+  "all_steps_accepted": true,
+  "DIR_zero_false_cert": true,
+  "DIR_nonvacuous_certified": true,
+  "ZERO_detected_at_eps_scale": true,
+  "ZERO_detected_at_ordinary_heights": true,
+  "EXACT_zero_false_cert": true,
+  "EXACT_nonvacuous_certified": true,
+  "VERB_identical": true
+ },
+ "stats": {
+  "DIR": {
+   "scenes": 2000,
+   "accepted": 2000,
+   "segments": 31673,
+   "aimed_segments": 23673,
+   "certified": 4435,
+   "false_cert": 0,
+   "false_cert_mid_height": 0,
+   "false_cert_aimed": 0
+  },
+  "ZERO": {
+   "scenes": 2000,
+   "accepted": 2000,
+   "segments": 31673,
+   "aimed_segments": 23673,
+   "certified": 8917,
+   "false_cert": 2880,
+   "false_cert_mid_height": 75,
+   "false_cert_aimed": 2864
+  },
+  "EXACT_DIR": {
+   "scenes": 2000,
+   "accepted": 2000,
+   "segments": 31673,
+   "aimed_segments": 23673,
+   "certified": 4430,
+   "false_cert": 0,
+   "false_cert_mid_height": 0,
+   "false_cert_aimed": 0
+  },
+  "EXACT_ZERO": {
+   "scenes": 2000,
+   "accepted": 2000,
+   "segments": 31673,
+   "aimed_segments": 23673,
+   "certified": 5506,
+   "false_cert": 0,
+   "false_cert_mid_height": 0,
+   "false_cert_aimed": 0
+  },
+  "VERB": {
+   "scenes": 100,
+   "segments": 1579,
+   "mismatch": 0
+  },
+  "max_family_offset_m": 0.0009900000000116333
+ },
+ "examples": [
+  {
+   "part": "ZERO",
+   "scene": 96,
+   "z": 2.999512545845789,
+   "clearance_minus_R_m": -0.00041351210293005813,
+   "aimed_delta_m": 0.00041351210293008
+  },
+  {
+   "part": "ZERO",
+   "scene": 96,
+   "z": 2.999512545845789,
+   "clearance_minus_R_m": -0.001114407067263068,
+   "aimed_delta_m": 0.0011144070672613959
+  },
+  {
+   "part": "ZERO",
+   "scene": 96,
+   "z": 2.999512545845789,
+   "clearance_minus_R_m": -0.0009505541078672075,
+   "aimed_delta_m": 0.000950554107867139
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.00017278117978708485,
+   "aimed_delta_m": 0.0001727811797869323
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.000810172623787575,
+   "aimed_delta_m": 0.0008101726237859622
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.00027581505870322154,
+   "aimed_delta_m": 0.0002758150587013149
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.0009041967855168975,
+   "aimed_delta_m": 0.0009041967855155388
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.00021817928633144357,
+   "aimed_delta_m": 0.00021817928633036907
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.00022453591841697929,
+   "aimed_delta_m": 0.00022453591841691223
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.0014012505693715704,
+   "aimed_delta_m": 0.0014012505693710487
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.00048651545439082344,
+   "aimed_delta_m": 0.0004865154543898537
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.0011017891556162063,
+   "aimed_delta_m": 0.0011017891556160215
+  },
+  {
+   "part": "ZERO",
+   "scene": 120,
+   "z": 0.00021338949862821893,
+   "clearance_minus_R_m": -0.0009305632530024477,
+   "aimed_delta_m": 0.0009305632530013696
+  },
+  {
+   "part": "ZERO",
+   "scene": 168,
+   "z": 0.8530667118497419,
+   "clearance_minus_R_m": -0.0003281705392186862,
+   "aimed_delta_m": 0.0003281705392185708
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.00020188780574148524,
+   "aimed_delta_m": 0.00020188780574036921
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0004010308923012018,
+   "aimed_delta_m": 0.00040103089229829393
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -1.9105615284731314e-05,
+   "aimed_delta_m": 1.9105615283617676e-05
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0004424327259398009,
+   "aimed_delta_m": 0.0004424327259383933
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0012530107741275942,
+   "aimed_delta_m": 0.001253010774127366
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0007581984629512206,
+   "aimed_delta_m": 0.0007581984629510751
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0013817577679687831,
+   "aimed_delta_m": 0.0013817577679677568
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0009162920213098835,
+   "aimed_delta_m": 0.0009162920213074378
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0004313092528776541,
+   "aimed_delta_m": 0.00043130925287726134
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0012845001639307796,
+   "aimed_delta_m": 0.0012845001639303082
+  },
+  {
+   "part": "ZERO",
+   "scene": 216,
+   "z": 2.99937152773927,
+   "clearance_minus_R_m": -0.0012828110283933936,
+   "aimed_delta_m": 0.0012828110283914886
+  },
+  {
+   "part": "ZERO",
+   "scene": 264,
+   "z": 2.999121902447762,
+   "clearance_minus_R_m": -0.0007347478514247441,
+   "aimed_delta_m": 0.0007347478514229946
+  },
+  {
+   "part": "ZERO",
+   "scene": 264,
+   "z": 2.999121902447762,
+   "clearance_minus_R_m": -0.0007507669883875523,
+   "aimed_delta_m": 0.0007507669883857968
+  },
+  {
+   "part": "ZERO",
+   "scene": 264,
+   "z": 2.999121902447762,
+   "clearance_minus_R_m": -0.0008509298263959519,
+   "aimed_delta_m": 0.000850929826394799
+  },
+  {
+   "part": "ZERO",
+   "scene": 264,
+   "z": 2.999121902447762,
+   "clearance_minus_R_m": -0.0006486540166929511,
+   "aimed_delta_m": 0.0006486540166913874
+  },
+  {
+   "part": "ZERO",
+   "scene": 264,
+   "z": 2.999121902447762,
+   "clearance_minus_R_m": -0.00074650795089648,
+   "aimed_delta_m": 0.0007465079508963937
+  }
+ ],
+ "eps_m": 0.001,
+ "a_m": 0.00099,
+ "n_scenes": 2000,
+ "seed0": 20261112,
+ "configs": {
+  "DIR": "MOTAR-72x4-RUNTIME-DIR-NATIVE",
+  "ZERO": "MOTAR-72x4-RUNTIME-NATIVE",
+  "VERB": "MOTAR-72x4-RUNTIME-DIR"
+ },
+ "library": "/home/fair/motar_tmp/cplanner_dirbound_20261104/run_d1f/native/libcoverage_b.so",
+ "failure": null,
+ "wall_s": 170.73644089698792
+}

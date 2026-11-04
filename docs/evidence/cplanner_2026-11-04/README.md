@@ -277,3 +277,26 @@ byte identity.
   - L1: GPU float32 is not measured. The measured lateral offset leaves a 34x margin to eps / 10.
   - L3: the D2 rule was relaxed after its data were seen. This is acceptable as the charter's one repair round, on a
     fresh sample.
+
+### Gate D1-F, full-bound direction adversary: **CONDITIONAL** (`dirbound/d1f/`)
+
+D1-F answers review I1. Preregistration:
+[`docs/plans/prereg_cplanner_dirbound_d1f_v1.md`](../../plans/prereg_cplanner_dirbound_d1f_v1.md).
+
+- **Run.** Frozen copy of `37762ab`, 2026-11-04 14:02 – 14:08 KST, 6 workers beside the GR-1 training. Host fault
+  count 0, online CPUs unchanged. `src/`, `native/` and `motar/` are byte-identical to the repair's frozen copy
+  (`8e2b77d`). Bound in [`dirbound/d1f/SHA256_MANIFEST.json`](dirbound/d1f/SHA256_MANIFEST.json).
+- **Result.** PASS twice, with identical results ([`dirbound/d1f/d1f.json`](dirbound/d1f/d1f.json)).
+  - 2,000 scenes and 31,673 segments, 23,673 of them aimed within 1.5 mm of R.
+  - The adversary used 81 rays per beam; the largest family offset was 0.99 mm.
+
+| Configuration and scans | FALSE_CERT | Certified |
+| --- | --- | --- |
+| repaired (`-DIR-NATIVE`), adversarial | **0** | 4,435 |
+| eps = 0 (`-NATIVE`), the same adversarial scans | **2,880** (75 at heights 0.3-2.7 m) | 8,917 |
+| repaired, exact scans | 0 | 4,430 |
+| eps = 0, exact scans | 0 | 5,506 |
+
+- **Identity.** The verbatim and native configurations agree on 100 scenes (1,579 segments).
+- **What this shows.** D1-F separates the repaired certifier from the unrepaired one at the scale of eps. It is the
+  eps-scale evidence that D1 was not. The label is CONDITIONAL until its independent review.

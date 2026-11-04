@@ -1,0 +1,29 @@
+{
+ "carry_over_identical": true,
+ "build_ok": true,
+ "preflight_pass": true,
+ "d1f": "PASS",
+ "dup_d1f": "PASS",
+ "determinism": {
+  "d1f": true
+ },
+ "inputs_unchanged": true,
+ "changed_inputs": [],
+ "host_void": false,
+ "online_cpu_changes": [],
+ "commands_run": 2,
+ "commands_expected": 2,
+ "verdict": "CONDITIONAL",
+ "verdict_scope": "D1-F full-bound adversary twice on the certifier of 8e2b77d (byte-identical) + build + host + inputs; decided only after an independent review",
+ "host_end": {
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "fault_events": [],
+  "fault_count": 0,
+  "online": "0-3,6-23",
+  "offline": "4-5",
+  "bios": "0806",
+  "loadavg": "6.27 5.38 3.64 2/2911 3289098",
+  "time": "2026-11-04T14:08:11.478746+09:00"
+ },
+ "finished": "2026-11-04T14:08:11.478757+09:00"
+}
