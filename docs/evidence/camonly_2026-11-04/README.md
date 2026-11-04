@@ -21,5 +21,8 @@ Preregistration: [`docs/plans/prereg_camonly_c1c2_v1.md`](../../plans/prereg_cam
 
 | File | What |
 | --- | --- |
-| `smoke_c1c2.py`, `smoke_01.json` | CPU smoke test of `tools/camonly_run.py` and `tools/camonly_c2_analyse.py` before launch (simulator stubbed, real GR-0 cells copied): 9 of 9 checks pass, covering C1 pass, switch-without-effect fail, missing-receipt fail, C2 needing C1, wrong-condition stop, the complete and ordered C2, the analysis known-good case and two binding failures |
+| `c1_report_1908fd8.json` | C1 on `1908fd8`: C1_IDENTITY_PASS (`full` equals GR-0's cell exactly; `no_lidar` differs). Superseded as C2's gate by the C1 rerun on amendment 1's commit |
+| `REVIEW_design_r1.md` | Pre-measurement design review (Claude Opus 5.5): AMEND_FIRST, no blocking finding; answered by amendment 1 |
+| `smoke_02.json` | The smoke test after amendment 1 (`smoke_c1c2.py`, current version): 14 of 14 checks, with distinct per-condition effects, contrast means checked independently, and five new known-bad cases |
+| `smoke_01.json` (made by the first version of `smoke_c1c2.py`, in `1908fd8`) | CPU smoke test of `tools/camonly_run.py` and `tools/camonly_c2_analyse.py` before launch (simulator stubbed, real GR-0 cells copied): 9 of 9 checks pass, covering C1 pass, switch-without-effect fail, missing-receipt fail, C2 needing C1, wrong-condition stop, the complete and ordered C2, the analysis known-good case and two binding failures |
 

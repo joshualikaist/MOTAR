@@ -14,12 +14,17 @@ switch is silently ignored without the entry point; review r1 L5 / r2 L-r2-2).
 Fail-closed preflight: approved commit = HEAD, clean tree, branch camonly/dev, the preregistration committed, launcher
 copy and ablation module at their pinned / committed bytes, Policy F checkpoint SHA, one RTX 3070, no other GPU
 compute process, import origins inside the tree, output folder new. Host faults void.
+Amendment 1 (docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md, after the design review AMEND_FIRST): the
+reports record the allowlisted runner environment (AERIAL_*, PYTHON*, PATH, LD_*, CUDA*, NVIDIA*, OMP_*, MKL_*,
+TORCH*, CONDA*, LANG, LC_*, HOME, USER, DISPLAY, VK_*, __GL*), and c2 refuses to start unless it equals C1's (M3);
+the default cap is 3.5 h (L5).
 usage: tools/camonly_run.py {c1,c2} --approved-commit SHA --gr0-dir GR0_MAIN --out DIR [--max-hours H]
 """
 import argparse
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 
@@ -30,6 +35,9 @@ import gr_run as G                                          # noqa: E402
 import kroc2027_eval as K                                   # noqa: E402
 
 PREREG = "docs/plans/prereg_camonly_c1c2_v1.md"
+AMENDMENT = "docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md"
+ENV_ALLOW = re.compile(r"^(AERIAL_.*|PYTHON.*|PATH|LD_.*|CUDA.*|NVIDIA.*|OMP_.*|MKL_.*|TORCH.*|CONDA.*|LANG|LC_.*|HOME|"
+                       r"USER|DISPLAY|VK_.*|__GL.*)$")
 LAUNCHER = "aerial_gym/rl_training/rl_games/eval_navrl_camonly_arms.sh"
 LAUNCHER_SHA = "1eadf8fbb042c7ebe70ab29f2b1adfee7d057c75a66eaf892edf52e0b4c0ff7f"
 MODULE = "aerial_gym/task/navrl_task/navrl_sensor_ablation.py"
@@ -81,7 +89,7 @@ def preflight(protocol, approved, out_root):
     head, problems = G.tree_problems(ROOT, approved)
     if K.git("rev-parse", "--abbrev-ref", "HEAD", root=ROOT).strip() != BRANCH:
         problems.append("branch is not " + BRANCH)
-    for rel in (PREREG, LAUNCHER, MODULE, "tools/camonly_entry.py", "tools/camonly_python"):
+    for rel in (PREREG, AMENDMENT, LAUNCHER, MODULE, "tools/camonly_entry.py", "tools/camonly_python"):
         if subprocess.run(["git", "-C", str(ROOT), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
             problems.append("%s is not committed" % rel)
     if not (ROOT / LAUNCHER).is_file() or G.sha(ROOT / LAUNCHER) != LAUNCHER_SHA:
@@ -111,7 +119,7 @@ def main():
     ap.add_argument("--approved-commit", required=True)
     ap.add_argument("--gr0-dir", required=True)
     ap.add_argument("--out", required=True)
-    ap.add_argument("--max-hours", type=float, default=3.0)
+    ap.add_argument("--max-hours", type=float, default=3.5)
     args = ap.parse_args()
     out_root = pathlib.Path(args.out).resolve()
     gr0 = pathlib.Path(args.gr0_dir).resolve()
@@ -123,7 +131,9 @@ def main():
     start = G.host()
     report = {"stage": args.stage, "tree": str(ROOT), "commit": head, "prereg": PREREG, "started": G.now(),
               "host_start": start, "import_origins": origins, "module_sha256": module_sha, "launcher": LAUNCHER,
-              "launcher_sha256": LAUNCHER_SHA, "gr0_dir": str(gr0), "preflight_problems": problems}
+              "launcher_sha256": LAUNCHER_SHA, "gr0_dir": str(gr0), "preflight_problems": problems,
+              "amendment": AMENDMENT,
+              "env_allowlisted": {k: os.environ[k] for k in sorted(os.environ) if ENV_ALLOW.match(k)}}
     if args.stage == "c2":
         c1 = None
         for cand in sorted(out_root.parent.glob("*/c1_report.json")):
@@ -132,6 +142,14 @@ def main():
                 c1 = cand
         if c1 is None:
             problems.append("c2 needs a C1_IDENTITY_PASS c1_report.json on this commit in %s" % out_root.parent)
+        else:
+            c1rep = json.loads(c1.read_text())
+            if c1rep.get("env_allowlisted") != report["env_allowlisted"]:
+                diff = sorted(k for k in set(c1rep.get("env_allowlisted") or {}) | set(report["env_allowlisted"])
+                              if (c1rep.get("env_allowlisted") or {}).get(k) != report["env_allowlisted"].get(k))
+                problems.append("runner environment differs from C1's in %s (amendment 1, M3)" % diff)
+            if c1rep.get("gr0_dir") != str(gr0):
+                problems.append("--gr0-dir differs from C1's")
         report["c1_report"] = str(c1)
     if problems:
         report["verdict"] = "PREFLIGHT_FAIL"

@@ -23888,3 +23888,45 @@ The raw output folder `results/camonly_c1c2_v1/` has a dated line in the main ch
 
 Next: C1 on this commit, with the design review in parallel; C2 after C1_IDENTITY_PASS and a design review without
 blocking findings. No push or merge.
+
+## 2026-11-04 — Camera-only C1 PASS on 1908fd8; design review AMEND_FIRST; amendment 1 (analysis, runner, wording)
+
+**C1** (`1908fd8`, 19:27-19:33, host faults 0): **C1_IDENTITY_PASS**.
+
+| Cell (S00, 205 bars, seed 4501) | Against GR-0's cell | Aggregate window |
+| --- | --- | --- |
+| `full` | result and episodes identical | 1,864 captures / 186 crashes |
+| `no_lidar` | differs; the switch takes effect in the simulator | 798 captures / 1,250 crashes |
+
+The `no_lidar` cell's speed-governor telemetry: mean clearance 1.32 m, against 6.42 m in `full`; intervention rate
+0.88, against 0.41. These are C1 control cells, not C2 results.
+
+PUBLIC_CPU on `1908fd8` ran 3,249 tests (the base's 3,234 + 15). The failing set is identical to the base's, and
+the tree stayed clean.
+
+**Design review** (Claude Opus 5.5, fresh context): **AMEND_FIRST**, no blocking finding
+(`docs/evidence/camonly_2026-11-04/c1c2/REVIEW_design_r1.md`). It confirmed:
+- the launcher copy and the pins;
+- the ablation module at the C0 bytes;
+- GR-0's S00 cells against the manifest;
+- the analysis arithmetic.
+
+**Amendment 1** (`docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`):
+- **M1:** a new contrast, `obs_all` = C_gL − A.
+- **M4:** labels with a 3 pp / 2 pp band: UNRESOLVED, LOWER / HIGHER, SMALL_*, NEGLIGIBLE, NO_DETECTED_CHANGE.
+  The bootstrap and the t-interval must agree.
+- **New bindings:**
+  - GR-0 COMPLETE and its S00 cells on the manifest (L1);
+  - conditions equal to GR-0's, and snapshots differing only in five measured keys (M3);
+  - the allowlisted runner environment equal in C1 and C2 (M3);
+  - B_in ≠ B_in_gL and C ≠ C_gL per block, i.e. the governor ablation engaged (M2);
+  - C1's `no_lidar` cell equal to C2's (L9).
+- **Reported:** governor telemetry; out of bounds added to the crash causes.
+- **Runner:** the reports record the allowlisted environment, and C2 refuses to start if it differs from C1's.
+  The cap is 3.5 h, with a rerun-whole rule (L5).
+- **Wording:** M5 ("in_fov / obs_in is not camera quality alone", "no effect" not sayable), L2, L3, L4 and L7
+  (multiplicity, descriptive labels).
+- **Smoke test** after the amendment: 14 of 14 checks. Each condition has a distinct effect, the contrast means
+  equal an independent computation, and five new known-bad cases each fail as intended.
+
+Next: C1 again on this commit (`c1_r2`), then C2. No push or merge.

@@ -707,17 +707,19 @@ family that is in the test's scope.
     test-only).
   - The repairs: association scenes, the governor elevation fix, the condition `no_lidar_in_fov_obs_only` and
     PATH. Then gate_02 C0_CONDITIONAL_PASS, and independent review r2 (Opus 5.5) **PASS**, so **C0 is PASS**.
-  - M-r2-1 and M-r2-2 answered (tests and plan). C1/C2 preregistered; GPU approved by the user; runner and
-    analysis smoke-tested on the CPU. Not yet run.
+  - M-r2-1 and M-r2-2 answered (tests and plan). C1/C2 preregistered; GPU approved by the user.
+  - C1 on `1908fd8`: C1_IDENTITY_PASS. Design review AMEND_FIRST, answered by amendment 1, so C1 is rerun on the
+    amendment commit. C2 not yet run.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
   - → `docs/plans/camonly_study_plan_v1.md`
   - → `docs/evidence/camonly_2026-11-04/` (C0 gate and reviews)
   - → `docs/plans/prereg_camonly_c1c2_v1.md` (GPU: C1 identity, C2 five zero-shot conditions; user approval 2026-11-04)
+  - → `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md` (after the design review AMEND_FIRST; before C2)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
-  `docs/evidence/camonly_2026-11-04/`
+  `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`
 
 ## Not yet in the repository
 
