@@ -23911,3 +23911,25 @@ adversary at the bound.
 Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/REVIEW_r1.md` and `REVIEW_r1_MANIFEST.json`. Beads
 `motar-3p3.35` closed. Next for C-Planner (user decision): the M3 remainder (planner, simulator arm, DEV smoke) on
 `MOTAR-72x4-RUNTIME-DIR-NATIVE`, or M4. No push or merge.
+
+## 2026-11-04 — C-Planner D1-F preregistered: full-bound direction adversary (closes review I1)
+
+The repair review's I1 found that D1 cannot tell the repaired certifier from the unrepaired one at the scale of eps.
+D1-F ([`docs/plans/prereg_cplanner_dirbound_d1f_v1.md`](docs/plans/prereg_cplanner_dirbound_d1f_v1.md),
+`cplanner/tests/check_direction_bound_full.py`) turns the reviewer's P1 construction into a gate:
+- 81 probed rays per beam, each within 0.99 eps of the assumed ray, combining origin offsets, tilts and pivots;
+- the most permissive declaration over those rays;
+- heights near 0 and 3 m;
+- candidates aimed at clearance R - U(-0.3, 1.5) mm.
+
+PASS requires:
+- 0 FALSE_CERT on the repaired configuration, with certificates;
+- FALSE_CERT > 0 on the eps = 0 configuration, overall and at ordinary heights;
+- exact scans clean;
+- verbatim and native identical.
+
+The test reads the unchanged certifier of `8e2b77d`, with a carry-over check. The driver is
+`cplanner/tools/run_dirbound_d1f.py`, with 6 workers beside the GR-1 training. Dev run on 120 scenes (not evidence):
+repaired 0 FALSE_CERT and 296 certified; eps = 0 gave 114 FALSE_CERT, 7 of them at ordinary heights.
+
+Next: commit, run from a frozen copy, independent review. No push or merge.

@@ -698,10 +698,12 @@ family that is in the test's scope.
   - → `docs/plans/prereg_cplanner_m3_v1.md`
   - → `docs/plans/prereg_cplanner_dirbound_v1.md` (repair after the M2 V1 FAIL)
   - → `docs/plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md` (D2-A1 after the first run's D2 FAIL)
+  - → `docs/plans/prereg_cplanner_dirbound_d1f_v1.md` (D1-F full-bound adversary, review I1)
 - **Compare with:** `b1r-classical-baseline`, `boia`
 - **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`,
   `docs/plans/prereg_cplanner_m2_v1.md`, `docs/plans/prereg_cplanner_m3_v1.md`,
   `docs/plans/prereg_cplanner_dirbound_v1.md`, `docs/plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md`,
+  `docs/plans/prereg_cplanner_dirbound_d1f_v1.md`,
   `docs/evidence/cplanner_2026-11-04/`
 
 ## Not yet in the repository

@@ -20,6 +20,7 @@ by `cplanner/tools/run_gate.py` or by hand, never by `tools/run_tests.py`. The m
 | `src/registry.py` (`direction_error_m`), `src/core.py` (eps > 0 only) | direction-bound repair after the M2 V1 FAIL: configs `MOTAR-72x4-RUNTIME-DIR` / `-DIR-NATIVE` (eps 1 mm); every existing config keeps eps 0 | changed |
 | `tests/check_direction_bound.py`, `tests/v1v2_kernelray.py`, `tools/run_dirbound.py` | direction-bound gates D1 (most-permissive-direction fuzz), D2 (V1-v2 along the kernel's own float32 rays) and their driver; `tests/galpha_replay.py` reads `CPLANNER_GALPHA_CONFIG` | new |
 | `tests/v1v2a_kernelray.py`, `tools/run_dirbound_a1.py` | direction-bound amendment 1: D2-A1 classifies disagreements as permissive / conservative (conservative accepted only when grazing) with rule controls; driver checks byte-identical carry-over of the certifier | new |
+| `tests/check_direction_bound_full.py`, `tools/run_dirbound_d1f.py` | gate D1-F: full-bound direction adversary (81 rays per beam within 0.99 eps, heights near 0 / 3 m, candidates within 1.5 mm of R); repaired must give 0 FALSE_CERT, eps = 0 must be caught (review I1) | new |
 | `tools/run_focused.py` | r1 single-command runner, kept for provenance; its empty-check behaviour is superseded by `run_gate.py` | r1 copy |
 | `docs/` | R0 architecture, r1 contract and amendments, historical R2 rules, research plan, terminal-approach spec | r1 copies, historical |
 
