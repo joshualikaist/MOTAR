@@ -23623,3 +23623,26 @@ which pin that file's bytes.
   with a matched control.
 
 Next: GR-1 training starts after GR-0's independent review (running) finds no blocking issue. No push or merge.
+
+## 2026-11-04 — GR-0 independent review PASS
+
+The reviewer was Claude Opus 5.5 (fresh context, Agent `model: "opus"`, CPU only), working on
+`~/motar_tmp/gainrand_20261104/review/` with a host fault count of 0. **PASS**: identity and both readings (S20
+GAIN_ROBUST, S40 GAIN_SENSITIVE) stand as computed.
+
+- The reviewer's recomputation from the ledgers is exact.
+- A probe on a real Lee controller confirms that the drawn gains are the ones used, and the draws are uniform.
+- All 36 + 4 cells pass a stricter audit than the runner's own.
+
+| Id | Finding | Consequence |
+| --- | --- | --- |
+| M1 | gains drawn per episode are not recorded | GR-0 cannot attribute crashes to a gain element; future runs should log draws |
+| M2 | about half of the S40 crash increase is early floor strikes at 41-64 deg tilt (0.10 -> 1.82 per 100 episodes, flat in density); the policy's z output is overwritten by the altitude controller | GR-1 retraining may not remove that half; report floor strikes and bar contacts separately for GR-1 (exploratory) |
+| L1-L5 | narrow runner per-cell check; amendment 1 without recorded user approval; gain seed = sim seed; GPU RNG path covered only by scale 0 = OFF; invalid share fields in the exploratory crash file | `gr0_crash_causes_exploratory_v2.json` supersedes the exploratory file (counts unchanged; shares of crashes: floor 2.2 % -> 22.1 %) |
+
+- Limit: GR-0 shows nothing about other airframes.
+- Limit: over the realistic ±20 % range the effect is about 0.6 pp; the case for GR-1 rests on ±40 %.
+
+Evidence: `docs/evidence/gain_randomization_2026-11-04/REVIEW_r1.md`. Beads `motar-3dn.1` closed.
+
+Next: GR-1 training (rand40, then ctrl). No push or merge.
