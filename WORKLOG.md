@@ -23833,3 +23833,35 @@ x 10 Hz = 2,880 beams/s; 691,200 beams = 240 s; 95 % range for one observed even
 
 Next: commit, run the gate from a frozen copy, independent review. In parallel (D-2026-11-04-1 on `gainrand/dev`):
 control gain randomization GR-0. No push or merge.
+
+## 2026-11-04 — C-Planner direction-bound repair: first run FAIL (D2 conservative corner grazing); amendment 1
+
+Run from the frozen copy of `8e2b77d`, 11:25 – 11:48 KST, 12 workers, 0 kernel fault records, online CPUs unchanged.
+**Driver verdict FAIL** (D2).
+
+| Gate | Result |
+| --- | --- |
+| D0 | the seven R2' suites PASS at eps = 0 |
+| D1 | 2,000 scenes: 0 FALSE_CERT inside the bound (21,636 certified of 32,000); 46 at 100x the bound; exact scans 0; eps costs 21,663 -> 21,636 certified; native identical |
+| D2 | **FAIL**: 1,728,000 beams. One frame (205 bars seed 4301, trace index 14571) has four column-54 beams that hit bar 167's vertical corner edge in float32 while the float64 ray misses it. 2 manifest disagreements are 4.7e-7 m deep. K2 max lateral 2.96e-6 m |
+| D3 | FILTER_ARM_RETAINED 0.8162 (M2: 0.8161), 0 FALSE_CERT |
+
+- Hypothesis "the eps repair costs certifiability" is rejected: G-alpha moves from 0.8161 to 0.8162 on M2's sample,
+  and the exact synthetic scans lose 0.12 % of certificates.
+- D2's rules counted a **conservative** disagreement (a declared obstacle the layout lacks) as a violation. Such a
+  declaration only removes evidence. This is a defect of the test specification, not of the certifier: a local
+  defect, so it gets one repair round.
+- Amendment 1 ([`docs/plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md`](docs/plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md)):
+  - D2-A1 (`cplanner/tests/v1v2a_kernelray.py`) splits disagreements into PERMISSIVE (needs depth <= LIMIT) and
+    CONSERVATIVE (needs the declared point within LIMIT of a surface). It adds per-frame rule controls: a real hit
+    flipped to NO_HIT and a phantom hit at 3 m must both be flagged.
+  - The fresh sample is seed 20,261,110, run twice with 2 workers; the first run's D2 sample is reported only.
+  - Driver `cplanner/tools/run_dirbound_a1.py` carries D0/D1/D3 over by byte identity of `src/`, `native/` and
+    `motar/`.
+- Development (not evidence):
+  - The failure frame is excused as conservative grazing (<= 1.03e-6 m from the surface).
+  - The two 160-bar manifest disagreements are permissive at 4.7e-7 m depth (<= eps).
+  - On 2 cells x 30 frames the rule controls flagged 60/60 and 60/60.
+
+Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/`. Next: commit, run D2-A1 from a frozen copy (2 workers, beside
+the GR-0 GPU run), independent review of the whole repair. No push or merge.

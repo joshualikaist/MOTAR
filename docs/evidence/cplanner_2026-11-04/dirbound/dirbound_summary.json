@@ -1,0 +1,54 @@
+{
+ "build_ok": true,
+ "preflight_pass": true,
+ "d0": {
+  "check_static": "PASS",
+  "check_r1_core": "PASS",
+  "attacks_p0r": "PASS",
+  "scenarios_p0r": "PASS",
+  "map_invariants": "PASS",
+  "check_r1_temporal": "PASS",
+  "regress_v7": "PASS"
+ },
+ "d1_dirbound": "PASS",
+ "d2_v1v2": "FAIL",
+ "d3_galpha_reading": "FILTER_ARM_RETAINED",
+ "d3_galpha_verdict": "REPORTED",
+ "d3_galpha_false_cert": 0,
+ "d3_certifiable_rate": 0.816225981277714,
+ "d3_certifiable_rate_by_group": {
+  "F_SHADOW:160": 0.8846611177170036,
+  "F_SHADOW:205": 0.8683274021352313,
+  "B-PP:160": 0.7576961271102284,
+  "B-PP:205": 0.823086574654956
+ },
+ "duplicates": {
+  "dup_dirbound": "PASS",
+  "dup_v1v2": "FAIL",
+  "dup_galpha_dir": "REPORTED"
+ },
+ "determinism": {
+  "dirbound": true,
+  "v1v2": true,
+  "galpha_dir": true
+ },
+ "inputs_unchanged": true,
+ "changed_inputs": [],
+ "host_void": false,
+ "online_cpu_changes": [],
+ "commands_run": 13,
+ "commands_expected": 13,
+ "verdict": "FAIL",
+ "verdict_scope": "D0 eps = 0 suites + D1 direction-bound fuzz + D2 V1-v2 + D3 G-alpha reading on the repaired configuration + build + determinism + host + inputs; decided only after an independent review",
+ "host_end": {
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "fault_events": [],
+  "fault_count": 0,
+  "online": "0-3,6-23",
+  "offline": "4-5",
+  "bios": "0806",
+  "loadavg": "9.92 9.86 6.46 1/2622 3012939",
+  "time": "2026-11-04T11:48:55.256040+09:00"
+ },
+ "finished": "2026-11-04T11:48:55.256052+09:00"
+}

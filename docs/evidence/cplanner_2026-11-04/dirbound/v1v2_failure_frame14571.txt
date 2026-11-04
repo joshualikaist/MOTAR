@@ -1,0 +1,8 @@
+frame 33 env/ep (107, 1) n_bars 205 p [25.001, 20.618, 1.004] t [25.009, 17.417, 1.0]
+beam 54 row 0 raw 1.6057 seg 0 hit [23.812, 21.547, 1.553] nearest bar (167, 0.0, [23.569, 21.265, 1.5], [0.243, 0.282, 1.5])
+beam 126 row 1 raw 1.5321 seg 0 hit [23.812, 21.547, 1.27] nearest bar (167, 0.0, [23.569, 21.265, 1.5], [0.243, 0.282, 1.5])
+beam 270 row 3 raw 1.5321 seg 0 hit [23.812, 21.547, 0.738] nearest bar (167, 0.0, [23.569, 21.265, 1.5], [0.243, 0.282, 1.5])
+beam 198 row 2 raw 1.5089 seg 0 hit [23.812, 21.547, 1.004] nearest bar (167, 0.0, [23.569, 21.265, 1.5], [0.243, 0.282, 1.5])
+sensor footprint distance to nearest bar (1.1891888529062271, 167)
+frames of this episode near index: 29 ... 37 count 9
+receipt layout keys sample ['center', 'half', 'quat', 'offsets', 'hashes', 'resets']

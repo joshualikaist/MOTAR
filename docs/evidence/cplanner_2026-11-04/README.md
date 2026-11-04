@@ -195,3 +195,28 @@ the same scans, with the recorded target state as a stand-in belief (a timing in
 - The reviewer's probes: a byte-identical rebuild with no FMA or x87 instructions, about 2.6 million primitive
   comparisons on other distributions, 26 mutants, E1 parts R and C replicated on 9 episodes plus 2,008 random-start
   segments: 0 mismatches for the unmodified source.
+
+## Direction-bound repair after the M2 V1 FAIL (`dirbound/`)
+
+- Decision D-2026-11-04-2 (repair, not tolerance). Preregistration:
+  [`docs/plans/prereg_cplanner_dirbound_v1.md`](../../plans/prereg_cplanner_dirbound_v1.md).
+- Run: frozen copy of `8e2b77d`, 2026-11-04 11:25 – 11:48 KST, 12 workers, host fault count 0 throughout, online CPU
+  list unchanged. Raw: `~/motar_tmp/cplanner_dirbound_20261104/run/` (48 files), bound with the frozen tree in
+  [`dirbound/SHA256_MANIFEST.json`](dirbound/SHA256_MANIFEST.json).
+- Driver verdict ([`dirbound/dirbound_summary.json`](dirbound/dirbound_summary.json)): **FAIL**, because D2 failed.
+
+| Gate | Result |
+| --- | --- |
+| D0, eps = 0 | the seven R2' suites PASS |
+| D1 ([`dirbound.json`](dirbound/dirbound.json)), 2,000 scenes, 32,000 segments per part | A (bound respected): 0 FALSE_CERT, 21,636 certified; B (100x the bound): 46 FALSE_CERT; D exact scans: 0 FALSE_CERT, 21,663 (eps = 0) vs 21,636 (eps) certified; E native identical |
+| **D2** ([`v1v2.json`](dirbound/v1v2.json)), 1,728,000 beams | **FAIL** (K1, K3, range tolerance): 3 kernel-ray HIT beams without an oracle hit and 1 HIT 24.26 m short of the oracle, all in one frame; 5 manifest disagreements (2 at 4.7e-7 m depth); K2 held (max lateral 2.96e-6 m) |
+| D3 ([`galpha_dir.json`](dirbound/galpha_dir.json)) | FILTER_ARM_RETAINED, certifiable rate 0.8162 (M2 0.8161), 0 FALSE_CERT |
+
+Post-hoc diagnosis, not gate evidence ([`dirbound/v1v2_failure_frame14571.txt`](dirbound/v1v2_failure_frame14571.txt)):
+at trace index 14571 of the 205-bar cell, the four beams of column 54 hit the vertical corner edge of bar 167. Each hit
+point lies within 1e-6 m of the bar's surface. The float32 ray touches the corner and the float64 ray passes just
+outside it. That is grazing in the conservative direction: a declared obstacle where the layout is free.
+Amendment 1 ([`docs/plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md`](../../plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md),
+the one repair round) classifies disagreements by direction. It accepts conservative ones only when grazing (within
+1e-5 m of a surface) and adds rule controls. It reruns D2 as D2-A1 on a fresh sample; D0, D1 and D3 carry over by
+byte identity.

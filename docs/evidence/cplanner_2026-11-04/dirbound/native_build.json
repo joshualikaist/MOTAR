@@ -1,0 +1,25 @@
+{
+ "cmd": [
+  "gcc",
+  "-O2",
+  "-fPIC",
+  "-shared",
+  "-std=c99",
+  "-ffp-contract=off",
+  "-fno-fast-math",
+  "-mfpmath=sse",
+  "-fno-strict-aliasing",
+  "-Wall",
+  "-Werror",
+  "-o",
+  "/home/fair/motar_tmp/cplanner_dirbound_20261104/run/native/libcoverage_b.so",
+  "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen/cplanner/native/coverage_b.c",
+  "-lm"
+ ],
+ "exit": 0,
+ "stderr": "",
+ "gcc": "gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0",
+ "src_sha256": "d559bce44a51adbe60117b34cf641c3fed37d425798ff890c07e1990c4f42566",
+ "so_sha256": "afbd3e68df0743a872eb4b142565bf3d69860fe83ef0b303dc98728c9b45a5aa",
+ "so": "/home/fair/motar_tmp/cplanner_dirbound_20261104/run/native/libcoverage_b.so"
+}

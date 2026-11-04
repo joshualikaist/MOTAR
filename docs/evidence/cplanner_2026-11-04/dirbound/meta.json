@@ -1,0 +1,15 @@
+{
+ "tree": "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen/cplanner",
+ "root": "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen",
+ "python": "/home/fair/miniconda3/envs/aerialgym/bin/python",
+ "allowed_cpus": "0-3,8-11,14-23",
+ "workers": "12",
+ "started": "2026-11-04T11:25:30.403183+09:00",
+ "argv": [
+  "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen/cplanner/tools/run_dirbound.py",
+  "/home/fair/motar_tmp/cplanner_dirbound_20261104/run"
+ ],
+ "galpha_config": "MOTAR-72x4-RUNTIME-DIR-NATIVE",
+ "frozen_commit": "8e2b77d 8e2b77dfc3a2c0178e67af445af9159b8aa3eea6",
+ "prereg": "docs/plans/prereg_cplanner_dirbound_v1.md"
+}

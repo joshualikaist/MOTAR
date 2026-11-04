@@ -1,0 +1,190 @@
+{
+ "cells": {
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__115bars__seed4301": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4301": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4302": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4303": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4304": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4305": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4306": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__160bars__seed4307": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4302": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4303": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4304": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4305": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4306": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4307": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__70bars__seed4301": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4301": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4302": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4303": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4304": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4305": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4306": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__160bars__seed4307": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4301": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4302": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4303": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4304": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4305": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4306": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PP/B-PP/E2_obstacle_aware__205bars__seed4307": {
+   "exists": true,
+   "missing_files": [],
+   "bar_pool": "bars_h3",
+   "ok": true
+  }
+ },
+ "n_cells": 30,
+ "pass": true,
+ "required_pool": "bars_h3",
+ "kernel_file": "/home/fair/motar_tmp/cplanner_dirbound_20261104/frozen/aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py",
+ "kernel_exists": true,
+ "trace_reader_exists": true
+}

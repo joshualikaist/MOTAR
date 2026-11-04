@@ -19,6 +19,7 @@ by `cplanner/tools/run_gate.py` or by hand, never by `tools/run_tests.py`. The m
 | `planner/c_planner.py`, `tests/planner_unit.py` | M3 predictive planner skeleton (C-OFF / C-FILTER) and its development checks (not a gate) | new |
 | `src/registry.py` (`direction_error_m`), `src/core.py` (eps > 0 only) | direction-bound repair after the M2 V1 FAIL: configs `MOTAR-72x4-RUNTIME-DIR` / `-DIR-NATIVE` (eps 1 mm); every existing config keeps eps 0 | changed |
 | `tests/check_direction_bound.py`, `tests/v1v2_kernelray.py`, `tools/run_dirbound.py` | direction-bound gates D1 (most-permissive-direction fuzz), D2 (V1-v2 along the kernel's own float32 rays) and their driver; `tests/galpha_replay.py` reads `CPLANNER_GALPHA_CONFIG` | new |
+| `tests/v1v2a_kernelray.py`, `tools/run_dirbound_a1.py` | direction-bound amendment 1: D2-A1 classifies disagreements as permissive / conservative (conservative accepted only when grazing) with rule controls; driver checks byte-identical carry-over of the certifier | new |
 | `tools/run_focused.py` | r1 single-command runner, kept for provenance; its empty-check behaviour is superseded by `run_gate.py` | r1 copy |
 | `docs/` | R0 architecture, r1 contract and amendments, historical R2 rules, research plan, terminal-approach spec | r1 copies, historical |
 
