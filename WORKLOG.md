@@ -24207,3 +24207,28 @@ No push or merge.
   negative control). G9 has no CPU smoke: it needs Isaac on the GPU.
 - **Next:** G8/G9 after GR-1b training; tune PX4's velocity loop to G9; build the bridge (S3a).
 
+## 2026-11-05 — G7 preregistered: Policy F under held / delayed actions (action-chunking premise, latency budget)
+
+- **Why:** the action-chunking literature check (`~/motar_tmp/action_chunking_20261105/`) recommends measuring the
+  premise first.
+  - Q-chunking (2507.07969) is off-policy, with offline data and a flow policy.
+  - ACPPO (2609.36250) gains only with a per-step corrector, at chunks of 0.04-0.13 s against MOTAR's 0.1 s step.
+- **Files:**
+  - prereg `docs/plans/prereg_actionhold_g7_v1.md`;
+  - opt-in hook `tools/actionhold_hook.py` with `tools/actionhold_site/sitecustomize.py`;
+  - runner `tools/actionhold_run.py`, analysis `tools/actionhold_analyse.py`;
+  - tests `tests/test_actionhold_hook.py`.
+- **Arms:**
+
+  | Bars | Arms |
+  | --- | --- |
+  | 205 | k1d0 (identity), k2d0, k4d0, k1d1 |
+  | 70 | k2d0, k4d0, k1d1 |
+
+- **Reading per arm:** TOLERANT (Δcrash ≤ +2 pp, CI upper ≤ +4) / HARMFUL (Δ ≥ +5, CI lower > 0) / INCONCLUSIVE.
+- **CPU checks:**
+  - The 8 unit tests pass.
+  - Analysis smoke: `no_lidar` in place of k2 reads HARMFUL (+38.0 pp), F's own cells TOLERANT (0.0), and
+    `no_lidar_in_fov` TOLERANT.
+- **Next:** the G7 run follows GR-1b evaluation in the queue.
+
