@@ -702,9 +702,12 @@ family that is in the test's scope.
 - **Policy:** Frozen Policy F, unchanged. The LiDAR is removed only in opt-in conditions selected through the
   study's own entry point (D-2026-11-04-3); the official RGB-D + LiDAR contract is unchanged. A later camera-only
   continuation (C3) would be a new policy compared with F.
-- **Status:** plan v1. C0 gate_01 C0_CONDITIONAL_PASS. Independent review r1 FAIL (B1: vacuous association-leak
-  check, test-only). Repairs after r1: association scenes, governor elevation fix, the condition
-  `no_lidar_in_fov_obs_only`, PATH; gate_02 and review r2 pending. No GPU stage run.
+- **Status:** plan v1.
+  - C0 gate_01 C0_CONDITIONAL_PASS. Independent review r1 FAIL (B1: a vacuous association-leak check,
+    test-only).
+  - The repairs: association scenes, the governor elevation fix, the condition `no_lidar_in_fov_obs_only` and
+    PATH. Then gate_02 C0_CONDITIONAL_PASS, and independent review r2 (Opus 5.5) **PASS**, so **C0 is PASS**.
+  - Open before the C2 preregistration: M-r2-1 and M-r2-2. No GPU stage run.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)

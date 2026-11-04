@@ -23781,3 +23781,43 @@ Next:
 
 Next: gate_02 on the repair commit, then review r2. C1 and C2 need a preregistration and the user's GPU approval.
 No push or merge.
+
+## 2026-11-04 — Camera-only C0: gate_02 CONDITIONAL_PASS and independent review r2 PASS, so C0 is PASS
+
+**gate_02** (`842fcf5`): C0_CONDITIONAL_PASS.
+- 14 tests passed.
+- All 7 mutants were caught.
+- PUBLIC_CPU ran 3,248 tests (the base's 3,234 + 14) with 0 new failures; the same 17 skips, 5 exclusions and 6
+  environment failures as the base.
+- The pinned files are unchanged, and the host fault count was 0.
+
+**Review r2** (Claude Opus 5.5, fresh context, CPU only, faults 0 throughout): **PASS**, so **C0 is PASS**.
+Copy: `docs/evidence/camonly_2026-11-04/c0/REVIEW_r2.md`. The reviewer's own probes:
+- B1 closed. In camera-loss scenes at 0 deg, +25 deg and +75 deg (after a yaw), the association is active under
+  `full` on 16, 4 and 16 env-steps. Wherever a condition removes those bearings it is off and every output is
+  bit-identical, for four different fills.
+- M1 closed. The camera path equals the LiDAR path to within 1e-6 m over 630 unit cases, and to within 4e-7 m for
+  the production geometry.
+- M2 implemented as described. A camera phantom at 3.5 m gives `full` 3.5, B_in 2.384 and B_in_gL 3.5 m/s.
+- M3 closed, through a byte copy of `play_navrl.sh`.
+
+Open findings, to fix before the C2 preregistration:
+- **M-r2-1:** the tests do not pin the governor of the `*_obs_only` conditions. Three known-bad mutants pass all
+  tests: the replica computed on the masked LiDAR, the raw branch without a target mask, and the K2 cap applied in
+  the raw branch. The code is correct by the reviewer's probe.
+- **M-r2-2:** the plan's M1 residual disclosure is wrong. The obstacle camera renders Euclidean range along
+  normalised pinhole rays (`navrl_detector.py:36-48`), not depth along the principal axis, so there is no
+  cos(bearing) shrink. The real residual is that perception maps bins to columns linearly in angle while the render
+  is pinhole (`navrl_perception.py:1917`). Each bin then samples a bearing up to 3.4 deg further out.
+- **Low:**
+  - L-r2-1: precision of the reading. A − B_in_gL also contains the governor's target carve-out, and B_in_gL
+    keeps the out-of-FOV association.
+  - L-r2-2: launcher requirements. The condition is set per cell; `PYTHON` and `CAMONLY_REAL_PYTHON` are
+    absolute paths.
+  - L-r2-3: the quiet-startup test is near vacuous.
+  - L-r2-4: plan text to update. There are five conditions, and the ego velocity also carries the governed
+    command.
+  - L-r2-5: fill_zero is not a single fault.
+
+Next: repair M-r2-1 and M-r2-2 and the low findings (tests and plan text only), then the C1/C2 preregistration and
+its design review. A GPU run needs the user's approval. No push or merge.
