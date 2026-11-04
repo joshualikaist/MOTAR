@@ -23865,3 +23865,22 @@ Run from the frozen copy of `8e2b77d`, 11:25 – 11:48 KST, 12 workers, 0 kernel
 
 Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/`. Next: commit, run D2-A1 from a frozen copy (2 workers, beside
 the GR-0 GPU run), independent review of the whole repair. No push or merge.
+
+## 2026-11-04 — C-Planner direction-bound amendment 1: D2-A1 PASS → repair CONDITIONAL
+
+D2-A1 ran from the frozen copy of `f5b4802`, 11:58 – 12:05 KST, with 2 workers beside the GR-0 GPU run. The host
+showed 0 fault records and the online CPUs did not change. The driver verdict is **CONDITIONAL**. `src/`, `native/`
+and `motar/` are byte-identical to the first run's copy, so D0, D1 and D3 carry over.
+
+| Run | Beams | Kernel-ray disagreements | Manifest disagreements | Rule controls | Result |
+| --- | --- | --- | --- | --- | --- |
+| a1 (seed 20,261,110), twice | 1,728,000 | 0 permissive, 4 conservative (<= 1.25e-6 m from a surface) | 5 conservative (<= 5.5e-6 m) | 6,000/6,000 and 6,000/6,000 | PASS, identical |
+| a1_d2 (first run's sample, reported) | 1,728,000 | 4 conservative (the failure frame) | 2 permissive (4.7e-7 m deep), 6 conservative | all flagged | pass |
+
+- Max lateral offset is 2.70e-6 m against the eps / 10 = 1e-4 m bound.
+- Max permissive HIT overshoot is 1.76e-4 m against the 5e-4 m limit; the adapter's 1 mm margin still keeps
+  declared ranges inside the truth.
+
+The independent review (Opus 5.5) of the whole repair started at 12:06 KST, on copies in
+`~/motar_tmp/cplanner_dirbound_20261104/review/`, with at most 2 processes. Evidence:
+`docs/evidence/cplanner_2026-11-04/dirbound/a1/`. Next: record the review. No push or merge.

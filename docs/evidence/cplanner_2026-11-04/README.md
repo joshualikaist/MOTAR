@@ -220,3 +220,20 @@ Amendment 1 ([`docs/plans/prereg_cplanner_dirbound_v1_amendment1_2026-11-04.md`]
 the one repair round) classifies disagreements by direction. It accepts conservative ones only when grazing (within
 1e-5 m of a surface) and adds rule controls. It reruns D2 as D2-A1 on a fresh sample; D0, D1 and D3 carry over by
 byte identity.
+
+### Amendment 1 run, D2-A1: **CONDITIONAL** (`dirbound/a1/`)
+
+- Frozen copy of `f5b4802`, 2026-11-04 11:58 – 12:05 KST, 2 workers beside the GR-0 GPU evaluation, host fault count
+  0, online CPUs unchanged. Raw: `~/motar_tmp/cplanner_dirbound_20261104/run_a1/`, bound in
+  [`dirbound/a1/SHA256_MANIFEST.json`](dirbound/a1/SHA256_MANIFEST.json).
+- Carry-over: `src/`, `native/` and `motar/` byte-identical to the first run's frozen copy, so D0, D1 and D3 stand.
+- [`dirbound/a1/a1.json`](dirbound/a1/a1.json) (fresh sample, seed 20,261,110, 1,728,000 beams) PASS, twice with
+  identical results:
+  - along the kernel ray: 0 permissive and 4 conservative disagreements, all grazing (<= 1.25e-6 m from a surface);
+  - along the manifest: 5 conservative disagreements (<= 5.5e-6 m);
+  - max lateral offset 2.70e-6 m; max permissive range overshoot 1.76e-4 m (limit 5e-4 m);
+  - rule controls flagged 6,000 / 6,000 permissive and 6,000 / 6,000 conservative.
+- Reported, not gated: [`dirbound/a1/a1_d2.json`](dirbound/a1/a1_d2.json), the first run's D2 sample under the
+  amended rule, passes. The failure frame is excused as conservative grazing; 2 permissive manifest disagreements
+  are 4.7e-7 m deep.
+- The repair as a whole (D0, D1 and D3 of the first run plus D2-A1) is **CONDITIONAL** until the independent review.

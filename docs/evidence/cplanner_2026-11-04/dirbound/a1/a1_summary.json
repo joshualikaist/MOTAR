@@ -1,0 +1,30 @@
+{
+ "carry_over_identical": true,
+ "preflight_pass": true,
+ "a1": "PASS",
+ "dup_a1": "PASS",
+ "a1_d2_reported": "REPORTED",
+ "a1_d2_pass_value": true,
+ "determinism": {
+  "a1": true
+ },
+ "inputs_unchanged": true,
+ "changed_inputs": [],
+ "host_void": false,
+ "online_cpu_changes": [],
+ "commands_run": 3,
+ "commands_expected": 3,
+ "verdict": "CONDITIONAL",
+ "verdict_scope": "D2-A1 on a fresh sample twice + carry-over of D0/D1/D3 by byte-identical certifier, replay and adapter + host + inputs; decided only after an independent review",
+ "host_end": {
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "fault_events": [],
+  "fault_count": 0,
+  "online": "0-3,6-23",
+  "offline": "4-5",
+  "bios": "0806",
+  "loadavg": "3.47 3.32 3.96 2/2628 3043577",
+  "time": "2026-11-04T12:05:08.915444+09:00"
+ },
+ "finished": "2026-11-04T12:05:08.915454+09:00"
+}

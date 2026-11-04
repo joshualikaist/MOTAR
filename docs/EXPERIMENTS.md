@@ -683,7 +683,8 @@ family that is in the test's scope.
     manifest but not along the kernel's float32 ray); G-alpha reading FILTER_ARM_RETAINED (0.816), 0 FALSE_CERT,
     from the FAIL run, so not a cleared FILTER arm. The user chose repair (D-2026-11-04-2).
   - Direction-bound repair, first run FAIL (D2: conservative corner grazing counted as a violation); D0, D1
-    and D3 passed (D3 0.816, 0 FALSE_CERT). Amendment 1 (D2-A1) preregistered, not yet measured.
+    and D3 passed (D3 0.816, 0 FALSE_CERT). Amendment 1: D2-A1 PASS on a fresh sample, so the repair is
+    CONDITIONAL; independent review pending.
   - M3 part 1 PASS after independent review (Opus 5.5): E1 native equivalence PASS, E2 PASS, G-beta PASS_K16
     (p95 20.7 ms at K = 16, fastest P-core, idle host); important findings I1-I3 open.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.
