@@ -237,3 +237,43 @@ byte identity.
   amended rule, passes. The failure frame is excused as conservative grazing; 2 permissive manifest disagreements
   are 4.7e-7 m deep.
 - The repair as a whole (D0, D1 and D3 of the first run plus D2-A1) is **CONDITIONAL** until the independent review.
+
+### Independent review of the repair: **PASS** (`dirbound/REVIEW_r1.md`)
+
+- **Reviewer and scope:** Claude Opus 5.5 (`claude-opus-5-5`), fresh context, read-only.
+  - It reviewed both frozen copies, both run copies, the preregistration, amendment 1 and the charter.
+  - It wrote only to `~/motar_tmp/cplanner_dirbound_20261104/review/audit/`, with at most 2 processes beside the GR-0
+    GPU run.
+  - The request, manifests and 44 audit files are bound in
+    [`dirbound/REVIEW_r1_MANIFEST.json`](dirbound/REVIEW_r1_MANIFEST.json). Host fault count was 0 before and after.
+- **Verdict.** No blocking finding.
+  - The eps construction is sound for every geometry path checked (Q1), and eps = 0 configurations are
+    byte-identical to the pre-repair core.
+  - D0, D1 and D3 of the first run and D2-A1 stand as computed, and the carry-over holds.
+  - So the **direction-bound repair is PASS**. V1-v2 (D2-A1) replaces V1 for `MOTAR-72x4-RUNTIME-DIR`; V1 stays FAIL
+    for `MOTAR-72x4-RUNTIME`.
+  - D3's reading, FILTER_ARM_RETAINED (0.8162, 0 FALSE_CERT), applies to the FILTER arm on the repaired
+    configuration under the charter.
+- **The reviewer's own probes:**
+  - P1, an adversary at the full bound (81 rays per beam, origin offsets and tilts up to 0.99 eps, heights near 0 and
+    3 m, candidates just inside R): 0 FALSE_CERT in 14,584 segments on the repaired configurations. The unrepaired
+    eps = 0 configurations gave 1,577 FALSE_CERT on the same scans.
+  - P2: an instrumented copy of the kernel reproduces D2's kernel rays bit for bit.
+  - P5: eps = 0 cores are byte-identical before and after the repair over 24,000 segments.
+- **I1 (important), disclosed here.** D1 does not separate the repaired from the unrepaired certifier at the scale of
+  eps:
+  - its cone moves rays by at most 0.53 eps at bar range, with no origin offset;
+  - its aimed candidates rarely reach R +- 5 cm, despite the preregistration's wording;
+  - its part C (eps = 0) also showed 0 FALSE_CERT.
+
+  D1's PASS shows the repaired configuration is not worse and that gross violations are caught. It is **not**
+  evidence of eps-scale soundness. That evidence is the argument plus the reviewer's P1.
+- **Minor and limitations.**
+  - Minor M1-M8 are in the report.
+  - M4: the M2 rate was not printed beside D3. It is 4,970 against 4,969 certifiable steps on the same sample, and
+    the difference comes from the veto-only map.
+  - M6: the set of certified segments is not monotone in the declarations. "Conservative cannot unsound" holds only
+    within scope.
+  - L1: GPU float32 is not measured. The measured lateral offset leaves a 34x margin to eps / 10.
+  - L3: the D2 rule was relaxed after its data were seen. This is acceptable as the charter's one repair round, on a
+    fresh sample.

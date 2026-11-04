@@ -23884,3 +23884,30 @@ and `motar/` are byte-identical to the first run's copy, so D0, D1 and D3 carry 
 The independent review (Opus 5.5) of the whole repair started at 12:06 KST, on copies in
 `~/motar_tmp/cplanner_dirbound_20261104/review/`, with at most 2 processes. Evidence:
 `docs/evidence/cplanner_2026-11-04/dirbound/a1/`. Next: record the review. No push or merge.
+
+## 2026-11-04 — C-Planner direction-bound repair: independent review PASS → repair PASS
+
+The reviewer was Claude Opus 5.5 (fresh context, Agent `model: "opus"`), working 12:06 – 13:06 KST on copies in
+`~/motar_tmp/cplanner_dirbound_20261104/review/`, with at most 2 processes beside GR-0 and a host fault count of 0.
+
+**PASS, no blocking finding.**
+- The eps construction is sound for every geometry path, and eps = 0 configurations are byte-identical to the
+  pre-repair core.
+- All gates stand under amendment 1.
+- Therefore the repair is PASS. V1-v2 replaces V1 for `MOTAR-72x4-RUNTIME-DIR`, and G-alpha on the repaired
+  configuration reads FILTER_ARM_RETAINED (0.8162, 0 FALSE_CERT).
+
+The reviewer's own full-bound adversary (P1) gave 0 FALSE_CERT in 14,584 repaired segments. On the same scans the
+unrepaired eps = 0 configurations gave 1,577 FALSE_CERT, so the repair is necessary as well as sufficient at that
+scale. The hypothesis "the old V1 gap is harmless without a repair" is rejected: measured 1,577 FALSE_CERT under an
+adversary at the bound.
+
+| Id | Finding | Follow-up |
+| --- | --- | --- |
+| I1 | D1's cone (at most 0.53 eps at bar range, no origin offset) and its aimed candidates cannot tell repaired from unrepaired at eps scale; D1 PASS is not eps-scale evidence | strengthen D1 with a full-bound adversary (origin + tilt up to eps, candidates within 1 mm of R) |
+| M1-M8 | among them: 0.2 m band also excuses NO_HIT; first-object-only depth excuse; tautological rule controls; M2 rate not printed beside D3 (4,970 vs 4,969 steps, map veto); overshoot rule stricter than needed; certificates not monotone in declarations; unbound Warp cache / site-packages / gcc | Beads |
+| L1-L5 | among them: GPU float32 not measured (34x margin); the bound shown statistically on CPU replays | recorded |
+
+Evidence: `docs/evidence/cplanner_2026-11-04/dirbound/REVIEW_r1.md` and `REVIEW_r1_MANIFEST.json`. Beads
+`motar-3p3.35` closed. Next for C-Planner (user decision): the M3 remainder (planner, simulator arm, DEV smoke) on
+`MOTAR-72x4-RUNTIME-DIR-NATIVE`, or M4. No push or merge.
