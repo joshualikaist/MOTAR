@@ -23511,3 +23511,35 @@ NOT_READY, with 1 P0, 10 P1 and about 30 P2.
 - PUBLIC_CPU not run: the host is on hardware hold. The kernel crash count stayed at 79.
 
 No GPU, push or merge. Results, raw data and checkpoints are untouched.
+
+## 2026-11-04 — Control-gain randomization GR-0 preregistered (D-2026-11-04-1: new PPO allowed, GPU approved)
+
+The user lifted the new-PPO ban and approved the GPU runs of this unit. The decision is D-2026-11-04-1 in
+`docs/DECISIONS.md`, which marks D-2026-10-14-0 superseded. Work happens on branch `gainrand/dev` (worktree
+`src/MOTAR-gainrand`, base `62e59c0`).
+
+- **Facts (read-only survey, file:line in the session record):**
+  - Policy F's NavRL controller inherits `randomize_params = False`, so the gains stay at the midpoints: K_vel 2.5,
+    K_rot (1, 1, 0.5), K_angvel 0.15.
+  - No NavRL flag, test or record exists for gain, mass, inertia or disturbance randomization.
+  - The only other airframe, ref5in, failed its adaptation gates in 2026-08.
+- **Opt-in switch** (default OFF): `NAVRL_GAIN_RAND`, `NAVRL_GAIN_RAND_SCALE`, `NAVRL_GAIN_RAND_SEED`.
+  - Per reset, each K_vel / K_rot / K_angvel element is drawn as nominal x U[1 - scale, 1 + scale] from a
+    dedicated generator, so the global RNG stream is untouched.
+  - The switch is recorded in the env state and the evaluation condition only when ON.
+  - `tests/test_gain_randomization.py`: 5/5 pass.
+- **Runner** `tools/gr_run.py` runs the KROC2027 launcher byte for byte via the `kroc2027_eval` helpers: quota
+  ledger, recorder, `direct_l2_v1`. It is fail-closed on commit, tree, pins, GPU, import origins, host faults and
+  online CPUs. **Analysis** is `tools/gr_analyse.py`.
+- **Plan:**
+  - Identity stage first: OFF must equal the base tree; ON with scale 0 must equal OFF; ON with scale 0.4 must
+    differ.
+  - Then GR-0: E2 x 70/115/160/205 bars x seeds 4501-4503 x S00/S20/S40, 2,048 quota episodes per cell, about
+    2 GPU-h.
+  - Readings GAIN_SENSITIVE / GAIN_ROBUST / INCONCLUSIVE per level.
+- The worktree holds a byte-identical copy of the Policy F checkpoint under `aerial_gym/rl_training/rl_games/runs/`
+  (SHA-256 `f7022139…`). Its own display exclude (`.git/worktrees/MOTAR-gainrand/motar_display_exclude`) keeps Source
+  Control at zero.
+
+Next: the identity stage, after the C-Planner direction-bound CPU gate ends (no GPU beside heavy CPU work); then GR-0.
+No push or merge.

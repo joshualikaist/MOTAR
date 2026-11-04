@@ -668,6 +668,23 @@ family that is in the test's scope.
 - **Compare with:** `occlusion-occ`, `safety-filter-attribution`, `external-baseline`
 - **Members:** `docs/evidence/b1r_*`, `docs/plans/*b1r*`, `docs/plans/b1r_classical_baseline_prereg_DRAFT_2026-10-23.md`
 
+### `gain-randomization` — Policy F under randomized controller gains (GR)
+
+- **Period:** 2026-11-04 –.
+- **Question:** Policy F was trained and evaluated on one airframe with fixed Lee-controller gains. How much do its
+  capture and crash rates change when the gains vary per episode? Does that motivate training with gain
+  randomization?
+- **Policy:** Frozen Policy F, unchanged; gain randomization is an opt-in switch with default OFF. Any newly trained
+  checkpoint (GR-1, not yet preregistered) would be a new policy compared with F (D-2026-11-04-1).
+- **Status:** GR-0 preregistered (identity stage, then 36 cells); not measured. Compare with `policy-r-ref5in`
+  (the failed 2026-08 airframe adaptation) and `b1r-classical-baseline` (the F condition GR-0's S00 mirrors).
+- **Read first:** [`docs/plans/prereg_gain_randomization_gr0_v1.md`](plans/prereg_gain_randomization_gr0_v1.md)
+- **Lineage:**
+  - D-2026-11-04-1 (new PPO allowed again)
+  - → `docs/plans/prereg_gain_randomization_gr0_v1.md`
+- **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
+- **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`
+
 ## Not yet in the repository
 
 - **C-Planner P0** (2026-10-29 →): its task did not allow commits, so the repository holds no record

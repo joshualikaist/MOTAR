@@ -95,6 +95,9 @@ class BaseLeeController(BaseController):
             #     "Randomization of controller parameters is disabled based on config setting."
             # )
             return
+        if getattr(self.cfg, "gain_rand_scale", None) is not None:
+            self._randomize_gains_scaled(env_ids)
+            return
         self.K_pos_tensor_current[env_ids] = torch_rand_float_tensor(
             self.K_pos_tensor_min[env_ids], self.K_pos_tensor_max[env_ids]
         )
@@ -107,6 +110,28 @@ class BaseLeeController(BaseController):
         self.K_angvel_tensor_current[env_ids] = torch_rand_float_tensor(
             self.K_angvel_tensor_min[env_ids], self.K_angvel_tensor_max[env_ids]
         )
+
+    def _randomize_gains_scaled(self, env_ids):
+        """NavRL opt-in (lee_controller_config_navrl.GAIN_RAND): each K_vel / K_rot / K_angvel element of the reset
+        envs becomes nominal * (1 + scale * (2u - 1)), u ~ U[0, 1) from a dedicated generator seeded once with
+        cfg.gain_rand_seed; nominal is the midpoint gain. The global torch RNG is never used."""
+        if getattr(self, "_gain_rand_generator", None) is None:
+            gen = torch.Generator(device=self.device)
+            gen.manual_seed(int(self.cfg.gain_rand_seed))
+            self._gain_rand_generator = gen
+            self._gain_rand_nominal = (
+                ((self.K_linvel_tensor_max + self.K_linvel_tensor_min) / 2.0).clone(),
+                ((self.K_rot_tensor_max + self.K_rot_tensor_min) / 2.0).clone(),
+                ((self.K_angvel_tensor_max + self.K_angvel_tensor_min) / 2.0).clone(),
+            )
+        scale = float(self.cfg.gain_rand_scale)
+        ids = torch.as_tensor(env_ids, device=self.device, dtype=torch.long).reshape(-1)
+        for current, nominal in zip(
+            (self.K_linvel_tensor_current, self.K_rot_tensor_current, self.K_angvel_tensor_current),
+            self._gain_rand_nominal,
+        ):
+            u = torch.rand((ids.numel(), 3), generator=self._gain_rand_generator, device=self.device)
+            current[ids] = nominal[ids] * (1.0 + scale * (2.0 * u - 1.0))
 
     def compute_acceleration(self, setpoint_position, setpoint_velocity):
         position_error_world_frame = setpoint_position - self.robot_position

@@ -3017,6 +3017,19 @@ class NavRLTask(BaseTask):
         self.sim_env.delete_env()
 
     # ------------------------------------------------------------------ checkpoint state
+    @staticmethod
+    def _gain_rand_condition():
+        """Controller-gain randomization opt-in (D-2026-11-04-1): {} when OFF, so OFF records stay unchanged."""
+        from aerial_gym.config.controller_config import lee_controller_config_navrl as _gain_cfg
+
+        if _gain_cfg.GAIN_RAND is None:
+            return {}
+        return {
+            "cfg_gain_rand": True,
+            "cfg_gain_rand_scale": float(_gain_cfg.GAIN_RAND[0]),
+            "cfg_gain_rand_seed": int(_gain_cfg.GAIN_RAND[1]),
+        }
+
     def get_env_state(self):
         """Saved into the rl_games checkpoint ('env_state') so the epoch-proportional goal
         curriculum and optional density curriculum survive a --checkpoint resume."""
@@ -3457,6 +3470,7 @@ class NavRLTask(BaseTask):
             "cfg_density_stratified_floor": float(
                 getattr(self.density, "stratified_floor", 0.0)
             ),
+            **self._gain_rand_condition(),
         }
 
     @staticmethod
@@ -9543,6 +9557,7 @@ class NavRLTask(BaseTask):
                     else None
                 ),
                 **physics,
+                **self._gain_rand_condition(),
             },
             "outcome": {
                 "captured": int(self._succ_agg),

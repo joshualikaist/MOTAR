@@ -105,6 +105,8 @@ first recorded, and that source stays authoritative.
 
 ## D-2026-10-14-0 — KROC2027 plan v2: Policy F only, no new PPO
 
+- **Superseded on 2026-11-04** by [D-2026-11-04-1](#d-2026-11-04-1--new-ppo-training-allowed-again-gpu-runs-approved-for-control-gain-randomization):
+  new PPO training is allowed again. The text below is kept as recorded.
 - **Decision:** Policy F (ep25000 riskcap) is the only policy, with no new PPO training. The capture
   metric `capture_0p5m` is primary.
 - **Source:** the temporary KROC2027 Phase 1 exception, formerly in [`AGENTS.md`](../AGENTS.md)
@@ -213,3 +215,34 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   - the inventory `~/motar_tmp/docs_consolidation_20261031/inventory.csv` (SHA-256
     `412a6df6bd6a3ac66ea598c26e6cff62d72a3c06b22af81329a9152242749a5d`), made by `inventory.py`
     (`6d3d1f23cebf17a72dff84b3e6a5b6eebf8c6340dcbb654e40b98bbf86dc97e6`).
+
+## D-2026-11-04-1 — New PPO training allowed again; GPU runs approved for control gain randomization
+
+- **Decision:**
+  - The ban on new PPO training (D-2026-10-14-0) is lifted.
+  - The user approves the GPU runs of the control-gain-randomization unit (GR), both evaluation and
+    training.
+  - Frozen Policy F (ep25000 riskcap) is not changed. Any newly trained checkpoint is a new policy,
+    compared with F and never substituted for it.
+- **Scope and conditions:**
+  - Every GPU run still has a preregistration committed before launch, a fail-closed runner (worktree
+    `PYTHONPATH` guard, per-process caps, kernel fault record before and after) and an independent
+    review before any positive label.
+  - Gain randomization is an opt-in switch with default OFF. Before measuring it ON, OFF must be shown
+    to reproduce the native run.
+  - Push and merge still need separate approval.
+- **Alternatives:** keep F as the only policy and test robustness by evaluation only. That is the first
+  step of GR (GR-0) in any case. Training follows only if the measurement motivates it.
+- **Reason:** every Policy F result so far comes from one airframe (`navrl_quad`) with fixed controller
+  gains (`randomize_params = False`, midpoint gains). The 2026-08 adaptation to the 1.2 kg ref5in
+  airframe failed its gates (`policy-r-ref5in` in [`EXPERIMENTS.md`](EXPERIMENTS.md)). The user wants
+  to know whether the method holds on other airframes and controller tunings.
+- **Impact:** AGENTS.md's research rules already say that the ban holds "unless the user reverses
+  that decision"; this entry is that reversal. GR work happens on branch `gainrand/dev` (worktree
+  `src/MOTAR-gainrand`).
+- **Reversal:** a user decision.
+- **Sources:** the user's message of 2026-11-04 ("새 ppo 금지 없애도 되고, gpu 승인은 마음껏 내가 해줄게.
+  교정하려는 작업 하면서 병행으로 먼저 control gain randomization 수행 가능할까?": the new-PPO ban can be
+  removed, GPU approvals will be given freely, and the user asks whether control gain randomization can
+  run first, in parallel with the C-Planner V1 repair). The same message's earlier part chose to repair
+  the C-Planner V1 direction gap rather than accept it as tolerance (recorded on `cplanner/dev`).
