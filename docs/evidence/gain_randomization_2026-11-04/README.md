@@ -130,3 +130,45 @@ results; each has the gated sign in 12 of 12 blocks. Limits the reviewer recorde
 
 The result is about this pair of training runs on this grid. It says nothing about other airframes, PX4, real
 flight, or gains beyond ±40 %.
+
+## Protocol deviation found afterwards: CPU work alongside the GPU cells (`load_overlap/`)
+
+On 2026-11-04 the author (the main Claude session and its subagents) ran CPU jobs while GR-0 and GR-1 were on the
+GPU. AGENTS.md forbids heavy CPU or disk work alongside an evaluation: in 2026-09 such load once moved a result
+(WORKLOG 2026-09-05, S_off 21.47 against 22.35 %). Neither the GR-0 nor the GR-1 record disclosed it, and neither
+review knew of it. The camera-only C2 results review found the same fault in C2 (review M-1, `camonly/dev`
+`f821058`), and the reconstruction below followed from that.
+
+**Reconstruction** (`load_overlap/overlap_table.md`, `overlap.json`, `twins.json`):
+- A read-only forensic pass (Claude Code subagent, Opus 5.5) rebuilt the timeline from the session transcripts and
+  the run reports. Its scripts and inputs are in `~/motar_tmp/load_overlap_20261104/`: `calls_v4.json` SHA-256
+  `3dc18972…`, `jobs_curated.json` `4780cdb6…`, `gpu_cells.json` `754096c4…`.
+- Every GPU runner was pinned to cores 0-3,8-11,14-23.
+
+| Unit | Cells | Overlapped | Where the load ran |
+| --- | ---: | ---: | --- |
+| GR-0 main | 36 | 23 (22 heavy) | On the GPU job's own cores. C-Planner gate D2-A1 (2 processes) and the C-Planner review probes P1, P4, P4b and P5 (1-2 processes); 4,341 process-seconds inside the cells, at most 2 extra processes |
+| GR-0 identity_02 | 4 | 1 (`off`, a 5 s dev run) | Cores 3,14 |
+| GR-1 training, rand40 / ctrl | 1 / 1 | both | rand40: the C-Planner D1-F gate (6 processes) and the review probes, on the GPU job's cores. ctrl: a PX4 clone and a conda install, unpinned disk and network |
+| GR-1 reproduction | 2 | 0 | — |
+| GR-1 evaluation | 72 | 25 | On cores 6,7,12,13 only (disjoint from the GPU job's), nice 10, at most 1 extra process: PUBLIC_CPU suites, camera-only C0 gates, mutants and review probes; 1,447 process-seconds. One 10 s unpinned grep |
+
+Of GR-0's overlapped cells, 8 are S00 cells. Those are also condition A of the camera-only C2.
+
+**Evidence so far against an effect.** Three twin groups have identical per-episode files although one member ran
+under load:
+- GR-0 S00 205/4501 ran with the P4 probe on its own cores for 164 of its 170 s. The camera-only C1 `full` cell,
+  run twice on an idle host, is identical to it.
+- GR-0 S40 205/4501 had about 5 s of minor load; the GR-1 reproduction's two twins of it ran idle.
+- GR-0 identity_02 `off` had a 5 s dev run; `ref` and `s00` ran idle.
+
+This is three cells. It does not cover the other 47 overlapped evaluation cells or the training runs.
+
+**Standing of the results.**
+- The recorded readings stay as recorded: GR-0 S20 GAIN_ROBUST and S40 GAIN_SENSITIVE; GR-1 GR1_SUPPORTED.
+- They now carry this deviation. No host fault was involved, so nothing is void under AGENTS.md.
+- A byte-for-byte rerun of every overlapped evaluation cell on an idle host would settle the question for the
+  evaluations. That is about 2.1 h of GPU for GR-0 and GR-1 together with C2's two cells, and needs the user's
+  approval and a preregistration.
+- The training overlap cannot be checked that way. A second training seed (GR-1b) would test the reading against
+  training variance.

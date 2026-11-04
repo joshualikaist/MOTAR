@@ -681,7 +681,10 @@ family that is in the test's scope.
   GAIN_SENSITIVE (crash +3.69 pp). GR-1: both arms TRAINED on `8f64631`; amendment 1 after the design review
   AMEND_FIRST; GR1_REPRO_PASS; evaluation COMPLETE; reading GR1_SUPPORTED, "reduced gain sensitivity", single
   training seed per arm (P1 −2.21 pp); independent review PASS. A confirmation with a second training seed is to be
-  proposed (amendment 1). Compare with `policy-r-ref5in`
+  proposed (amendment 1). Found afterwards: the author's CPU jobs ran alongside 23 of GR-0's 36 cells (on the
+  GPU job's own cores), 25 of GR-1's 72 evaluation cells (on disjoint cores) and both trainings. This was not
+  disclosed in either record. It is recorded as a deviation in `load_overlap/`; the readings stand as recorded,
+  and an idle-host byte-compare rerun awaits the user. Compare with `policy-r-ref5in`
   (the failed 2026-08 airframe adaptation) and `b1r-classical-baseline` (the F condition GR-0's S00 mirrors).
 - **Read first:** [`docs/evidence/gain_randomization_2026-11-04/README.md`](evidence/gain_randomization_2026-11-04/README.md)
 - **Lineage:**
@@ -691,6 +694,7 @@ family that is in the test's scope.
   - → `docs/evidence/gain_randomization_2026-11-04/`
   - → `docs/plans/prereg_gain_randomization_gr1_v1.md` (GR-1 training, after GR-0 GAIN_SENSITIVE)
   - → `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md` (after both trainings, before evaluation)
+  - → `docs/evidence/gain_randomization_2026-11-04/load_overlap/` (deviation found afterwards: CPU load during GR-0/GR-1)
 - **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
 - **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`,
   `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`,
