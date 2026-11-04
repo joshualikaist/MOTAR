@@ -24149,3 +24149,28 @@ No push or merge.
     conditions. `read_trace` reads back a B1-R trace.
 - **Next:** G3 runs after GR-1b's training.
 
+## 2026-11-05 — T-LOAD results review r1 PASS_WITH_LIMITS; the concurrent-work rule narrowed (MAJOR-1)
+
+- **Reviewer:** Claude Opus 5.5 (fresh context, CPU only on cores 6,7,12,13). Review in
+  `docs/evidence/tload_2026-11-05/REVIEW_r1.md`, with its own recomputation `verify_r1.py`.
+- **Verdict:** PASS_WITH_LIMITS.
+  - All hashes, equalities and load figures were recomputed from the raw files: exact.
+  - The 15 runs are genuine (distinct nonces, commit 812f6b1, clean receipts). The loads ran.
+  - No vacuous path.
+- **MAJOR-1:** the rule allowed CPU work during any evaluation, but T-LOAD covers outcome files of Isaac Gym cells
+  only. Disjoint cores slowed cells by 15-27 %, so timing results are load-sensitive.
+  - Answered by narrowing AGENTS.md "Concurrent work" and D-2026-11-05-1 (dated outcome line).
+  - These keep an idle host: wall-clock timing results, real-time SITL runs, and CPU-side decision paths that were
+    not tested.
+- **MINOR findings** (README updated):
+  - The count of unconfirmed cells is 47 of the 51 overlapped evaluation cells. I had written "48".
+  - The source of the 2026-11-04 load figures is now cited.
+  - L2 is about 16.8 core-equivalents.
+  - The first L0a ran about 4 % slow (warm-up).
+  - The outer timeout is recorded.
+  - There was no pre-launch design review (stated before).
+  - Memory-bandwidth load was not tested.
+- **Consequence for the SITL work running alongside GR-1b training:** SITL runs are real-time. Their response times
+  are computed in PX4 sim time (`time_boot_ms`), with the real-time factor recorded. Final SITL acceptance runs keep
+  an idle host.
+

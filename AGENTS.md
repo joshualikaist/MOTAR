@@ -209,6 +209,14 @@ The full list, with the checks that enforce it, is in
       LOAD_INVARIANT, then under the same conditions, with its window recorded;
     - after DISJOINT_ONLY, allowed on the disjoint cores only;
     - otherwise forbidden.
+  - T-LOAD read LOAD_INVARIANT on 2026-11-05 (review r1 PASS_WITH_LIMITS). It covers the per-episode outcome
+    files of Isaac Gym evaluation cells only. Disjoint cores still slowed the cells by 15-27 %, so these keep an
+    idle host:
+    - any evaluation whose result includes wall-clock timing (latency gates, benchmarks, `duration_s`,
+      `perf_counter` telemetry);
+    - real-time SITL runs;
+    - evaluation paths with CPU-side decision logic that T-LOAD did not cover (classical baselines, CPU replays,
+      the target route planner).
   - Why: on 2026-09-05 one loaded evaluation differed from two idle runs (S_off 22.35 % vs 21.47 %,
     mechanism not identified). On 2026-11-04 three loaded cells were byte-identical to idle twins.
 - A run started from a worktree must set `PYTHONPATH` to that worktree and fail closed unless

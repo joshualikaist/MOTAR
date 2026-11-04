@@ -314,6 +314,11 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   - The same rule text is copied to `gainrand/dev`.
 - **Reversal:** a user decision, or a T-LOAD reading other than LOAD_INVARIANT (then the evaluation clause stays
   closed).
+- **Outcome and narrowing (2026-11-05, T-LOAD review r1 MAJOR-1):** T-LOAD read LOAD_INVARIANT; review r1 was
+  PASS_WITH_LIMITS.
+  - The evaluation clause applies to the per-episode outcome files of Isaac Gym evaluation cells.
+  - These keep an idle host: wall-clock timing results (latency gates, benchmarks, durations), real-time SITL runs
+    and CPU-side decision paths T-LOAD did not cover. The reason is that disjoint cores slowed cells by 15-27 %.
 - **Sources:** the user's messages of 2026-11-05:
   - "gpu 작업이랑 근데 cpu작업이랑 같이 하면 무슨 문제가 있어? … 그건 프로세스상 문제 될 일이 없잖아. 자 그 부분은
     확실하게 정의해야돼": what is wrong with running CPU work alongside GPU work; process-wise there should be no

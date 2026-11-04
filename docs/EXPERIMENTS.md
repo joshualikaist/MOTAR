@@ -752,9 +752,10 @@ family that is in the test's scope.
   cell? Its reading decides whether CPU work may run during evaluations (D-2026-11-05-1).
 - **Policy:** Frozen Policy F, unchanged, through the camera-only cell path (`full` and `no_lidar` conditions).
 - **Status:** ran 2026-11-05 on `812f6b1`, 15 of 15 runs OK, host faults 0. **LOAD_INVARIANT**: every load arm is
-  byte-identical to idle in all three cells, with L2 lengthening the cells by 57-72 %. Results review pending.
+  byte-identical to idle in all three cells, with L2 lengthening the cells by 57-72 %. Independent review r1 PASS_WITH_LIMITS. MAJOR-1 narrowed the rule:
+  timing results, real-time SITL and untested CPU-side paths keep an idle host.
   - The loaded GR-0 cells of 2026-11-04 (205/4501 and 70/4501) equal the idle runs.
-  - CPU compute during evaluations is now allowed (D-2026-11-05-1).
+  - CPU compute is allowed during Isaac Gym evaluation cells (D-2026-11-05-1, narrowed).
 - **Read first:** [`docs/plans/prereg_tload_v1.md`](plans/prereg_tload_v1.md)
 - **Lineage:**
   - 2026-09-05 A8 `S_off` difference under load (WORKLOG)
