@@ -214,7 +214,8 @@ The full list, with the checks that enforce it, is in
     idle host:
     - any evaluation whose result includes wall-clock timing (latency gates, benchmarks, `duration_s`,
       `perf_counter` telemetry);
-    - real-time SITL runs;
+    - real-time SITL acceptance runs. Development runs may run alongside if their metrics are computed in
+      simulator time and the real-time factor is recorded (and is 1.0);
     - evaluation paths with CPU-side decision logic that T-LOAD did not cover (classical baselines, CPU replays,
       the target route planner).
   - Why: on 2026-09-05 one loaded evaluation differed from two idle runs (S_off 22.35 % vs 21.47 %,

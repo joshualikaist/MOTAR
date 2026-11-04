@@ -1,0 +1,6 @@
+S2 install 2026-11-05T03:00:19+09:00
+8dea2b83f836596083fc99ab265272e447bb7582a41fcca211af34e449158e45  /home/fair/workspaces/px4_ws/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/10090_gazebo-classic_navrl_quad
+9403d99aa5ac321bed6dbe7c994e17143d88d51452ce3604edf44b9fd2a8ae43  /home/fair/workspaces/px4_ws/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/navrl_quad/model.config
+3523902f4eff28b8c15055dfbbd2f4d1f593e681a9cd3b9723b9e61a3915adfd  /home/fair/workspaces/px4_ws/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/navrl_quad/navrl_quad.sdf.jinja
+jinja_gen navrl_quad.sdf 2026-11-05T03:00:53+09:00 6e0f08d67fa97384213da040acbf2c0a76bdb28a47ec97b4264afa23b18ee4a4
+velocity_decay 0.01 -> 4e-5 (per-step ODE) 2026-11-05T03:04:50+09:00 77b64a88c6cc007de2841196d077d97066e994f7033d24433fb756d4c6c4e6ab

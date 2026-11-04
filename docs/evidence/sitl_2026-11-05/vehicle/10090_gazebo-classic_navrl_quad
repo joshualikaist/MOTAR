@@ -1,0 +1,59 @@
+#!/bin/sh
+#
+# @name MOTAR training-spec quadrotor SITL (navrl_quad) -- DRAFT, UNTESTED
+#
+# @type Quadrotor x
+#
+# @maintainer MOTAR (draft 2026-11-04)
+#
+# Derived from PX4 v1.14.3 ROMFS/px4fmu_common/init.d-posix/airframes/10015_gazebo-classic_iris
+# (sha256 9d2d8fc2...). Geometry and yaw moment ratio match the Gazebo model navrl_quad.sdf.jinja and MOTAR's
+# Isaac Gym navrl_quad (0.25 kg, motors at +-0.13 m, 2 N per motor, thrust-to-torque 0.01, T/W 3.26).
+# Controller values below are STARTING ESTIMATES scaled from PX4 defaults by the plant's angular-acceleration
+# authority (about 6x iris in roll/pitch, about 1.85x in yaw). They MUST be tuned in SITL before any experiment.
+
+. ${R}etc/init.d/rc.mc_defaults
+
+param set-default CA_AIRFRAME 0
+
+# Rotor geometry, PX4 body frame FRD (x forward, y right); same order and spin convention as the iris airframe
+param set-default CA_ROTOR_COUNT 4
+param set-default CA_ROTOR0_PX 0.13
+param set-default CA_ROTOR0_PY 0.13
+param set-default CA_ROTOR0_KM 0.01
+param set-default CA_ROTOR1_PX -0.13
+param set-default CA_ROTOR1_PY -0.13
+param set-default CA_ROTOR1_KM 0.01
+param set-default CA_ROTOR2_PX 0.13
+param set-default CA_ROTOR2_PY -0.13
+param set-default CA_ROTOR2_KM -0.01
+param set-default CA_ROTOR3_PX -0.13
+param set-default CA_ROTOR3_PY 0.13
+param set-default CA_ROTOR3_KM -0.01
+
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
+
+# Limits matching the MOTAR task contract (navrl_task_config: max_velocity 2.5 m/s per axis in v2, tilt 45 deg,
+# yaw rate 3.0 rad/s, altitude-hold vmax 2.5 m/s)
+param set-default MPC_XY_VEL_MAX 3.6
+# MOTAR limits each axis to 2.5 m/s (diagonal 3.54); PX4 limits the norm, so 3.6 keeps the diagonal (2026-11-05)
+param set-default MPC_Z_VEL_MAX_UP 2.5
+param set-default MPC_Z_VEL_MAX_DN 2.5
+param set-default MPC_TILTMAX_AIR 45
+param set-default MC_YAWRATE_MAX 172
+
+# STARTING ESTIMATES (tune in SITL): rate loops scaled down from PX4 defaults by the authority ratio
+param set-default MC_ROLLRATE_P 0.025
+param set-default MC_ROLLRATE_I 0.033
+param set-default MC_ROLLRATE_D 0.0005
+param set-default MC_PITCHRATE_P 0.025
+param set-default MC_PITCHRATE_I 0.033
+param set-default MC_PITCHRATE_D 0.0005
+param set-default MC_YAWRATE_P 0.11
+param set-default MC_YAWRATE_I 0.055
+# Hover thrust: T/W 3.26 -> 0.31 with a linear thrust model, 0.55 with a quadratic one. Which applies depends on
+# THR_MDL_FAC and the Gazebo motor plugin's input mapping; verify with test A1 (hover-thrust estimator is on by default).
+param set-default MPC_THR_HOVER 0.31

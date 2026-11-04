@@ -766,6 +766,29 @@ family that is in the test's scope.
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/prereg_tload_v1.md`, `docs/evidence/tload_2026-11-05/`
 
+### `sitl-transfer` — Gazebo/PX4 SITL before real flight: can Policy F fly a PX4 vehicle?
+
+- **Period:** 2026-11-05 –.
+- **Question:** Before real-vehicle flight (the user's goal), can MOTAR's Policy F close the loop through a real
+  autopilot stack (PX4 v1.14.3 SITL + Gazebo Classic 11): its estimator, controllers, offboard setpoints and
+  latency? And what dynamics and sensor gaps must be closed first?
+- **Policy:** Frozen Policy F, unchanged. The vehicle is MOTAR's training-spec navrl_quad as a PX4 airframe, with
+  PX4's default iris as the comparison.
+- **Status:** plan v1. System, build and boot checks done. S1 (iris) and S2 (navrl_quad) offboard tests are
+  exploratory.
+  - Found and fixed: ODE per-step damping, the thrust model, PX4's norm speed limit.
+  - The velocity loop is still to be matched to G9.
+  - G8/G9 preregistered, not run. The bridge (S3a/S3b) is designed, not built.
+- **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
+- **Lineage:**
+  - user direction 2026-11-05 (real flight, SITL check first)
+  - → `docs/plans/sitl_validation_plan_v1.md`
+  - → `docs/evidence/sitl_2026-11-05/` (S1/S2 offboard tests, vehicle files)
+  - → `docs/plans/prereg_sitl_reference_g8g9_v1.md` (G8 reference dump, G9 Isaac velocity response)
+- **Compare with:** `camera-only`, `gain-randomization`
+- **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
+  `docs/plans/prereg_sitl_reference_g8g9_v1.md`
+
 ## Not yet in the repository
 
 - **C-Planner P0** (2026-10-29 →): its task did not allow commits, so the repository holds no record

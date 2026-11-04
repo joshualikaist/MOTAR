@@ -1,0 +1,245 @@
+{
+ "iris": {
+  "mass_kg": 1.535,
+  "inertia_com": [
+   0.03003910371335505,
+   0.03058161971335505,
+   0.057553016000000005
+  ],
+  "rotors": [
+   {
+    "n": 0,
+    "x_flu": 0.13,
+    "y_flu": -0.22,
+    "dir": "ccw",
+    "tmax_N": 7.0664,
+    "km": 0.06,
+    "tau_up": 0.0125,
+    "tau_down": 0.025,
+    "rotor_drag": 0.000175,
+    "rolling_moment": 1e-06
+   },
+   {
+    "n": 1,
+    "x_flu": -0.13,
+    "y_flu": 0.2,
+    "dir": "ccw",
+    "tmax_N": 7.0664,
+    "km": 0.06,
+    "tau_up": 0.0125,
+    "tau_down": 0.025,
+    "rotor_drag": 0.000175,
+    "rolling_moment": 1e-06
+   },
+   {
+    "n": 2,
+    "x_flu": 0.13,
+    "y_flu": 0.22,
+    "dir": "cw",
+    "tmax_N": 7.0664,
+    "km": 0.06,
+    "tau_up": 0.0125,
+    "tau_down": 0.025,
+    "rotor_drag": 0.000175,
+    "rolling_moment": 1e-06
+   },
+   {
+    "n": 3,
+    "x_flu": -0.13,
+    "y_flu": -0.2,
+    "dir": "cw",
+    "tmax_N": 7.0664,
+    "km": 0.06,
+    "tau_up": 0.0125,
+    "tau_down": 0.025,
+    "rotor_drag": 0.000175,
+    "rolling_moment": 1e-06
+   }
+  ],
+  "total_max_thrust_N": 28.2656,
+  "thrust_to_weight": 1.8770715251006915,
+  "max_horizontal_accel_at_full_thrust_mps2": 15.583386510806964,
+  "roll_accel_authority_radps2": 103.50561819917674,
+  "yaw_accel_authority_radps2": 29.467369703092533
+ },
+ "navrl_quad_sdf": {
+  "mass_kg": 0.25,
+  "inertia_com": [
+   0.0008606800000000001,
+   0.0008606800000000001,
+   0.00170004
+  ],
+  "rotors": [
+   {
+    "n": 0,
+    "x_flu": 0.13,
+    "y_flu": -0.13,
+    "dir": "ccw",
+    "tmax_N": 2.00000000002,
+    "km": 0.01,
+    "tau_up": 0.04,
+    "tau_down": 0.04,
+    "rotor_drag": 0.0,
+    "rolling_moment": 0.0
+   },
+   {
+    "n": 1,
+    "x_flu": -0.13,
+    "y_flu": 0.13,
+    "dir": "ccw",
+    "tmax_N": 2.00000000002,
+    "km": 0.01,
+    "tau_up": 0.04,
+    "tau_down": 0.04,
+    "rotor_drag": 0.0,
+    "rolling_moment": 0.0
+   },
+   {
+    "n": 2,
+    "x_flu": 0.13,
+    "y_flu": 0.13,
+    "dir": "cw",
+    "tmax_N": 2.00000000002,
+    "km": 0.01,
+    "tau_up": 0.04,
+    "tau_down": 0.04,
+    "rotor_drag": 0.0,
+    "rolling_moment": 0.0
+   },
+   {
+    "n": 3,
+    "x_flu": -0.13,
+    "y_flu": -0.13,
+    "dir": "cw",
+    "tmax_N": 2.00000000002,
+    "km": 0.01,
+    "tau_up": 0.04,
+    "tau_down": 0.04,
+    "rotor_drag": 0.0,
+    "rolling_moment": 0.0
+   }
+  ],
+  "total_max_thrust_N": 8.00000000008,
+  "thrust_to_weight": 3.261977573936799,
+  "max_horizontal_accel_at_full_thrust_mps2": 30.45921699618163,
+  "roll_accel_authority_radps2": 604.1734442594227,
+  "yaw_accel_authority_radps2": 47.05771628949907
+ },
+ "isaac_navrl_quad": {
+  "urdf": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/resources/robots/quad/quad_navrl_collide.urdf",
+  "mass_kg": 0.25,
+  "inertia_com_approx": [
+   0.000845,
+   0.000845,
+   0.00169
+  ],
+  "max_thrust_per_motor_N": 2.0,
+  "thrust_to_weight": 3.261977573904179,
+  "thrust_to_torque": 0.01,
+  "motor_tau_s": 0.04,
+  "arm_xy_m": 0.13
+ },
+ "iris_px4_consistency": [
+  {
+   "n": 0,
+   "pos_match": true,
+   "pos_err_m": [
+    -0.02149999999999999,
+    -0.024999999999999994
+   ],
+   "spin_match": true,
+   "km_match_sdf": false
+  },
+  {
+   "n": 1,
+   "pos_match": true,
+   "pos_err_m": [
+    0.02149999999999999,
+    -0.012500000000000011
+   ],
+   "spin_match": true,
+   "km_match_sdf": false
+  },
+  {
+   "n": 2,
+   "pos_match": true,
+   "pos_err_m": [
+    -0.02149999999999999,
+    0.024999999999999994
+   ],
+   "spin_match": true,
+   "km_match_sdf": false
+  },
+  {
+   "n": 3,
+   "pos_match": true,
+   "pos_err_m": [
+    0.02149999999999999,
+    0.012500000000000011
+   ],
+   "spin_match": true,
+   "km_match_sdf": false
+  }
+ ],
+ "navrl_px4_consistency": [
+  {
+   "n": 0,
+   "pos_match": true,
+   "pos_err_m": [
+    0.0,
+    0.0
+   ],
+   "spin_match": true,
+   "km_match_sdf": true
+  },
+  {
+   "n": 1,
+   "pos_match": true,
+   "pos_err_m": [
+    0.0,
+    0.0
+   ],
+   "spin_match": true,
+   "km_match_sdf": true
+  },
+  {
+   "n": 2,
+   "pos_match": true,
+   "pos_err_m": [
+    0.0,
+    0.0
+   ],
+   "spin_match": true,
+   "km_match_sdf": true
+  },
+  {
+   "n": 3,
+   "pos_match": true,
+   "pos_err_m": [
+    0.0,
+    0.0
+   ],
+   "spin_match": true,
+   "km_match_sdf": true
+  }
+ ],
+ "checks": {
+  "navrl_mass_matches_isaac": true,
+  "navrl_tmax_matches_isaac": true,
+  "navrl_km_matches_isaac": true,
+  "navrl_tau_matches_isaac": true,
+  "navrl_tw_matches_isaac": true,
+  "navrl_inertia_within_2pct_of_isaac": true,
+  "navrl_no_rotor_drag": true,
+  "navrl_sdf_px4_rotors_consistent": true,
+  "iris_sdf_px4_spin_consistent_reference": true
+ },
+ "pass": true,
+ "ratios_iris_over_navrl": {
+  "mass": 6.14,
+  "Ixx": 34.901593755350476,
+  "thrust_to_weight": 0.5754397394079264,
+  "roll_authority": 0.17131772205918577,
+  "yaw_authority": 0.6261963398693059
+ }
+}

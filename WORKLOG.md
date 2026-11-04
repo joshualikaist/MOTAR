@@ -24174,3 +24174,36 @@ No push or merge.
   are computed in PX4 sim time (`time_boot_ms`), with the real-time factor recorded. Final SITL acceptance runs keep
   an idle host.
 
+## 2026-11-05 — SITL unit started: PX4 builds and flies; S1 (iris) and S2 (navrl_quad) offboard tests; G8/G9 preregistered
+
+- **Direction (user, 2026-11-05):** the goal is real-vehicle flight; first check its feasibility in Gazebo/PX4 SITL.
+  Plan `docs/plans/sitl_validation_plan_v1.md`; evidence `docs/evidence/sitl_2026-11-05/`.
+- **Setup:**
+  - The user's system packages (apt, 2026-11-04 19:24-19:27) were fine; my renewed request was unnecessary.
+  - PX4 v1.14.3 failed once on its version header (the NuttX submodule had no tags). It built after fetching
+    `nuttx-10.3.0` alone.
+  - Headless iris boots to "Ready for takeoff".
+  - The navrl_quad model and airframe 10090 are installed (local changes in the px4_ws checkout).
+- **Client:** pymavlink. MAVSDK 4.x has a different native API, and installing `mavsdk-grpc` was denied by the
+  permission policy, so I did not pursue it.
+- **Findings (run table in the evidence README):**
+  - ODE applies SDF damping per step: 0.01 meant a 0.4 s drag. Fixed to 4e-5.
+  - The quadratic thrust model (`THR_MDL_FAC` 1) removes a 3.3° constant hover tilt and the climb sag. I had first
+    attributed the tilt to estimator bias; that was wrong.
+  - PX4's norm speed limit needs `MPC_XY_VEL_MAX` 3.6 to keep F's 3.54 m/s diagonal.
+  - The default PX4 velocity loop (iris) rises in 1.4-1.7 s. Tuned navrl_quad rises in 0.36-0.42 s with 5-10 %
+    overshoot. Yaw rate is 3.00 rad/s.
+- **Concurrency:**
+  - The SITL runs ran on cores 6,7,12,13 alongside GR-1b training (allowed during training).
+  - Runs 03-05 compute metrics in PX4 sim time and recorded RTF 1.00. AGENTS.md's idle-host clause now names SITL
+    *acceptance* runs; development runs may run alongside under that condition.
+- **Observation map (Opus Explore, read-only):**
+  - F's perception has no randomness. Perturbations are off; dropout and depth noise are inert.
+  - Its target detector is a fixed colour rule for MOTAR's red sphere. A real target needs a real detector with the
+    same measurement interface, a separate real-flight blocker.
+  - Contract details the bridge must set: `cluster_sector`, altitude 1.0 m, history shift on a global step phase.
+- **G8/G9 preregistered** (`docs/plans/prereg_sitl_reference_g8g9_v1.md`; `tools/sitl_g8_ref_dump.py`,
+  `tools/sitl_g9_lee_steps.py`). The G8 comparison was smoke-tested (0 mismatches for F, 128 for the `no_lidar`
+  negative control). G9 has no CPU smoke: it needs Isaac on the GPU.
+- **Next:** G8/G9 after GR-1b training; tune PX4's velocity loop to G9; build the bridge (S3a).
+
