@@ -7,7 +7,8 @@ are **not** approvals to run again.
 
 ## 1. Authority — read before running anything heavy
 
-- **No GPU evaluation and no PPO training is authorised at present.** Every GPU run, including the
+- **No GPU run is authorised by default.** New PPO training is allowed again (D-2026-11-04-1), but
+  every GPU run, including the
   approved October 2026 units recorded in [`WORKLOG.md`](../WORKLOG.md), had an explicit user
   approval naming that run or its unit. A new run needs the user's explicit approval **and** a preregistration committed before
   execution.
@@ -123,7 +124,10 @@ These rules exist because breaking them has voided runs before (see `results/VOI
   do **not** modify or commit any tracked file, including `WORKLOG.md`, docs or tests. Keep HEAD
   and the tracked tree frozen; write only designated run outputs or scratch files. Do not create
   runtime files under `aerial_gym/`, `tools/` or `resources/robots/`.
-- Do not run heavy CPU or disk work alongside an evaluation; concurrent load has changed results.
+- Concurrent work follows [`AGENTS.md`](../AGENTS.md) "Concurrent work" (D-2026-11-05-1):
+  - Never write the run's tree, never use CUDA from another job, never run uncapped jobs.
+  - CPU compute is allowed during PPO training on disjoint cores.
+  - During an evaluation it is allowed only after the load-invariance test T-LOAD reads LOAD_INVARIANT.
 - Evaluate a frozen policy only through its recorded contract; `tools/audits/check_eval_condition_contract.py`
   refuses a mismatched condition. HEAD defaults do **not** reproduce the ep25000 training contract of policy F.
 - TensorBoard for this repository: `tensorboard --logdir aerial_gym/rl_training/rl_games/runs --port 6009`.

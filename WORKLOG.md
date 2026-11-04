@@ -23795,3 +23795,15 @@ Records: `docs/evidence/gain_randomization_2026-11-04/gr1/`; raw `results/gain_r
 
   During any GPU run there is no CPU work at all from me or my subagents
   (memory `feedback-no-cpu-work-during-eval`). No push or merge.
+
+## 2026-11-05 — AGENTS.md / OPERATIONS.md: concurrent-work definition and PPO wording (copied from camonly/dev)
+
+- **What:** the rule text from `camonly/dev` `812f6b1`, copied byte for byte, so that this branch's runs (GR-1b)
+  follow the same rule:
+  - AGENTS.md "Concurrent work" (D-2026-11-05-1);
+  - the PPO wording that cites D-2026-11-04-1 instead of the superseded ban;
+  - docs/OPERATIONS.md sections 1 and 7.
+- **Where the rest is:** D-2026-11-05-1 itself and the T-LOAD preregistration (`docs/plans/prereg_tload_v1.md`)
+  are recorded on `camonly/dev`, like D-2026-11-04-2 on `cplanner/dev`.
+- **User instruction (2026-11-05):** "동시 실행 정의 난 괜찮아. 반영해도 돼." and "AGENTS.md … 문구 수정이
+  필요합니다. -> 수정해."

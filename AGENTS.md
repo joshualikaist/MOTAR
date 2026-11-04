@@ -28,8 +28,9 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
 The user reserves these decisions. Ask each time. Never infer approval from an earlier approval or
 from a recommended next step.
 
-- Any GPU run, training or evaluation. New PPO training is excluded altogether by D-2026-10-14-0
-  unless the user reverses that decision.
+- Any GPU run, training or evaluation. New PPO training is allowed again since D-2026-11-04-1
+  (which superseded the ban D-2026-10-14-0); each run still needs the user's approval and a committed
+  preregistration.
 - Entering the next gate of a staged plan (for example G4 → G5, or R2 → R3).
 - Changing Frozen Policy F or a checkpoint. Committed preregistrations, existing results, raw data
   and recorded failure evidence are never edited, even with approval (see "Research rules" and
@@ -53,8 +54,10 @@ or a host fault.
   or pursue a camera-only conversion without a new explicit user instruction. See the current
   [`sensor contract`](docs/SENSOR_CONTRACT.md) and its linked correction of historical roadmap text.
   Evaluation-only GT/semantic provenance must not become online tracking or control inputs.
-- **Frozen Policy F (ep25000 riskcap) is the only learned policy**: no new PPO (D-2026-10-14-0) and
-  no actor or checkpoint replacement without the user's approval. Classical baselines and planners are comparisons. A
+- **Frozen Policy F (ep25000 riskcap) is the reference policy and stays frozen**: no actor or
+  checkpoint replaces it without the user's approval. New PPO training is allowed again
+  (D-2026-11-04-1, superseding D-2026-10-14-0); a newly trained checkpoint is a new policy, compared
+  with F and never substituted for it. Classical baselines and planners are comparisons. A
   correction or observer is an opt-in layer that defaults to OFF. Before measuring it ON, show that
   OFF reproduces the native run.
 - **Never auto-start PPO training or GPU evaluation.** Every GPU run needs the user's explicit approval
@@ -191,7 +194,23 @@ The full list, with the checks that enforce it, is in
     local commit.
 - The same freeze applies to a CPU runner with a clean-tree guard: one edit, even to WORKLOG, can
   void it.
-- Do not start heavy CPU or disk work alongside an evaluation; concurrent load has changed results.
+- **Concurrent work** (D-2026-11-05-1):
+  - Always forbidden while a run is active:
+    - writing the run's worktree or the main checkout (the freeze above), or the run's output or scratch;
+    - any CUDA use by another job (start CPU jobs with `CUDA_VISIBLE_DEVICES=""`);
+    - a job without a memory cap;
+    - the offlined cores (cpu4/5).
+  - Always allowed: reading, the web, and writing outside the repositories (`~/motar_tmp`, scratch).
+  - CPU compute during PPO training: allowed on cores disjoint from the runner (6,7,12,13 when the
+    runner is pinned to 0-3,8-11,14-23), `nice -n 10`, under the conditions above. Record its window
+    in the WORKLOG.
+  - CPU compute during an evaluation:
+    - allowed only once the load-invariance test T-LOAD (`docs/plans/prereg_tload_v1.md`) reads
+      LOAD_INVARIANT, then under the same conditions, with its window recorded;
+    - after DISJOINT_ONLY, allowed on the disjoint cores only;
+    - otherwise forbidden.
+  - Why: on 2026-09-05 one loaded evaluation differed from two idle runs (S_off 22.35 % vs 21.47 %,
+    mechanism not identified). On 2026-11-04 three loaded cells were byte-identical to idle twins.
 - A run started from a worktree must set `PYTHONPATH` to that worktree and fail closed unless
   `aerial_gym` resolves inside it. Otherwise the editable install imports the main checkout's code
   while the worktree is the one hashed.
