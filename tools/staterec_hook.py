@@ -7,7 +7,8 @@ then returns that action unchanged. It reads detached copies only; nothing is wr
 
 Recorded per call (arrays stacked over calls; env axis = all envs):
   sim_steps (episode step at request), robot_position, robot_linvel (world), robot_vehicle_orientation,
-  robot_orientation (xyzw), robot_body_angvel, target_position, prev_action (the task's, as fed to perception),
+  robot_orientation (xyzw), robot_body_angvel, env_bounds_min / env_bounds_max (passed to perception), target_position,
+  target_orientation (passed to the renderer), prev_action (the task's, as fed to perception),
   perception_step_count (scalar per call), action (the policy output returned to the player).
 The npz is written when the player exits (atexit as a fallback).
 """
@@ -22,7 +23,8 @@ import sys
 TARGET_MODULE = "aerial_gym.rl_training.rl_games.navrl_players"
 TARGET_CLASS = "NavRLPpoPlayerContinuous"
 STATE = {"recorder": None, "finder": None, "written_by": None}
-FIELDS = ("robot_position", "robot_linvel", "robot_vehicle_orientation", "robot_orientation", "robot_body_angvel")
+FIELDS = ("robot_position", "robot_linvel", "robot_vehicle_orientation", "robot_orientation", "robot_body_angvel",
+          "env_bounds_min", "env_bounds_max")
 
 
 class _PatchingLoader(importlib.abc.Loader):
@@ -70,7 +72,8 @@ def find_task(player):
 class Recorder:
     def __init__(self, path):
         self.path = Path(path)
-        self.rows = {k: [] for k in FIELDS + ("sim_steps", "target_position", "prev_action", "action")}
+        self.rows = {k: [] for k in FIELDS + ("sim_steps", "target_position", "target_orientation", "prev_action",
+                                              "action")}
         self.step_counts = []
         self.task = None
 
@@ -82,6 +85,9 @@ class Recorder:
             self.rows[k].append(t.obs_dict[k].detach().to("cpu").clone())
         self.rows["sim_steps"].append(t.sim_env.sim_steps.detach().to("cpu").clone())
         self.rows["target_position"].append(t.target_position.detach().to("cpu").clone())
+        tq = getattr(t, "target_orientation", None)
+        if tq is not None:
+            self.rows["target_orientation"].append(tq.detach().to("cpu").clone())
         self.rows["prev_action"].append(t.prev_action.detach().to("cpu").clone())
         self.rows["action"].append(action.detach().to("cpu").clone())
         perception = getattr(t, "perception", None)

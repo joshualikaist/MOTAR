@@ -31,7 +31,9 @@ def fake_task(n):
     t = types.SimpleNamespace()
     t.obs_dict = {"robot_position": torch.zeros(n, 3), "robot_linvel": torch.zeros(n, 3),
                   "robot_vehicle_orientation": torch.tensor([[0.0, 0.0, 0.0, 1.0]] * n),
-                  "robot_orientation": torch.tensor([[0.0, 0.0, 0.0, 1.0]] * n), "robot_body_angvel": torch.zeros(n, 3)}
+                  "robot_orientation": torch.tensor([[0.0, 0.0, 0.0, 1.0]] * n), "robot_body_angvel": torch.zeros(n, 3),
+                  "env_bounds_min": torch.zeros(n, 3), "env_bounds_max": torch.full((n, 3), 40.0)}
+    t.target_orientation = torch.tensor([[0.0, 0.0, 0.0, 1.0]] * n)
     t.prev_action = torch.zeros(n, 4)
     t.target_position = torch.ones(n, 3)
     t.sim_env = types.SimpleNamespace(sim_steps=torch.zeros(n, dtype=torch.long))
@@ -61,6 +63,8 @@ class StateRecTests(unittest.TestCase):
             self.assertEqual(list(z["perception_step_count"]), [1, 2, 3, 4])
             self.assertEqual(list(z["action"][:, 0, 0]), [0, 1, 2, 3])
             self.assertEqual(list(z["sim_steps"][:, 1]), [0, 1, 2, 3])
+            self.assertEqual(z["env_bounds_max"].shape, (4, 3, 3))
+            self.assertEqual(z["target_orientation"].shape, (4, 3, 4))
             with self.assertRaises(FileExistsError):
                 rec.save()                                       # never overwrites
 

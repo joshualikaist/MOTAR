@@ -12,7 +12,8 @@ G8 adds a third evaluation-only recorder, the opt-in state recorder hook.
   - robot position and world velocity;
   - vehicle and full orientation;
   - body angular velocity;
-  - target position;
+  - target position and orientation (passed to the renderer);
+  - the arena bounds (passed to perception);
   - the task's `prev_action`, as fed to perception;
   - `perception.step_count`;
   - the policy action.
