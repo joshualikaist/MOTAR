@@ -728,6 +728,8 @@ family that is in the test's scope.
     - Without the out-of-FOV LiDAR, its lateral reversals fall from 2.07 % to 0.15 % of steps.
     - 38.5 % of the paired first episodes that A captured crash in C.
     - Consistent with blind-side contacts; the contact bearing in C is NOT_MEASURED.
+  - G3 preregistered (`prereg_camonly_c2trace_v1.md`): traced reruns of 12 C2 cells, a noninterference gate and the
+    reading BLIND_SIDE_SUPPORTED / NOT_SUPPORTED. Not run.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -737,9 +739,11 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md` (after the design review AMEND_FIRST; before C2)
   - → `docs/evidence/camonly_2026-11-04/c1c2/` (C1 rerun, C2 results, results review r1)
   - → `docs/evidence/camonly_2026-11-04/mechanism/` (CPU, exploratory: why C crashes)
+  - → `docs/plans/prereg_camonly_c2trace_v1.md` (G3: which bar camera-only F hits; GPU session approval 2026-11-05)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
-  `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`
+  `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
+  `docs/plans/prereg_camonly_c2trace_v1.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

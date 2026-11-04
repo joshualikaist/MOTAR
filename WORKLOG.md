@@ -24123,3 +24123,29 @@ No push or merge.
 - **Limit:** three cells and one seed; a rare effect could pass 15 runs.
 - **Next:** independent results review (Opus, running alongside); GR-1b training on the GPU; SITL S1 on the CPU.
 
+## 2026-11-05 — camera-only G3 preregistered: which bar does camera-only F hit?
+
+- **What:** `docs/plans/prereg_camonly_c2trace_v1.md`, runner `tools/camonly_trace_run.py`, analysis
+  `tools/camonly_c2trace_analyse.py`. Queue item G3 of the user-approved GPU session (2026-11-05).
+- **Design:**
+  - 12 C2 cells (`full`, `no_lidar_out_fov`, `no_lidar` × 70/115/160/205 bars, seed 4501, quota 16) are rerun with
+    `NAVRL_KROC2027_OCCLUSION_TRACE=1`.
+  - Noninterference gate: each traced cell's `episodes.jsonl` must equal its untraced reference.
+- **Reading:**
+
+  | Reading | Rule |
+  | --- | --- |
+  | MEASUREMENT_INVALID | under 90 % of crash episodes have their nearest bar within 0.6 m at the last frame |
+  | BLIND_SIDE_SUPPORTED | Δ out_last (C − A) ≥ 15 pp, its CI lower bound > 0, and out_last(C) ≥ 60 % |
+  | BLIND_SIDE_NOT_SUPPORTED | the CI upper bound < 15 pp, or out_last(C) < 50 % |
+
+- **CPU smoke:**
+  - Analysis on the B1-R F_SHADOW traces placed under all three conditions (negative control): Δ = 0, CI
+    [−10.8, +11.4] → BLIND_SIDE_NOT_SUPPORTED.
+  - Validity on real F crash data: 96.2 %.
+  - It reproduces the mechanism analysis (out_last 51.27 %, left 71.52 %, travel outside FOV 51.81 %).
+  - Runner preflight fails closed (dirty tree, GPU busy, prereg uncommitted).
+  - Noninterference: the function passes C2 against C1_r2 and C1 `full` against GR-0, and fails on mismatched
+    conditions. `read_trace` reads back a B1-R trace.
+- **Next:** G3 runs after GR-1b's training.
+
