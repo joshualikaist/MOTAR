@@ -23701,3 +23701,57 @@ merge.
 
 Next: gr1repro into `results/gain_randomization_gr1_v1/repro_02` on the fixed commit, then gr1eval for both arms. No
 push or merge.
+
+## 2026-11-04 — Camera-only study: plan v1 (D-2026-11-04-3) and the C0 LiDAR-ablation switch
+
+**Decision D-2026-11-04-3.**
+- The study compares camera + LiDAR with the camera alone. The user's question is what difference appears
+  without the LiDAR.
+- The LiDAR may be removed only in opt-in conditions, selected through the study's own entry point. Frozen
+  Policy F and the official sensor contract are unchanged.
+- The user accepted recommendations K1-K4 and K6. For K5 they judged a native-resolution camera arm hard.
+
+**K5, revised.** The code shows the camera reaches the policy only through min-fusion into 17 in-FOV bins
+(`navrl_perception.py:1910-1921`). So:
+- the LiDAR can never remove the camera's phantoms;
+- it can only correct the camera's misses, inside the FOV.
+
+Removing the LiDAR by bearing therefore separates camera quality (inside the FOV) from coverage (outside it)
+without changing the camera. The C2 conditions are `full`, `no_lidar_in_fov`, `no_lidar_out_fov`, `no_lidar` and
+`no_lidar_obs_only`. A CPU sensor-level miss and phantom count is planned beside them.
+
+**C0 implementation.**
+- `navrl_task.py` and `navrl_perception.py` are byte-pinned by the H-R3 tests and stay unchanged.
+- `aerial_gym/task/navrl_task/navrl_sensor_ablation.py` wraps at run time:
+  - perception `observe`, where removed bins become "no return";
+  - `_fuse_static_and_extract_obstacles`, which records the fused scan and the raw-LiDAR target mask;
+  - the speed governor: the condition's governor scan, and K2, the 2.0 m/s cap for commands outside the FOV when
+    out-of-FOV LiDAR is removed. Other governor features refuse.
+- Only `tools/camonly_entry.py` imports it, through `tools/camonly_python`, the `PYTHON` for `play_navrl.sh`.
+
+**Development runs** (disclosed; not the gate):
+
+| Check | Result |
+| --- | --- |
+| `tests/test_navrl_sensor_ablation.py` | 10 / 10 OK |
+| mutants (`tests/camonly_c0_mutants.py`) | unmodified 0 failing; no_mask, governor_raw, no_k2, fill_zero, fov_shifted each caught (2-9 failing tests) |
+| PUBLIC_CPU, same worktree, base (new files moved out) vs candidate | 3,234 vs 3,244 tests; identical 6 failing tests (environment: untracked raw files no worktree has, and a temp directory one test assumes); 0 new |
+
+**Corrected during development:**
+- The governor leak check first passed vacuously. A dense random LiDAR kept every corridor clearance under 3 m,
+  so riskcap always gave its 2.0 m/s floor. The positive control caught it. The scene now leaves clearances in
+  the 3-5 m release band.
+- A command at 40 deg was added, so the governor_raw mutant is caught in `no_lidar_out_fov` too.
+- The isolation check matched any substring. It now matches import statements, with a positive control on the
+  entry point.
+- The plan's suite criterion "0 failures" could not hold in this environment. It was corrected before the gate
+  run to "no new failure against the base in the same worktree", for the reason above.
+- The first suite run, before the Policy F checkpoint copy was placed in this worktree's `runs/`, had 6 more
+  errors (`test_boia_shadow_runner`, missing checkpoint).
+
+Evidence of the development runs: `~/motar_tmp/camonly_c0_20261104/`.
+
+Next:
+- C0 gate run on this commit (`tools/camonly_c0_gate.py`), then an independent review (Opus 5.5).
+- C1 and C2 need a preregistration and the user's GPU approval.
+- No push or merge.

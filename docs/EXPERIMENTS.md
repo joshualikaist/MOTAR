@@ -694,6 +694,22 @@ family that is in the test's scope.
   `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`,
   `docs/plans/prereg_gain_randomization_gr1_v1.md`, `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md`
 
+### `camera-only` — Camera-only vs camera + LiDAR: what the LiDAR contributes
+
+- **Period:** 2026-11-04 –.
+- **Question:** What difference appears when the LiDAR is not used? How much of the LiDAR's value comes from
+  coverage outside the camera's field of view, and how much from correcting the camera inside it?
+- **Policy:** Frozen Policy F, unchanged. The LiDAR is removed only in opt-in conditions selected through the
+  study's own entry point (D-2026-11-04-3); the official RGB-D + LiDAR contract is unchanged. A later camera-only
+  continuation (C3) would be a new policy compared with F.
+- **Status:** plan v1 committed; C0 switch and tests implemented, gate run pending. No GPU stage run.
+- **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
+- **Lineage:**
+  - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
+  - → `docs/plans/camonly_study_plan_v1.md`
+- **Compare with:** `gain-randomization`
+- **Members:** `docs/plans/camonly_study_plan_v1.md`
+
 ## Not yet in the repository
 
 - **C-Planner P0** (2026-10-29 →): its task did not allow commits, so the repository holds no record

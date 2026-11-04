@@ -246,3 +246,38 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   removed, GPU approvals will be given freely, and the user asks whether control gain randomization can
   run first, in parallel with the C-Planner V1 repair). The same message's earlier part chose to repair
   the C-Planner V1 direction gap rather than accept it as tolerance (recorded on `cplanner/dev`).
+
+## D-2026-11-04-3 — Camera-only comparison study: LiDAR may be removed in an opt-in research condition
+
+- **Decision:**
+  - A study may compare the current RGB-D camera + LiDAR system with the camera alone. It measures what difference
+    appears when the LiDAR is not used.
+  - For this comparison only, the LiDAR may be removed in an opt-in condition. The condition defaults to OFF and is
+    selected only through the study's own entry point.
+  - Frozen Policy F and the official RGB-D + LiDAR sensor contract (`docs/SENSOR_CONTRACT.md`) are unchanged.
+  - The user accepted the plan's recommendations K1-K4 and K6. For K5 they judged a native-resolution camera arm
+    hard. The plan separates camera quality from field of view by removing the LiDAR by bearing instead.
+- **Scope and conditions:**
+  - Work happens on branch `camonly/dev` (worktree `src/MOTAR-camonly`).
+  - The CPU switch and its leak tests (C0) may proceed.
+  - Every GPU stage (C1 identity, C2 zero-shot conditions, C3 training, C4 matched evaluation) needs a
+    preregistration committed before launch and the user's approval of that stage.
+  - The pinned `navrl_task.py` and `navrl_perception.py` stay byte-identical.
+  - Push and merge need separate approval.
+- **Alternatives:**
+  - Keep the LiDAR in every option and study only depth fidelity. That was the first draft, which the user
+    corrected.
+  - Add a native-resolution camera arm. The user judged it hard: it changes the observation statistics and GPU
+    memory.
+- **Reason:** the user wants to know what the LiDAR contributes, and whether a camera-only system can work.
+- **Impact:**
+  - AGENTS.md and the sensor contract forbid removing the LiDAR "without a new explicit user instruction". This
+    entry records that instruction and its scope.
+  - D-2026-11-04-2 (the C-Planner V1 repair) is recorded on `cplanner/dev`.
+- **Reversal:** a user decision.
+- **Sources:** the user's messages of 2026-11-04:
+  - "기존의 우리 방식은 카메라와 라이다를 둘 다 쓰는건데, 라이다를 쓰지 않았을때 어떠한 차이가 나타나는지를 보고
+    싶어서 그런거야 … 방향성 수정 부탁할게": the existing method uses both camera and LiDAR; they want to see what
+    difference appears without the LiDAR, and asked for the direction to be corrected.
+  - "오케이 일단 진행해. 그렇게. 해상도 문제를 따로 분리하기는 어려울 것 같은데. 너도 한번 생각해봐": proceed as
+    proposed; separating the resolution problem seems hard; think about it too.
