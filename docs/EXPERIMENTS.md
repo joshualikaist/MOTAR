@@ -709,7 +709,10 @@ family that is in the test's scope.
     PATH. Then gate_02 C0_CONDITIONAL_PASS, and independent review r2 (Opus 5.5) **PASS**, so **C0 is PASS**.
   - M-r2-1 and M-r2-2 answered (tests and plan). C1/C2 preregistered; GPU approved by the user.
   - C1 on `1908fd8`: C1_IDENTITY_PASS. Design review AMEND_FIRST, answered by amendment 1, so C1 is rerun on the
-    amendment commit. C2 not yet run.
+    amendment commit.
+  - C1 on `5522be0`: C1_IDENTITY_PASS. C2 ran there to COMPLETE (60 cells, host faults 0); its results await the
+    independent review.
+  - Sensor-level CPU check (exploratory, not a gate): `docs/evidence/camonly_2026-11-04/sensor/`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)

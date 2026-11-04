@@ -23930,3 +23930,24 @@ the tree stayed clean.
   equal an independent computation, and five new known-bad cases each fail as intended.
 
 Next: C1 again on this commit (`c1_r2`), then C2. No push or merge.
+
+## 2026-11-04 — camera-only: sensor-level CPU check of the camera input (exploratory)
+
+The plan's "Sensor-level check" (section "K5 revised"), run on the CPU while C2 held the GPU; no policy, no GPU. Not
+preregistered and not a gate. Files: `docs/evidence/camonly_2026-11-04/sensor/` (script, extracted kernel, JSON,
+stdout; the evidence README carries the full table, generated from the JSON).
+
+- **Method:** at 1,200 recorded frames of B1-R `A/F_SHADOW` (70/115/160/205 bars, seed 4301, 300 frames each),
+  MOTAR's 40 x 24 obstacle camera (kernel copied byte for byte, upsampled to 160 x 90) and its 72 x 4 LiDAR
+  (`cplanner/motar/replay.py` at `bf1ebc7`) are rendered with Warp on the CPU. Each of the 17 in-FOV bins' fused
+  camera value is compared with an exact horizontal ray against the bar boxes (tolerance 0.3 m).
+- **Validation:** the LiDAR's horizontal row agrees with the exact caster on 41,837 of 41,837 bins.
+- **Result:** the camera's per-bin miss rate rises with range up to 6-8 m (47.9 % at the bin's bearing; 18.4 %
+  at the bearing the column actually samples). Of the bars at 10-12 m, 68.4 % are beyond the camera's 10 m.
+- **Column offset:** the linear angle-to-column map in perception differs from the pinhole render by up to
+  3.41 degrees, as review r2 estimated.
+- **Not computed:** the plan's split by bar position between rays (NOT_RECORDED).
+- **Scope:** it describes the camera value F receives in place of the in-FOV LiDAR. It does not say what the
+  policy does with it; C2 measures that.
+
+Next: the independent review of the C2 results, then the results commit. No push or merge.
