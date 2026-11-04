@@ -1,0 +1,123 @@
+{
+ "stage": "identity",
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+ "commit": "d38b24705d751181c4d547ca182c2540092eed36",
+ "prereg": "docs/plans/prereg_gain_randomization_gr0_v1.md",
+ "started": "2026-11-04T11:51:02.749917+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T11:51:02.749903+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/motar_eval/__init__.py"
+ },
+ "preflight_problems": [],
+ "ref_tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1",
+ "ref_commit": "62e59c031ad27c4d00e7bef3110fc17d3f0f6249",
+ "comparisons": {},
+ "verdict": "IDENTITY_FAIL",
+ "records": [
+  {
+   "level": "ref",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1",
+   "commit": "62e59c031ad27c4d00e7bef3110fc17d3f0f6249",
+   "scale": null,
+   "seed": 4501,
+   "density": 160,
+   "quota": 2,
+   "exit": 0,
+   "wall_s": 15.806292533874512,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T11:51:18.572120+09:00"
+   },
+   "stats": null,
+   "problems": [
+    "missing or unreadable output: [Errno 2] No such file or directory: '/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/identity_01/ref/E2_obstacle_aware__160bars__seed4501/result.json'"
+   ],
+   "verdict": "FAIL"
+  },
+  {
+   "level": "off",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "d38b24705d751181c4d547ca182c2540092eed36",
+   "scale": null,
+   "seed": 4501,
+   "density": 160,
+   "quota": 2,
+   "exit": 0,
+   "wall_s": 15.046793460845947,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T11:51:33.619116+09:00"
+   },
+   "stats": null,
+   "problems": [
+    "missing or unreadable output: [Errno 2] No such file or directory: '/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/identity_01/off/E2_obstacle_aware__160bars__seed4501/result.json'"
+   ],
+   "verdict": "FAIL"
+  },
+  {
+   "level": "s00",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "d38b24705d751181c4d547ca182c2540092eed36",
+   "scale": 0.0,
+   "seed": 4501,
+   "density": 160,
+   "quota": 2,
+   "exit": 0,
+   "wall_s": 14.007015466690063,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T11:51:47.626295+09:00"
+   },
+   "stats": null,
+   "problems": [
+    "missing or unreadable output: [Errno 2] No such file or directory: '/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/identity_01/s00/E2_obstacle_aware__160bars__seed4501/result.json'"
+   ],
+   "verdict": "FAIL"
+  },
+  {
+   "level": "s40",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "d38b24705d751181c4d547ca182c2540092eed36",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 160,
+   "quota": 2,
+   "exit": 0,
+   "wall_s": 14.007847785949707,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T11:52:01.634420+09:00"
+   },
+   "stats": null,
+   "problems": [
+    "missing or unreadable output: [Errno 2] No such file or directory: '/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/identity_01/s40/E2_obstacle_aware__160bars__seed4501/result.json'"
+   ],
+   "verdict": "FAIL"
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T11:52:01.644426+09:00"
+ },
+ "finished": "2026-11-04T11:52:01.644438+09:00"
+}

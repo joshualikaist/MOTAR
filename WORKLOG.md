@@ -23561,3 +23561,34 @@ The identity stage ran from `d38b247`, 11:51 – 11:52 KST, at 0 kernel fault re
   if that is not IDENTITY_PASS, the unit stops.
 
 Next: identity_02, then GR-0. No push or merge.
+
+## 2026-11-04 — GR identity_02 IDENTITY_PASS; GR-0 COMPLETE: Policy F robust to ±20 % gains, sensitive to ±40 %
+
+**Identity_02** (commit `c56be07`, A3 placement, 11:54 – 11:58 KST) is IDENTITY_PASS:
+- `off` reproduces the base tree `62e59c0` bit for bit (result.json and every episode row);
+- the switch ON with scale 0 reproduces `off`;
+- scale 0.4 differs (capture 240 -> 224 and crash 16 -> 32, of 256).
+
+**GR-0** (`c56be07`, 11:58 – 13:25 KST, 36 / 36 cells COMPLETE, 2,048 quota episodes per cell, 0 kernel fault
+records) used Policy F, E2 and A3:
+
+| Level | Capture | Crash | Delta capture [95 % CI] | Delta crash [95 % CI] | Reading (as computed) |
+| --- | --- | --- | --- | --- | --- |
+| S00 nominal | 95.54 % | 4.46 % | – | – | – |
+| S20 ±20 % | 94.92 % | 5.07 % | -0.62 [-1.01, -0.26] pp | +0.61 [+0.25, +0.98] pp | GAIN_ROBUST |
+| S40 ±40 % | 91.85 % | 8.15 % | -3.69 [-4.36, -3.03] pp | +3.69 [+3.03, +4.37] pp | GAIN_SENSITIVE |
+
+- Crash rises with density at every level. At 205 bars it goes from 8.81 % (S00) to 13.57 % (S40), and every S40 block
+  is worse than S00.
+- Exploratory, not preregistered: floor strikes go 24 -> 72 -> 447 and bar contacts 1,076 -> 1,194 -> 1,568.
+  The new failure mode under ±40 % gains is consistent with altitude tracking loss.
+- Hypothesis "Policy F is insensitive to controller tuning" is rejected at ±40 % (crash +3.69 pp, CI excludes 0).
+  It holds at ±20 % within the preregistered margins.
+- Next-step rule: S40 is GAIN_SENSITIVE, so GR-1 (training with gain randomization) is motivated; it gets its own
+  preregistration.
+
+Raw data: `aerial_gym_simulator/results/gain_randomization_gr0_v1/` (303 files, bound in
+`docs/evidence/gain_randomization_2026-11-04/SHA256_MANIFEST.json`). Analysis: `tools/gr_analyse.py`.
+
+The independent review (Opus 5.5) started at 13:27 KST in `~/motar_tmp/gainrand_20261104/review/`. Next: record the
+review, then the GR-1 preregistration. No push or merge.

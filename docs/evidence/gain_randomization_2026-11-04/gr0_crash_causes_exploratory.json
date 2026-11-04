@@ -1,0 +1,39 @@
+{
+ "status": "EXPLORATORY_NOT_PREREGISTERED",
+ "source": "result.json crash_causes (aggregate window) per cell, summed per level",
+ "by_level": {
+  "S00": {
+   "count": 1106,
+   "bar_contact": 1076,
+   "below": 24,
+   "above": 0,
+   "out_of_bounds": 6,
+   "bar_contact_share": 11.664918906555931,
+   "below_share": 0.29366150141370767,
+   "above_share": 0.0,
+   "out_of_bounds_share": 0.04141959203036053
+  },
+  "S20": {
+   "count": 1273,
+   "bar_contact": 1194,
+   "below": 72,
+   "above": 0,
+   "out_of_bounds": 7,
+   "bar_contact_share": 10.914486544259605,
+   "below_share": 1.0153852436457302,
+   "above_share": 0.0,
+   "out_of_bounds_share": 0.07012821209466558
+  },
+  "S40": {
+   "count": 2019,
+   "bar_contact": 1568,
+   "below": 447,
+   "above": 0,
+   "out_of_bounds": 4,
+   "bar_contact_share": 8.728783203586314,
+   "below_share": 3.2432504731105647,
+   "above_share": 0.0,
+   "out_of_bounds_share": 0.027966323303123125
+  }
+ }
+}
