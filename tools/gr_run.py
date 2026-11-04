@@ -33,7 +33,7 @@ import kroc2027_eval as K                                  # noqa: E402
 
 PREREG = "docs/plans/prereg_gain_randomization_gr0_v1.md"
 REF_TREE = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1")
-REF_COMMIT = "62e59c0d"
+REF_COMMIT = "62e59c031ad2"
 ARM = "E2_obstacle_aware"
 BACKEND = {"NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1"}
 GPU = "NVIDIA GeForce RTX 3070"
