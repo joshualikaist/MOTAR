@@ -681,7 +681,8 @@ family that is in the test's scope.
     assumptions; minor findings and limitations open (`docs/evidence/cplanner_2026-11-04/`).
   - M2 FAIL, confirmed by independent review: V1 FAIL (one beam in 691,200 grazes a bar edge along the float64
     manifest but not along the kernel's float32 ray); G-alpha reading FILTER_ARM_RETAINED (0.816), 0 FALSE_CERT,
-    from the FAIL run, so not a cleared FILTER arm. The V1 repair is a user decision.
+    from the FAIL run, so not a cleared FILTER arm. The user chose repair (D-2026-11-04-2): the direction-bound
+    repair is preregistered, not yet measured.
   - M3 part 1 PASS after independent review (Opus 5.5): E1 native equivalence PASS, E2 PASS, G-beta PASS_K16
     (p95 20.7 ms at K = 16, fastest P-core, idle host); important findings I1-I3 open.
   - No closed-loop result; C-Planner capture is NOT_RECORDED.
@@ -692,10 +693,11 @@ family that is in the test's scope.
   - → `docs/plans/prereg_cplanner_r2prime_v1.md` → `docs/evidence/cplanner_2026-11-04/` (R2', R3')
   - → `docs/plans/prereg_cplanner_m2_v1.md`
   - → `docs/plans/prereg_cplanner_m3_v1.md`
+  - → `docs/plans/prereg_cplanner_dirbound_v1.md` (repair after the M2 V1 FAIL)
 - **Compare with:** `b1r-classical-baseline`, `boia`
 - **Members:** `docs/plans/cplanner_charter_v1.md`, `docs/plans/prereg_cplanner_r2prime_v1.md`,
   `docs/plans/prereg_cplanner_m2_v1.md`, `docs/plans/prereg_cplanner_m3_v1.md`,
-  `docs/evidence/cplanner_2026-11-04/`
+  `docs/plans/prereg_cplanner_dirbound_v1.md`, `docs/evidence/cplanner_2026-11-04/`
 
 ## Not yet in the repository
 

@@ -247,3 +247,26 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Sources:** the user's messages of 2026-11-03 ("이거 관련해서, 다음 계획을 어떤거를 세워야되고 …")
   and 2026-11-04 ("오케이 다른건 괜찮은데, 호스트 복구 안해도 될거같은데? … 다 진행해. D세션");
   `~/motar_tmp/cplanner_roadmap_20261103/ROADMAP_PROPOSAL.md`.
+
+## D-2026-11-04-2 — C-Planner V1 direction gap: repair, not tolerance
+
+- **Decision:** the M2 V1 violation is a defect to repair, not a measurement tolerance. The repair makes
+  the certifier sound under a bounded beam-direction error. A wider V1 band alone does not count as the
+  repair.
+- **Alternatives:**
+  - (b) accept the violation as tolerance: add a geometric edge band to V1 and argue the reviewer's
+    three exceptions. Rejected by the user once the rate was stated in flight time (about one beam
+    every 4 minutes of flight per vehicle at 10 Hz x 288 beams).
+  - (c) keep the certificate as a label only and pause the FILTER arm.
+- **Reason:** at one beam every few minutes the gap is a recurring input error. The certificate's
+  soundness should cover it by construction.
+- **Impact:**
+  - The M2 FAIL stays recorded.
+  - The repair is a new dated preregistration on `cplanner/dev`, with its own gates and an independent
+    review. It needs no GPU.
+  - The FILTER arm stays uncleared until the repaired V1 and G-alpha pass.
+- **Reversal:** a user decision.
+- **Sources:** the user's message of 2026-11-04 ("4분에 1번이면 교정하려고 하는게 맞네 … 오차 아니고
+  수정해야되는 부분": at one in four minutes it should be corrected; it is a part to fix, not an error);
+  [`docs/evidence/cplanner_2026-11-04/m2/REVIEW_r1.md`](evidence/cplanner_2026-11-04/m2/REVIEW_r1.md);
+  Beads `motar-3p3.35`.

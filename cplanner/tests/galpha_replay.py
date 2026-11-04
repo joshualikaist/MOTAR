@@ -18,6 +18,7 @@ usage: galpha_replay.py OUT_JSON EPISODES_PER_CELL WORKERS CELL_DIR [CELL_DIR ..
 import concurrent.futures as cf
 import hashlib
 import json
+import os
 import math
 import multiprocessing as mp
 import pathlib
@@ -36,7 +37,12 @@ import core                                          # noqa: E402
 import replay as RP                                  # noqa: E402
 from motar_eval import occlusion_trace as OT         # noqa: E402
 
-CONFIG = "MOTAR-72x4-RUNTIME"
+# The M2 gate ran MOTAR-72x4-RUNTIME; the direction-bound repair (docs/plans/prereg_cplanner_dirbound_v1.md) reruns
+# this script on its configurations through CPLANNER_GALPHA_CONFIG (read here so spawned workers see it).
+CONFIG = os.environ.get("CPLANNER_GALPHA_CONFIG", "MOTAR-72x4-RUNTIME")
+if CONFIG not in ("MOTAR-72x4-RUNTIME", "MOTAR-72x4-RUNTIME-NATIVE", "MOTAR-72x4-RUNTIME-DIR",
+                  "MOTAR-72x4-RUNTIME-DIR-NATIVE"):
+    raise SystemExit("unsupported CPLANNER_GALPHA_CONFIG " + CONFIG)
 R_PLAN = 0.45
 TERMINAL_M = 0.9
 CERT_EVERY = 2

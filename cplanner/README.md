@@ -17,6 +17,8 @@ by `cplanner/tools/run_gate.py` or by hand, never by `tools/run_tests.py`. The m
 | `native/coverage_b.c`, `native/build.py`, `src/coverage_native.py` | M3: exact C port of `_coverage_B` (opt-in config `MOTAR-72x4-RUNTIME-NATIVE`; never build the library inside the repository) | new |
 | `tests/m3_native_equivalence.py`, `tests/gbeta_timing.py` | M3 gates E1 (whole-result identity with the verbatim Python) and G-beta (compute on replay) | new |
 | `planner/c_planner.py`, `tests/planner_unit.py` | M3 predictive planner skeleton (C-OFF / C-FILTER) and its development checks (not a gate) | new |
+| `src/registry.py` (`direction_error_m`), `src/core.py` (eps > 0 only) | direction-bound repair after the M2 V1 FAIL: configs `MOTAR-72x4-RUNTIME-DIR` / `-DIR-NATIVE` (eps 1 mm); every existing config keeps eps 0 | changed |
+| `tests/check_direction_bound.py`, `tests/v1v2_kernelray.py`, `tools/run_dirbound.py` | direction-bound gates D1 (most-permissive-direction fuzz), D2 (V1-v2 along the kernel's own float32 rays) and their driver; `tests/galpha_replay.py` reads `CPLANNER_GALPHA_CONFIG` | new |
 | `tools/run_focused.py` | r1 single-command runner, kept for provenance; its empty-check behaviour is superseded by `run_gate.py` | r1 copy |
 | `docs/` | R0 architecture, r1 contract and amendments, historical R2 rules, research plan, terminal-approach spec | r1 copies, historical |
 

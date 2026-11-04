@@ -210,6 +210,9 @@ class CertifierCore:
         """Free evidence exists strictly inside the qualified bar-height interval for every layout."""
         n = len(dz)
         zlo, zhi = REG.BAR_Z_EXTENT
+        eps = self.cfg.direction_error_m
+        if eps:     # every ray within the declared direction bound stays inside the bar-height interval
+            zlo, zhi = zlo + eps, zhi - eps
         lo, hi = np.zeros(n), np.full(n, np.inf)
         if not zlo < z < zhi:
             return lo, np.zeros(n)              # boundary grazing is unqualified: no 2-D free evidence
@@ -298,8 +301,12 @@ class CertifierCore:
         coverage = {"VERBATIM_PY": CB._coverage_B, "NATIVE_EXACT": CN.coverage_B_native}.get(self.cfg.coverage)
         if coverage is None:
             return result(k, "COVERAGE_IMPL_NOT_QUALIFIED", "SAFE_REJECT")
-        r = coverage((a, b), list(cur[3]), list(cur[4]), REG.BAR_HALF_SIZES, R, self.cfg.resolution,
-                     self.cfg.max_nodes)
+        shapes, radius = REG.BAR_HALF_SIZES, R
+        eps = self.cfg.direction_error_m
+        if eps:     # direction bound: a free point within eps of the cast ray proves only the footprint shrunk by eps
+            shapes = tuple((hx - eps, hy - eps) for hx, hy in REG.BAR_HALF_SIZES)
+            radius = R + 2.0 * eps
+        r = coverage((a, b), list(cur[3]), list(cur[4]), shapes, radius, self.cfg.resolution, self.cfg.max_nodes)
         cat = ("CERTIFIED_STATIC_BARS" if r["certified"] else "OCCUPIED"
                if r["reason"] == "OBSERVED_SURFACE_INTERSECTION" else "UNKNOWN"
                if r["reason"] == "NO_VALID_RAYS" else "SAFE_REJECT")

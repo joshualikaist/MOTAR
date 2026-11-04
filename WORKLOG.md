@@ -23803,3 +23803,33 @@ cycle stops here. Beads `motar-3p3.35` (P1) holds the V1 decision and its option
 Next (user decisions): how to repair the direction/grazing gap in V1 (new dated preregistration) or keep the
 certificate as a label only; whether M3's remaining parts (planner, simulator arm, DEV smoke) proceed. No GPU, PPO,
 push or merge.
+
+## 2026-11-04 — C-Planner direction-bound repair preregistered (user: repair, not tolerance)
+
+The user decided that the M2 V1 violation is a defect to repair (D-2026-11-04-2 in `docs/DECISIONS.md`) once its
+rate was stated in flight time: one beam in 691,200 is about one beam every 4 minutes of flight per vehicle (288 beams
+x 10 Hz = 2,880 beams/s; 691,200 beams = 240 s; 95 % range for one observed event about 43 s to 2.7 h).
+
+- **Repair** ([`docs/plans/prereg_cplanner_dirbound_v1.md`](docs/plans/prereg_cplanner_dirbound_v1.md)): a declared
+  bound eps on the lateral offset between the probed ray and the manifest ray. It is opt-in per configuration
+  (`registry.direction_error_m`, default 0; new `MOTAR-72x4-RUNTIME-DIR` / `-DIR-NATIVE` with eps = 1 mm). With
+  eps > 0 the core certifies against bar shapes shrunk by eps with radius R + 2 eps, and shrinks the bar-height
+  interval by eps. `coverage_b.py` and the native port are unchanged. Soundness follows from the R2' argument
+  applied to the shrunk scene.
+- **Gates:**
+  - D0: the seven R2' suites with eps = 0.
+  - D1: the new `check_direction_bound.py`, 2,000 scenes with the most permissive declaration inside the bound,
+    plus a power control at 100x the bound.
+  - D2: the new `v1v2_kernelray.py`, V1-v2 along the kernel's own float32 rays, 1,000 frames per V1 cell.
+  - D3: G-alpha on `-DIR-NATIVE` with M2's sample.
+  - Driver: `tools/run_dirbound.py`, which also records the online CPU list per command (R3' minor M8).
+- **Development (not evidence):**
+  - D1 on 40 scenes: 0 FALSE_CERT inside the bound, 2 at 100x; eps costs 450 -> 446 certified of 640.
+  - D2 on the M2 violation frame: the manifest ray disagrees (depth 1.7e-8 m) and the kernel ray agrees. The
+    kernel-ray HIT range error is 1.7e-6 m, against 2.5e-4 m along the manifest in M2.
+  - Driver smoke: CONDITIONAL.
+- Hypothesis "the kernel-ray reconstruction differs from the kernel" not supported: along it, the M2 violation
+  disappears and ranges match to 1.7e-6 m.
+
+Next: commit, run the gate from a frozen copy, independent review. In parallel (D-2026-11-04-1 on `gainrand/dev`):
+control gain randomization GR-0. No push or merge.
