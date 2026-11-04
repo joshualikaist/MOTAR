@@ -23951,3 +23951,74 @@ stdout; the evidence README carries the full table, generated from the JSON).
   policy does with it; C2 measures that.
 
 Next: the independent review of the C2 results, then the results commit. No push or merge.
+
+## 2026-11-04 — camera-only: C1 rerun PASS and C2 COMPLETE (reading REPORTED); results review r1 PASS_WITH_LIMITS
+
+- **Runs:** C1 again on amendment 1's commit `5522be0` (`c1_r2`, 19:51-19:57): **C1_IDENTITY_PASS**. Then C2 at
+  the same commit, 19:57:26-22:30:58: **COMPLETE**, 60 of 60 cells OK.
+  - Host faults were 0 at the start, after each of the 62 cells and at the end, with one boot id.
+  - Raw data: `results/camonly_c1c2_v1/{c1_r2,c2}` in the main checkout, untracked; 498 files bound in
+    `docs/evidence/camonly_2026-11-04/c1c2/SHA256_MANIFEST_c1r2_c2.json`.
+- **Analysis:** `tools/camonly_c2_analyse.py` (SHA-256 `f9d709ff…`, the bytes at `5522be0`) wrote
+  `c1c2/c2_analysis.json` (`f145389c…`). All 18 bindings are true.
+
+Pooled over the quota (zero-shot, Frozen Policy F, E2, A3, 70-205 bars, seeds 4501-4503):
+
+| Condition | Capture % | Crash % |
+| --- | ---: | ---: |
+| A `full` (GR-0 S00) | 95.54 | 4.46 |
+| B_in `no_lidar_in_fov` | 96.23 | 3.76 |
+| B_in_gL `no_lidar_in_fov_obs_only` | 95.70 | 4.30 |
+| B_out `no_lidar_out_fov` (OOD) | 56.28 | 43.71 |
+| C `no_lidar` (OOD) | 55.59 | 44.40 |
+| C_gL `no_lidar_obs_only` (OOD) | 60.64 | 39.36 |
+
+| Contrast (crash, pp) | Mean [95 % bootstrap CI] | Label |
+| --- | --- | --- |
+| total (OOD, includes K2) | +39.95 [+33.95, +45.52] | HIGHER |
+| out_fov (OOD, includes K2) | +39.25 [+33.65, +44.71] | HIGHER |
+| in_fov | −0.69 [−1.07, −0.33] | SMALL_LOWER |
+| interaction (OOD) | +1.39 [+0.28, +2.52] | SMALL_HIGHER (fragile) |
+| obs_in | −0.16 [−0.46, +0.11] | NEGLIGIBLE |
+| gov_in | −0.53 [−0.96, −0.16] | SMALL_LOWER (fragile) |
+| obs_all (OOD) | +34.90 [+28.88, +40.62] | HIGHER |
+| gov_all (OOD, includes K2) | +5.05 [+4.15, +5.83] | HIGHER |
+
+Capture contrasts are the mirror image, because timeouts are 0.004-0.012 %. The governor telemetry for the
+conditions without out-of-FOV LiDAR (B_out, C) is an intervention rate of 0.85, a mean clearance of 1.66 m and a
+mean executed speed of 2.17 m/s. For A it is 0.28, 7.99 m and 2.95 m/s.
+
+**Independent results review r1** (Claude Code subagent, Opus 5.5, fresh context, read-only;
+`c1c2/REVIEW_results_r1.md`): **PASS_WITH_LIMITS**.
+- It re-derived every binding from the raw files and every number exactly. Its own bootstrap, 100,000 resamples
+  with a different generator, gives the same 16 labels.
+- **MAJOR M-1, my protocol deviation.** I ran the CPU sensor check (`sensor/`, previous entry) from about 20:35:48
+  to 20:37:46, during C2.
+  - AGENTS.md forbids heavy CPU or disk work alongside an evaluation. I checked only the tree-freeze rule, and
+    pinning the job to other cores does not make it allowed.
+  - It overlapped `no_lidar` 115/4501 and `no_lidar_obs_only` 115/4501. The second took 186 s; the others of its
+    condition took 104-161 s.
+  - With that block dropped, every label holds except `interaction` and `gov_in`, which become UNRESOLVED
+    (`c1c2/sensitivity_author.json`, my own computation, which agrees with the review's).
+  - An idle-host rerun of the two cells, compared byte for byte, would settle it. It needs a new GPU approval.
+- **Minor findings:**
+  - m-1: `gov_all` includes K2.
+  - m-2: the `interaction` and `gov_in` labels are fragile. Leave-one-out leaves them unchanged in only 4-9 of
+    12 blocks, and the Bonferroni-adjusted p is 0.33 and 0.25.
+  - m-3: the plan's "nearest bar inside vs outside the FOV at crash" and "time to capture" are NOT_REPORTED.
+  - m-4: the amendment's code ran 6 minutes after its commit, without review; this review found no defect.
+  - m-5: the analysis output is now bound by SHA-256.
+  - m-6: the magnitudes depend on density. Mean `total` capture is −24.54 pp at 70 bars and −51.45 pp at 205.
+- The claim scope, what may and may not be said, is in `docs/evidence/camonly_2026-11-04/README.md`.
+- **Hypothesis rejected:** "removing the in-FOV LiDAR raises F's crash rate by the 2 pp band or more on this grid".
+  Measured `in_fov` crash −0.69 pp [−1.07, −0.33]; `obs_in` is NEGLIGIBLE.
+  - This does not say the camera suffices. `in_fov` also contains the in-FOV association, the governor's
+    immunity to phantoms and the column offset.
+  - It is zero-shot, with the K1 fill.
+
+**Next** (user decisions):
+1. The idle-host rerun of the two overlapped cells for M-1 (GPU, about 6 min).
+2. Whether C3/C4 is wanted: a camera-only continuation of F, then a matched evaluation against GR-1 `ctrl`.
+3. GR-1b, the second-seed proposal, outside this unit.
+
+No push or merge.

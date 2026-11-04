@@ -1,0 +1,114 @@
+{
+ "total.capture": {
+  "label_full": "LOWER",
+  "recorded": "LOWER",
+  "drop_115_4501": "LOWER",
+  "drop_mean": -40.14,
+  "loo_unchanged": 12
+ },
+ "total.crash": {
+  "label_full": "HIGHER",
+  "recorded": "HIGHER",
+  "drop_115_4501": "HIGHER",
+  "drop_mean": 40.13,
+  "loo_unchanged": 12
+ },
+ "in_fov.capture": {
+  "label_full": "SMALL_HIGHER",
+  "recorded": "SMALL_HIGHER",
+  "drop_115_4501": "SMALL_HIGHER",
+  "drop_mean": 0.69,
+  "loo_unchanged": 12
+ },
+ "in_fov.crash": {
+  "label_full": "SMALL_LOWER",
+  "recorded": "SMALL_LOWER",
+  "drop_115_4501": "SMALL_LOWER",
+  "drop_mean": -0.7,
+  "loo_unchanged": 12
+ },
+ "out_fov.capture": {
+  "label_full": "LOWER",
+  "recorded": "LOWER",
+  "drop_115_4501": "LOWER",
+  "drop_mean": -39.58,
+  "loo_unchanged": 12
+ },
+ "out_fov.crash": {
+  "label_full": "HIGHER",
+  "recorded": "HIGHER",
+  "drop_115_4501": "HIGHER",
+  "drop_mean": 39.57,
+  "loo_unchanged": 12
+ },
+ "interaction.capture": {
+  "label_full": "SMALL_LOWER",
+  "recorded": "SMALL_LOWER",
+  "drop_115_4501": "UNRESOLVED",
+  "drop_mean": -1.25,
+  "loo_unchanged": 5
+ },
+ "interaction.crash": {
+  "label_full": "SMALL_HIGHER",
+  "recorded": "SMALL_HIGHER",
+  "drop_115_4501": "UNRESOLVED",
+  "drop_mean": 1.25,
+  "loo_unchanged": 4
+ },
+ "obs_in.capture": {
+  "label_full": "NEGLIGIBLE",
+  "recorded": "NEGLIGIBLE",
+  "drop_115_4501": "NEGLIGIBLE",
+  "drop_mean": 0.22,
+  "loo_unchanged": 12
+ },
+ "obs_in.crash": {
+  "label_full": "NEGLIGIBLE",
+  "recorded": "NEGLIGIBLE",
+  "drop_115_4501": "NEGLIGIBLE",
+  "drop_mean": -0.22,
+  "loo_unchanged": 12
+ },
+ "gov_in.capture": {
+  "label_full": "SMALL_HIGHER",
+  "recorded": "SMALL_HIGHER",
+  "drop_115_4501": "UNRESOLVED",
+  "drop_mean": 0.47,
+  "loo_unchanged": 8
+ },
+ "gov_in.crash": {
+  "label_full": "SMALL_LOWER",
+  "recorded": "SMALL_LOWER",
+  "drop_115_4501": "UNRESOLVED",
+  "drop_mean": -0.48,
+  "loo_unchanged": 9
+ },
+ "gov_all.capture": {
+  "label_full": "LOWER",
+  "recorded": "LOWER",
+  "drop_115_4501": "LOWER",
+  "drop_mean": -4.83,
+  "loo_unchanged": 12
+ },
+ "gov_all.crash": {
+  "label_full": "HIGHER",
+  "recorded": "HIGHER",
+  "drop_115_4501": "HIGHER",
+  "drop_mean": 4.82,
+  "loo_unchanged": 12
+ },
+ "obs_all.capture": {
+  "label_full": "LOWER",
+  "recorded": "LOWER",
+  "drop_115_4501": "LOWER",
+  "drop_mean": -35.31,
+  "loo_unchanged": 12
+ },
+ "obs_all.crash": {
+  "label_full": "HIGHER",
+  "recorded": "HIGHER",
+  "drop_115_4501": "HIGHER",
+  "drop_mean": 35.31,
+  "loo_unchanged": 12
+ }
+}

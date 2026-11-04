@@ -710,8 +710,15 @@ family that is in the test's scope.
   - M-r2-1 and M-r2-2 answered (tests and plan). C1/C2 preregistered; GPU approved by the user.
   - C1 on `1908fd8`: C1_IDENTITY_PASS. Design review AMEND_FIRST, answered by amendment 1, so C1 is rerun on the
     amendment commit.
-  - C1 on `5522be0`: C1_IDENTITY_PASS. C2 ran there to COMPLETE (60 cells, host faults 0); its results await the
-    independent review.
+  - C1 on `5522be0`: C1_IDENTITY_PASS. C2 ran there to COMPLETE (60 cells, host faults 0), reading REPORTED.
+    Independent results review r1 (Opus 5.5): **PASS_WITH_LIMITS**.
+    - MAJOR M-1: the author's CPU sensor check ran alongside two C2 cells, disclosed as a deviation.
+    - Six MINOR: wording and record.
+  - C2 (zero-shot, Frozen Policy F, this grid), crash:
+    - removing all LiDAR: +39.95 pp (OOD, includes K2);
+    - removing only the out-of-FOV LiDAR: +39.25 pp (OOD, includes K2);
+    - removing only the in-FOV LiDAR: −0.69 pp, a detected change below the 2 pp band.
+  - Read these with the limits and the claim scope in `docs/evidence/camonly_2026-11-04/README.md`.
   - Sensor-level CPU check (exploratory, not a gate): `docs/evidence/camonly_2026-11-04/sensor/`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
@@ -720,6 +727,7 @@ family that is in the test's scope.
   - → `docs/evidence/camonly_2026-11-04/` (C0 gate and reviews)
   - → `docs/plans/prereg_camonly_c1c2_v1.md` (GPU: C1 identity, C2 five zero-shot conditions; user approval 2026-11-04)
   - → `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md` (after the design review AMEND_FIRST; before C2)
+  - → `docs/evidence/camonly_2026-11-04/c1c2/` (C1 rerun, C2 results, results review r1)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`
