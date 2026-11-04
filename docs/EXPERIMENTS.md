@@ -722,6 +722,12 @@ family that is in the test's scope.
   - Found afterwards: 8 of the 12 GR-0 S00 cells used as condition A also ran alongside the author's CPU jobs
     (`gainrand/dev` `352b919`, `load_overlap/`). An idle-host byte-compare rerun awaits the user.
   - Sensor-level CPU check (exploratory, not a gate): `docs/evidence/camonly_2026-11-04/sensor/`.
+  - Crash mechanism (CPU, exploratory, post hoc; user request 2026-11-05): `docs/evidence/camonly_2026-11-04/mechanism/`.
+    - With the full LiDAR, F flies diagonally forward-left, outside the camera FOV in 51.8 % of moving frames.
+      52.0 % of its imminent bars lie outside the FOV.
+    - Without the out-of-FOV LiDAR, its lateral reversals fall from 2.07 % to 0.15 % of steps.
+    - 38.5 % of the paired first episodes that A captured crash in C.
+    - Consistent with blind-side contacts; the contact bearing in C is NOT_MEASURED.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -730,6 +736,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_c1c2_v1.md` (GPU: C1 identity, C2 five zero-shot conditions; user approval 2026-11-04)
   - → `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md` (after the design review AMEND_FIRST; before C2)
   - → `docs/evidence/camonly_2026-11-04/c1c2/` (C1 rerun, C2 results, results review r1)
+  - → `docs/evidence/camonly_2026-11-04/mechanism/` (CPU, exploratory: why C crashes)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`

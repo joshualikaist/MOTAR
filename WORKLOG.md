@@ -24038,3 +24038,30 @@ No push or merge.
   except `gov_in` and `gov_all`. The reading stays REPORTED with this added limit.
 - **Next:** the user decides on an idle-host byte-compare rerun of the 50 overlapped evaluation cells (GR-0 23,
   GR-1 25, C2 2), about 2.1 h of GPU. No push or merge.
+
+## 2026-11-05 — camera-only: crash mechanism from C2 telemetry and F's own trajectories (CPU, exploratory)
+
+The user asked why the crash rate rises so much with the camera only, and for numbers that explain it. Post hoc, not
+preregistered, not reviewed. CPU only, with the GPU idle. The record is
+`docs/evidence/camonly_2026-11-04/mechanism/` (README section `mechanism/`).
+
+- **Where F flies.** Policy F's own full-LiDAR flights (B1-R `A/F_SHADOW`, seed 4301) are diagonal forward-left:
+  97.3 % of moving frames go left, at a mean bearing of 43.1° against a half-FOV of 43.5°. 51.8 % of moving frames
+  are outside the FOV.
+- **Where the threats are.** 52.0 % of imminent bars (TTC < 1 s, within 2 m) are outside the FOV. 73.5 % of episodes
+  have a frame in which all of them are; the share rises from 47.9 % at 70 bars to 86.9 % at 205.
+- **What C2 changes.** Without the out-of-FOV LiDAR, lateral reversals fall from 2.07 % to 0.15 % of steps and
+  rightward commands from 3.4 % to 0.4 %. In-FOV removal leaves them unchanged.
+- **Outcome.** From identical initial states (1536 pairs, hashes match), 38.5 % of A's captures crash in C, and 1.3 %
+  go the other way. The median crash time is 3.2 s.
+- **Governor.** K2 caps 85 % of steps (2.52 to 1.86 m/s), and C still crashes 44.4 %. With the raw-LiDAR governor
+  (C_gL) it is 39.4 %; riskcap keeps the direction.
+- **Limits.**
+  - The contact bar's bearing in C2's crashes is NOT_MEASURED (no per-step traces).
+  - The geometry is F's full-LiDAR flight on another seed.
+  - The per-axis-limit explanation of the diagonal is untested.
+- **Next** (GPU, the user's decision; the user asked on 2026-11-05 to run GPU work later):
+  - a per-step trace of C / B_out on a subset of cells;
+  - a camera-direction control.
+
+No push or merge.

@@ -166,3 +166,123 @@ Per bin, by the exact range on the bin's bearing (pooled over the four densities
   (40 x 24 rays and bilinear upsampling).
 - Scope: one seed per density, F_SHADOW poses only, horizontal truth rays only. It describes the camera value F
   receives in place of the in-FOV LiDAR; it does not measure what the policy does with it.
+
+
+## `mechanism/`: why F crashes without the out-of-FOV LiDAR (CPU, exploratory)
+
+Requested by the user on 2026-11-05 ("explain numerically why the crash rate rises so much with the camera only").
+Post hoc, not preregistered, not a gate, not independently reviewed. CPU only (numpy on recorded JSON and traces);
+no policy, no rendering, no GPU. It ran with the GPU idle.
+
+| File | What |
+| --- | --- |
+| `c2_mechanism_telemetry.py` | Reads the 72 cells of C2 (condition A = GR-0 S00 cells): outcomes and crash durations on the quota episodes, the policy-action and speed-governor telemetry of `result.json` (all samples), and the paired first episodes |
+| `telemetry_02.json` | Its output, with the SHA-256 of all 216 input files. Version 01 is not kept: it read crash time from `completion_step`, which is a global step counter (the duration only for each env's first episode) |
+| `f_trace_geometry.py` | Reads Policy F's own full-LiDAR flights (B1-R `A/F_SHADOW` traces, seed 4301, 70/115/160/205 bars; MOTAR's `motar_eval/occlusion_trace.py` reader, which checks both SHA-256 values) and measures the travel direction and the nearby bars against the camera FOV, in the yaw-only vehicle frame |
+| `trace_geometry_02.json` | Its output, with input SHA-256 (version 01 lacked two fields; every shared field is identical) |
+
+Facts used below:
+- **FOV coverage.** The camera covers 17 of the 72 LiDAR bins (87°). In conditions without the out-of-FOV LiDAR, the
+  other 55 bins read "no return" (K1).
+- **Policy F's command.** F runs in vision mode, so its command is a vehicle-frame velocity (x forward along the
+  camera axis, y left). Each axis is limited to 2.5 m/s, so the fastest horizontal direction is 45° off the axis
+  (3.54 m/s). The camera's half-FOV is 43.5°.
+- **Reversals.** "Lateral reversals" counts consecutive steps whose y commands have opposite signs, both
+  |y| > 0.1 (`navrl_task.py` action diagnostics).
+
+Table 1. Behaviour (result.json, all samples of the 12 cells; vision mode: vehicle-frame command, y = left)
+
+| Condition | Crash (quota) | Lateral reversals per step | Rightward commands (y < −0.1) | \|y\| ≥ 0.8 | Mean y | Mean \|yaw\| | Speed (m/s) | Governor caps | Speed at contact (m/s) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| A `full` | 4.46 % | 2.07 % | 3.4 % | 78.7 % | +0.809 | 0.197 | 2.52 | 28.3 % | 1.27 |
+| B_in `no_lidar_in_fov` | 3.76 % | 2.13 % | 3.5 % | 78.3 % | +0.805 | 0.194 | 2.52 | 27.6 % | 1.30 |
+| B_in_gL `no_lidar_in_fov_obs_only` | 4.30 % | 2.18 % | 3.6 % | 78.2 % | +0.804 | 0.195 | 2.52 | 28.4 % | 1.30 |
+| B_out `no_lidar_out_fov` | 43.71 % | 0.14 % | 0.3 % | 89.7 % | +0.914 | 0.146 | 1.87 | 85.3 % | 0.84 |
+| C `no_lidar` | 44.40 % | 0.15 % | 0.4 % | 89.8 % | +0.914 | 0.145 | 1.86 | 85.0 % | 0.84 |
+| C_gL `no_lidar_obs_only` | 39.36 % | 0.21 % | 0.6 % | 84.4 % | +0.882 | 0.188 | 2.39 | 41.2 % | 0.81 |
+
+Table 2. Paired first episodes (env_episode_index 0; same initial state in A and X, checked by `initial_state_hash`)
+
+| X | Pairs | Hash mismatches | A capture → X crash | A crash → X capture | Both crash | New crash time p10 / p50 / p90 (s) |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| B_in | 1536 | 0 | 27 (1.8 %) | 35 (2.3 %) | 32 (2.1 %) | 1.3 / 4.2 / 6.8 |
+| B_in_gL | 1536 | 0 | 25 (1.6 %) | 39 (2.5 %) | 28 (1.8 %) | 1.2 / 4.3 / 8.8 |
+| B_out | 1536 | 0 | 573 (37.3 %) | 20 (1.3 %) | 47 (3.1 %) | 1.3 / 3.3 / 7.8 |
+| C | 1536 | 0 | 592 (38.5 %) | 20 (1.3 %) | 47 (3.1 %) | 1.3 / 3.2 / 7.9 |
+| C_gL | 1536 | 0 | 527 (34.3 %) | 25 (1.6 %) | 42 (2.7 %) | 1.4 / 2.6 / 5.0 |
+
+Table 3. When crashes happen (quota episodes; duration = kroc2027 `actions` x 0.1 s)
+
+| Condition | Crashes | Median crash time (s) | Episodes crashing within 2 s | within 5 s |
+| --- | ---: | ---: | ---: | ---: |
+| A | 1095 | 4.1 | 1.40 % | 2.94 % |
+| B_in | 925 | 3.8 | 1.23 % | 2.60 % |
+| B_in_gL | 1056 | 3.9 | 1.38 % | 2.97 % |
+| B_out | 10741 | 3.3 | 11.71 % | 31.65 % |
+| C | 10912 | 3.3 | 12.24 % | 32.16 % |
+| C_gL | 9672 | 2.7 | 11.86 % | 35.31 % |
+
+Table 4. Policy F's own flights with the full LiDAR (B1-R `A/F_SHADOW`, seed 4301) against the camera FOV (±43.5°), with C2's crash change by density
+
+| Bars | Frames | Travel outside FOV | Travel to the left | Mean \|travel bearing\| | Speed (m/s) | Nearest bar ≤ 2 m outside FOV | Imminent bars (TTC < 1 s) outside FOV | Episodes with a blind-imminent frame | F crashes: contact bar outside FOV / on the left | C2 crash C − A |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- | ---: |
+| 70 | 26368 | 59.5 % | 98.0 % | 44.8° | 2.80 | 74.3 % | 50.8 % | 47.9 % | 9: 55.6 % / 55.6 % | +24.53 pp |
+| 115 | 34432 | 53.3 % | 97.3 % | 43.4° | 2.72 | 75.0 % | 52.7 % | 67.3 % | 20: 70.0 % / 80.0 % | +37.24 pp |
+| 160 | 48768 | 49.6 % | 97.1 % | 42.7° | 2.64 | 73.8 % | 51.8 % | 84.5 % | 56: 41.1 % / 64.3 % | +46.57 pp |
+| 205 | 37376 | 47.8 % | 97.0 % | 42.2° | 2.53 | 74.3 % | 52.0 % | 86.9 % | 73: 53.4 % / 76.7 % | +51.45 pp |
+| pooled | 146944 | 51.8 % | 97.3 % | 43.1° | 2.66 | 74.3 % | 52.0 % | 73.5 % | 158: 51.3 % / 71.5 % | +39.95 pp |
+
+Travel-bearing histogram (pooled moving frames, 15° bins, share): -30..-15: 0.6 %, -15..0: 1.3 %, 0..15: 2.8 %, 15..30: 7.7 %, 30..45: 43.5 %, 45..60: 36.8 %, 60..75: 5.3 %, 75..90: 0.7 %
+
+Definitions for Table 4:
+- *Imminent*: a bar within 2 m surface distance, closing, with time to contact under 1 s.
+- *Blind-imminent frame*: there are imminent bars and all of them are outside the FOV.
+- *Contact bar*: the bar nearest at the last recorded frame of a crash episode, about 0.1 s before contact.
+
+**What the numbers show** (descriptive, this grid):
+1. **Where F flies.** With the full LiDAR, F flies diagonally forward-left: 97.3 % of moving frames go left, the mean
+   travel bearing is 43.1° and 80.3 % of frames fall between 30° and 60°. In 51.8 % of moving frames the travel
+   direction is outside the camera FOV. Its commands are diagonal too (A, all samples: mean |x| 0.96 and |y| 0.85 of
+   the limit, in `telemetry_02.json`), and its mean speed, 2.66 m/s, is above the 2.5 m/s per-axis limit.
+2. **Where the threats are.** Of the bars that would be hit within 1 s, 52.0 % are outside the FOV. 73.5 % of F's
+   episodes contain at least one frame in which every such bar is outside the FOV. This share rises with density,
+   from 47.9 % at 70 bars to 86.9 % at 205.
+3. **What changes without the out-of-FOV LiDAR.**
+   - F's lateral reversals fall from 2.07 % to 0.15 % of steps (C), and its rightward commands fall from 3.4 % to
+     0.4 %. It keeps the left diagonal: |y| ≥ 0.8 in 89.8 % of samples, against 78.7 % in A.
+   - Removing only the in-FOV LiDAR leaves this pattern as it was (B_in: 2.13 %, 3.5 %, 78.3 %).
+4. **Outcome.**
+   - From identical initial states, 592 of 1536 first episodes (38.5 %) that A captured crash in C, while 20 (1.3 %)
+     go the other way.
+   - The new crashes come early: median 3.2 s, p10 1.3 s. 12.2 % of C's quota episodes crash within 2 s,
+     against 1.4 % in A.
+5. **The governor does not make up for it.**
+   - Under K2, 85.0 % of steps are capped, and speed falls from 2.52 to 1.86 m/s. C still crashes in 44.40 % of
+     episodes, at 0.84 m/s at contact.
+   - With the raw full LiDAR in the governor (C_gL), crashes are 39.36 %. The governor scales speed and keeps the
+     direction (riskcap, `direction_preserved`); it does not turn.
+6. **Density.** The crash change C − A grows with density, from +24.53 pp at 70 bars to +51.45 pp at 205. The share of
+   F's episodes with a blind-imminent frame grows in the same way.
+
+**May be said** (this grid, Frozen Policy F, zero-shot, K1 and K2):
+- Policy F's own full-LiDAR flight puts the travel direction outside the camera FOV about half the time. About half
+  of its imminent bars are outside the FOV.
+- Without the out-of-FOV LiDAR, F almost stops reversing laterally, and it keeps its diagonal. Most C crashes come
+  from scenes that A captured.
+- These facts are consistent with this explanation: the crashes come from bars beside the diagonal path that only
+  the out-of-FOV LiDAR saw, and F does not react to them.
+
+**May not be said:**
+- That this explanation is the measured cause. The contact bar's bearing in C2's crashes is NOT_MEASURED, because
+  C2 recorded no per-step traces. The geometry in Table 4 is F's full-LiDAR flight on another seed, 4301.
+- That the diagonal comes from the per-axis limit. This is consistent with the speed above 2.5 m/s, but untested.
+- Anything about a policy trained without the LiDAR (C3/C4). Such a policy could learn to keep its travel direction
+  inside the FOV, at a lower top speed (2.5 m/s forward instead of 3.54 m/s on the diagonal). That is a prediction,
+  not a result.
+
+**Tests that would settle the cause** (GPU; not run, for the user's decision; the user asked on 2026-11-05 to run GPU
+work later):
+1. A per-step trace of C and B_out on a subset of C2's cells, with the occlusion trace recorder: the contact bar's
+   bearing and whether it was ever inside the FOV.
+2. A zero-shot rotation control: give the camera-only F a camera aimed along its travel direction, or a wider FOV.
+   If the cause is FOV geometry, the crash rate falls toward A.
