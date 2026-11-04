@@ -1,0 +1,1166 @@
+{
+ "unit": "T-LOAD",
+ "prereg": "docs/plans/prereg_tload_v1.md",
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+ "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+ "dry_run": false,
+ "started": "2026-11-05T02:05:32.037052+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-05T02:05:32.037038+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/motar_eval/__init__.py"
+ },
+ "module_sha256": "ea9ccacbc79918e3080486d47d63fed21569628657a20b240d198521036ff894",
+ "launcher_sha256": "1eadf8fbb042c7ebe70ab29f2b1adfee7d057c75a66eaf892edf52e0b4c0ff7f",
+ "runner_cores": "0-3,8-11,14-23",
+ "disjoint_cores": "6,7,12,13",
+ "min_cores": {
+  "L1": 3.0,
+  "L2": 12.0,
+  "L3": 0.8
+ },
+ "preflight_problems": [],
+ "env_allowlisted": {
+  "DISPLAY": ":1",
+  "HOME": "/home/fair",
+  "LANG": "en_US.UTF-8",
+  "LC_ADDRESS": "ko_KR.UTF-8",
+  "LC_IDENTIFICATION": "ko_KR.UTF-8",
+  "LC_MEASUREMENT": "ko_KR.UTF-8",
+  "LC_MONETARY": "ko_KR.UTF-8",
+  "LC_NAME": "ko_KR.UTF-8",
+  "LC_NUMERIC": "ko_KR.UTF-8",
+  "LC_PAPER": "ko_KR.UTF-8",
+  "LC_TELEPHONE": "ko_KR.UTF-8",
+  "LC_TIME": "ko_KR.UTF-8",
+  "PATH": "/home/fair/.local/bin:/home/fair/.bun/bin:/usr/local/cuda-11.7/bin:/home/fair/miniconda3/bin:/home/fair/miniconda3/condabin:/home/fair/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+  "PYTHONNOUSERSITE": "1",
+  "USER": "fair"
+ },
+ "reading": "LOAD_INVARIANT",
+ "arm_state": {
+  "L1": "EQUAL",
+  "L2": "EQUAL",
+  "L3": "EQUAL"
+ },
+ "runs": [
+  {
+   "idx": 1,
+   "cell": [
+    "full",
+    205,
+    4501
+   ],
+   "arm": "L0a",
+   "verdict": "OK",
+   "wall_s": 175.5532741546631,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/01_L0a/full/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+    "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+   },
+   "load": null,
+   "load_cores": null,
+   "load_ok": true,
+   "eq_L0a": null,
+   "ref_gate_equal": true,
+   "ref": {
+    "gate": [
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+       "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+      },
+      "b": {
+       "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+       "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/camonly_c1c2_v1/c1/full"
+     },
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+       "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+      },
+      "b": {
+       "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+       "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/camonly_c1c2_v1/c1_r2/full"
+     }
+    ],
+    "report": [
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+       "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+      },
+      "b": {
+       "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+       "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/gr0_main/S00"
+     }
+    ]
+   }
+  },
+  {
+   "idx": 2,
+   "cell": [
+    "full",
+    205,
+    4501
+   ],
+   "arm": "L1",
+   "verdict": "OK",
+   "wall_s": 202.65888571739197,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/02_L1/full/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+    "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+   },
+   "load": {
+    "arm": "L1",
+    "cmd": [
+     "taskset",
+     "-c",
+     "6,7,12,13",
+     "stress-ng",
+     "--cpu",
+     "4",
+     "--hdd",
+     "1",
+     "--hdd-bytes",
+     "1G",
+     "--temp-path",
+     "/home/fair/motar_tmp/tload_20261105/load/02_L1",
+     "--metrics-brief",
+     "--timeout",
+     "3600s"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 221.5905158519745,
+    "sampled_wall_s": 207.77335453033447,
+    "cpu_s": 829.36,
+    "cpu_s_wait4": 829.8838470000001,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/02_L1",
+    "alive_before_cell": true
+   },
+   "load_cores": 3.9916571683349087,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 3,
+   "cell": [
+    "full",
+    205,
+    4501
+   ],
+   "arm": "L2",
+   "verdict": "OK",
+   "wall_s": 274.9855659008026,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/03_L2/full/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+    "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+   },
+   "load": {
+    "arm": "L2",
+    "cmd": [
+     "taskset",
+     "-c",
+     "0-3,8-11,14-23",
+     "stress-ng",
+     "--cpu",
+     "18",
+     "--metrics-brief",
+     "--timeout",
+     "3600s"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 280.2049548625946,
+    "sampled_wall_s": 280.00457739830017,
+    "cpu_s": 4716.37,
+    "cpu_s_wait4": 4717.283147,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/03_L2",
+    "alive_before_cell": true
+   },
+   "load_cores": 16.843903209807426,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 4,
+   "cell": [
+    "full",
+    205,
+    4501
+   ],
+   "arm": "L3",
+   "verdict": "OK",
+   "wall_s": 166.25589323043823,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/04_L3/full/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+    "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+   },
+   "load": {
+    "arm": "L3",
+    "cmd": [
+     "taskset",
+     "-c",
+     "6,7,12,13",
+     "nice",
+     "-n",
+     "10",
+     "bash",
+     "-c",
+     "i=0; while true; do \"/home/fair/miniconda3/envs/aerialgym/bin/python\" -I -B \"/home/fair/motar_tmp/tload_20261105/load/04_L3/sensor_check.py\" \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly\" \"$CPLANNER_TREE\" \"/home/fair/motar_tmp/tload_20261105/load/04_L3/sc_$i.json\" 300 > \"/home/fair/motar_tmp/tload_20261105/load/04_L3/sc_$i.out\" 2>&1; i=$((i+1)); done"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 171.46932697296143,
+    "sampled_wall_s": 171.26904940605164,
+    "cpu_s": 171.31,
+    "cpu_s_wait4": 157.076663,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/04_L3",
+    "alive_before_cell": true
+   },
+   "load_cores": 1.000239100958932,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 5,
+   "cell": [
+    "full",
+    205,
+    4501
+   ],
+   "arm": "L0b",
+   "verdict": "OK",
+   "wall_s": 167.9090757369995,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/05_L0b/full/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+    "kroc2027_episodes.jsonl": "3eb439456a0e7055994705db994523bdc0ead956effe8c2242ad35cfb99c0777"
+   },
+   "load": null,
+   "load_cores": null,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 6,
+   "cell": [
+    "no_lidar",
+    205,
+    4501
+   ],
+   "arm": "L0a",
+   "verdict": "OK",
+   "wall_s": 171.53928017616272,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/06_L0a/no_lidar/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+    "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+   },
+   "load": null,
+   "load_cores": null,
+   "load_ok": true,
+   "eq_L0a": null,
+   "ref_gate_equal": true,
+   "ref": {
+    "gate": [
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+       "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+      },
+      "b": {
+       "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+       "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/camonly_c1c2_v1/c1/no_lidar"
+     },
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+       "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+      },
+      "b": {
+       "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+       "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/camonly_c1c2_v1/c1_r2/no_lidar"
+     },
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+       "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+      },
+      "b": {
+       "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+       "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/camonly_c1c2_v1/c2/no_lidar"
+     }
+    ],
+    "report": []
+   }
+  },
+  {
+   "idx": 7,
+   "cell": [
+    "no_lidar",
+    205,
+    4501
+   ],
+   "arm": "L1",
+   "verdict": "OK",
+   "wall_s": 213.05711102485657,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/07_L1/no_lidar/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+    "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+   },
+   "load": {
+    "arm": "L1",
+    "cmd": [
+     "taskset",
+     "-c",
+     "6,7,12,13",
+     "stress-ng",
+     "--cpu",
+     "4",
+     "--hdd",
+     "1",
+     "--hdd-bytes",
+     "1G",
+     "--temp-path",
+     "/home/fair/motar_tmp/tload_20261105/load/07_L1",
+     "--metrics-brief",
+     "--timeout",
+     "3600s"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 221.6211793422699,
+    "sampled_wall_s": 218.4172739982605,
+    "cpu_s": 872.99,
+    "cpu_s_wait4": 873.25566,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/07_L1",
+    "alive_before_cell": true
+   },
+   "load_cores": 3.996890832027107,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 8,
+   "cell": [
+    "no_lidar",
+    205,
+    4501
+   ],
+   "arm": "L2",
+   "verdict": "OK",
+   "wall_s": 295.60749435424805,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/08_L2/no_lidar/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+    "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+   },
+   "load": {
+    "arm": "L2",
+    "cmd": [
+     "taskset",
+     "-c",
+     "0-3,8-11,14-23",
+     "stress-ng",
+     "--cpu",
+     "18",
+     "--metrics-brief",
+     "--timeout",
+     "3600s"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 300.8216018676758,
+    "sampled_wall_s": 300.6212682723999,
+    "cpu_s": 5069.48,
+    "cpu_s_wait4": 5070.278333,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/08_L2",
+    "alive_before_cell": true
+   },
+   "load_cores": 16.863344463727117,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 9,
+   "cell": [
+    "no_lidar",
+    205,
+    4501
+   ],
+   "arm": "L3",
+   "verdict": "OK",
+   "wall_s": 169.3285744190216,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/09_L3/no_lidar/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+    "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+   },
+   "load": {
+    "arm": "L3",
+    "cmd": [
+     "taskset",
+     "-c",
+     "6,7,12,13",
+     "nice",
+     "-n",
+     "10",
+     "bash",
+     "-c",
+     "i=0; while true; do \"/home/fair/miniconda3/envs/aerialgym/bin/python\" -I -B \"/home/fair/motar_tmp/tload_20261105/load/09_L3/sensor_check.py\" \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly\" \"$CPLANNER_TREE\" \"/home/fair/motar_tmp/tload_20261105/load/09_L3/sc_$i.json\" 300 > \"/home/fair/motar_tmp/tload_20261105/load/09_L3/sc_$i.out\" 2>&1; i=$((i+1)); done"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 174.53931045532227,
+    "sampled_wall_s": 174.33899402618408,
+    "cpu_s": 174.43,
+    "cpu_s_wait4": 155.473244,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/09_L3",
+    "alive_before_cell": true
+   },
+   "load_cores": 1.0005220058445574,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 10,
+   "cell": [
+    "no_lidar",
+    205,
+    4501
+   ],
+   "arm": "L0b",
+   "verdict": "OK",
+   "wall_s": 169.00676655769348,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/10_L0b/no_lidar/E2_obstacle_aware__205bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "4a161f9eb0f0792f14dc3de6e1432a5786a099c661fc461bf69d8f4fd0119a3b",
+    "kroc2027_episodes.jsonl": "adc872d7015cded00f7017836ca31942c556c0138f981d6716b8f40b07841dd0"
+   },
+   "load": null,
+   "load_cores": null,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 11,
+   "cell": [
+    "full",
+    70,
+    4501
+   ],
+   "arm": "L0a",
+   "verdict": "OK",
+   "wall_s": 106.29193139076233,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/11_L0a/full/E2_obstacle_aware__70bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+    "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+   },
+   "load": null,
+   "load_cores": null,
+   "load_ok": true,
+   "eq_L0a": null,
+   "ref_gate_equal": null,
+   "ref": {
+    "gate": [],
+    "report": [
+     {
+      "files_equal": true,
+      "result_equal": true,
+      "equal": true,
+      "a": {
+       "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+       "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+      },
+      "b": {
+       "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+       "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+      },
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/gr0_main/S00"
+     }
+    ]
+   }
+  },
+  {
+   "idx": 12,
+   "cell": [
+    "full",
+    70,
+    4501
+   ],
+   "arm": "L1",
+   "verdict": "OK",
+   "wall_s": 134.99910259246826,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/12_L1/full/E2_obstacle_aware__70bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+    "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+   },
+   "load": {
+    "arm": "L1",
+    "cmd": [
+     "taskset",
+     "-c",
+     "6,7,12,13",
+     "stress-ng",
+     "--cpu",
+     "4",
+     "--hdd",
+     "1",
+     "--hdd-bytes",
+     "1G",
+     "--temp-path",
+     "/home/fair/motar_tmp/tload_20261105/load/12_L1",
+     "--metrics-brief",
+     "--timeout",
+     "3600s"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 147.61874842643738,
+    "sampled_wall_s": 140.00929284095764,
+    "cpu_s": 559.9,
+    "cpu_s_wait4": 560.088879,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/12_L1",
+    "alive_before_cell": true
+   },
+   "load_cores": 3.99902026957606,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 13,
+   "cell": [
+    "full",
+    70,
+    4501
+   ],
+   "arm": "L2",
+   "verdict": "OK",
+   "wall_s": 168.86815905570984,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/13_L2/full/E2_obstacle_aware__70bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+    "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+   },
+   "load": {
+    "arm": "L2",
+    "cmd": [
+     "taskset",
+     "-c",
+     "0-3,8-11,14-23",
+     "stress-ng",
+     "--cpu",
+     "18",
+     "--metrics-brief",
+     "--timeout",
+     "3600s"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 174.08953332901,
+    "sampled_wall_s": 173.88916897773743,
+    "cpu_s": 2907.91,
+    "cpu_s_wait4": 2908.6558999999997,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/13_L2",
+    "alive_before_cell": true
+   },
+   "load_cores": 16.722778175863798,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 14,
+   "cell": [
+    "full",
+    70,
+    4501
+   ],
+   "arm": "L3",
+   "verdict": "OK",
+   "wall_s": 106.75222420692444,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/14_L3/full/E2_obstacle_aware__70bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+    "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+   },
+   "load": {
+    "arm": "L3",
+    "cmd": [
+     "taskset",
+     "-c",
+     "6,7,12,13",
+     "nice",
+     "-n",
+     "10",
+     "bash",
+     "-c",
+     "i=0; while true; do \"/home/fair/miniconda3/envs/aerialgym/bin/python\" -I -B \"/home/fair/motar_tmp/tload_20261105/load/14_L3/sensor_check.py\" \"/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly\" \"$CPLANNER_TREE\" \"/home/fair/motar_tmp/tload_20261105/load/14_L3/sc_$i.json\" 300 > \"/home/fair/motar_tmp/tload_20261105/load/14_L3/sc_$i.out\" 2>&1; i=$((i+1)); done"
+    ],
+    "alive_at_stop": true,
+    "wall_s": 111.96226334571838,
+    "sampled_wall_s": 111.76191186904907,
+    "cpu_s": 111.71,
+    "cpu_s_wait4": 93.795525,
+    "scratch": "/home/fair/motar_tmp/tload_20261105/load/14_L3",
+    "alive_before_cell": true
+   },
+   "load_cores": 0.9995355137704703,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  },
+  {
+   "idx": 15,
+   "cell": [
+    "full",
+    70,
+    4501
+   ],
+   "arm": "L0b",
+   "verdict": "OK",
+   "wall_s": 106.75004649162292,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/15_L0b/full/E2_obstacle_aware__70bars__seed4501",
+   "digest": {
+    "episodes.jsonl": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+    "kroc2027_episodes.jsonl": "9f96ecf1edbbc6bfdf03264a587189c6331834429797b3d03fe7ab0fabb37d73"
+   },
+   "load": null,
+   "load_cores": null,
+   "load_ok": true,
+   "eq_L0a": true,
+   "ref_gate_equal": null,
+   "ref": {}
+  }
+ ],
+ "cell_records": [
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 175.5532741546631,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:08:27.570814+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 175,
+    "result_sha256": "97f4bf5c75286d2b9ea52855b1ee82d9a1a5f45ba61909c4586416fb1add446c"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 202.65888571739197,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:11:55.414487+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 203,
+    "result_sha256": "25f622058c664c19a266690502fea3d3206b9f59779c038ac5a16d37671eae7b"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 274.9855659008026,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:16:49.233558+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 275,
+    "result_sha256": "d55da2104ecf45d91a91e6a79220bb11d5963a7bff24276230618317fbab01c7"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 166.25589323043823,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:19:40.765231+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 166,
+    "result_sha256": "203ce645945c16828b26cef0fbc661cfa241d926c79c5bf9a34d4c50af5974c8"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 167.9090757369995,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:22:28.910655+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 167,
+    "result_sha256": "c4f28e1239cb24c1caf62d04f10721efcbf2324dee4f7398ec3f4bf5397865fe"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "no_lidar",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 171.53928017616272,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:25:20.476272+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 804,
+     "crash": 1244,
+     "timeout": 0
+    },
+    "duration_s": 171,
+    "result_sha256": "bf63115eafc78c0e87047e0b0bec814132c4d05fd1f88a3e8ec43a969ab7c1ad"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "no_lidar"
+  },
+  {
+   "level": "no_lidar",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 213.05711102485657,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:28:58.973362+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 804,
+     "crash": 1244,
+     "timeout": 0
+    },
+    "duration_s": 213,
+    "result_sha256": "c0f50ef54bd2a3becc4e19c00f231fa9795a1e94b750a8fe300e5daff98c287b"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "no_lidar"
+  },
+  {
+   "level": "no_lidar",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 295.60749435424805,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:34:02.796558+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 804,
+     "crash": 1244,
+     "timeout": 0
+    },
+    "duration_s": 295,
+    "result_sha256": "9bc98b950afb6b5f4de49651bc59af77677503fe628565259e0de65c6115e685"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "no_lidar"
+  },
+  {
+   "level": "no_lidar",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 169.3285744190216,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:36:57.403731+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 804,
+     "crash": 1244,
+     "timeout": 0
+    },
+    "duration_s": 169,
+    "result_sha256": "b0efc7e54d1db436b6f22e7f67ed0c0cbd1b2e5ba2123e0fa78bd4dcbf467ccd"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "no_lidar"
+  },
+  {
+   "level": "no_lidar",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 169.00676655769348,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:39:46.650083+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 804,
+     "crash": 1244,
+     "timeout": 0
+    },
+    "duration_s": 169,
+    "result_sha256": "2d52773d92f01b42172eed13d66931cd112736dcebb1b2188bbfa264868b92dc"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "no_lidar"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 106.29193139076233,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:41:32.975790+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2020,
+     "crash": 28,
+     "timeout": 0
+    },
+    "duration_s": 106,
+    "result_sha256": "7aa1c0da642228eb8215321cc640538e477b183d79c38861f4e08eb5c3b9b27d"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 134.99910259246826,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:43:53.003526+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2020,
+     "crash": 28,
+     "timeout": 0
+    },
+    "duration_s": 134,
+    "result_sha256": "50c2194fca0042de7cbcf0ff6d3b6b6b6d629d8e06ab66c2a5ad6b5d8b12b75a"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 168.86815905570984,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:46:54.485199+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2020,
+     "crash": 28,
+     "timeout": 0
+    },
+    "duration_s": 169,
+    "result_sha256": "16c83edc32b823d1509e0b7ebb3cddbca8eb2c7bd883baa23490c80319ee0ee6"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 106.75222420692444,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:48:46.517198+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2020,
+     "crash": 28,
+     "timeout": 0
+    },
+    "duration_s": 107,
+    "result_sha256": "2c0326307efae114d093a01b12ddd21304f6fe80b564cc237f1bbd2e25195ce8"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  },
+  {
+   "level": "full",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 106.75004649162292,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T02:50:33.501720+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2020,
+     "crash": 28,
+     "timeout": 0
+    },
+    "duration_s": 107,
+    "result_sha256": "c5f1fed4b6e0dd2dcff92a7df44c7bffccc480c80b063cd527ce779f4a24538e"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "condition": "full"
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-05T02:50:33.556732+09:00"
+ },
+ "finished": "2026-11-05T02:50:33.556746+09:00"
+}

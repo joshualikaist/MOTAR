@@ -24099,3 +24099,27 @@ No push or merge.
 - **No pre-launch independent design review.** The runner reuses the reviewed C1/C2 cell path unchanged, and the
   user asked to start at once. A results review follows.
 - **Next:** T-LOAD on the GPU.
+
+## 2026-11-05 — T-LOAD: LOAD_INVARIANT (concurrent CPU load did not change the evaluation cells)
+
+- **Run:** `812f6b1`, 02:05-02:50 KST, 15 of 15 runs OK, host fault count 0 → 0. Raw `results/tload_v1/` (main
+  checkout, display exclude added). Evidence `docs/evidence/tload_2026-11-05/`.
+- **Reading LOAD_INVARIANT:** L1, L2 and L3 are byte-identical to L0a in all three cells (`full` 205/4501, `no_lidar`
+  205/4501, `full` 70/4501), and L0b is too.
+
+| Arm | Load cores | Cell wall time vs L0a |
+| --- | ---: | ---: |
+| L1 (disjoint, CPU and disk) | 3.99-4.00 | +15 to +27 % |
+| L2 (runner's own cores) | 16.72-16.86 | +57 to +72 % |
+| L3 (real Warp job) | 1.00 | -5 to +0 % |
+
+- **Gate references:** L0a equals C1/C1_r2 `full` and C1/C1_r2/C2 `no_lidar`.
+- **Reported:** the loaded GR-0 S00 cells of 2026-11-04 equal L0a: 205/4501 (one-process probe) and 70/4501 (heavy
+  D2-A1 gate, 95 s of its run).
+- **Consequence (D-2026-11-05-1):** CPU compute during evaluations is allowed under AGENTS.md's conditions. The
+  idle rerun of the other 48 overlapped cells (G2) is optional.
+- **Hypothesis rejected (on these cells, loads and host):** "concurrent CPU load changes the episode outcome files".
+  Measured: 0 of 12 loaded runs differ.
+- **Limit:** three cells and one seed; a rare effect could pass 15 runs.
+- **Next:** independent results review (Opus, running alongside); GR-1b training on the GPU; SITL S1 on the CPU.
+

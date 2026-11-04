@@ -747,15 +747,19 @@ family that is in the test's scope.
 - **Question:** Can CPU or disk load from another process change the per-episode outcome files of an evaluation
   cell? Its reading decides whether CPU work may run during evaluations (D-2026-11-05-1).
 - **Policy:** Frozen Policy F, unchanged, through the camera-only cell path (`full` and `no_lidar` conditions).
-- **Status:** preregistered (`prereg_tload_v1.md`); GPU approved by the user on 2026-11-05; not run.
+- **Status:** ran 2026-11-05 on `812f6b1`, 15 of 15 runs OK, host faults 0. **LOAD_INVARIANT**: every load arm is
+  byte-identical to idle in all three cells, with L2 lengthening the cells by 57-72 %. Results review pending.
+  - The loaded GR-0 cells of 2026-11-04 (205/4501 and 70/4501) equal the idle runs.
+  - CPU compute during evaluations is now allowed (D-2026-11-05-1).
 - **Read first:** [`docs/plans/prereg_tload_v1.md`](plans/prereg_tload_v1.md)
 - **Lineage:**
   - 2026-09-05 A8 `S_off` difference under load (WORKLOG)
   - → the 2026-11-04 overlaps and twins (recorded on branch gainrand/dev at 352b919, folder load_overlap)
   - → D-2026-11-05-1 (definition of concurrent work)
   - → `docs/plans/prereg_tload_v1.md`
+  - → `docs/evidence/tload_2026-11-05/` (results)
 - **Compare with:** `camera-only`, `gain-randomization`
-- **Members:** `docs/plans/prereg_tload_v1.md`
+- **Members:** `docs/plans/prereg_tload_v1.md`, `docs/evidence/tload_2026-11-05/`
 
 ## Not yet in the repository
 
