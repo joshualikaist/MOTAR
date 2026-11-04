@@ -84,3 +84,49 @@ motivated and gets its own preregistration.
     about 0.6 pp.
   - The S40 capture loss grows with density: -2.3, -3.0, -4.75 and -4.8 pp at 70, 115, 160 and 205 bars.
   - This is simulation only, with one target behaviour and visible starts.
+
+## GR-1: training with randomized gains (`gr1/`, `gr1_design/`)
+
+Preregistration: [`prereg_gain_randomization_gr1_v1.md`](../../plans/prereg_gain_randomization_gr1_v1.md), with
+[amendment 1](../../plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md), which was committed after both
+trainings and before any evaluation cell.
+
+**Training** on `8f64631`: both arms are continuations of Policy F for 1,000 epochs.
+
+| Arm | Gains | Checkpoint SHA-256 | Record |
+| --- | --- | --- | --- |
+| `rand40` | nominal x U[0.6, 1.4], per reset | `3f122b47…` | `gr1/train_report_rand40.json` |
+| `ctrl` | nominal | `0f6ca010…` | `gr1/train_report_ctrl.json` |
+
+**Reproduction:** `gr1/gr1repro_report.json` reads GR1_REPRO_PASS. One GR-0 cell is reproduced exactly through the
+pinned launcher and through the GR-1 launcher copy with Policy F. Attempt 1 stopped before any cell because of a
+runner bug; its folder `results/gain_randomization_gr1_v1/repro/` is empty and kept.
+
+**Evaluation** on `ab6531b`: GR-0's grid, 36 cells per arm, all valid, host faults 0. The run reports are
+`gr1/gr1eval_run_report_*.json`.
+
+**Reading** (`gr1/gr1_analysis.json`): **GR1_SUPPORTED, "reduced gain sensitivity", single training seed per
+arm.** All the bindings pass, and the drift qualifier is not triggered. Values are in pp, with the 95 % block
+bootstrap interval:
+
+| Quantity | Value |
+| --- | --- |
+| P1: crash at ±40 %, rand40 − ctrl | −2.21 [−2.68, −1.76] |
+| P2: capture at nominal gains, rand40 − ctrl | +1.20 [+0.75, +1.70] |
+| P3: capture at ±40 %, rand40 − ctrl | +2.21 [+1.76, +2.69] |
+| DiD: crash gap (S40 − S00), rand40 − ctrl | −1.02 [−1.37, −0.71] |
+| crash at ±40 %, rand40 − F | −1.67 [−2.09, −1.29] |
+| crash at ±40 %, ctrl − F (drift) | +0.54 [+0.05, +1.07] |
+
+**Independent review:** **PASS** ([`gr1/REVIEW_r1.md`](gr1/REVIEW_r1.md), Claude Opus 5.5, fresh context; inputs
+bound in `gr1/SHA256_MANIFEST.json`). The reviewer recomputed every quantity from the ledgers, with identical
+results; each has the gated sign in 12 of 12 blocks. Limits the reviewer recorded:
+- **M1.** The sensitivity effect itself (DiD −1.02 pp) is smaller than P1. About −1.19 pp of P1 is already present
+  at nominal gains. On a relative scale, which is exploratory, the reduction is not resolved: the log-ratio DiD is
+  −0.054 [−0.130, +0.016].
+- **M2.** There is one training seed per arm, and ctrl drifted from F: +0.79 pp crash at nominal gains. The
+  intervals cover evaluation noise only, not training variance.
+- **L1-L7.** These are minor: the missing seed label, recording gaps and the smoke test's scope.
+
+The result is about this pair of training runs on this grid. It says nothing about other airframes, PX4, real
+flight, or gains beyond ±40 %.

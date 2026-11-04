@@ -1,0 +1,38 @@
+{
+ "arm": "rand40",
+ "commit": "8f64631bb7c87e4b61f2e05f281d78b65d7ec8f5",
+ "prereg": "docs/plans/prereg_gain_randomization_gr1_v1.md",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T13:44:00.708150+09:00"
+ },
+ "preflight_problems": [],
+ "started": "2026-11-04T13:44:00.708161+09:00",
+ "exit": 0,
+ "wall_s": 4186.422513484955,
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T14:53:47.140972+09:00"
+ },
+ "new_run_dirs": [
+  "ppo_261104_1344_navrl_v2-gr1-ep25000-205bars-main-riskcap-rand40-s1"
+ ],
+ "checkpoint": {
+  "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/aerial_gym/rl_training/rl_games/runs/ppo_261104_1344_navrl_v2-gr1-ep25000-205bars-main-riskcap-rand40-s1",
+  "file": "last_gen_ppo_ep_26000_rew_40.864136.pth",
+  "sha256": "3f122b47f08c638b963d99a432fef2767d06c37505dbfa18030ca2d820cfa6c5",
+  "copy": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/train_rand40/checkpoint/last_gen_ppo_ep_26000_rew_40.864136.pth",
+  "copy_sha256": "3f122b47f08c638b963d99a432fef2767d06c37505dbfa18030ca2d820cfa6c5"
+ },
+ "session_log": {
+  "file": "gr1_rand40_261104_134400_3235960.log",
+  "sha256": "c7a5f6bf98b7a2ea89072fec483ae699f54cafceca56480b7cf211626241303e"
+ },
+ "problems": [],
+ "verdict": "TRAINED",
+ "finished": "2026-11-04T14:53:47.164035+09:00"
+}

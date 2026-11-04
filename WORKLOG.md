@@ -23701,3 +23701,60 @@ merge.
 
 Next: gr1repro into `results/gain_randomization_gr1_v1/repro_02` on the fixed commit, then gr1eval for both arms. No
 push or merge.
+
+## 2026-11-04 — GR-1 COMPLETE: GR1_SUPPORTED ("reduced gain sensitivity", single training seed per arm); review PASS
+
+**Runs** (commit `ab6531b`; host faults 0 throughout):
+- `repro_02` GR1_REPRO_PASS. Both launchers reproduce GR-0's S40 205-bar seed-4501 cell exactly.
+- `eval_rand40` ran 16:12-17:42 and `eval_ctrl` 17:42-19:12. Each is COMPLETE: 36 of 36 cells valid, with
+  checkpoints `3f122b47…` and `0f6ca010…`.
+
+**Reading** (`tools/gr1_analyse.py`, amendment 1): **GR1_SUPPORTED**, worded "reduced gain sensitivity". The drift
+qualifier is not triggered, and all three t-interval checks agree. Label: **single training seed per arm**.
+
+| Quantity (pp, 95 % block bootstrap) | Value |
+| --- | --- |
+| P1: crash at S40, rand40 − ctrl | −2.21 [−2.68, −1.76] (12 of 12 blocks negative) |
+| P2: capture at S00, rand40 − ctrl | +1.20 [+0.75, +1.70] |
+| P3: capture at S40, rand40 − ctrl | +2.21 [+1.76, +2.69] |
+| DiD: crash gap S40 − S00, rand40 − ctrl | −1.02 [−1.37, −0.71] |
+| crash at S40, rand40 − F | −1.67 [−2.09, −1.29] |
+| crash at S40, ctrl − F (drift) | +0.54 [+0.05, +1.07] |
+
+Pooled crash rates (%):
+
+| Policy | S00 | S20 | S40 |
+| --- | --- | --- | --- |
+| F | 4.46 | 5.07 | 8.15 |
+| rand40 | 4.06 | 4.41 | 6.48 |
+| ctrl | 5.25 | 5.91 | 8.69 |
+
+Crash causes at S40, per 100 episodes:
+
+| Policy | Floor strikes | Bar contacts |
+| --- | --- | --- |
+| F | 1.82 | 6.38 |
+| ctrl | 1.28 | 7.51 |
+| rand40 | 0.84 | 5.76 |
+
+The amendment expected "P1 capped near −2 pp" because floor strikes would persist. That is rejected: rand40 also
+halved the floor strikes. They are still about 40 times their nominal rate.
+
+**Independent review** (Claude Opus 5.5, fresh context, CPU only, faults 0): **PASS**. Copy:
+`docs/evidence/gain_randomization_2026-11-04/gr1/REVIEW_r1.md`, inputs bound in `gr1/SHA256_MANIFEST.json` (789
+files).
+- Its recomputation from the ledgers is identical, and a rerun of the analysis is byte-identical.
+- Seven independent records bind each cell to its checkpoint.
+- **M1:** DiD (−1.02 pp) is the sensitivity effect. −1.19 pp of P1 is already present at nominal gains, and the
+  relative-scale DiD is not resolved (exploratory).
+- **M2:** one training seed per arm, and ctrl drifted from F. The intervals cover evaluation noise only.
+- **L1-L7:** the missing seed label in the analysis output, recording gaps (rlnorm hash, train-report hash) and
+  the smoke test's scope.
+
+**Next (amendment 1):**
+- The reading is SUPPORTED, so a confirmation with a second training seed per arm is proposed as a new
+  preregistration, for the user's decision: about 2.3 GPU-h of training and 3 h of evaluation.
+- If confirmed, the `rand40` checkpoint joins GR-2.
+- No push or merge.
+
+Records: `docs/evidence/gain_randomization_2026-11-04/gr1/`; raw `results/gain_randomization_gr1_v1/`.

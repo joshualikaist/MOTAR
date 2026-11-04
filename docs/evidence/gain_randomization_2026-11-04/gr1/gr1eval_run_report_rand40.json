@@ -1,0 +1,1114 @@
+{
+ "stage": "gr1eval",
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+ "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+ "prereg": "docs/plans/prereg_gain_randomization_gr1_v1.md",
+ "started": "2026-11-04T16:12:44.133316+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T16:12:44.133301+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/motar_eval/__init__.py"
+ },
+ "preflight_problems": [],
+ "train_report": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/train_rand40/train_report.json",
+ "repro_report": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/repro_02/gr1repro_report.json",
+ "policy": "rand40",
+ "checkpoint": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/train_rand40/checkpoint/last_gen_ppo_ep_26000_rew_40.864136.pth",
+ "checkpoint_sha256": "3f122b47f08c638b963d99a432fef2767d06c37505dbfa18030ca2d820cfa6c5",
+ "verdict": "COMPLETE",
+ "cells_expected": 36,
+ "records": [
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 116.07654571533203,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:14:40.195562+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2020,
+     "crash": 28,
+     "timeout": 0
+    },
+    "duration_s": 116,
+    "result_sha256": "27594d9413153d13bd10f16350289f0b168d058e6abc5ff5329c2971366ed412"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 108.02794933319092,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:16:28.224493+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2024,
+     "crash": 24,
+     "timeout": 0
+    },
+    "duration_s": 108,
+    "result_sha256": "cc8abc9d2cc23a986a55df20662ddd3af2506a08153b69aa915165be88b0d7fb"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 113.9705708026886,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:18:22.193173+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2004,
+     "crash": 44,
+     "timeout": 0
+    },
+    "duration_s": 114,
+    "result_sha256": "fefb0a84e83592c02e7e81d96756fad0ee3d166189c61c56726e9193b83af552"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__70bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4502,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 106.63582849502563,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:20:08.831177+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2027,
+     "crash": 21,
+     "timeout": 0
+    },
+    "duration_s": 106,
+    "result_sha256": "36615bf2f886a235b1001c085a5a2ba1f99323242a7cba0969ea92e7912061df"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__70bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4502,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 105.45046091079712,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:21:54.282253+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2024,
+     "crash": 24,
+     "timeout": 0
+    },
+    "duration_s": 106,
+    "result_sha256": "82e7b4be2ee0d37b4f866a02300f76b7a7912dd704eafc44e8e3bd372bc2ce0b"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__70bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4502,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 107.7514398097992,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:23:42.032235+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2015,
+     "crash": 33,
+     "timeout": 0
+    },
+    "duration_s": 107,
+    "result_sha256": "bee43b3b6d46bd3770923aa4035979ad2322b3fa2e6946d2a0b0231cd4e78ad9"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__70bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4503,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 106.84936904907227,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:25:28.882759+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2024,
+     "crash": 24,
+     "timeout": 0
+    },
+    "duration_s": 106,
+    "result_sha256": "8b82c761dc68ea7ae1ba7c64b1719051d08f5fba4b88c212fe8deff178f15ec8"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__70bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4503,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 109.50252938270569,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:27:18.385716+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2022,
+     "crash": 26,
+     "timeout": 0
+    },
+    "duration_s": 110,
+    "result_sha256": "5373b3c26a40c4f1448fb8cc98264a8f35274edc39465e61d8d33e46b6db1a0a"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__70bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4503,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 115.65479612350464,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:29:14.040762+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2001,
+     "crash": 47,
+     "timeout": 0
+    },
+    "duration_s": 115,
+    "result_sha256": "cf0fd4b7b9fb67d10cb8b6385d9a46cddb46803b9a832d620a99c98811831526"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__115bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4501,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 179.9427511692047,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:32:13.974485+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2001,
+     "crash": 46,
+     "timeout": 1
+    },
+    "duration_s": 179,
+    "result_sha256": "dad7bd2e7c218dd06ce01191e6f2a0df835161f0b66601c0ef2bb96367bb1565"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__115bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4501,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 134.70784330368042,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:34:28.690196+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1992,
+     "crash": 56,
+     "timeout": 0
+    },
+    "duration_s": 134,
+    "result_sha256": "98424516dbb3aae87f93e423e401ac570eafa6a880f594cf272140686c90dddd"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__115bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 130.76380443572998,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:36:39.453768+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1965,
+     "crash": 83,
+     "timeout": 0
+    },
+    "duration_s": 131,
+    "result_sha256": "b2e3fe7adfd37e128bbbe4c57a09d0b8350ce57f4375cff161c3eeadbc149306"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__115bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4502,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 123.07475590705872,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:38:42.530638+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2001,
+     "crash": 47,
+     "timeout": 0
+    },
+    "duration_s": 123,
+    "result_sha256": "3c0e24b4bbcdfc4dd25d44c90defd3989f761ab8b2aa00dc0dfec56c0b69e6fe"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__115bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4502,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 122.94383096694946,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:40:45.468716+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1992,
+     "crash": 56,
+     "timeout": 0
+    },
+    "duration_s": 123,
+    "result_sha256": "9b0c6233f845cfc0468a892ccc0eee401489d5f603884347e6fd061f9d948f35"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__115bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4502,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 133.58058619499207,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:42:59.055126+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1954,
+     "crash": 94,
+     "timeout": 0
+    },
+    "duration_s": 133,
+    "result_sha256": "ad3569737d4aeff948d889128602422b9b22f46881e529376c8da324f01f9dd3"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__115bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4503,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 163.79937958717346,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:45:42.851687+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1992,
+     "crash": 55,
+     "timeout": 1
+    },
+    "duration_s": 163,
+    "result_sha256": "69473799cf5ab02f5afcb30b6df2a3de8274eb7993d50f321d8ccf7faceb926f"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__115bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4503,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 121.64861369132996,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:47:44.504619+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1978,
+     "crash": 70,
+     "timeout": 0
+    },
+    "duration_s": 122,
+    "result_sha256": "0dc187d2a0bad5609755117faa26eaa6789c563aa8a5a590d03f6f9a60de8667"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__115bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4503,
+   "density": 115,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 133.90608739852905,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:49:58.409869+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1951,
+     "crash": 97,
+     "timeout": 0
+    },
+    "duration_s": 134,
+    "result_sha256": "1f03cf0b10af1357049e6a7b7528a46247270173cee87c63f94839b7fee1ac8d"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4501,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 146.12654376029968,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:52:24.537300+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1958,
+     "crash": 90,
+     "timeout": 0
+    },
+    "duration_s": 146,
+    "result_sha256": "c19ab3aff0e0af1012f903dd721ac269cd2e157115487214a8e39886765493eb"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4501,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 149.38492155075073,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:54:53.921063+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1955,
+     "crash": 93,
+     "timeout": 0
+    },
+    "duration_s": 149,
+    "result_sha256": "0d11dae4dce19abdd69a4f7f52548565845dea9871137eae27c1f02592ee74b3"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__160bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 207.0971417427063,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:58:21.015330+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1900,
+     "crash": 147,
+     "timeout": 1
+    },
+    "duration_s": 207,
+    "result_sha256": "07a8db88a8c2a7d7340d48db9ee4ad69ce8a93c04e91628c6ef3f012941e7216"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__160bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4502,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 141.12862539291382,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:00:42.148747+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1968,
+     "crash": 80,
+     "timeout": 0
+    },
+    "duration_s": 141,
+    "result_sha256": "b88f47ca4bf2eb35a1c5c596d23b8c2ec6118a35a327bb4878b6428d14134b51"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__160bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4502,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 143.52707147598267,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:03:05.676181+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1964,
+     "crash": 84,
+     "timeout": 0
+    },
+    "duration_s": 143,
+    "result_sha256": "d203beb08080f55c34dbcd7be6cd8539050066b293680258983bab0b660efce0"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__160bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4502,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 153.73617124557495,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:05:39.411199+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1916,
+     "crash": 132,
+     "timeout": 0
+    },
+    "duration_s": 154,
+    "result_sha256": "959e1d42f7a2916dd25da87c16ad1305b8e0ff004e76d31808bf679b86f5d3c9"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__160bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4503,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 215.0567111968994,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:09:14.463072+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1950,
+     "crash": 97,
+     "timeout": 1
+    },
+    "duration_s": 215,
+    "result_sha256": "1d65adc63f49e5b02e7a5f2ec49543b6435a283aa2833f7cd4d91d8f8e77cd0f"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__160bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4503,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 155.0430498123169,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:11:49.511560+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1932,
+     "crash": 116,
+     "timeout": 0
+    },
+    "duration_s": 155,
+    "result_sha256": "9826253e30309186baaff8c20ef4ebc675afc50fefecb6f2c6566c072a893532"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__160bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4503,
+   "density": 160,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 191.82395601272583,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:15:01.332830+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1890,
+     "crash": 157,
+     "timeout": 1
+    },
+    "duration_s": 192,
+    "result_sha256": "710b612a63e797f84f601135d23ce670459cc307fb215c0accba256de573e9e8"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 206.23850679397583,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:18:27.572550+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1894,
+     "crash": 153,
+     "timeout": 1
+    },
+    "duration_s": 206,
+    "result_sha256": "b2266c7107b71f77e53a7d0e602b4ce9676876fcff19a29b2f93a511e0681ac6"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 175.64834833145142,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:21:23.223328+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 176,
+    "result_sha256": "d152b9caad0020b005365e4569e6913ed544c3f95d7c6eedd512403f04c7a5c3"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 176.0534987449646,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:24:19.277313+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1803,
+     "crash": 245,
+     "timeout": 0
+    },
+    "duration_s": 176,
+    "result_sha256": "eba3f83086bf75579897396ca12e0f93c66b4955521f388c8bfe90359a4c7d39"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__205bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4502,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 168.32800912857056,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:27:07.604070+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1862,
+     "crash": 186,
+     "timeout": 0
+    },
+    "duration_s": 168,
+    "result_sha256": "677e822418f05a68bfd4a2535ff94e147f95fa2ef9f2dd64b04ea3f56d760c80"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__205bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4502,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 173.74591708183289,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:30:01.350712+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1873,
+     "crash": 175,
+     "timeout": 0
+    },
+    "duration_s": 174,
+    "result_sha256": "f24678d59eb2299d45f0ca27f1bb0dcd91f51f2534016bc14ce5ccb103c0c25e"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__205bars__seed4502",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4502,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 174.3483431339264,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:32:55.700195+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1790,
+     "crash": 258,
+     "timeout": 0
+    },
+    "duration_s": 174,
+    "result_sha256": "95c6f66d154b789a23448a3edeaa07eb08d5ab8d70b2ce8a99b30c3efe9b9ca3"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S00",
+   "cell_id": "E2_obstacle_aware__205bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": null,
+   "seed": 4503,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 166.98757410049438,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:35:42.683420+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1878,
+     "crash": 170,
+     "timeout": 0
+    },
+    "duration_s": 167,
+    "result_sha256": "0d6c6b04b1501ae57d62528afdc50f91213c33ff3f8bd212083e7c65d3ac3837"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S20",
+   "cell_id": "E2_obstacle_aware__205bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.2,
+   "seed": 4503,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 210.82768511772156,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:39:13.512993+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 180,
+     "timeout": 1
+    },
+    "duration_s": 211,
+    "result_sha256": "2b05006ddf00f1dfca7cfa8fe23048b90443d1f82f2c7e57275de226196a32c2"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__205bars__seed4503",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4503,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 172.3472352027893,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T17:42:05.862126+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1793,
+     "crash": 255,
+     "timeout": 0
+    },
+    "duration_s": 172,
+    "result_sha256": "25adc8cc3717decddabb3bcf7a5096910d3ee86fd5c1023c89fdf2a34614362d"
+   },
+   "problems": [],
+   "verdict": "OK"
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T17:42:05.893753+09:00"
+ },
+ "finished": "2026-11-04T17:42:05.893767+09:00"
+}

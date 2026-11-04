@@ -1,0 +1,147 @@
+{
+ "stage": "gr1repro",
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+ "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+ "prereg": "docs/plans/prereg_gain_randomization_gr1_v1.md",
+ "started": "2026-11-04T16:07:16.768724+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T16:07:16.768707+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand/motar_eval/__init__.py"
+ },
+ "preflight_problems": [],
+ "gr0_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr0_v1/gr0_main",
+ "comparison": {
+  "S40": {
+   "result_equal": true,
+   "episodes_equal": true,
+   "outcome_a": {
+    "captured": 1764,
+    "crash": 285,
+    "timeout": 0,
+    "capture_rate": 0.8609077598828697,
+    "crash_rate": 0.1390922401171303,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.8584675451439727,
+    "closest_nocrash_mean_m": 0.408549149121557,
+    "closest_nocrash_best_m": 0.1055733785033226,
+    "closest_nocrash_count": 1764
+   },
+   "outcome_b": {
+    "captured": 1764,
+    "crash": 285,
+    "timeout": 0,
+    "capture_rate": 0.8609077598828697,
+    "crash_rate": 0.1390922401171303,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.8584675451439727,
+    "closest_nocrash_mean_m": 0.408549149121557,
+    "closest_nocrash_best_m": 0.1055733785033226,
+    "closest_nocrash_count": 1764
+   }
+  },
+  "S40_gr1launcher": {
+   "result_equal": true,
+   "episodes_equal": true,
+   "outcome_a": {
+    "captured": 1764,
+    "crash": 285,
+    "timeout": 0,
+    "capture_rate": 0.8609077598828697,
+    "crash_rate": 0.1390922401171303,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.8584675451439727,
+    "closest_nocrash_mean_m": 0.408549149121557,
+    "closest_nocrash_best_m": 0.1055733785033226,
+    "closest_nocrash_count": 1764
+   },
+   "outcome_b": {
+    "captured": 1764,
+    "crash": 285,
+    "timeout": 0,
+    "capture_rate": 0.8609077598828697,
+    "crash_rate": 0.1390922401171303,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.8584675451439727,
+    "closest_nocrash_mean_m": 0.408549149121557,
+    "closest_nocrash_best_m": 0.1055733785033226,
+    "closest_nocrash_count": 1764
+   }
+  }
+ },
+ "verdict": "GR1_REPRO_PASS",
+ "records": [
+  {
+   "level": "S40",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 151.37478637695312,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:09:48.123229+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1764,
+     "crash": 284,
+     "timeout": 0
+    },
+    "duration_s": 152,
+    "result_sha256": "37ddffed9a393842503e8b306783aa19d7a6f17aed20cb638c9d3a5be11f0d1a"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "S40_gr1launcher",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+   "commit": "ab6531be8cb159d853f92f6c5c6f839f1cec09db",
+   "scale": 0.4,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 151.2923765182495,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-04T16:12:19.432978+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1764,
+     "crash": 284,
+     "timeout": 0
+    },
+    "duration_s": 151,
+    "result_sha256": "18b9548714234dba2d127e9c2d28d98c8c23f6f36c12b164c0c25fcc5f8f1df6"
+   },
+   "problems": [],
+   "verdict": "OK"
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-04T16:12:19.477950+09:00"
+ },
+ "finished": "2026-11-04T16:12:19.477961+09:00"
+}
