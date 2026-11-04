@@ -23755,3 +23755,29 @@ Next:
 - C0 gate run on this commit (`tools/camonly_c0_gate.py`), then an independent review (Opus 5.5).
 - C1 and C2 need a preregistration and the user's GPU approval.
 - No push or merge.
+
+## 2026-11-04 — Camera-only C0: gate_01 CONDITIONAL_PASS, review r1 FAIL (vacuous association check); repairs
+
+**gate_01** (`4d03f35`, `tools/camonly_c0_gate.py`): C0_CONDITIONAL_PASS.
+- 10 tests passed.
+- All 5 mutants were caught.
+- PUBLIC_CPU ran 3,244 tests against the base's 3,234, with 0 new failures (6 environment failures in both).
+- The pinned files are unchanged, and the host fault count was 0 before and after.
+
+**Review r1** (Claude Opus 5.5, fresh context, CPU only, faults 0 → 0): **FAIL**. Copy:
+`docs/evidence/camonly_2026-11-04/c0/REVIEW_r1.md`.
+
+| Id | Finding | Repair |
+| --- | --- | --- |
+| B1 | the LiDAR target association never ran in the test scene, because the camera always saw the target (0 of 24 env-steps); an `assoc_raw` mutant passed every test | camera-loss scenes inside and outside the FOV: under `full` the association is active on 12 env-steps and changes under perturbation; it is 0 and bit-identical where removed, and 12 where kept; `assoc_raw` is now caught |
+| M1 | the governor projected camera values by row elevation, shrinking them by cos 20 deg (a bar at 4 m read as 3.745 m) | camera values are divided by cos(elevation) per row; test: the same bar gives the same speed (2.768 m/s) via the LiDAR and via the camera; mutant `no_elevation_fix` |
+| M2 | the K5 claim holds for the observation only: in A the governor never sees camera phantoms, and in-FOV LiDAR association holds the track | new condition `no_lidar_in_fov_obs_only`; corrected reading in the plan's "After review r1" |
+| M3 | `play_navrl.sh` puts the wrapper's directory first on PATH, so ninja is missing | `tools/camonly_python` puts the interpreter's bin directory first; tested |
+| L1-L9 | disclosures (obs_only previous action and target mask, absolute `__file__`, recorder mixing) and launcher requirements for C1/C2 | in the plan. Tests added for L3 (quiet startup), L6 (refusals, K2 threshold at 43 vs 44 deg) and L7 (10 m camera far plane) |
+
+**After the repairs** (development runs):
+- 14 tests pass.
+- All 7 mutants are caught: each makes 3-17 tests fail, and the unmodified module makes none fail.
+
+Next: gate_02 on the repair commit, then review r2. C1 and C2 need a preregistration and the user's GPU approval.
+No push or merge.

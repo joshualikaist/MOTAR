@@ -9,6 +9,8 @@ Conditions (the camera FOV is perception's own |bearing| <= hfov / 2 mask, the o
   no_lidar_out_fov   LiDAR kept inside the camera FOV, removed outside
   no_lidar           LiDAR removed everywhere (camera only)
   no_lidar_obs_only  LiDAR removed from perception everywhere; the speed governor keeps the raw LiDAR
+  no_lidar_in_fov_obs_only  LiDAR removed from perception inside the FOV only; the governor keeps the raw LiDAR
+                     (separates the governor's in-FOV use of the LiDAR from the observation's; review r1 M2)
 
 Removal means every online consumer sees no LiDAR return in the removed bins:
   - perception: `observe` receives `lidar_m` with removed bins set to `lidar_max_range` ("no return"). In the FOV
@@ -17,7 +19,10 @@ Removal means every online consumer sees no LiDAR return in the removed bins:
     association, its confidence field and the LiDAR part of fused visibility switch off without other changes.
   - speed governor (riskcap, directional corridor clearance only): the clearance is computed on a governor scan
     with the raw LiDAR in kept bins, the camera-fused range in removed in-FOV bins and no return in removed
-    out-of-FOV bins. When out-of-FOV LiDAR is removed, a moving command whose bearing lies outside the FOV gets
+    out-of-FOV bins. The governor treats each of the V rows as a slant range at its elevation and projects it
+    horizontally; perception copies one camera value into all rows. So the camera value is divided by the cosine of
+    each row's elevation, and the projection returns the camera value itself (review r1 M1: without this the
+    camera's clearance shrank by cos 20 deg). When out-of-FOV LiDAR is removed, a moving command whose bearing lies outside the FOV gets
     clearance 0, so riskcap caps it at its 2.0 m/s floor (K2). Any other governor feature raises.
 Not changed: rewards (r_ss reads the raw LiDAR; a training-only signal), terminations (physics contacts) and the
 evaluation recorders, which may read the LiDAR and ground truth but do not feed control.
@@ -38,6 +43,7 @@ CONDITIONS = {
     "no_lidar_out_fov": {"in_fov": True, "out_fov": False, "governor": "same"},
     "no_lidar": {"in_fov": False, "out_fov": False, "governor": "same"},
     "no_lidar_obs_only": {"in_fov": False, "out_fov": False, "governor": "raw"},
+    "no_lidar_in_fov_obs_only": {"in_fov": False, "out_fov": True, "governor": "raw"},
 }
 _LINEAGE_FLAGS = ("sensor_lineage_s_l1a", "sensor_lineage_s_l1b", "sensor_lineage_s_l1c", "sensor_lineage_s_l1d")
 _INSTALLED = {}
@@ -122,8 +128,8 @@ def install_perception(module, condition):
     return cls
 
 
-def governor_scan(perception, condition, scan_m, max_range_m):
-    """The scan the governor's clearance is computed on, [N, V, H] metres."""
+def governor_scan(perception, condition, scan_m, max_range_m, vertical_fov_deg):
+    """The scan the governor's clearance is computed on, [N, V, H] metres (slant ranges per row)."""
     removed = getattr(perception, "_ablation_removed", None)
     if removed is None or not bool(removed.any()):
         return scan_m
@@ -131,7 +137,12 @@ def governor_scan(perception, condition, scan_m, max_range_m):
     out = scan_m.clone()
     rin, rout = removed & inside, removed & ~inside
     if bool(rin.any()):
-        out[:, :, rin] = perception._ablation_fused_m[:, :, rin].to(out.dtype)
+        camera = perception._ablation_fused_m[:, :, rin].to(out.dtype)
+        elevation = torch.linspace(math.radians(float(vertical_fov_deg[0])), math.radians(float(vertical_fov_deg[1])),
+                                   scan_m.shape[1], device=scan_m.device, dtype=out.dtype)
+        slant = camera / torch.cos(elevation).view(1, -1, 1)
+        no_return = camera >= float(max_range_m) * 0.995
+        out[:, :, rin] = torch.where(no_return, torch.full_like(camera, float(max_range_m)), slant)
     if bool(rout.any()):
         out[:, :, rout] = float(max_range_m)
     return out
@@ -153,6 +164,7 @@ def install_governor(task_cls, condition):
     orig_method = task_cls._apply_sensor_speed_governor
     module_globals = orig_method.__globals__
     orig_dlc = module_globals["directional_lidar_clearance"]
+    default_vfov = inspect.signature(orig_dlc).parameters["vertical_fov_deg"].default
     active = {"task": None}
 
     def directional_lidar_clearance(scan_m, bearings_rad, command_xy, **kwargs):
@@ -163,7 +175,8 @@ def install_governor(task_cls, condition):
         if spec["governor"] == "raw":
             kwargs = dict(kwargs, target_return_mask=perception._ablation_raw_target_like)
             return orig_dlc(scan_m, bearings_rad, command_xy, **kwargs)
-        scan = governor_scan(perception, condition, scan_m, kwargs["max_range_m"])
+        scan = governor_scan(perception, condition, scan_m, kwargs["max_range_m"],
+                             kwargs.get("vertical_fov_deg", default_vfov))
         clearance = orig_dlc(scan, bearings_rad, command_xy, **kwargs)
         if not spec["out_fov"]:
             clearance = torch.where(out_of_fov_commands(perception, command_xy), torch.zeros_like(clearance),

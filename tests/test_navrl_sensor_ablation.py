@@ -85,7 +85,8 @@ SG = _load("speed_governor_ablation_test", _TASK_DIR / "speed_governor.py")
 def make_perception(mod):
     camera = types.SimpleNamespace(detector_max_range=20.0, detector_hfov_deg=87.0, detector_vfov_deg=58.0,
                                    camera_width=80, camera_height=45, camera_translation=[0.1, 0.0, 0.03],
-                                   camera_target_radius=0.15, tracker_memory_s=5.0)
+                                   camera_target_radius=0.15, tracker_memory_s=5.0,
+                                   camera_obstacle_max_range=10.0)       # production far plane (review r1 L7)
     cfg = types.SimpleNamespace(lidar_max_range=LIDAR_MAX, min_target_pixels=2, pixel_threshold=0.55,
                                 detection_dropout_prob=0.0, detection_latency_s=0.0, range_error_m=0.0,
                                 latency_compensate=False, latency_lidar_backup=False, latency_obstacle_fix=False,
@@ -125,6 +126,57 @@ def scene(seed):
     return frames, lidar
 
 
+
+def yaw_quat(deg):
+    h = math.radians(deg) / 2.0
+    return torch.tensor([[0.0, 0.0, math.sin(h), math.cos(h)]]).repeat(N, 1)
+
+
+def bins_near(mod, bearing_deg, half_width_deg=8.0):
+    b = mod.lidar_bin_bearings("cpu")
+    d = torch.atan2(torch.sin(b - math.radians(bearing_deg)), torch.cos(b - math.radians(bearing_deg))).abs()
+    return d < math.radians(half_width_deg)
+
+
+def association_scene(mod, kind):
+    """The camera sees the target straight ahead at 3 m for steps 0-2, then loses it; a LiDAR return stays on the
+    target's surface (review r1 B1). kind 'in_fov': the target stays ahead. kind 'out_fov': from step 3 the vehicle
+    is yawed by 60 deg, so the target lies at -60 deg, outside the 87 deg FOV."""
+    frames, lidar, quats = [], [], []
+    for k in range(STEPS):
+        depth = torch.full((N, 45, 80), 10.0)
+        rgb = torch.full((N, 3, 45, 80), 0.15)
+        if k < 3:
+            rgb[:, 0, 20:24, 38:43] = 0.88
+            rgb[:, 1, 20:24, 38:43] = 0.08
+            rgb[:, 2, 20:24, 38:43] = 0.045
+            depth[:, 20:24, 38:43] = 3.0
+        frames.append((rgb, depth))
+        yawed = kind == "out_fov" and k >= 3
+        quats.append(yaw_quat(60.0) if yawed else yaw_quat(0.0))
+        x = torch.full((N, VB, HB), LIDAR_MAX)
+        x[:, :, bins_near(mod, -60.0 if yawed else 0.0)] = 3.0
+        lidar.append(x.reshape(N, VB * HB))
+    return frames, lidar, quats
+
+
+def same_bar_scene(mod, depth_m=4.0):
+    """One bar straight ahead at horizontal distance depth_m, seen consistently by both sensors: the camera columns
+    that map to the 0 deg bin read depth_m, and the LiDAR's rows at +20, +10, 0, -10 deg read the slant range
+    depth_m / cos(elevation) in that bin (review r1 M1)."""
+    frames, lidar = [], []
+    elevation = torch.linspace(math.radians(20.0), math.radians(-10.0), VB)
+    for _ in range(STEPS):
+        depth = torch.full((N, 45, 80), 10.0)
+        depth[:, :, 38:43] = depth_m
+        frames.append((torch.full((N, 3, 45, 80), 0.15), depth))
+        x = torch.full((N, VB, HB), LIDAR_MAX)
+        b0 = bins_near(mod, 0.0, 2.0)
+        x[:, :, b0] = (depth_m / torch.cos(elevation)).view(1, VB, 1)
+        lidar.append(x.reshape(N, VB * HB))
+    return frames, lidar
+
+
 def perturb(lidar, bins_mask, seed):
     """Same scan, other random values in the selected horizontal bins."""
     g = torch.Generator().manual_seed(seed)
@@ -137,19 +189,21 @@ def perturb(lidar, bins_mask, seed):
     return out
 
 
-def run(perc, frames, lidar, governor=None, commands=None):
+def run(perc, frames, lidar, governor=None, commands=None, quats=None, vel=None):
     """Observe the sequence; after each step optionally govern `commands` with the same raw LiDAR."""
     out = []
     pos = torch.tensor([[0.0, 0.0, 1.0]]).repeat(N, 1)
-    vel = torch.tensor([[0.4, 0.0, 0.0]]).repeat(N, 1)
-    quat = torch.tensor([[0.0, 0.0, 0.0, 1.0]]).repeat(N, 1)
+    vel = torch.tensor([[0.4, 0.0, 0.0]]).repeat(N, 1) if vel is None else vel
+    identity = torch.tensor([[0.0, 0.0, 0.0, 1.0]]).repeat(N, 1)
     for k, ((rgb, depth), L) in enumerate(zip(frames, lidar)):
+        quat = identity if quats is None else quats[k]
         with torch.random.fork_rng():
             torch.manual_seed(1000 + k)
             obs, diag = perc.observe(rgb=rgb, depth=depth, lidar_m=L.clone(), drone_pos_w=pos, drone_vel_w=vel,
                                      vehicle_quat=quat, yaw_rate=torch.zeros(N), previous_action=torch.zeros(N, 4),
                                      max_velocity=2.5, flight_altitude=1.0, training=False)
         rec = {"obs": obs.clone(), "visible": diag["visible"].clone(), "confidence": perc.last_confidence.clone(),
+               "lidar_visible": diag["lidar_visible"].clone(), "camera_visible": diag["camera_visible"].clone(),
                "state": perc.tracker.state.clone(), "cov": perc.tracker.cov.clone(),
                "target_like": perc.last_target_like.clone()}
         if governor is not None:
@@ -266,7 +320,7 @@ class SensorAblationC0(unittest.TestCase):
 
     def test_conditions_known(self):
         self.assertEqual(set(ABL.CONDITIONS), {"full", "no_lidar_in_fov", "no_lidar_out_fov", "no_lidar",
-                                               "no_lidar_obs_only"})
+                                               "no_lidar_obs_only", "no_lidar_in_fov_obs_only"})
         self.assertEqual(ABL.condition_from_env({"NAVRL_SENSOR_ABLATION": "no_lidar"}), "no_lidar")
         with self.assertRaises(ValueError):
             ABL.condition_from_env({})
@@ -348,7 +402,11 @@ class SensorAblationC0(unittest.TestCase):
                     raw = L.reshape(N, VB, HB)
                     removed = ABL.removed_bins(perc, condition)
                     scan = raw.clone()
-                    scan[:, :, removed & self.inside] = static[:, :, removed & self.inside]
+                    rin = removed & self.inside
+                    elevation = torch.linspace(math.radians(20.0), math.radians(-10.0), VB).view(1, VB, 1)
+                    cam = static[:, :, rin]
+                    scan[:, :, rin] = torch.where(cam >= LIDAR_MAX * 0.995, torch.full_like(cam, LIDAR_MAX),
+                                                  cam / torch.cos(elevation))
                     scan[:, :, removed & ~self.inside] = LIDAR_MAX
                     clearance = SG.directional_lidar_clearance(
                         scan, mod.lidar_bin_bearings("cpu"), COMMANDS, max_range_m=LIDAR_MAX, path_half_width_m=0.45,
@@ -362,10 +420,72 @@ class SensorAblationC0(unittest.TestCase):
         self.assertTrue(bool((recs[-1]["governed"].norm(dim=1)[out_cmd] > 2.0 + 1e-6).all()))
 
     def test_obs_only_keeps_governor_lidar(self):
-        removed = torch.ones(HB, dtype=torch.bool)
-        ra, rb = self._pair("no_lidar_obs_only", removed)
-        self.assertTrue(equal_runs(ra, rb, ("obs", "visible", "confidence", "state", "cov")))
-        self.assertFalse(equal_runs(ra, rb, ("governed",)), "obs_only governor ignores the LiDAR")
+        for condition, removed in (("no_lidar_obs_only", torch.ones(HB, dtype=torch.bool)),
+                                   ("no_lidar_in_fov_obs_only", self.inside)):
+            with self.subTest(condition=condition):
+                ra, rb = self._pair(condition, removed)
+                self.assertTrue(equal_runs(ra, rb, ("obs", "visible", "confidence", "state", "cov")))
+                self.assertFalse(equal_runs(ra, rb, ("governed",)), "obs_only governor ignores the LiDAR")
+
+    def test_association_leak_with_camera_loss(self):
+        """Review r1 B1: the LiDAR target association runs only when the camera has lost the target. Scenes where it
+        does, inside and outside the FOV; under `full` it must be active (non-zero) and change under perturbation;
+        where the condition removes those bearings it must stay off and every output bit-identical; where the
+        condition keeps them it must stay active."""
+        keys = ("obs", "visible", "lidar_visible", "confidence", "state", "cov")
+        mod = perception_module()
+        removes = {"no_lidar": {"in_fov": True, "out_fov": True}, "no_lidar_in_fov": {"in_fov": True, "out_fov": False},
+                   "no_lidar_out_fov": {"in_fov": False, "out_fov": True},
+                   "no_lidar_obs_only": {"in_fov": True, "out_fov": True},
+                   "no_lidar_in_fov_obs_only": {"in_fov": True, "out_fov": False}}
+        for kind in ("in_fov", "out_fov"):
+            frames, lidar, quats = association_scene(mod, kind)
+            target_bins = bins_near(mod, 0.0) | bins_near(mod, -60.0)
+            other = perturb(lidar, target_bins, 5)
+            zero_vel = torch.zeros(N, 3)
+            fa = run(setup("full")[1], frames, lidar, quats=quats, vel=zero_vel)
+            fb = run(setup("full")[1], frames, other, quats=quats, vel=zero_vel)
+            active = sum(int(r["lidar_visible"].sum()) for r in fa)
+            self.assertGreater(active, 0, "%s: the association never ran under full" % kind)
+            self.assertEqual(sum(int(r["camera_visible"][:].sum()) for r in fa[3:]), 0, "camera did not lose it")
+            self.assertFalse(equal_runs(fa, fb, ("lidar_visible", "confidence", "state")), kind)
+            for condition, spec in removes.items():
+                with self.subTest(kind=kind, condition=condition):
+                    perc_a = setup(condition)[1]
+                    removed_here = target_bins & ABL.removed_bins(perc_a, condition)
+                    ra = run(perc_a, frames, lidar, quats=quats, vel=zero_vel)
+                    if spec[kind]:
+                        self.assertTrue(bool(removed_here.any()))
+                        mine = perturb(lidar, removed_here, 5)      # only bins this condition removes
+                        rb = run(setup(condition)[1], frames, mine, quats=quats, vel=zero_vel)
+                        self.assertEqual(sum(int(r["lidar_visible"].sum()) for r in ra), 0)
+                        self.assertTrue(equal_runs(ra, rb, keys))
+                    else:          # bearings kept: the association still runs there
+                        self.assertGreater(sum(int(r["lidar_visible"].sum()) for r in ra), 0)
+
+    def test_same_bar_same_clearance(self):
+        """Review r1 M1: one bar 4 m ahead seen by the LiDAR (full) and by the camera (in-FOV LiDAR removed) gives
+        the same governed speed, riskcap's 2.0 + 0.5 * (3.5355 - 2.0) at 4 m."""
+        mod = perception_module()
+        frames, lidar = same_bar_scene(mod, 4.0)
+        forward = torch.tensor([[3.5, 0.0]]).repeat(N, 1)
+        expect = 2.0 + 0.5 * (3.53553390593 - 2.0)
+        for condition in ("full", "no_lidar_in_fov", "no_lidar"):
+            with self.subTest(condition=condition):
+                _, perc, gov, _ = setup(condition)
+                speed = run(perc, frames, lidar, gov, forward)[-1]["governed"].norm(dim=1)
+                self.assertTrue(torch.allclose(speed, torch.full_like(speed, expect), atol=1e-4), (condition, speed))
+
+    def test_k2_threshold_between_43_and_44_deg(self):
+        """Review r1 L6: in open space a 43 deg command (inside the 87 deg FOV) is not capped, a 44 deg one is."""
+        _, perc, gov, _ = setup("no_lidar")
+        frames = [(torch.full((N, 3, 45, 80), 0.15), torch.full((N, 45, 80), 10.0)) for _ in range(2)]
+        open_lidar = [torch.full((N, VB * HB), LIDAR_MAX) for _ in range(2)]
+        cmd = torch.tensor([[3.5 * math.cos(math.radians(a)), 3.5 * math.sin(math.radians(a))]
+                            for a in (43.0, -43.0, 44.0, -44.0)])
+        speed = run(perc, frames, open_lidar, gov, cmd)[-1]["governed"].norm(dim=1)
+        self.assertTrue(torch.allclose(speed[:2], torch.full((2,), 3.5), atol=1e-5), speed)
+        self.assertTrue(torch.allclose(speed[2:], torch.full((2,), 2.0), atol=1e-5), speed)
 
     def test_double_install_and_unsupported_governor_refused(self):
         mod = perception_module()
@@ -381,6 +501,24 @@ class SensorAblationC0(unittest.TestCase):
         # Positive control: the supported configuration runs.
         gov.speed_governor_cfg = SG.SpeedGovernorConfig(mode="riskcap")
         self.assertEqual(tuple(govern(gov, COMMANDS).shape), (N, 2))
+        # Review r1 L6: another governor mode refuses; a sensor lineage refuses; governing before any observation
+        # refuses. Each with its positive control in `full` or on the supported path.
+        gov.speed_governor_cfg = SG.SpeedGovernorConfig(mode="fixed")
+        with self.assertRaises(RuntimeError):
+            govern(gov, COMMANDS)
+        _, pfull, gfull, _ = setup("full")
+        run(pfull, self.frames[:1], self.lidar[:1])
+        gfull.speed_governor_cfg = SG.SpeedGovernorConfig(mode="fixed")
+        gfull.obs_dict["depth_range_pixels"] = gov.obs_dict["depth_range_pixels"]
+        self.assertEqual(tuple(govern(gfull, COMMANDS).shape), (N, 2))
+        _, plin, _, _ = setup("no_lidar")
+        plin.sensor_lineage_s_l1a = True
+        with self.assertRaises(RuntimeError):
+            run(plin, self.frames[:1], self.lidar[:1])
+        _, pfresh, gfresh, _ = setup("no_lidar")
+        gfresh.obs_dict["depth_range_pixels"] = gov.obs_dict["depth_range_pixels"]
+        with self.assertRaises(RuntimeError):
+            govern(gfresh, COMMANDS)
 
     def test_no_production_import(self):
         import re
@@ -400,7 +538,9 @@ class SensorAblationC0(unittest.TestCase):
 
 class CamonlyEntryPoint(unittest.TestCase):
     """tools/camonly_entry.py, run for real in a child process against stub `isaacgym` / `aerial_gym` packages that
-    record the call order (the real ones need Isaac Gym)."""
+    record the call order (the real ones need Isaac Gym). With the real package, `aerial_gym/__init__.py` imports
+    isaacgym itself before the origin guard returns, as in a native `runner.py` run (review r1 L3); the stub order
+    checks the entry point's own calls only."""
 
     STUBS = {
         "isaacgym/__init__.py": "import builtins\nbuiltins.ORDER = getattr(builtins, 'ORDER', []) + ['isaacgym']\n",
@@ -411,7 +551,7 @@ class CamonlyEntryPoint(unittest.TestCase):
             "import builtins\ndef assert_runtime_origin():\n    builtins.ORDER = getattr(builtins, 'ORDER', []) + ['origin']\n"
             "    return {}\n",
         "aerial_gym/rl_training/rl_games/quiet_rl_io.py":
-            "import contextlib\ndef quiet_startup_enabled():\n    return False\n"
+            "import contextlib, os\ndef quiet_startup_enabled():\n    return os.environ.get('STUB_QUIET') == '1'\n"
             "@contextlib.contextmanager\ndef devnull_stdio():\n    yield\n",
         "aerial_gym/task/__init__.py": "",
         "aerial_gym/task/navrl_task/__init__.py": "",
@@ -419,20 +559,41 @@ class CamonlyEntryPoint(unittest.TestCase):
             "import builtins, os\ndef condition_from_env():\n    return os.environ['NAVRL_SENSOR_ABLATION']\n"
             "def install(c):\n    builtins.ORDER = getattr(builtins, 'ORDER', []) + ['install:' + c]\n"
             "    return {'condition': c}\n",
-        "rl/runner.py": "import builtins, json, sys\nprint('RUNNER ' + json.dumps({'name': __name__, 'argv': sys.argv,"
-                        " 'path0': sys.path[0], 'order': builtins.ORDER}))\n",
+        "rl/runner.py": "import builtins, json, os, sys\nprint('RUNNER ' + json.dumps({'name': __name__, 'argv': sys.argv,"
+                        " 'path0': sys.path[0], 'order': builtins.ORDER, 'path': os.environ['PATH']}))\n",
     }
 
-    def _run(self, root, receipt):
+    def _run(self, root, receipt, quiet=False, wrapper=False):
         import subprocess
         for rel, text in self.STUBS.items():
             p = Path(root) / rel
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(text)
         env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": root, "PYTHONNOUSERSITE": "1", "PYTHONDONTWRITEBYTECODE": "1",
-               "NAVRL_SENSOR_ABLATION": "no_lidar", "NAVRL_SENSOR_ABLATION_RECEIPT": receipt}
-        return subprocess.run([sys.executable, "-B", str(ROOT / "tools/camonly_entry.py"), str(Path(root) / "rl/runner.py"),
-                               "--file", "x.yaml", "--play"], env=env, capture_output=True, text=True)
+               "NAVRL_SENSOR_ABLATION": "no_lidar", "NAVRL_SENSOR_ABLATION_RECEIPT": receipt,
+               "STUB_QUIET": "1" if quiet else "0", "CAMONLY_REAL_PYTHON": sys.executable}
+        head = (["bash", str(ROOT / "tools/camonly_python")] if wrapper
+                else [sys.executable, "-B", str(ROOT / "tools/camonly_entry.py")])
+        return subprocess.run(head + [str(Path(root) / "rl/runner.py"), "--file", "x.yaml", "--play"], env=env,
+                              capture_output=True, text=True)
+
+    def _got(self, r):
+        import json
+        self.assertEqual(r.returncode, 0, r.stderr)
+        line = [x for x in r.stdout.splitlines() if x.startswith("RUNNER ")][0]
+        return json.loads(line[len("RUNNER "):])
+
+    def test_quiet_startup_and_wrapper_path(self):
+        """Review r1 L3 and M3: the quiet-startup branch keeps the order; tools/camonly_python puts the
+        interpreter's bin directory first on PATH (ninja for the gymtorch build), as a native run has it."""
+        import os
+        import tempfile
+        with tempfile.TemporaryDirectory() as root:
+            got = self._got(self._run(root, str(Path(root) / "r1.json"), quiet=True))
+            self.assertEqual(got["order"], ["origin", "isaacgym", "install:no_lidar"])
+            got = self._got(self._run(root, str(Path(root) / "r2.json"), wrapper=True))
+            self.assertEqual(got["path"].split(":")[0], os.path.dirname(sys.executable))
+            self.assertEqual(got["order"], ["origin", "isaacgym", "install:no_lidar"])
 
     def test_entry_order_argv_and_receipt(self):
         import json

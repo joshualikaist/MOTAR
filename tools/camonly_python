@@ -4,4 +4,7 @@
 # command; every other helper keeps the real interpreter.
 set -euo pipefail
 REAL="${CAMONLY_REAL_PYTHON:?CAMONLY_REAL_PYTHON is required}"
+# play_navrl.sh puts this wrapper's directory first on PATH; restore the interpreter's bin directory in front of it so
+# tools that runner.py builds with (ninja for gymtorch) are found as in a native run (review r1 M3).
+export PATH="$(dirname "${REAL}"):${PATH}"
 exec "${REAL}" "$(dirname "$(readlink -f "$0")")/camonly_entry.py" "$@"

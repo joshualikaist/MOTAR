@@ -1,5 +1,6 @@
 """Known-bad controls for the C0 tests (tests/test_navrl_sensor_ablation.py): each mutant breaks one property of the
 ablation module; the test suite must FAIL on every mutant and PASS on the unmodified module.
+Mutants assoc_raw and no_elevation_fix were added after review r1 (B1, M1).
 usage: tests/camonly_c0_mutants.py TREE OUT_JSON   (not collected by tools/run_tests.py: no test_ prefix)
 """
 import importlib.util
@@ -37,7 +38,7 @@ def m_no_mask():
 
 def m_governor_raw():
     """the governor ignores the condition and uses the raw LiDAR (governor leak)."""
-    A.governor_scan = lambda perception, condition, scan_m, max_range_m: scan_m
+    A.governor_scan = lambda perception, condition, scan_m, max_range_m, *args, **kwargs: scan_m
 
 
 def m_no_k2():
@@ -73,13 +74,44 @@ def m_fov_shifted():
     A.removed_bins = removed_bins
 
 
+def m_assoc_raw():
+    """the LiDAR target association still reads the raw LiDAR (review r1 B1)."""
+    orig = ORIG["install_perception"]
+
+    def install_perception(module, condition):
+        cls = orig(module, condition)
+        assoc = cls._associate_lidar_target
+
+        def associate(self, lidar_m, *args, **kwargs):
+            return assoc(self, getattr(self, "_ablation_raw_lidar_m", lidar_m), *args, **kwargs)
+        cls._associate_lidar_target = associate
+        return cls
+    A.install_perception = install_perception
+
+
+def m_no_elevation_fix():
+    """camera values copied into the governor rows without the 1/cos(elevation) correction (review r1 M1)."""
+    def governor_scan(perception, condition, scan_m, max_range_m, vertical_fov_deg):
+        removed = getattr(perception, "_ablation_removed", None)
+        if removed is None or not bool(removed.any()):
+            return scan_m
+        inside = A.fov_inside(perception)
+        out = scan_m.clone()
+        rin, rout = removed & inside, removed & ~inside
+        out[:, :, rin] = perception._ablation_fused_m[:, :, rin].to(out.dtype)
+        out[:, :, rout] = float(max_range_m)
+        return out
+    A.governor_scan = governor_scan
+
+
 def torch_zeros(command_xy):
     import torch
     return torch.zeros(command_xy.shape[0], dtype=torch.bool)
 
 
 MUTANTS = {"none": None, "no_mask": m_no_mask, "governor_raw": m_governor_raw, "no_k2": m_no_k2,
-           "fill_zero": m_fill_zero, "fov_shifted": m_fov_shifted}
+           "fill_zero": m_fill_zero, "fov_shifted": m_fov_shifted, "assoc_raw": m_assoc_raw,
+           "no_elevation_fix": m_no_elevation_fix}
 
 
 def run_suite():

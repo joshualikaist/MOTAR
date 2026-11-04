@@ -228,3 +228,66 @@ Limits of C0:
 - GPU approval for C1 and C2, after C0 and its review.
 - Whether C2's zero-shot result alone answers the question, or C3-C4 (new PPO) is wanted. The user has approved
   new PPO in principle (D-2026-11-04-1, GR unit); each run still needs its own approval.
+
+## After review r1 (2026-11-04): repairs and corrected readings
+
+The C0 gate run gate_01 on `4d03f35` read C0_CONDITIONAL_PASS. The independent review r1 (Opus 5.5, fresh
+context; `docs/evidence/camonly_2026-11-04/c0/REVIEW_r1.md`) read **FAIL** on one blocking, test-only finding.
+This section supersedes the earlier text where they differ. The earlier text stays as written.
+
+**B1 (blocking): the association leak check was vacuous.**
+- In the original test scene the camera never lost the target, so the LiDAR target association never ran:
+  0 of 24 env-steps.
+- A mutant whose association reads the raw LiDAR passed every test.
+- Repair: two camera-loss scenes, inside the FOV and outside it (the vehicle is yawed by 60 deg).
+  - Under `full` the association runs on 12 env-steps in each scene, and it changes under perturbation.
+  - In each condition that removes those bearings it runs on 0 env-steps, and every output is bit-identical.
+  - In each condition that keeps them it still runs on 12.
+- The mutant `assoc_raw` is now caught.
+
+**M1: the governor shrank camera clearances by cos 20 deg.** The governor projects each of the 4 rows by its
+elevation; perception copies one camera value into all of them. The governor scan now divides the camera value
+by the cosine of each row's elevation, so the projection returns the camera value.
+- Test: one bar 4 m ahead gives the same governed speed seen by the LiDAR (`full`) and by the camera
+  (`no_lidar_in_fov`, `no_lidar`): riskcap's 2.768 m/s.
+- The mutant `no_elevation_fix` is caught.
+- Remaining and disclosed: camera values are depths along the principal axis. F's perception uses them as
+  ranges, and the governor inherits that, so off-axis camera clearances are under-estimated by about cos(bearing):
+  0.73 at the FOV edge. This is part of "the camera as F's perception uses it", not removed.
+
+**M2: the K5 claim holds for the observation only.** In A the governor reads only the raw LiDAR, so camera
+phantoms never slow it. The in-FOV LiDAR also holds the target track when the camera loses it inside the FOV.
+So A − B_in is not only the camera's misses. Corrected reading, with the new condition
+`no_lidar_in_fov_obs_only` (B_in_gL: in-FOV LiDAR removed from perception, governor on the raw LiDAR):
+- A − B_in_gL: the observation's in-FOV use of the LiDAR, i.e. the camera's misses plus the in-FOV target
+  association.
+- B_in_gL − B_in: the governor's in-FOV use of the LiDAR, including its immunity to camera phantoms.
+- The association share inside A − B_in_gL is not separated here. The existing switch
+  `NAVRL_LIDAR_TARGET_ASSOC=0` can separate it, as an optional condition in the C2 preregistration.
+
+**M3: PATH.** `play_navrl.sh` puts the `PYTHON` wrapper's directory first on `PATH`, so ninja (for the gymtorch
+build) was not found. `tools/camonly_python` now puts the interpreter's bin directory first. Tested.
+
+**Disclosed, not changed:**
+- L1: in the `*_obs_only` conditions the observation's previous-action field is the command after the
+  raw-LiDAR governor. Those observations are not strictly LiDAR-free.
+- L2: in the `*_obs_only` conditions the governor's target mask uses the camera-only visibility. A target the
+  camera has lost is therefore an obstacle to the raw-LiDAR governor.
+- L4: under the entry point, `__file__` and `argv[0]` of `runner.py` are absolute paths. `__name__`,
+  `sys.path[0]` and `__main__` match a native run.
+- L9: under ablation, joint-speed telemetry mixes the ablated requested clearance with raw-LiDAR actual
+  clearances. This affects a recorder only.
+
+**Requirements for the C1/C2 launcher (L5):**
+- each cell gets its own receipt path;
+- the runner refuses a cell whose receipt is missing or names another condition, because `NAVRL_SENSOR_ABLATION`
+  without the entry point is silently ignored;
+- `PYTHON=tools/camonly_python` is set only for the `play_navrl.sh` call.
+
+**Tests added for the low findings:**
+- L3: quiet startup.
+- L6: the governor-mode, lineage and "governor before perception" refusals, and the K2 threshold at 43 vs 44 deg.
+- L7: the test camera uses the production 10 m far plane.
+
+**C0 gate after r1:** the same five items, with 14 tests and 7 mutants. It is run again on the repair commit
+(gate_02) and reviewed again (r2).
