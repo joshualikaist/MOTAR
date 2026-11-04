@@ -23543,3 +23543,21 @@ The user lifted the new-PPO ban and approved the GPU runs of this unit. The deci
 
 Next: the identity stage, after the C-Planner direction-bound CPU gate ends (no GPU beside heavy CPU work); then GR-0.
 No push or merge.
+
+## 2026-11-04 — GR identity_01 IDENTITY_FAIL (runner placement); amendment 1 adopts the KROC2027 A3 placement
+
+The identity stage ran from `d38b247`, 11:51 – 11:52 KST, at 0 kernel fault records.
+- Output: `aerial_gym_simulator/results/gain_randomization_gr0_v1/identity_01/`, `identity_report.json` SHA-256
+  `b7f45bf0…3b18`. The verdict is **IDENTITY_FAIL**, and it stays recorded.
+- All four cells (`ref` on the base tree `62e59c0`, `off`, `s00`, `s40`) stopped after one step without a result.
+- The KROC2027 recorder's swept-clearance check found the target overlapping a bar at spawn in 3 of 128 envs
+  (clearance 0) and stopped each cell.
+- Cause: the runner did not set the KROC2027 initial-view placement, which carries the spawn-clearance rule. B1-R ran
+  Policy F with that placement (A3: moving, visible at 10 m).
+- The hypothesis "the gain switch breaks the OFF run" is not supported: the base tree failed identically, and no
+  comparison was made.
+- Amendment: [`docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`](docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md).
+  `tools/gr_run.py` builds every cell with `view='visible'` and `arm='A3'`. Identity reruns once into `identity_02`;
+  if that is not IDENTITY_PASS, the unit stops.
+
+Next: identity_02, then GR-0. No push or merge.

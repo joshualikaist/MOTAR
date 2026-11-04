@@ -676,14 +676,17 @@ family that is in the test's scope.
   randomization?
 - **Policy:** Frozen Policy F, unchanged; gain randomization is an opt-in switch with default OFF. Any newly trained
   checkpoint (GR-1, not yet preregistered) would be a new policy compared with F (D-2026-11-04-1).
-- **Status:** GR-0 preregistered (identity stage, then 36 cells); not measured. Compare with `policy-r-ref5in`
+- **Status:** GR-0 preregistered; identity_01 IDENTITY_FAIL (runner placement, no comparison made), amendment 1
+  (A3 placement); GR-0 cells not measured. Compare with `policy-r-ref5in`
   (the failed 2026-08 airframe adaptation) and `b1r-classical-baseline` (the F condition GR-0's S00 mirrors).
 - **Read first:** [`docs/plans/prereg_gain_randomization_gr0_v1.md`](plans/prereg_gain_randomization_gr0_v1.md)
 - **Lineage:**
   - D-2026-11-04-1 (new PPO allowed again)
   - → `docs/plans/prereg_gain_randomization_gr0_v1.md`
+  - → `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md` (A3 placement after identity_01)
 - **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
-- **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`
+- **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`,
+  `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`
 
 ## Not yet in the repository
 

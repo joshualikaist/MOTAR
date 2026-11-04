@@ -32,6 +32,7 @@ sys.path.insert(0, str(HERE))
 import kroc2027_eval as K                                  # noqa: E402
 
 PREREG = "docs/plans/prereg_gain_randomization_gr0_v1.md"
+AMENDMENT = "docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md"
 REF_TREE = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1")
 REF_COMMIT = "62e59c031ad2"
 ARM = "E2_obstacle_aware"
@@ -92,8 +93,11 @@ def tree_problems(root, commit_prefix):
 
 def cell_env(root, protocol, density, seed, out_dir, quota, run_id, scale):
     inherited = {k: v for k, v in os.environ.items() if not k.startswith("NAVRL_")}
+    # Amendment 1: the KROC2027 A3 placement (moving target, initial view visible at 10 m, spawn clearance and
+    # line-of-sight rules), i.e. the B1-R Policy F condition (tools/b1r_run.py view='visible', arm='A3').
     env = K.cell_env(K.base_env(root=root, inherited=inherited), protocol, target_model=ARM, density=density,
-                     seed=seed, out_dir=out_dir, quota=quota, recorder=True, run_id=run_id, arm=ARM)
+                     seed=seed, out_dir=out_dir, quota=quota, view="visible", recorder=True, run_id=run_id,
+                     arm="A3")
     env.update(BACKEND)
     env.update(gain_env(scale, seed))
     return env
@@ -203,8 +207,9 @@ def preflight(root, protocol, approved, out_root):
     head, problems = tree_problems(root, approved)
     if K.git("rev-parse", "--abbrev-ref", "HEAD", root=root).strip() != "gainrand/dev":
         problems.append("branch is not gainrand/dev")
-    if subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", PREREG], capture_output=True).returncode:
-        problems.append("preregistration %s is not committed" % PREREG)
+    for rel in (PREREG, AMENDMENT):
+        if subprocess.run(["git", "-C", str(root), "ls-files", "--error-unmatch", rel], capture_output=True).returncode:
+            problems.append("preregistration %s is not committed" % rel)
     problems += K.static_problems(protocol, root)
     if K.gpu_names() != [GPU]:
         problems.append("expected exactly one %s, found %s" % (GPU, K.gpu_names()))
