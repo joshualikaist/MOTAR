@@ -24244,3 +24244,28 @@ global history phase.
 - **Tests:** `tests/test_staterec_hook.py` (3) pass.
 - **Unchanged:** the noninterference gate, which would expose any effect on outcomes.
 
+## 2026-11-05 — SITL bridge, MOTAR side (CPU): production sensors, perception and Policy F outside Isaac Gym; S3a check script
+
+- **`tools/sitl_bridge.py`:** rebuilds F's 898-D observation and action on the CPU with production code from this
+  tree. `aerial_gym` is stood in by bare packages, the offline audit's pattern.
+  - LiDAR: MOTAR's Warp kernel via `MOTAR-cplanner/cplanner/motar/replay.py`, with the yaw-only sensor attitude.
+  - RGB-D: the production renderer `NavRLTargetDetector.render_raw_rgbd`, with a stand-in warp env holding the bar
+    mesh.
+  - Perception: `NavRLPerceptionModule.observe`, unchanged.
+  - Policy: the real `NavRLPpoPlayerContinuous` restored from F (the checkpoint mapped to the CPU during restore).
+- **`tools/sitl_s3a_equivalence.py`:** replays each env's first episode of a G8 cell from the recorded states.
+  - It compares per slice with the dumped observation, and the action against the record.
+  - Gate: EQUIVALENT at obs ≤ 1e-3 and action ≤ 1e-4.
+- **Smoke on a B1-R trace episode:**
+  - Setup 0.7 s, episode build 0.1 s, policy 0.9 s.
+  - Per step 4.5 ms median after the first, which compiles the Warp kernel (0.7 s).
+  - Output (1, 898), target visible. The actions are F's forward-left diagonal (x ≈ 0.97, y ≈ 0.99).
+- **Two fixes made during the smoke:** the renderer needs a Warp device string, and rl_games' restore needs the
+  CPU map.
+- **PUBLIC_CPU on `f3930c6` (the new G7 test file in the full suite):** 3,257 tests, 9 failures and 4 errors.
+  - All 7 failures new against the 2026-11-04 baseline are launcher preflights refusing "duplicate NavRL training;
+    active PID 515786", the running GR-1b training. They are environmental.
+  - The rest are the known missing-raw failures.
+  - The new tests pass.
+- **Next:** G8 (GPU), then S3a on its dump.
+
