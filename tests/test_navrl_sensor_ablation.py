@@ -427,6 +427,37 @@ class SensorAblationC0(unittest.TestCase):
                 self.assertTrue(equal_runs(ra, rb, ("obs", "visible", "confidence", "state", "cov")))
                 self.assertFalse(equal_runs(ra, rb, ("governed",)), "obs_only governor ignores the LiDAR")
 
+    def test_obs_only_governor_matches_full_with_target_hits(self):
+        """Review r2 M-r2-1: while the camera sees the target (so no association runs), the `*_obs_only` governor is the
+        raw-LiDAR governor of `full`, bit for bit. That covers its target mask (the replica on the raw LiDAR) and the
+        absence of the K2 cap. Positive controls: the scene has target-mask hits, dropping the mask changes the
+        governed command, and commands outside the FOV run above 2.0 m/s in `full`."""
+        mod = perception_module()
+        near = bins_near(mod, 0.0, 15.0)
+        lidar = []
+        for _ in range(STEPS):
+            x = torch.full((N, VB, HB), LIDAR_MAX)
+            x[:, :, near] = 3.1                      # on the target's surface in envs 0-1; an obstacle in envs 2-3
+            lidar.append(x.reshape(N, VB * HB))
+        _, pf, gf, _ = setup("full")
+        full = run(pf, self.frames, lidar, gf, COMMANDS)
+        self.assertGreater(sum(int(r["target_like"].sum()) for r in full), 0, "no target-mask hits")
+        self.assertEqual(sum(int(r["lidar_visible"].sum()) for r in full), 0)
+        bearings = mod.lidar_bin_bearings("cpu")
+        unmasked_differs = False
+        for rec, L in zip(full, lidar):
+            c = SG.directional_lidar_clearance(L.reshape(N, VB, HB), bearings, COMMANDS, max_range_m=LIDAR_MAX,
+                                               path_half_width_m=0.45, target_return_mask=None)
+            g, _ = SG.apply_speed_governor(COMMANDS, c, gf.speed_governor_cfg)
+            unmasked_differs |= not torch.equal(g, rec["governed"])
+        self.assertTrue(unmasked_differs, "the target mask does not matter in this scene")
+        outside = torch.tensor([abs(a) > math.radians(43.5) for a in _ANGLES])
+        self.assertTrue(bool((full[-1]["governed"].norm(dim=1)[outside] > 2.0 + 1e-6).all()))
+        for condition in ("no_lidar_obs_only", "no_lidar_in_fov_obs_only"):
+            with self.subTest(condition=condition):
+                _, pc, gc, _ = setup(condition)
+                self.assertTrue(equal_runs(full, run(pc, self.frames, lidar, gc, COMMANDS), ("governed",)))
+
     def test_association_leak_with_camera_loss(self):
         """Review r1 B1: the LiDAR target association runs only when the camera has lost the target. Scenes where it
         does, inside and outside the FOV; under `full` it must be active (non-zero) and change under perturbation;
@@ -551,8 +582,9 @@ class CamonlyEntryPoint(unittest.TestCase):
             "import builtins\ndef assert_runtime_origin():\n    builtins.ORDER = getattr(builtins, 'ORDER', []) + ['origin']\n"
             "    return {}\n",
         "aerial_gym/rl_training/rl_games/quiet_rl_io.py":
-            "import contextlib, os\ndef quiet_startup_enabled():\n    return os.environ.get('STUB_QUIET') == '1'\n"
-            "@contextlib.contextmanager\ndef devnull_stdio():\n    yield\n",
+            "import builtins, contextlib, os\ndef quiet_startup_enabled():\n    return os.environ.get('STUB_QUIET') == '1'\n"
+            "@contextlib.contextmanager\ndef devnull_stdio():\n    builtins.ORDER = getattr(builtins, 'ORDER', []) + ['quiet']\n"
+            "    yield\n",
         "aerial_gym/task/__init__.py": "",
         "aerial_gym/task/navrl_task/__init__.py": "",
         "aerial_gym/task/navrl_task/navrl_sensor_ablation.py":
@@ -590,7 +622,7 @@ class CamonlyEntryPoint(unittest.TestCase):
         import tempfile
         with tempfile.TemporaryDirectory() as root:
             got = self._got(self._run(root, str(Path(root) / "r1.json"), quiet=True))
-            self.assertEqual(got["order"], ["origin", "isaacgym", "install:no_lidar"])
+            self.assertEqual(got["order"], ["origin", "quiet", "isaacgym", "install:no_lidar"])   # review r2 L-r2-3
             got = self._got(self._run(root, str(Path(root) / "r2.json"), wrapper=True))
             self.assertEqual(got["path"].split(":")[0], os.path.dirname(sys.executable))
             self.assertEqual(got["order"], ["origin", "isaacgym", "install:no_lidar"])

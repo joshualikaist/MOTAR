@@ -291,3 +291,68 @@ build) was not found. `tools/camonly_python` now puts the interpreter's bin dire
 
 **C0 gate after r1:** the same five items, with 14 tests and 7 mutants. It is run again on the repair commit
 (gate_02) and reviewed again (r2).
+
+## After review r2 (2026-11-04): C0 PASS; corrections before the C2 preregistration
+
+Review r2 (Opus 5.5, fresh context; `docs/evidence/camonly_2026-11-04/c0/REVIEW_r2.md`) read **PASS** on gate_02
+(`842fcf5`), so C0 is PASS. Its open findings are answered here. This section supersedes the earlier sections
+where they differ.
+
+**M-r2-2: the M1 residual disclosure above is withdrawn; it was wrong.**
+- What it said: camera values are depths along the principal axis, so off-axis clearances shrink by
+  cos(bearing).
+- What the code does: the obstacle camera renders the Euclidean range along normalised pinhole rays
+  (`navrl_detector.py:36-48`, rays normalised at `:403-405`). There is no cos(bearing) shrink.
+- The real off-axis residual: perception maps each LiDAR bin to a camera column linearly in angle
+  (`navrl_perception.py:1917`), but the render is pinhole. So each in-FOV bin samples a bearing slightly further
+  out, by up to about 3.4 deg according to the reviewer's re-implementation (20 → 23.4 deg, 30 → 32.9 deg).
+  Bars shift by up to one bin toward the axis, or are missed between samples.
+- This is part of how F's perception uses the camera. It applies equally to every condition that uses the camera
+  in the FOV. The planned sensor-level check with the real Warp kernels will measure it.
+
+**M-r2-1: the obs_only governor is now pinned by a test.** While the camera sees the target, both `*_obs_only`
+governors equal `full`'s raw-LiDAR governor bit for bit. The test has positive controls:
+- the scene has target-mask hits;
+- dropping the mask changes the governed command;
+- commands outside the FOV run above 2.0 m/s.
+
+Three source mutants, all caught:
+- the replica computed on the masked LiDAR;
+- the raw branch without a mask;
+- the K2 cap applied in the raw branch.
+
+**Readings, made precise (L-r2-1):**
+- A − B_in_gL contains the observation's in-FOV use of the LiDAR, which is the camera's misses and the in-FOV
+  association. It also contains the governor's target carve-out after a camera loss: `full` keeps the lost
+  target out of the governor's obstacles through the association, while B_in_gL does not.
+- B_in_gL's visibility is camera plus the out-of-FOV LiDAR association, not camera only.
+- In the `*_obs_only` conditions, both the previous-action field and the ego velocity in the observation carry
+  the raw-LiDAR governor's effect (L1, L-r2-4).
+
+**Launcher requirements, completed (L5, L-r2-2):**
+- each cell sets `NAVRL_SENSOR_ABLATION` itself, because `gr_run`-style runners drop inherited `NAVRL_*`
+  variables;
+- each cell has its own receipt path, and the runner refuses a cell whose receipt is missing or names another
+  condition;
+- `PYTHON` points to `tools/camonly_python` by absolute path, because `play_navrl.sh` changes directory first;
+- `CAMONLY_REAL_PYTHON` is an absolute path;
+- `PYTHON` is set only for the `play_navrl.sh` call.
+
+**Stage table (L-r2-4):** C2 has five new conditions:
+- `no_lidar_in_fov`;
+- `no_lidar_out_fov`;
+- `no_lidar`;
+- `no_lidar_obs_only`;
+- `no_lidar_in_fov_obs_only`.
+
+`full` is GR-0's S00 cells. An association-off condition (`NAVRL_LIDAR_TARGET_ASSOC=0`) is optional. At about
+2.3 min per cell, five conditions x 12 cells is about 2.3 h.
+
+**Also:** L-r2-3 (the quiet-startup test now records the quiet branch) and L-r2-5 (`fill_zero` also reverts the
+governor; it is still caught by the K1 subtests).
+
+**C0 after r2:**
+- 15 tests and 10 mutants. The mutants are the original 5, `assoc_raw`, `no_elevation_fix` and the 3 source
+  mutants above.
+- These are test and plan changes only; the ablation module is unchanged since gate_02.
+- They are reviewed together with the C1/C2 preregistration in its pre-measurement design review.

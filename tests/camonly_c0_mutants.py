@@ -1,6 +1,7 @@
 """Known-bad controls for the C0 tests (tests/test_navrl_sensor_ablation.py): each mutant breaks one property of the
 ablation module; the test suite must FAIL on every mutant and PASS on the unmodified module.
-Mutants assoc_raw and no_elevation_fix were added after review r1 (B1, M1).
+Mutants assoc_raw and no_elevation_fix were added after review r1 (B1, M1); the source mutants replica_on_masked,
+raw_branch_no_mask and k2_in_raw_branch after review r2 (M-r2-1).
 usage: tests/camonly_c0_mutants.py TREE OUT_JSON   (not collected by tools/run_tests.py: no test_ prefix)
 """
 import importlib.util
@@ -104,6 +105,30 @@ def m_no_elevation_fix():
     A.governor_scan = governor_scan
 
 
+SOURCE = (TREE / "aerial_gym/task/navrl_task/navrl_sensor_ablation.py").read_text()
+SOURCE_MUTANTS = {
+    # review r2 M-r2-1: the obs_only governor
+    "replica_on_masked": ('        raw = getattr(self, "_ablation_raw_lidar_m", None)\n',
+                          '        raw = bound.arguments["lidar_m"]\n'),
+    "raw_branch_no_mask": ("            kwargs = dict(kwargs, target_return_mask=perception._ablation_raw_target_like)\n",
+                           "            kwargs = dict(kwargs, target_return_mask=None)\n"),
+    "k2_in_raw_branch": ("            return orig_dlc(scan_m, bearings_rad, command_xy, **kwargs)\n        scan = governor_scan",
+                         "            c = orig_dlc(scan_m, bearings_rad, command_xy, **kwargs)\n"
+                         "            return torch.where(out_of_fov_commands(perception, command_xy), torch.zeros_like(c), c)\n"
+                         "        scan = governor_scan"),
+}
+
+
+def source_module(name):
+    """A copy of the ablation module with one source edit (the edit must match exactly once)."""
+    old, new = SOURCE_MUTANTS[name]
+    assert SOURCE.count(old) == 1, name
+    import types
+    mod = types.ModuleType("navrl_sensor_ablation_mutant_" + name)
+    exec(compile(SOURCE.replace(old, new), mod.__name__, "exec"), mod.__dict__)
+    return mod
+
+
 def torch_zeros(command_xy):
     import torch
     return torch.zeros(command_xy.shape[0], dtype=torch.bool)
@@ -131,8 +156,12 @@ for name, mutate in MUTANTS.items():
     out[name] = run_suite()
 for k, v in ORIG.items():
     setattr(A, k, v)
+for name in SOURCE_MUTANTS:
+    T.ABL = source_module(name)
+    out[name] = run_suite()
+T.ABL = A
 ok = (out["none"]["failures"] == 0 and out["none"]["errors"] == 0
-      and all(out[m]["failures"] + out[m]["errors"] > 0 for m in MUTANTS if m != "none"))
+      and all(out[m]["failures"] + out[m]["errors"] > 0 for m in out if m != "none"))
 res = {"tree": str(TREE), "mutants": out, "pass": ok}
 OUT.write_text(json.dumps(res, indent=1) + "\n")
 print(json.dumps({k: (v["failures"] + v["errors"], v["failed_tests"]) for k, v in out.items()}, indent=1))

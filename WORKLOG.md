@@ -23821,3 +23821,29 @@ Open findings, to fix before the C2 preregistration:
 
 Next: repair M-r2-1 and M-r2-2 and the low findings (tests and plan text only), then the C1/C2 preregistration and
 its design review. A GPU run needs the user's approval. No push or merge.
+
+## 2026-11-04 — Camera-only: review r2 findings answered (tests and plan text only; module unchanged)
+
+- **M-r2-1:** new test `test_obs_only_governor_matches_full_with_target_hits`. While the camera sees the target,
+  both `*_obs_only` governors equal `full` bit for bit. The scene has target-mask hits, dropping the mask changes
+  the command, and outside-FOV commands run above 2.0 m/s.
+  - Source mutants `replica_on_masked`, `raw_branch_no_mask` and `k2_in_raw_branch` are each caught by its two
+    subtests.
+- **M-r2-2:** the plan's M1 residual disclosure ("principal-axis depth, cos(bearing) shrink") is withdrawn as
+  wrong.
+  - The obstacle camera renders Euclidean range along normalised pinhole rays (`navrl_detector.py:36-48`).
+  - The real residual is the linear angle-to-column map against a pinhole render (`navrl_perception.py:1917`),
+    up to about 3.4 deg further out per bin.
+  - The hypothesis "camera values are principal-axis depths" is rejected: the measured kernel returns the ray
+    distance `t`.
+- **Low:**
+  - L-r2-1 precise readings, L-r2-2 launcher requirements, L-r2-4 five conditions and the ego velocity: in the
+    plan's "After review r2".
+  - L-r2-3: the quiet-startup test records the quiet branch.
+- **Development run:** 15 tests OK. All 10 mutants caught (2-17 failing tests each); the unmodified module has 0
+  failing.
+- `navrl_sensor_ablation.py` is unchanged since gate_02 (`842fcf5`).
+- These changes are reviewed with the C1/C2 preregistration's design review.
+
+Next: GR-1 analysis when the ctrl evaluation ends, then the C1/C2 preregistration. GPU runs need the user's
+approval. No push or merge.
