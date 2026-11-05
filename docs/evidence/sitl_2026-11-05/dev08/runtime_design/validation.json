@@ -1,0 +1,105 @@
+{
+  "scope": "dev08 observed-prefix input/runtime design only",
+  "base": "5f444abcfe94fc8ae59cbb7c5946e71ac32106e8",
+  "measurement_status": "NOT_RUN",
+  "runtime_status": "NOT_IMPLEMENTED",
+  "focused_tests": {
+    "ran": 13,
+    "status": "PASS"
+  },
+  "shared_public_cpu": {
+    "status": "FAIL",
+    "ran": 3298,
+    "failures": 2,
+    "errors": 2,
+    "skipped": 17,
+    "excluded": 5,
+    "duration_s": 222.529,
+    "cause": "unchanged historical worktree artifact availability; motar-lp5.6",
+    "limits": {
+      "CUDA_VISIBLE_DEVICES": "",
+      "PYTHONNOUSERSITE": "1",
+      "cpu_affinity": "6,7,12,13",
+      "nice": 10,
+      "rlimit_as_kib_per_process": 8388608,
+      "timeout_s": 900,
+      "kill_grace_s": 20,
+      "threads": 2
+    }
+  },
+  "independent_review": {
+    "verdict": "PASS_WITH_LIMITS",
+    "scope": "repaired offline contracts/design only",
+    "report": "REVIEW_design_r1.md",
+    "sha256": "245b897d0d98c64a5b4141eecaafa3aa382f0983f686ee5c6ed3926f205d503a",
+    "reviewer": "fresh-context Codex /root/dev08_prefix_review",
+    "exact_backend_model": "NOT_RECORDED",
+    "findings": "initial shortened-window and identity/operational validation gaps retained externally and repaired; no final source blocker",
+    "independent_tests": 13
+  },
+  "source_sha256": {
+    "tools/sitl_dev08_prefix_contract.py": "f309dd5d2fdbfc8fb21c19fd5361a903b8fadfe525f8d246132c4ed75afc8c70",
+    "tests/test_sitl_dev08_prefix_contract.py": "325e90730f5ccb02f68d8644eb8702fddb47d9f53a479e480e021f70ab0abc2e",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md": "159fea947a4db752afa746946dd7506ae8f24ee8a62f4c3b6d08f2ac7802c014"
+  },
+  "host_faults": {
+    "before": 0,
+    "after": 0
+  },
+  "external_artifacts": {
+    "focused_final.log": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/focused_final.log",
+      "sha256": "a410b1f26af1062a7a674f3a910a527f1808f631dbaf2bc3ad8d22b062296f3a"
+    },
+    "public_cpu.log": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/public_cpu.log",
+      "sha256": "e48843c89472937ad13def501bb0ba2f707db74760ba3f6871c4b054a1621aa1"
+    },
+    "host_before_cpu.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/host_before_cpu.json",
+      "sha256": "6c0aa84ab5649c3a518b609f62bf2cc20aa1a21a8968a752e8ba04e9afebb461"
+    },
+    "host_after_cpu.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/host_after_cpu.json",
+      "sha256": "6c0aa84ab5649c3a518b609f62bf2cc20aa1a21a8968a752e8ba04e9afebb461"
+    },
+    "strict600_preflight_final.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/strict600_preflight_final.json",
+      "sha256": "b4391350e791812dceeffd146214820d12820884e7b51f0dd8b232bf555d9d71"
+    },
+    "observed-prefix-v1_preflight_final.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/observed-prefix-v1_preflight_final.json",
+      "sha256": "8ae094e931684fe8d1be4a138bba9c4afaf69137d6aca8e1ac0b40ba63284f52"
+    },
+    "resolution_probe/REPORT.md": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/resolution_probe/REPORT.md",
+      "sha256": "2002278ba393fadb5422efa6fd5c329a8aaadefc50b2148cd4fa4a6d1741f158"
+    },
+    "resolution_probe/findings.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/resolution_probe/findings.json",
+      "sha256": "32641d020531434a23a652fffb5152464817fa18a202ee5ff09c655db62592f7"
+    },
+    "source_review_r1/REPORT.md": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/source_review_r1/REPORT.md",
+      "sha256": "245b897d0d98c64a5b4141eecaafa3aa382f0983f686ee5c6ed3926f205d503a"
+    },
+    "source_review_r1/initial_checks.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/source_review_r1/initial_checks.json",
+      "sha256": "c4e5095a1258637917c582e2c34a01bc7fa280b5a294bfe23fbe6093f2d94e8f"
+    },
+    "source_review_r1/final_checks.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/source_review_r1/final_checks.json",
+      "sha256": "3f2340aa081e4237e0ee10a8e2420b98b3b171a93f1bec92f067cbfcbfb7d39e"
+    },
+    "availability_readonly.json": {
+      "path": "/home/fair/motar_tmp/dev08_runtime_design_20261105/availability_readonly.json",
+      "sha256": "64c808a3513f6850f9c3a9f9e9b8b0a69a3e1040e8f133da375a4263552fad7b"
+    }
+  },
+  "record_checks": {
+    "ran": 71,
+    "status": "PASS",
+    "log": "/home/fair/motar_tmp/dev08_runtime_design_20261105/record_checks.log",
+    "sha256": "c8ec9e797077bb95851e4ffc13507d10d9cb8d5c8ad1d771b27e91b573b04260"
+  }
+}

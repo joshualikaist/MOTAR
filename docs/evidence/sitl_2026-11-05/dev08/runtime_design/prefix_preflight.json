@@ -1,0 +1,296 @@
+{
+  "candidate_params": {
+    "MC_PITCHRATE_D": 0.00026,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_P": 0.013,
+    "MC_YAWRATE_I": 0.1,
+    "MC_YAWRATE_P": 0.2,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_P_ACC": 2.0,
+    "THR_MDL_FAC": 1.0
+  },
+  "configuration_source_sha256": "e63049cc92bae56afad212219e42af9f91def1f2fac88f688e69a0065a8fa3fb",
+  "execution_supported": false,
+  "inventory_sha256": "379c02fac58b62fdd160ab7c6c6f99065d8c4939044cc97931e5fcac73fcd12d",
+  "launch_ready": false,
+  "layout_semantics_qualified": false,
+  "limits": [
+    "No target continuation, raw rewrite, episode dropping, GPU/SITL launch or formal S3b PASS.",
+    "Historical dev07 report steps are observation-check counts; Isaac completion steps are actions.",
+    "Censored cases stay in the planned denominator; no complete-case success/crash rate.",
+    "Endpoint times/status fields do not establish live per-step telemetry freshness or pacing.",
+    "Full/zero common-frame equality does not supersede G8 TARGET_DEPENDS_ON_PURSUER."
+  ],
+  "measurement_status": "NOT_RUN",
+  "native_params": {
+    "MC_PITCHRATE_D": 0.00026,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_P": 0.013,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_P_ACC": 2.5,
+    "THR_MDL_FAC": 1.0
+  },
+  "proposed_unit": {
+    "density_order": [
+      70,
+      205
+    ],
+    "main_episodes": 40,
+    "main_pairs": 20,
+    "native_smoke": 2,
+    "pair_order": "env0..9; even env native then candidate, odd env candidate then native",
+    "smoke_in_main_denominator": false,
+    "total_episodes": 42
+  },
+  "requirements": [
+    "new additive launcher; do not call historical sitl_run.sh (global pkill/shared rootfs)",
+    "fresh per-episode external rootfs and parameter echo/readback",
+    "checkpoint termination check before command; no command at terminal/censor frame",
+    "CPU native command-prefix identity and owned-process/resource/telemetry guards",
+    "reviewed committed runtime/protocol; newly scoped SITL execution approval"
+  ],
+  "runtime_status": "NOT_IMPLEMENTED",
+  "selected_protocol": "observed-prefix-v1",
+  "status": "PREFIX_INPUTS_VERIFIED",
+  "strict600_shortfalls": [
+    {
+      "bars": 70,
+      "env": 5,
+      "recorded_frames": 208
+    }
+  ],
+  "strict600_status": "BLOCKED_INCOMPLETE_TARGET_TRACE",
+  "true_60s_endpoint_status": "NOT_RECORDED_REQUIRES_FRAME600",
+  "unit": "dev08 input/runtime design v1",
+  "verified_inventory_files": 34,
+  "windows": [
+    {
+      "bars": 70,
+      "env": 0,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 1,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 2,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 3,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 4,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 5,
+      "env_episode_index": 0,
+      "last_frame_index": 207,
+      "last_scheduled_elapsed_s": 20.7,
+      "max_commands_before_last_check": 207,
+      "post_action600_state_available": false,
+      "recorded_frames": 208,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 6,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 7,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 8,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 70,
+      "env": 9,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 0,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 1,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 2,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 3,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 4,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 5,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 6,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 7,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 8,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    },
+    {
+      "bars": 205,
+      "env": 9,
+      "env_episode_index": 0,
+      "last_frame_index": 599,
+      "last_scheduled_elapsed_s": 59.9,
+      "max_commands_before_last_check": 599,
+      "post_action600_state_available": false,
+      "recorded_frames": 600,
+      "unresolved_at_last_check": "CENSORED_TRACE_END"
+    }
+  ]
+}

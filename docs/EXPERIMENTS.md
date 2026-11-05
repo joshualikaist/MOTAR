@@ -805,6 +805,10 @@ family that is in the test's scope.
       runtime NOT_IMPLEMENTED, measurement NOT_RUN. Fixed first-ten cohort execution is blocked:
       zero-action70bars/env5 has208 target frames, not600. Historical dev07 captured at35, before
       exhaustion; its result is preserved. No SITL/GPU run, later gate or flight acceptance follows.
+    - **dev08 amendment1 design:** a separate observed-prefix diagnostic preserves the20 scenes;
+      records end at checkpoint207/599 with explicit censoring when no physical terminal occurs.
+      Offline input/checkpoint/ledger contracts are implemented; live runtime remains NOT_IMPLEMENTED.
+      The strict600 parent remains BLOCKED; no prefix measurement or formal stage advancement.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -820,13 +824,15 @@ family that is in the test's scope.
   - → `docs/evidence/sitl_2026-11-05/g7/analysis.json` (fixed G7 readings, actual Opus5.5 independent verification)
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1.md` (configuration preparation, incomplete target input blocker)
   - → `docs/evidence/sitl_2026-11-05/dev08/` (source/input audit, CPU preparation checks; measurement NOT_RUN)
+  - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md` (observed-prefix input/runtime design)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment2_2026-11-05.md`,
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment3_2026-11-05.md`,
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment4_2026-11-05.md`,
-  `docs/plans/prereg_actionhold_g7_v1.md`, `docs/plans/prereg_sitl_dev08_candidate_gains_v1.md`
+  `docs/plans/prereg_actionhold_g7_v1.md`, `docs/plans/prereg_sitl_dev08_candidate_gains_v1.md`,
+  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md`
 
 ## Not yet in the repository
 
