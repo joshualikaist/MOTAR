@@ -1,0 +1,81 @@
+{
+ "unit": "S3b dev07",
+ "cells": {
+  "70": {
+   "episodes": 10,
+   "start_check_valid": 10,
+   "outcome_agree": 10,
+   "sitl": {
+    "capture": 10,
+    "crash": 0,
+    "timeout": 0
+   },
+   "isaac": {
+    "capture": 10,
+    "crash": 0,
+    "timeout": 0
+   },
+   "capture_steps_sitl_minus_isaac": {
+    "median": 2.0,
+    "min": 0,
+    "max": 17,
+    "n": 10
+   },
+   "rtf_min": 0.996398809861006,
+   "rtf_max": 1.0036727061539474,
+   "ekf_xy_err_median_max_m": 0.15974053602233046,
+   "ekf_xy_err_max_m": 0.24753971626634497,
+   "ode_iters": 100,
+   "params": {
+    "MC_ROLLRATE_P": 0.013,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_D": 0.00026,
+    "MPC_XY_VEL_P_ACC": 2.5,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "THR_MDL_FAC": 1.0
+   }
+  },
+  "205": {
+   "episodes": 10,
+   "start_check_valid": 10,
+   "outcome_agree": 10,
+   "sitl": {
+    "capture": 9,
+    "crash": 1,
+    "timeout": 0
+   },
+   "isaac": {
+    "capture": 9,
+    "crash": 1,
+    "timeout": 0
+   },
+   "capture_steps_sitl_minus_isaac": {
+    "median": 2,
+    "min": -8,
+    "max": 13,
+    "n": 9
+   },
+   "rtf_min": 0.9985123608450763,
+   "rtf_max": 1.0032924054628947,
+   "ekf_xy_err_median_max_m": 0.15615964230840315,
+   "ekf_xy_err_max_m": 0.24185985415939634,
+   "ode_iters": 100,
+   "params": {
+    "MC_ROLLRATE_P": 0.013,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_D": 0.00026,
+    "MPC_XY_VEL_P_ACC": 2.5,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "THR_MDL_FAC": 1.0
+   }
+  }
+ }
+}

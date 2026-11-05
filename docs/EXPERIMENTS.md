@@ -789,7 +789,11 @@ family that is in the test's scope.
   - The bridge is built.
     - S3a reads NOT_EQUIVALENT. The bridge had dropped F's lateral mu scale (fixed; action error 0.388 → 1.7e-3),
       and a target-slice error is still open.
-    - S3b dev runs so far are confounded (the mu-scale bug; PX4's EKF diverged under ODE iters 10, fixed with 100).
+    - S3b dev01-dev06 are confounded: the mu-scale bug, PX4's EKF diverging under ODE iters 10 (fixed with 100) and
+      the GPS height drift (fixed with a rangefinder).
+    - **dev07** (development, not acceptance; first 10 envs of seed 4501 at 70 and 205 bars): the SITL outcome
+      equals Isaac's in 20 of 20 episodes (19 captures, 1 crash in both). Capture takes a median of 2 steps longer.
+      The PX4 velocity loop is not yet matched to MOTAR's.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

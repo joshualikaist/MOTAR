@@ -24630,3 +24630,37 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - Then: copy the vehicle files into the evidence; update the jinja; tune PX4's velocity loop to G9 env 1.
 - G9 attempt 3 and G7 run after GR-1b.
 
+## 2026-11-05 — S3b dev07: with the bridge, ODE-iterations and rangefinder fixes, Policy F's PX4 SITL outcomes equal Isaac's in 20 of 20 episodes (development run)
+
+- **Setup:**
+  - `tools/sitl_s3b_closed_loop.py` on `9882889`, with the fixed bridge, worlds at ODE iters 100 and navrl_quad with a
+    downward rangefinder as PX4's height reference.
+  - Vehicle files copied to `docs/evidence/sitl_2026-11-05/vehicle/2026-11-05_dev07/`.
+  - Targets from the G8 r2 zero-action cells.
+  - First 10 envs of seed 4501 at 70 and 205 bars.
+  - 10:03-10:18 KST on cores 6,7,12,13 at nice 10, during the GR-1b GPU evaluation.
+- **Records:** `docs/evidence/sitl_2026-11-05/s3b_dev/dev07_*` (summary from `dev07_summary.py`). Raw data:
+  `~/motar_tmp/sitl_s3b_20261105/dev07_70/` and `dev07_205/`.
+
+| Cell | Isaac | SITL | Same outcome | Capture steps SITL − Isaac, median (range) | RTF |
+| --- | --- | --- | --- | --- | --- |
+| 70 bars | 10 capture | 10 capture | 10/10 | +2 (0 to +17) | 0.996-1.004 |
+| 205 bars | 9 capture, 1 crash | 9 capture, 1 crash | 10/10 | +2 (−8 to +13) | 0.999-1.003 |
+
+- Start checks were valid in 20 of 20 episodes. EKF − truth horizontal error: per-episode median ≤ 0.16 m, max
+  0.25 m.
+- **Decision:** treat this as development evidence that the remaining pieces work. It is not S3b acceptance.
+- **Limits:**
+  - not preregistered; run alongside the GPU evaluation;
+  - n = 20, first episodes, one seed;
+  - replayed target;
+  - MOTAR's sensors rendered from truth;
+  - PX4's velocity loop not yet matched to MOTAR's;
+  - S3a NOT_EQUIVALENT;
+  - the rangefinder is an addition to the training-spec vehicle.
+- **Next:**
+  - match PX4's velocity loop (sweep of `MPC_XY_VEL_P_ACC` running);
+  - G9 attempt 3 after GR-1b;
+  - then a preregistered S3b on an idle host with more episodes and seeds, and Gazebo-rendered sensors or a real
+    detector, for the real-flight path.
+

@@ -81,3 +81,41 @@ changes in order).
   - **Policy numerics:** the policy on Isaac's own observation differs by about 1e-3, consistent with TF32 in the
     Isaac process.
   - Neither cause is tested.
+
+## `s3b_dev/`: Policy F flying PX4 SITL in closed loop (development runs, not preregistered)
+
+- **Runner:** `tools/sitl_s3b_closed_loop.py`, with the MOTAR side in `tools/sitl_bridge.py`.
+  - The loop runs at 10 Hz of PX4 sim time.
+  - MOTAR's sensors are rendered against the episode's bars from the PX4/Gazebo truth pose.
+  - The perception uses PX4's EKF pose.
+  - F's governed velocity and yaw-rate commands go to PX4 offboard.
+  - Termination uses Isaac's rules on the truth pose.
+- **dev01-dev06 are confounded** and measure neither transfer nor F. Their reports are kept as recorded.
+  - The bridge dropped F's lateral mu scale (S3a), so it ran a different controller.
+  - PX4's EKF diverged under ODE quickstep iters 10 (`vehicle/2026-11-05_dev07/VIBRATION_BISECTION_2026-11-05.md`).
+  - All of them used PX4's default GPS height, which drifts with the GPS model's vertical random walk.
+- **dev07** (2026-11-05 10:03-10:18 KST, `camonly/dev` `9882889`; reports `dev07_70_s3b_report.json`,
+  `dev07_205_s3b_report.json`; summary `dev07_summary.py` → `dev07_summary.json`). Setup:
+  - the fixed bridge;
+  - S3b worlds at ODE iters 100;
+  - navrl_quad with a downward rangefinder as PX4's height reference (`vehicle/2026-11-05_dev07/`);
+  - targets from the G8 r2 zero-action cells (60 s);
+  - the first 10 envs of seed 4501 at 70 and 205 bars.
+
+| Cell | Start checks valid | Isaac | SITL | Same outcome | Capture steps, SITL − Isaac (median, range) | RTF |
+| --- | --- | --- | --- | --- | --- | --- |
+| 70 bars | 10/10 | 10 capture | 10 capture | 10/10 | +2 (0 to +17) | 0.996-1.004 |
+| 205 bars | 10/10 | 9 capture, 1 crash | 9 capture, 1 crash | 10/10 | +2 (−8 to +13) | 0.999-1.003 |
+
+- The crash is env 8 at 205 bars, on a bar, at Isaac step 17 and SITL step 18.
+- EKF − truth horizontal error: per-episode median at most 0.16 m, maximum 0.25 m.
+- **This is a development result, not S3b acceptance.**
+  - It ran alongside the GR-1b GPU evaluation (cores 6,7,12,13, nice 10). RTF was 1.0, and the metrics are in sim
+    time.
+  - It was not preregistered. n = 20 episodes, first episodes only, one seed.
+  - The target replays its trajectory and does not react to the pursuer. The E2 target does not read the pursuer;
+    see G8 r2 for the RNG coupling.
+  - The sensors are MOTAR's own, rendered from truth, not Gazebo's.
+  - PX4's velocity loop is not yet matched to MOTAR's (G9 env 1: rise 0.61 s; PX4 S2 tune: 0.36-0.42 s).
+  - S3a is NOT_EQUIVALENT (a target-velocity slice difference).
+  - The rangefinder is an addition to the training-spec vehicle.
