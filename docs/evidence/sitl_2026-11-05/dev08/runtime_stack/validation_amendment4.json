@@ -1,0 +1,185 @@
+{
+ "base_head": "c4974f416249e543384f7dedf8128d805c408b68",
+ "branch": "camonly/dev",
+ "external_evidence": {
+  "../dev08_skip_bound_20261105/ANALYSIS.md": "3105704cc2cfc9a3f3f4257ea1dbf42dc489ca3be16700f1ae3f8b8d57331e14",
+  "../dev08_skip_bound_20261105/analyse_skip_bound.out": "a509cf3c6e580bb2565b43d732e183a194898fc6c9d6721d0fe2417b5201a4a3",
+  "../dev08_skip_bound_20261105/analyse_skip_bound.py": "ac330b2a1366937402116b06543bb8951420a264c130c0b1788431b092ab5d88",
+  "../dev08_skip_bound_20261105/analysis_out.json": "f809572c45a49d6564701eb9378340297df21bdf7c25fa5b35120a2bfbe9beee",
+  "../dev08_skip_bound_20261105/spike_mixture.out": "b3132cbc67f207a0644ed48813d36cd3e0774f9b4591f7a7d8e5a4bcf4a8c76a",
+  "../dev08_skip_bound_20261105/spike_mixture.py": "4053ab0b252c8c053c748bbab4256e224823b937054f097d050d040988ec1a1b",
+  "../dev08_skip_bound_20261105/spike_mixture_out.json": "57f67433c840557f2660894179c5192713ded7fe339d5bbfe7405fa7ea2987cd",
+  "../dev08_skip_bound_20261105/timing_benchmark.json": "6bf8930063125840bdf32e6a95d3d97d0ba8d91ccc098eaf54566e7c877f3810",
+  "../dev08_skip_bound_20261105/timing_benchmark.log": "9b503f6c1004616936b6ad687c4e0b979c290a3dc88a7f1a5a9040660c875e98",
+  "../dev08_skip_bound_20261105/timing_benchmark.py": "881a1786829e66b7e0ca13011749f0117e9e153c089d1ce6b6a9e5a1f7e3a74b",
+  "../dev08_skip_bound_20261105/timing_benchmark_plan.md": "df041c4703761d40608b25a194d690c118a75c9a13a59e0ed5daea97d6e1fe94",
+  "../dev08_skip_bound_20261105/timing_benchmark_threads1.json": "646ad2ecc1d5601567954c3a36ad2bb4d3c6fd7e4a45623d66ec189c5fafef05",
+  "../dev08_skip_bound_20261105/timing_benchmark_threads1.log": "be1d0e351008da1bd20a745b63643d0a5d47af884f4dc61eda92c9b2ff13d6d3",
+  "../dev08_skip_bound_20261105/timing_diag_gc.json": "873a274c08f95cdca556e06ea51422a87c14790b54d2cb9cb6f2dc2b53a51a65",
+  "../dev08_skip_bound_20261105/timing_diag_gc.log": "e7e3cef894cd3fd351252d488476a7df8ff547d2cae94fd062de9fd5f9f461ac",
+  "../dev08_skip_bound_20261105/timing_diag_gc.py": "42820eec60cbeb39575eceb43862c9f5bc42fe72870d1f2223b00f79b17515aa",
+  "../dev08_skip_bound_20261105/timing_diag_threads.py": "91c50d558c025b8bdbc1654254e5df248cd196584996742ea06660480830fe93",
+  "../dev08_skip_bound_20261105/timing_diag_threads_omp1.json": "b871d8121d3cbdcdbdb4ab1b2078deb8ec2791747753f515387cf33e66927c8c",
+  "../dev08_skip_bound_20261105/timing_diag_threads_omp1.log": "9d4ee25b40b1f35d812bf24cbb6793e63297868e45b3b80ceff78a99703b43ce",
+  "../dev08_skip_bound_20261105/timing_diag_threads_omp4.json": "a4337bf03cd01145c9083ff6f84f7640ec7f5377635825d8d20b374e06c2d7e2",
+  "../dev08_skip_bound_20261105/timing_diag_threads_omp4.log": "b926e17b5c60206aef8710c52130eda247cfadda41022c88eeaf5cd5a6266673",
+  "copy_reviews.sh": "feecf472d9c3fb9df745bcc24ee375224cb229a0798908245e8099ffe6bef9d8",
+  "dev07_lateness.out": "d49da94a68037ea2a3844e5425be1630ab1ae8afac5cafc0b6d5d8bd81e1f70e",
+  "dev07_lateness.py": "c9eb32ae72832e4db8057f6ba35c89d49431c6c46acc28ae6164fa3a58c7fb0f",
+  "dev07_records.json": "9f0e2706623de45a8025b63ac382ef89b39b9713431eb523ab5ea84b166e0482",
+  "dev07_records.py": "6a558acf013562b78c55e447a61161c4c148c2ed95b656fff195652f2b306e45",
+  "faults_before_a3.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "faults_before_a4.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "faults_before_commit_suite.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "faults_before_final.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+  "faults_final.txt": "01d91dc904624281992a51be0e35ce46d86ee62d7189ce4789e6777c437c585b",
+  "focused_a3.log": "b9e2bfc89db4434d9d97491017ee46b911a8dc3523c00c0dd6e78661b43731d2",
+  "focused_a4.log": "b61a58c6526a0fc9cb774bf44e52f348aa07e0a36f9c5b18f6efcc03c0e25db5",
+  "focused_commit.log": "9098a0c87632631aec699adfd83bcbf088d29f20f637aa215d635a33b219db1f",
+  "layout_quats.out": "be2dfa6057b9644e7e8caf9005a084d752c930a791d8a4a1d800d3b695db02b5",
+  "layout_quats.py": "296b2592e554ac776c4f877d4220cf7748a0b2a4d67133db9dec81ecdc152cd3",
+  "link_mutants/mut_control.py": "adcd73dfa996e5850a3d1207efcb9834d8dacd05bb57d780d5cda461551b2fca",
+  "link_mutants/mut_no_order_bound.py": "d254ec1b39a59f55e741ad6a504e6d4422cf5579f163eaa92213541e0a67d0a5",
+  "link_mutants/mut_no_settle_align.py": "91a404780f6b596ac148d5888521fa64a261e09e0297ff9846e95129f0168b12",
+  "link_mutants/mut_no_settle_checkpoint.py": "8a18e01aef5cfbe71a386c60a978466f2a20b8735fd620765347cd44c3a794c8",
+  "link_mutants/results.txt": "71e510d045c8ee9cb7b193a98eb2335118033d4e9c3a35d28b949a563ba6778c",
+  "link_mutants/run.py": "d5e71833291ec79a4e20a7ff3d97c7ab8139004fc93ce32cf900cfadd7478b71",
+  "public_cpu_a3.log": "74988787e857668475ee7e7f55ab6ba031a2c3116b0a5fc965d5804673b43751",
+  "public_cpu_a4.log": "d5529f8819828865534a8351a4b2cd054c213171a0c3196d6cb381054e5364e6",
+  "public_cpu_commit.log": "1f58c9e15ef9a0067e0b0dd66f33fce0df7b4b687130f0a65b10a91381161d96",
+  "public_cpu_final.log": "f4bcab74f099c447d811b3f9629fa9e784aa1fba2eb1596178ff946ab05cbd71",
+  "public_cpu_pre_fix.log": "30609f9f1255d6232253f8ee5ec761c5548638c938f8d579e48eba3d1e5d28f2",
+  "public_cpu_r1fix.log": "166c97171779ee161c907c41c4636be6bd98317e5fa915a7d273729e1c6ea190",
+  "public_cpu_r2fix.log": "3ae97e34b7acb9c3557081b4af830e02b0df6afdc8acccb268d26aa7d77a1b73",
+  "real_bridge_identity.json": "d3abd4b88782a7bdcfbc80b1cb562522535b287ad6b1aaab1f5dfaefea55c4d0",
+  "real_bridge_identity.log": "a4070764ba0c0b4e53779a016ae7baa2a55857c34da5da7ce2816e167a69a810",
+  "real_bridge_identity.py": "6ca63e1087e617825bf4127c922879e20df1794771d17b7202f3db1d2bdd0319",
+  "real_bridge_identity_prefix_gate_eps.json": "46db0682fd600142c9fe8207a9341c75522cef8c333c7653dfbb189b99444c4b",
+  "real_bridge_identity_prefix_gate_eps.log": "6dbd185b149ee67654088b3c9342277efb2badcb9660d0143e3104e7eac78858",
+  "scene_specs_check.json": "6c328db041f31ff36889e33840edb22a938fdba5ef59369c573cc93093041ea1",
+  "scene_specs_check.py": "0b4a705f0c726a00bfaaa80e5c2f46e381dd96d76c43245784f00832fb48819b",
+  "signal_hold_check/attempt_a672fc8.py": "3a83c9ea9562336b3a9d578a4bc7e0ddf2fcb485b7c353278c9bcd980a6a74c5",
+  "signal_hold_check/results.txt": "7bba8e969ee984626211a95b2385f0660fbecf7db2e9d3b79729036da71740de",
+  "signal_hold_check/run.py": "b60f911cd46622aa467c349789eb6c07c49d33e168103e650d74b7e59ea77fd8",
+  "step_mutants/mut_M19_no_floor.py": "dcabcab9fcd269bc33afe7a7df0f1915fbd5dbf8d8124fde704025bc753c5adc",
+  "step_mutants/mut_M21_oob_x_only.py": "07f76f23b7a129a1d667db557ce997df4be5c931512776ca079144b6dd3ed50b",
+  "step_mutants/mut_M27_min_from_point.py": "41414733f137356572763e4aa4a9d4bd2ebf4cdce3e16cf058689c40c55899c3",
+  "step_mutants/mut_M28_prev_rel_frozen.py": "ac8b35b10ce72fb351598a0f0c3d9621e459838792df56973868ebf3af81ad4c",
+  "step_mutants/mut_control_unmutated.py": "9b1c9135d9e0b44c6f915bd2f0925780456c87ddfbd84551f0d5961b40ab984e",
+  "step_mutants/mut_crash_first.py": "a24ec83c5f73621c3f934c27be6c1db42482ad19b0a7a5d9dc65e146fc1b47b2",
+  "step_mutants/mut_no_ceiling.py": "bc20944414ceb59739dc4926d9d01f68b0862d7fd8ea2c83545ac5090020b97a",
+  "step_mutants/mut_no_oob_margin.py": "51c329496817bf7025c744ae6feae7da5ef20fc8aaa4e544af02fca8f5e69e91",
+  "step_mutants/mut_point_capture.py": "d95644a831df5d0df20d6309b8f8059fe7da6a5bd3b9c8789e0f0c4797768fcf",
+  "step_mutants/mut_target_0.py": "45408f975f0aaf6a8827bd03f29293ac03197d810ffc698cc10a8dbfdd306bdc",
+  "step_mutants/mut_target_k_plus_1.py": "74b573ad7ecfecfb9dc2aec3415b714a080e8738efac8be5ae90848a140ce21c",
+  "step_mutants/mut_vz_sign.py": "4948fd10f21de4f98118342b7b7a3d60adf0171609c54354216138e22c35d60c",
+  "step_mutants/results.json": "569b8b01b800502558e247a22d938d6b40fbb30a176afd98346c35773119f4f4",
+  "step_mutants/run_mutants.py": "e170a0609bb62bc616bf0ee1a5d955c0e20a1b0ec51c5fc37567792523558111",
+  "tolerance_divergence.out": "412b768d2c3b8b5836db7c9d20db4e41a0b7f5ecae740d559188451c2ee3bfce",
+  "tolerance_divergence.py": "9d455ba0da8cefc4dcf854ec85eb815251f9c4043016fd890aa70ae3d3709d2f"
+ },
+ "external_evidence_root": "/home/fair/motar_tmp/dev08_runtime_stack_20261105",
+ "focused_tests": {
+  "log": "/home/fair/motar_tmp/dev08_runtime_stack_20261105/focused_a4.log",
+  "ran": [
+   131
+  ],
+  "seconds": [
+   58.591
+  ],
+  "sha256": "b61a58c6526a0fc9cb774bf44e52f348aa07e0a36f9c5b18f6efcc03c0e25db5",
+  "status": [
+   "OK"
+  ]
+ },
+ "kernel_faults": {
+  "after": 0,
+  "before": 0
+ },
+ "live_verified": false,
+ "make_validation_sha256": "c316272ec3eb8f7de8a4dd8ec8546570f6b227028628330f52deee0599ca98e8",
+ "measurement_status": "NOT_RUN",
+ "public_cpu": {
+  "log": "/home/fair/motar_tmp/dev08_runtime_stack_20261105/public_cpu_a4.log",
+  "ran": [
+   3429
+  ],
+  "seconds": [
+   285.001
+  ],
+  "sha256": "d5529f8819828865534a8351a4b2cd054c213171a0c3196d6cb381054e5364e6",
+  "status": [
+   "OK (skipped=10)"
+  ]
+ },
+ "reviews": {
+  "/home/fair/motar_tmp/dev08_link_20261105/review_r1/REVIEW_r1.md": {
+   "sha256": "9c2c4d3d849b7d831b645c55492957025a280b6bb57bed52bd9222835a9e1239",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_link_20261105/review_r2/REVIEW_r2.md": {
+   "sha256": "36048631d86fd776c573fc473ecc5c56263c5aff4e0ced07e01ee17f5a27c583",
+   "verdict": "PASS_WITH_LIMITS"
+  },
+  "/home/fair/motar_tmp/dev08_link_20261105/review_r3/REVIEW_r3.md": {
+   "sha256": "964cf49f714ce01a454961766c3f1897217a29d2bed3676ee3ad551b66b49d34",
+   "verdict": "PASS_WITH_LIMITS"
+  },
+  "/home/fair/motar_tmp/dev08_owned_session_20261105/review_r1/REVIEW_r1.md": {
+   "sha256": "67c3a3129f76d362d76b8669643cfbcade2c253913889c5456f7b2bd2b1fcbb9",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_owned_session_20261105/review_r2/REVIEW_r2.md": {
+   "sha256": "0816928e59b477e8f3e7c557e84e99b9504828e1a9c32877ca182c56cd26e6e9",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_owned_session_20261105/review_r3/REVIEW_r3.md": {
+   "sha256": "0d929992992c480ddda5efa131596ec6b9d83e9cfbb2ed51b0107d66a4b126df",
+   "verdict": "PASS_WITH_LIMITS"
+  },
+  "/home/fair/motar_tmp/dev08_skip_bound_20261105/ANALYSIS.md": {
+   "sha256": "3105704cc2cfc9a3f3f4257ea1dbf42dc489ca3be16700f1ae3f8b8d57331e14",
+   "verdict": "NOT_FOUND"
+  },
+  "/home/fair/motar_tmp/dev08_step_runner_20261105/review_r1/REVIEW_r1.md": {
+   "sha256": "fa6dd57e9d01a0d74d74818d90baf8998f1206813cb52a96caad78f1285e9588",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_step_runner_20261105/review_r2/REVIEW_r2.md": {
+   "sha256": "644cd893801aafca2d4388a72e682f28b0e86bc774a3faf17afa45d7d5fff40f",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_step_runner_20261105/review_r3/REVIEW_r3.md": {
+   "sha256": "e0372a9e9627b4c6408dbea1cf8de72729511119f8c8852212bd469f34129bf3",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_step_runner_20261105/review_r4/REVIEW_r4.md": {
+   "sha256": "e090403e0c2c81595202ddc22b6e3b87383e898908942494e05c09d4602b4b56",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_step_runner_20261105/review_r5/REVIEW_r5.md": {
+   "sha256": "d099ee097c9ac9034113d81a9c2d6a3ebd801ee167962923b8f5bb51bdf15685",
+   "verdict": "FAIL"
+  },
+  "/home/fair/motar_tmp/dev08_step_runner_20261105/review_r6/REVIEW_r6.md": {
+   "sha256": "1a754198a4a804ea50feaf475181b06cadce6e224396ae454532215ab25b112b",
+   "verdict": "PASS_WITH_LIMITS"
+  }
+ },
+ "sources": {
+  "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md": "17edabedb20d60f10a80e5bc3332b9e7143f0776104bb64f67cae506036267b8",
+  "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md": "16d6b2a4ed4843c8fdc643d4a85607f7e1788305f6de66772f2098558e4e5059",
+  "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md": "67b194189722af4f89e300ef49f8287ff17354cdc7de1ab0e89539ab6639c8de",
+  "tests/test_sitl_dev08_attempt.py": "0c46da54aadf0b4f645813e5535cf4a297076d040852d51c483ef6d8e5152530",
+  "tests/test_sitl_dev08_link.py": "c4b8f1cf00a2c04c87ab12f5623a8353fbb5e4753d9eecde3ac39323f1009045",
+  "tests/test_sitl_dev08_step.py": "24dd4438478f5d2f613981664da95fc73e9fe3dffb788c239852e9d61b14aa1d",
+  "tests/test_sitl_owned_session.py": "8171339298d000b36c16adedcd593f18b2bad19b947874cf06e93e96776ecdaf",
+  "tests/test_sitl_s3b_dev08_prefix.py": "6d6865d85fccead2cc20fed69c5ac6aa2f1fc97933ef48af9b29c3344a9f5cbd",
+  "tools/sitl_dev08_attempt.py": "63c08a5f956fcf39e4dc8a76b60bb549a8a66cbdd5705d0a68b4f97ddf7f9e02",
+  "tools/sitl_dev08_link.py": "adcd73dfa996e5850a3d1207efcb9834d8dacd05bb57d780d5cda461551b2fca",
+  "tools/sitl_dev08_step.py": "9b1c9135d9e0b44c6f915bd2f0925780456c87ddfbd84551f0d5961b40ab984e",
+  "tools/sitl_owned_session.py": "e4fbdd2180de14a9aa9a944f699bc633d6ea81ebc9a2cbe941df47c493165c84",
+  "tools/sitl_s3b_dev08_prefix.py": "1ac196e33de2962807aaa7c4a9afd3615d7c8da46b730e730847382a5371dc16"
+ },
+ "unit": "dev08 runtime stack (motar-5md), CPU only"
+}

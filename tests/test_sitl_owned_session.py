@@ -79,6 +79,23 @@ if "gc_fork_on_int" in args:
         note("child", os.getpid())
         forever()
     note("grandchild", pid)
+if "gc_escape_on_int" in args:
+    # a session child that, on SIGINT, starts a setsid process, waits 0.3 s and exits: only re-sampling finds it
+    pid = os.fork()
+    if pid == 0:
+        def on_int(signum, frame):
+            d = os.fork()
+            if d == 0:
+                os.setsid()
+                signal.signal(signal.SIGINT, signal.SIG_IGN)
+                forever()
+            note("late", d)
+            time.sleep(0.3)
+            os._exit(0)
+        signal.signal(signal.SIGINT, on_int)
+        note("child", os.getpid())
+        forever()
+    note("grandchild", pid)
 if "escape" in args:
     time.sleep(float(args["escape"]))
     pid = os.fork()
@@ -356,6 +373,19 @@ class Lifecycle(Base):
         r = self.receipt()
         self.assertEqual(r["cleanup"]["leaked"], [])
         self.assertIn((late, int(signal.SIGKILL)), [(a["pid"], a["signal"]) for a in r["cleanup"]["actions"]])
+
+    def test_escape_during_cleanup_is_found_by_resampling(self):
+        """Review r3 X18: a process that leaves its session during the cleanup grace is found by the grace wait's
+        re-sampling (sample_s 0.05 here)."""
+        with self.session(kill_grace_s=1.0) as s:
+            s.start("px4", self.fake("p", "gc_escape_on_int"), env=self.env, cwd=s.rootfs)
+            self.ready("p", "child")
+        late = int(read_notes(self.notes("p"))["late"])
+        ident = identity(late)
+        if ident is not None and S.is_live(S.proc_stat(late)):
+            self.strays.append(ident)
+        self.assertFalse(S.is_live(S.proc_stat(late)))
+        self.assertIn(late, [a["pid"] for a in self.receipt()["cleanup"]["actions"]])
 
     def test_exception_cleans_up_and_propagates(self):
         sent = self.sentinel("s")
@@ -790,7 +820,8 @@ print("finished", flush=True)
 
     def test_sigkill_leaves_a_journal_that_reaps_by_identity(self):
         sent = self.sentinel("s")
-        for name, args in (("kill", ()), ("kill_ignore", ("ignore_int",)), ("kill_fork", ("gc_fork_on_int",))):
+        for name, args in (("kill", ()), ("kill_ignore", ("ignore_int",)), ("kill_fork", ("gc_fork_on_int",)),
+                           ("kill_escape", ("gc_escape_on_int",))):
             proc = self.runner(name, child_args=args)
             self.assertTrue(self.wait_line(proc, b"ready"))
             self.ready(name)
@@ -811,6 +842,9 @@ print("finished", flush=True)
             self.assertFalse(alive(child))
             if name == "kill_ignore":
                 self.assertIn(int(signal.SIGKILL), [a["signal"] for a in report["actions"]])
+            if name == "kill_escape":                                # review r3 X20: found by the wait's re-scan
+                late = int(read_notes(self.notes(name))["late"])
+                self.assertFalse(S.is_live(S.proc_stat(late)))
             if name == "kill_fork":
                 late = int(read_notes(self.notes(name))["late"])         # forked on SIGINT, then found
                 self.assertIn(late, [a["pid"] for a in report["actions"]])

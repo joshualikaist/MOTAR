@@ -344,8 +344,8 @@ class Execute(unittest.TestCase):
                        for b in (70, 205) for e in range(10)})
         self.B = type("B", (), {"F_CKPT": str(f), "Episode": SI.StubEpisode})
         self.calls = []
-        self.env_ok = ({"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1", "affinity": [6, 7, 12, 13], "nice": 10},
-                       AT.CORES)
+        self.env_ok = ({"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1", "affinity": [6, 7, 12, 13], "nice": 10,
+                        "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}, AT.CORES)
 
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
@@ -371,7 +371,8 @@ class Execute(unittest.TestCase):
                 "final_sim_time_s": 40.0 + k * 0.1, "scheduled_elapsed_s": round(k * 0.1, 10)}
 
     def go(self, approval, name="attempt", run=None, environment=None):
-        with mock.patch.dict(os.environ, {"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1"}):
+        with mock.patch.dict(os.environ, {"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1", "OMP_NUM_THREADS": "1",
+                                          "MKL_NUM_THREADS": "1"}):
             return R.execute(self.tmp / name, approval, deps={}, specs=self.specs, B=self.B, policy=SI.StubPolicy(),
                              run=run or self.run_fake, root=ROOT, make_recorder=self.recorder,
                              git_state=lambda root: dict(self.git), environment=environment or self.env_ok)

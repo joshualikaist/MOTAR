@@ -438,6 +438,10 @@ def execute(attempt_dir, approval, *, deps=None, specs=None, B=None, policy=None
             if not str(resolved).startswith(str(pathlib.Path(root).resolve()) + "/"):
                 raise PermissionError("aerial_gym resolves outside this tree: %s" % resolved)
             policy = B.Policy()
+            import torch
+            torch.set_num_threads(1)                              # amendment4: one compute thread
+            if torch.get_num_threads() != 1:
+                raise PermissionError("torch uses %d threads; amendment4 requires 1" % torch.get_num_threads())
             if PYLINK not in sys.path:
                 sys.path.append(PYLINK)
             import pymavlink  # noqa: F401

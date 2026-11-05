@@ -26,7 +26,7 @@ def load(name, rel):
 
 A = load("sitl_dev08_attempt_t", "tools/sitl_dev08_attempt.py")
 P = load("sitl_dev08_prefix_t", "tools/sitl_dev08_prefix_contract.py")
-ENV_OK = {"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1"}
+ENV_OK = {"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1", "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
 
 
 def record(member, outcome="capture", k=30, status="VALID"):
@@ -59,10 +59,12 @@ class Schedule(unittest.TestCase):
         self.assertEqual(len({m["name"] for m in plan}), 42)
 
     def test_environment_rules(self):
-        good = {"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1", "affinity": [6, 7, 12, 13], "nice": 10}
+        good = {"CUDA_VISIBLE_DEVICES": "", "PYTHONNOUSERSITE": "1", "affinity": [6, 7, 12, 13], "nice": 10,
+                "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1"}
         self.assertEqual(A.environment_problems(good), [])
         for key, bad in (("CUDA_VISIBLE_DEVICES", None), ("CUDA_VISIBLE_DEVICES", "0"), ("PYTHONNOUSERSITE", None),
-                         ("affinity", [0, 6]), ("affinity", []), ("nice", 0)):
+                         ("affinity", [0, 6]), ("affinity", []), ("nice", 0), ("OMP_NUM_THREADS", "4"),
+                         ("OMP_NUM_THREADS", None), ("MKL_NUM_THREADS", "4")):
             self.assertEqual(len(A.environment_problems(dict(good, **{key: bad}))), 1, (key, bad))
 
 
@@ -388,6 +390,66 @@ class RecordRules(RecorderBase):
             sig.signal(sig.SIGTERM, old)
             stop.set()
             idle.join()
+
+    def test_remaining_guards(self):
+        """Review r2/r3 surviving attempt mutants A10, A19, A20, A23, A24, A26, A27, A29."""
+        plan = A.schedule()
+        base = record(plan[0])
+        self.assertEqual(A.record_problems(base), [])                    # positive control
+        for change in ({"final_sim_time_s": 39.0},                          # A19: before the start
+                       {"scheduled_elapsed_s": 3.1},                        # A20: not k * DT
+                       {"recorded_frames": 0}, {"recorded_frames": 601}):   # A29: outside 1..600
+            self.assertTrue(A.record_problems(dict(base, **change)), change)
+        # A10: a tracked file that is not a listed source still makes the tree dirty
+        (self.repo / "notes.txt").write_text("a\n")
+        subprocess.run(["git", "-C", str(self.repo), "add", "notes.txt"], check=True, capture_output=True)
+        subprocess.run(["git", "-C", str(self.repo), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "n"],
+                       check=True, capture_output=True)
+        (self.repo / "notes.txt").write_text("b\n")
+        with self.assertRaises(A.AttemptError):
+            self.recorder("dirty_other").open()
+        (self.repo / "notes.txt").write_text("a\n")
+        # A26: an external source with local changes or missing refuses
+        ext_tree = self.tmp / "ext"
+        ext_tree.mkdir()
+        subprocess.run(["git", "-C", str(ext_tree), "init", "-q"], check=True, capture_output=True)
+        with self.assertRaises(A.AttemptError):
+            self.recorder("ext_missing", external=((str(ext_tree), "replay.py"),)).open()
+        (ext_tree / "replay.py").write_text("r\n")
+        with self.assertRaises(A.AttemptError):                         # untracked counts as local change
+            self.recorder("ext_dirty", external=((str(ext_tree), "replay.py"),)).open()
+        # A27: only the Git-tree condition fails
+        inside = self.repo / "attempt_inside"
+        with self.assertRaises(A.AttemptError) as cm:
+            A.AttemptRecorder(inside, scope={"approval": "x"}, root=self.repo, f_checkpoint=self.ckpt,
+                              f_sha=self.fsha, sources=("src.py",), external=(),
+                              cores=frozenset(os.sched_getaffinity(0)), min_nice=os.nice(0),
+                              host_check=lambda: (True, {}), faults=lambda: 0).open()
+        self.assertIn("Git work tree", str(cm.exception))
+        self.assertFalse(inside.exists())
+        # A23/A24: main_records refuses a changed fault count or a record with problems
+        for name, mutate in (("faults_end", lambda f, lines: f.update(kernel_faults_end=1)),
+                             ("problems", None)):
+            r = self.recorder("mr_" + name)
+            r.open()
+            for m in plan:
+                r.append(record(m))
+            r.finish()
+            d = self.tmp / ("mr_" + name)
+            if name == "faults_end":
+                final = json.loads((d / "final.json").read_text())
+                mutate(final, None)
+                (d / "final.json").write_text(json.dumps(final))
+                with self.assertRaises(A.AttemptError):
+                    A.main_records(d)
+            else:
+                self.assertEqual(len(A.main_records(d)), 40)              # positive control
+                with mock.patch.object(A, "read_ledger", lambda dd: ([{"phase": "main", "record_problems": ["x"]}],
+                                                                     {"status": "COMPLETE", "reason": None,
+                                                                      "kernel_faults_start": 0,
+                                                                      "kernel_faults_end": 0})):
+                    with self.assertRaises(A.AttemptError):
+                        A.main_records(d)
 
     def test_unreadable_kernel_log_is_an_error(self):
         class R:

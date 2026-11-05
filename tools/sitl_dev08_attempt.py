@@ -33,6 +33,7 @@ PROTOCOL = "observed-prefix-v1"
 AMENDMENT = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md"
 AMENDMENT2 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md"
 AMENDMENT3 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md"
+AMENDMENT4 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md"
 # Every file the unit runs or reads as code/configuration: the runtime stack, the historical runner and bridge, and
 # the production modules the bridge loads. Each must be tracked and equal to HEAD.
 SOURCES = ("tools/sitl_owned_session.py", "tools/sitl_dev08_link.py", "tools/sitl_dev08_step.py",
@@ -47,7 +48,7 @@ SOURCES = ("tools/sitl_owned_session.py", "tools/sitl_dev08_link.py", "tools/sit
            "aerial_gym/rl_training/rl_games/navrl_action_models.py", "aerial_gym/rl_training/rl_games/ppo_update_safety.py",
            "aerial_gym/rl_training/rl_games/navrl_mode_probe.py", "aerial_gym/task/navrl_task/navrl_corridor.py",
            "aerial_gym/task/navrl_task/navrl_search_state.py", "aerial_gym/utils/math.py", AMENDMENT, AMENDMENT2,
-           AMENDMENT3)
+           AMENDMENT3, AMENDMENT4)
 # Code loaded from another work tree (tools/sitl_bridge.py CPLANNER): bound by hash and that tree's HEAD/state.
 EXTERNAL_SOURCES = (("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-cplanner", "cplanner/motar/replay.py"),)
 SEED, EPISODE = 4501, 0
@@ -234,6 +235,7 @@ def _finite_json(record):
 def process_environment():
     return {"CUDA_VISIBLE_DEVICES": os.environ.get("CUDA_VISIBLE_DEVICES"),
             "PYTHONNOUSERSITE": os.environ.get("PYTHONNOUSERSITE"),
+            "OMP_NUM_THREADS": os.environ.get("OMP_NUM_THREADS"), "MKL_NUM_THREADS": os.environ.get("MKL_NUM_THREADS"),
             "affinity": sorted(os.sched_getaffinity(0)), "nice": os.nice(0)}
 
 
@@ -243,6 +245,9 @@ def environment_problems(env, cores=CORES, min_nice=10):
         p.append("CUDA_VISIBLE_DEVICES must be the empty string")
     if env["PYTHONNOUSERSITE"] != "1":
         p.append("PYTHONNOUSERSITE must be 1")
+    for key in ("OMP_NUM_THREADS", "MKL_NUM_THREADS"):        # amendment4: 4 threads on two cores gave 160-350 ms
+        if env.get(key) != "1":                                 # compute spikes; 1 thread: max 11.8 ms
+            p.append("%s must be 1" % key)
     if not env["affinity"] or not set(env["affinity"]) <= set(cores):
         p.append("CPU affinity %s outside %s" % (env["affinity"], sorted(cores)))
     if env["nice"] < min_nice:

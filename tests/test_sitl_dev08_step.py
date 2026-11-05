@@ -197,8 +197,9 @@ def spec_for(scenario, world):
     spec = {"env": 0, "isaac_outcome": "unknown", "p0": np.array([5.0, 6.0, 1.0]), "yaw0": 0.7,
             "bounds_min": [0.0, 0.0, 0.0], "bounds_max": [40.0, 40.0, 3.0]}
     far_bar = (np.array([[30.0, 30.0, 1.5]]), np.array([[0.1, 0.1, 1.5]]))
-    if scenario in ("moving", "vz", "fast_cross", "oob", "ceiling"):
-        frames = {"moving": 80, "vz": 40, "fast_cross": 60, "oob": 200, "ceiling": 200}[scenario]
+    if scenario in ("moving", "vz", "fast_cross", "oob", "oob_y", "ceiling", "floor"):
+        frames = {"moving": 80, "vz": 40, "fast_cross": 60, "oob": 200, "oob_y": 200, "ceiling": 200,
+                  "floor": 200}[scenario]
         centers, halves = far_bar
         if scenario == "moving":                    # a target walking towards the vehicle's path: index-sensitive
             tpos = moving(world.p_true(spec, T_MOVE + 6.0) + np.array([3.0, 0.0, 0.0]), (-0.5, 0.0, 0.0), frames)
@@ -209,6 +210,8 @@ def spec_for(scenario, world):
             tpos = moving((35.0, 35.0, 1.0), (0.0, -0.05, 0.0), frames)
         if scenario == "oob":
             spec.update(p0=np.array([1.0, 20.0, 1.0]), yaw0=math.pi)
+        if scenario == "oob_y":                         # world motion along -y (review r1 M21: y checked too)
+            spec.update(p0=np.array([20.0, 1.0, 1.0]), yaw0=-math.pi / 2)
         spec.update(centers=centers, halves=halves, quats=np.tile([0.0, 0.0, 0.0, 1.0], (1, 1)), tpos=tpos)
         return spec, frames
     far_bar = (np.array([[30.0, 30.0, 1.5]]), np.array([[0.1, 0.1, 1.5]]))
@@ -367,6 +370,8 @@ class Identity(unittest.TestCase):
         self.assertEqual(len(old["commands"]), n_cmd + 1)
         if reason:
             self.assertEqual((old["res"]["crash_reason"], new["recs"][-1]["crash_reason"]), (reason, reason))
+        # the swept distance and its running state (review r1 M27/M28): the historical minimum over the episode
+        self.assertEqual(c["min_dist_m"], old["res"]["min_dist_m"])
         return c
 
     def test_moving_target_capture(self):              # target index k (not k+1, not 0)
@@ -409,6 +414,16 @@ class Identity(unittest.TestCase):
         self.assert_terminal(old, new, "crash", "bounds")
         self.assertLess(new["recs"][-1]["p_true"][0], -1.0)    # beyond the 1 m margin, not at the boundary
         self.assertGreater(new["recs"][-2]["p_true"][0], -1.0)
+
+    def test_out_of_bounds_in_y(self):
+        old, new = self.run_scenario("oob_y", World(ve=0.3, vn=0.0, yaw_rate=0.0))
+        self.assert_terminal(old, new, "crash", "bounds")
+        self.assertLess(new["recs"][-1]["p_true"][1], -1.0)
+
+    def test_altitude_floor(self):                     # review r1 M19
+        old, new = self.run_scenario("floor", World(ve=0.0, vn=0.0, yaw_rate=0.0, vz=-0.3))
+        self.assert_terminal(old, new, "crash", "altitude")
+        self.assertLess(new["recs"][-1]["p_true"][2], 0.1)
 
     def test_altitude_ceiling(self):
         old, new = self.run_scenario("ceiling", World(ve=0.0, vn=0.0, yaw_rate=0.0, vz=0.5))

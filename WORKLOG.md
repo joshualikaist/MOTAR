@@ -24844,3 +24844,32 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - Hypothesis "pthread_sigmask in the main thread holds a process-directed signal" rejected: the kernel may deliver it to another thread, and CPython then runs the handler in the main thread.
 - These corrections are not independently re-reviewed. motar-5md stays OPEN. Next single action: a fresh-context check of this commit against REVIEW_step_runner_r5.md. Then the user's skip_max_s decision and a scoped approval for the CLI entry and the 2-member smoke. No SITL/GPU run, push or merge without the user.
 
+## 2026-11-05 — dev08 skip_max_s basis: Fable analysis, compute-timing benchmark, one compute thread (amendment4)
+
+- The user asked for the skip/late bound to be chosen from the numbers, and asked for Fable. Independent analysis by Claude Fable 5.1 (Agent model fable), `docs/evidence/sitl_2026-11-05/dev08/runtime_stack/ANALYSIS_skip_bound_fable.md`:
+  - a rejection at τ is a runner compute above about 100 + 1000τ ms;
+  - the dev07 stream side was clean; dev07's compute spikes were about 1 in 260 checkpoints above 60 ms, recorded alongside a GPU evaluation;
+  - unit completion at 0.05 s was 0.11–0.27, at 0.15 s about 0.60–0.65;
+  - recommended 0.15 s with limits, and a timing-only benchmark under a rule fixed beforehand.
+- Benchmark (real bridge + Policy F on the CPU, 20 scenes, warm-up, 10 Hz pacing, receiver/watchdog-like threads, cores 6,7,12,13; plan fixed in `/home/fair/motar_tmp/dev08_skip_bound_20261105/timing_benchmark_plan.md` before running):
+
+| Run | Threads | n | median | p99 | max | > 60 ms | > 150 ms |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| planned | 4 | 5000 | 5.64 | 87.3 | 351.8 | 117 | 11 |
+| GC attribution, 205 first | 4 | 3000 | 5.76 | 93.5 | 264.5 | 108 | 7 |
+| A/B | 4 | 1500 | 5.78 | 92.0 | 160.4 | 42 | 1 |
+| A/B | 1 | 1500 | 4.62 | 8.2 | 11.8 | 0 | 0 |
+| planned after the fix | 1 | 5000 | 4.51 | 8.0 | 13.8 | 0 | 0 |
+
+- The rule's verdict on the planned 4-thread benchmark was "fix the runner first".
+  - Hypothesis "GC pauses cause the spikes" rejected: 0 of 108 spikes contained a GC of 20 ms or more.
+  - Hypothesis "spikes grow with run time" rejected: they stayed spread out with the scene order reversed.
+  - Cause: four OMP/MKL threads (amendment2's setting) on two physical cores, competing with the runner's Python threads.
+  - Fix: amendment4 sets one compute thread. environment_problems requires OMP/MKL = 1, and execute() calls torch.set_num_threads(1) and checks it.
+  - After the fix, the planned rule reads "0.10 s suffices" (max 13.8 ms). The decision stays the user's, in the approval record.
+  - Other work ran on the E-cores 16–23 during the runs (shared L3, no shared hyperthreads).
+- Review r6 (Opus 5.5) of `c4974f4`: PASS_WITH_LIMITS, no MAJOR; MJ1-r5 resolved. The step/recorder/runner/proposal reviews now end at PASS_WITH_LIMITS, as the owned-session (r3) and link (r3) reviews do.
+  - r6 m6-c: two external files bound by validation_amendment3.json (`step_mutants/run_mutants.py`, `results.json`) were overwritten after that commit by the later mutant run. Their old contents are lost; amendment4 §5 records this, and validation_amendment4.json binds the new contents. Lesson: new runs go to new directories.
+- More tests: step mutants M19, M21, M27 and M28 killed (min_dist equality, floor and y-bounds scenes); attempt guard mutants A10, A19, A20, A23, A24, A26, A27 and A29; owned-session escape cases X18 and X20.
+- Next: the user's skip_max_s decision (measured basis: 0.10 s suffices after the fix; Fable: 0.15 s with the older conditions). Then a scoped approval for the CLI entry and the 2-member smoke. motar-5md: all three review lineages end at PASS_WITH_LIMITS. amendment4's changes are not re-reviewed.
+

@@ -90,7 +90,8 @@ SHA-256.
 | | r2 | FAIL | amendment2 statements; idle-core precondition |
 | | r3 | FAIL | amendment2 statements only (text) |
 | | r4 | FAIL (narrow) | Kill-grace reconciliation (text); three signal windows in the recorder/runner |
-| | r5 (on `a672fc8`) | FAIL (narrow) | The signal hold covered one thread only; corrected in amendment3 and the following commit |
+| | r5 (on `a672fc8`) | FAIL (narrow) | The signal hold covered one thread only; corrected in amendment3's commit `c4974f4` |
+| | r6 (on `c4974f4`) | PASS_WITH_LIMITS | MJ1-r5 resolved; 3 MINOR (test shapes, a re-written external record) and notes |
 
 **Applied after the last round, not independently re-reviewed:**
 - Owned session (after r3):
@@ -110,16 +111,28 @@ SHA-256.
   - signals held over the ledger line with its chain update, and over all of final.json (with a test);
   - the interrupted-member naming.
 
-**After r5 (amendment3's commit, not independently re-reviewed):**
+**After r5 (amendment3's commit `c4974f4`; reviewed in r6):**
 - the handler-swap signal hold, tested with another thread alive;
 - `signal_hold_check/results.txt`: the test fails on the `a672fc8` recorder and passes on the repaired one;
 - the interrupted-member test;
 - a 30 s timeout on the kernel-log read;
 - amendment3: the outer timeout becomes 5800 s, and the complete stop list.
 
+**After r6 (amendment4's commit, not independently re-reviewed):**
+- one compute thread enforced (amendment4);
+- more tests for the step mutants M19, M21, M27 and M28, the attempt mutants A10, A19, A20, A23, A24, A26, A27 and
+  A29, and the owned-session escape cases X18 and X20.
+- Two external files bound by `validation_amendment3.json` were overwritten after that commit (r6 m6-c): see
+  amendment4 §5.
+
+**Timing basis for skip_max_s:**
+- `ANALYSIS_skip_bound_fable.md`: the independent analysis of the dev07 logs (Claude Fable 5.1).
+- `/home/fair/motar_tmp/dev08_skip_bound_20261105/`: the benchmark plan, fixed before running, and the timing
+  runs summarised in amendment4.
+
 **Open:**
-- surviving mutants listed in the reviews: step M19–M21, M27, M28; attempt A10, A19, A20, A23, A24, A26, A27, A29;
-  owned session X18, X20, R2_N27;
+- surviving mutants still open: step M20 (crash-reason precedence); owned session R2_N27; the r6 test-shape
+  items (m6-a, m6-b);
 - numpy scalars or arrays serialised as strings by `default=str` are not flagged;
 - budgets are checked only between members;
 - the notes in each review.
