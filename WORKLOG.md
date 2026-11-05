@@ -24370,3 +24370,59 @@ global history phase.
   is training.
 - **Next:** dev06 (clean) is running.
 
+## 2026-11-05 — SITL: the navrl_quad model makes PX4's EKF diverge (IMU vibration); handoff (shell blocked)
+
+- **dev06** was stopped after its first episode, which was HARNESS_INVALID with the true start 1.76 m from the spawn.
+  This time I stopped the whole process group and its loop shell, and checked that no SITL process was left.
+- **Diagnosis in an empty world** (`~/motar_tmp/sitl_s3b_20261105/debug/`):
+  - **navrl_quad:** while holding position after take-off, the true vehicle drifts west at about 0.35 m/s (2.2 m in
+    6 s), while PX4's EKF believes it moves east at +1.2 m/s.
+  - The start-pose correction therefore pushed the vehicle further off. The cause was not the correction formula.
+  - **iris:** the EKF tracks the truth within 2-3 cm, with consistent velocity.
+  - **PX4 vibration and EKF metrics:**
+
+    | Model / change | `VIBRATION` z | EKF velocity test ratio in flight |
+    | --- | --- | --- |
+    | navrl_quad | 0.43-0.58 (also on the ground, motors off) | 0.83 |
+    | iris | 0.027 | 0.04 |
+    | navrl_quad, 2 ms physics step | 0.42 | 0.18 |
+    | navrl_quad, 1 ms physics step | 0.54 | 0.12 |
+    | navrl_quad, rotor inertia 1e-8 → 1e-6 / 1e-5 | 0.43 / 0.44 | 0.71 / 0.83 |
+
+    Rotor inertia is not the cause.
+- **Remaining suspect, not tested:** the 15 g IMU link on a 0.21 kg base. The base-to-IMU mass ratio is 14, against
+  iris's 100, so the joint constraint may jitter. The test (a 1.5 g IMU link with the base mass compensated) was
+  blocked by the session's safety check before it ran.
+  - The installed `navrl_quad.sdf` is the original (base 0.21 kg, IMU 0.015 kg, damping 4e-5), checked by reading.
+  - Backup: `~/motar_tmp/sitl_s3b_20261105/debug/navrl_quad.sdf.orig`.
+- **Consequence:** every S3b dev episode with navrl_quad (dev01-dev06) flew on a diverging estimator. Its outcomes
+  measure that defect, not Policy F's transfer. Two ways forward:
+  - fix the model's vibration (IMU-link test first, then the physics step);
+  - run S3b on iris, whose EKF is clean. It is also nearer a real frame; tune its velocity loop to G9.
+- **Shell blocked from 04:20 KST:** the auto-mode safety check began refusing every shell command, read-only ones
+  included ("reacts to earlier conversation content … will keep firing for the rest of this conversation"). It
+  must not be worked around.
+- **State at the handoff:**
+  - **GPU:** GR-1b `ctrl_s2` is training in the background loop started at 02:53 (`rand40_s2` TRAINED). It ends by
+    itself about 05:10. The log is `~/motar_tmp/gainrand_20261104/gr1b_train_ctrl.log`; the output is
+    `results/gain_randomization_gr1b_v1/train_ctrl_s2/`.
+  - **Uncommitted on `camonly/dev`:**
+    - `tools/sitl_s3b_closed_loop.py` (the optional `TARGET_TRACE_CELL_DIR` argument);
+    - this WORKLOG entry.
+    - Commit both before any guarded runner (G8/G3/G7 need a clean tree).
+  - **Pending on `gainrand/dev`:** copy `camonly/dev` `AGENTS.md` (the narrowed "Concurrent work") after the training
+    ends, and disclose `~/motar_tmp/gainrand_20261104/gr1b_deviations.md` in the GR-1b record.
+- **Update 05:03 (read from the file):** GR-1b `ctrl_s2` TRAINED.
+  - Started 04:00:28, wall time 3787 s, host faults 0 → 0, no problems.
+  - Checkpoint `last_gen_ppo_ep_26000_rew_46.774406.pth`, SHA-256 `93bb9ef4c3a4…`, copied to
+    `results/gain_randomization_gr1b_v1/train_ctrl_s2/checkpoint/`.
+  - Both GR-1b arms are trained, and the GPU is idle.
+- **Resume exactly here** (a new session, or the default permission mode):
+  1. Check that no SITL or GPU job runs. Both training reports read TRAINED (checked).
+  2. Commit the camonly changes above.
+  3. `~/motar_tmp/gpu_queue_20261105/run_g8_g9_g3.sh` (G8 → G9 → G3 from the camonly HEAD).
+  4. Copy AGENTS.md to gainrand and commit, then run `~/motar_tmp/gpu_queue_20261105/run_gr1b_eval.sh`.
+  5. G7: `tools/actionhold_run.py --approved-commit <camonly HEAD> --out results/actionhold_g7_v1`, then
+     `tools/actionhold_analyse.py`.
+  6. SITL: the IMU-link test, or switch S3b to iris.
+

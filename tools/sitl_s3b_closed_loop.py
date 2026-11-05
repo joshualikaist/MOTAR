@@ -16,7 +16,10 @@ trajectory, Isaac's outcome), this:
 Known approximations (v0, disclosed in every report): the target replays its Isaac trajectory and does not react to
 the SITL pursuer; the bridge's sensors are MOTAR's, not Gazebo's; the LiDAR and camera are yaw-level (MOTAR's mount);
 the vehicle state is PX4's estimate.
-usage: tools/sitl_s3b_closed_loop.py TRACE_CELL_DIR OUT_DIR N_EPISODES [FIRST_ENV]
+usage: tools/sitl_s3b_closed_loop.py TRACE_CELL_DIR OUT_DIR N_EPISODES [FIRST_ENV] [TARGET_TRACE_CELL_DIR]
+TARGET_TRACE_CELL_DIR (optional): a G8 zero-action cell of the same scene set (pursuer hovering to the 600-step
+timeout); the target trajectory is taken from it (60 s) instead of from TRACE_CELL_DIR (which ends with the Isaac
+episode). G8 checks the two agree exactly on their common frames.
 """
 import json
 import math
@@ -324,13 +327,14 @@ def run_episode(B, ep_spec, out_dir, idx, policy):
     return res
 
 
-def episodes_from_trace(cell_dir, n, first_env, tree):
+def episodes_from_trace(cell_dir, n, first_env, tree, target_cell=None):
     import importlib.util
     spec = importlib.util.spec_from_file_location("ot_s3b", str(tree / "motar_eval/occlusion_trace.py"))
     OT = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(OT)
     tr = OT.read_trace(cell_dir)
     by = OT.episode_frames(tr["frames"])
+    tby = OT.episode_frames(OT.read_trace(target_cell)["frames"]) if target_cell is not None else by
     look = OT.reset_lookup(tr["layouts"])
     outcome = {}
     with open(cell_dir / "episodes.jsonl") as f:
@@ -351,7 +355,9 @@ def episodes_from_trace(cell_dir, n, first_env, tree):
         out.append({"env": env, "centers": np.asarray(c, float), "halves": np.asarray(h, float),
                     "quats": np.asarray(q, float), "p0": np.asarray(fr[0]["p_pos"], float),
                     "yaw0": yaw_of(np.asarray(fr[0]["p_vehicle_quat"], float)),
-                    "tpos": np.asarray(fr["t_pos"], float), "isaac_outcome": outcome.get(key),
+                    "tpos": np.asarray(tby[key]["t_pos"] if key in tby else fr["t_pos"], float),
+                    "target_source": "zero_action_cell" if (target_cell is not None and key in tby) else "same_cell",
+                    "isaac_outcome": outcome.get(key),
                     "isaac_steps": int(len(fr)), "bounds_min": [0.0, 0.0, 0.0], "bounds_max": [arena, arena, 3.0],
                     "receipt_env": receipt["env_snapshot_navrl"]})
     return out
@@ -362,15 +368,18 @@ def main():
     out_dir = pathlib.Path(sys.argv[2]).resolve()
     n = int(sys.argv[3])
     first_env = int(sys.argv[4]) if len(sys.argv) > 4 else 0
+    target_cell = pathlib.Path(sys.argv[5]).resolve() if len(sys.argv) > 5 else None
     out_dir.mkdir(parents=True, exist_ok=False)
     import sitl_bridge as B
-    eps = episodes_from_trace(cell, n, first_env, B.ROOT)
+    eps = episodes_from_trace(cell, n, first_env, B.ROOT, target_cell)
     B.setup(eps[0]["receipt_env"])
     policy = B.Policy()
     report = {"unit": "S3b v0", "cell": str(cell), "params": PARAMS, "episodes": []}
     for i, spec in enumerate(eps):
         r = run_episode(B, spec, out_dir, i, policy)
         r["isaac_steps"] = spec["isaac_steps"]
+        r["target_source"] = spec["target_source"]
+        r["target_frames"] = int(len(spec["tpos"]))
         report["episodes"].append(r)
         print(json.dumps(r), flush=True)
         (out_dir / "s3b_report.json").write_text(json.dumps(report, indent=1, default=str) + "\n")
