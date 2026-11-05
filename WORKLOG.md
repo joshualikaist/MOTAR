@@ -24703,3 +24703,11 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - During GR-1b freeze, all resume work stayed outside repositories: ~/motar_tmp/gr1b_resume_20261105/ and ~/motar_tmp/g9_resume_20261105/. CPU controls used cores6,7,12,13/nice10/CUDA hidden/memory and time caps. Watcher start11:44:50 and finish12:55:36KST are machine recorded in started.json/completion.json; the analysis ran only after the original queue ended.
 - Next inside this authorization: verify installed source/CPU controls and G7 tests, commit, run G9 attempt3 into results/sitl_ref_v1_r2/g9_attempt3/, then G7 into a fresh results/actionhold_g7_v1/; analyse/review and record results after runners end.
 - Prelaunch validation: installed G9 source matches the reviewed SHA; 8 CPU scene/journal controls, 8 existing action-hold hook tests and 9 experiment-index tests PASS. No simulator was imported in the G9 smoke.
+
+## 2026-11-05 — G7 prelaunch: enforce the already-preregistered byte identity
+
+- User approved completion through G7. Before measurement, a readiness audit found that the inherited identity helper compared parsed JSONL, whereas G7 preregistration requires byte identity.
+- G7-only repair: tools/actionhold_run.py now records episodes_byte_equal and stops unless raw bytes, parsed ledger and result identity all hold. Historical tools/gr_run.py is unchanged; no scientific rule/threshold changed.
+- tests/test_actionhold_identity.py pairs accepted equal bytes with logically-equal/differently-formatted and missing-file rejections. Combined actionhold tests: 11 PASS, CUDA hidden, cores6,7,12,13/nice10, 4GiB memory cap and timeout180.
+- Fresh independent Codex byte-guard review PASS_WITH_LIMITS: no blocker; inherited malformed/missing reference failures can stop without a structured report. Source readiness/test/review records: docs/evidence/sitl_2026-11-05/g7/.
+- G7 GPU NOT_RUN at this commit. Next: G9 attempt3, then G7 identity plus six treatment cells in results/actionhold_g7_v1/, without tracked writes during the runners.

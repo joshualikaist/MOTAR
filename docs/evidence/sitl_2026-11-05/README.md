@@ -166,3 +166,15 @@ contact/clearance/altitude/tilt diagnostics with fail-closed source and host che
 Attempt 3 will write a fresh `results/sitl_ref_v1_r2/g9_attempt3/g9_lee_steps.json`. All four envs and diagnostics
 will be reported. The legacy within-step sampling uncertainty (one 0.01 s physics dt) remains explicit. Results
 and independent interpretation are pending. G7 follows under its existing fixed preregistration.
+
+## `g7/`: action-hold/delay premise probe, prepared before measurement
+
+The fixed protocol is `docs/plans/prereg_actionhold_g7_v1.md`. The user explicitly approved completing through
+G7. `READINESS_prelaunch.md` records source checks and time estimates from matching measured cells. Before any
+G7 measurement, the runner was corrected to enforce the preregistered raw `episodes.jsonl` byte identity as well
+as logical/result equality. The historical shared helper remains unchanged.
+
+`cpu_checks_prelaunch.json` records 11 passing hook/identity tests; `REVIEW_byte_guard_r1.md` is the fresh
+independent source review (PASS_WITH_LIMITS). Neither is a GPU measurement or experimental PASS. The first
+identity cell must pass before six held/delayed treatment cells may run. Output `results/actionhold_g7_v1/`,
+fixed analysis and independent results review are pending.

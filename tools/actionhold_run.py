@@ -32,6 +32,15 @@ def arm_name(k, d):
     return "k%dd%d" % (k, d)
 
 
+def episodes_byte_equal(reference_dir, cell_dir):
+    """G7's preregistration requires raw ledger identity, beyond parsed JSON equality."""
+    try:
+        return ((reference_dir / "episodes.jsonl").read_bytes()
+                == (cell_dir / "episodes.jsonl").read_bytes())
+    except OSError:
+        return False
+
+
 def sidecar_problems(cell_dir, k, d):
     try:
         sc = json.loads((cell_dir / "actionhold_hook.json").read_text())
@@ -95,8 +104,9 @@ def main():
                  "verdict": rec["verdict"], "sidecar": sc}
         if rec["verdict"] == "OK" and (k, d) == (1, 0):
             comp = G.identity_compare(REF / rec["cell_id"], cell_dir)
+            comp["episodes_byte_equal"] = episodes_byte_equal(REF / rec["cell_id"], cell_dir)
             entry["identity"] = comp
-            if not (comp["episodes_equal"] and comp["result_equal"]):
+            if not (comp["episodes_equal"] and comp["result_equal"] and comp["episodes_byte_equal"]):
                 reading = "HOOK_IDENTITY_FAIL"
         cells.append(entry)
         print("   G7", arm, d_bars, rec["verdict"], entry.get("identity"), flush=True)
