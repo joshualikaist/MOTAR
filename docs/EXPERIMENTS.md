@@ -787,8 +787,9 @@ family that is in the test's scope.
   - G8 r2 (2026-11-05) read TARGET_DEPENDS_ON_PURSUER, consistent with global-RNG coupling across envs.
   - G9 attempt 1 lost its report to a locale bug; attempt 2 was contaminated by random placement and an
     unverified raw asset count. The additive v2 one-bar correction produced four contact-free responses in
-    attempt 3, but its systemd memory cap was unenforced. Amendment 4 fixes an RSS watchdog before the
-    confirming attempt 4 and G7. Neither measurement is accepted yet.
+    attempt 3, but its systemd memory cap was unenforced. Amendment 4 fixes the RSS watchdog.
+    G9 attempt4 is recorded with independent review LIMITED_VALIDITY for descriptive response use (REPORTED ONLY);
+    no transfer or real-flight acceptance follows. G7 results/review are being recorded separately.
   - The bridge is built.
     - S3a reads NOT_EQUIVALENT. The bridge had dropped F's lateral mu scale (fixed; action error 0.388 → 1.7e-3),
       and a target-slice error is still open.

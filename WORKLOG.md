@@ -24719,3 +24719,13 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - Amendment4 fixes process-tree RSS watchdog12GiB/poll0.25s and timeout before confirming unchanged G9 code at a new attempt4 path, then G7. This is explicitly a watchdog, not a kernel hard cap; inter-observation transients are unmeasured.
 - CPU watchdog controls accept a healthy child and reject actual RSS overflow, descendant overflow and timeout. Exact script/validation/review records are preserved with the SITL evidence. No policy/controller/RNG/threshold change and no raw overwrite.
 - Resource wrapper repairs/reviews r1-r3 are retained. Final independent source review PASS_WITH_LIMITS; six real bounded/RSS/timeout/descendant/late-fork controls PASS with zero live descendants. The standalone subreaper watchdog explicitly does not claim a kernel hardcap or a receipt after external forced termination.
+
+## 2026-11-05 — G9 confirmation recorded: four-env one-bar response, descriptive LIMITED_VALIDITY
+
+- Primary: results/sitl_ref_v1_r2/g9_attempt4/g9_lee_steps.json, measured at06383eb after amendment4. The same reviewed v2 source (a41a4e1a…) was used; attempt3 and its operational deviation remain unchanged.
+- All4env have complete finite responses, actual bars1, measured contacts0, host faults0→0. Translation reported upper-middle rise0.61–0.62s, onset0.07–0.09s, settling0.86–0.87s; yaw rise0.11s. Full per-env data are in docs/evidence/sitl_2026-11-05/g9/attempt4_report.json and attempt4_summary.json.
+- Watchdog: 12GiB aggregate RSS, observed peak4.6953GiB, 71 observations, no stop reason and no lingering descendants. This is a sampled watchdog, not a kernel hardcap. Launch14:27:15 and completion14:27:33KST are machine recorded.
+- Fresh independent Codex results review: LIMITED_VALIDITY for descriptive record use; G9 is REPORTED ONLY, not a scientific/transfer/real-flight PASS. Source/host/provenance/log/metric-summary audit passed within that limited scope.
+- Limits retained: per-step traces/counts NOT_RECORDED, upper-middle four-env median, within-step0.01s alignment, inherited motor/bar reset sampling with seed/realized motor values NOT_RECORDED. No response effect is inferred from the motor coefficient range; no fully deterministic-dynamics claim.
+- Only bounded read-only G9 record checks ran alongside G7 (cores6,7,12,13/nice10/CUDA hidden/4GiB/20s); time window14:33:02.774–14:33:02.786KST is in the audit. No tracked edit occurred until the GPU runner ended and independent reviews completed.
+- Record validation: experiment-index9/9 PASS and staged diff check clean. Primary JSON/launch/resource/independent-audit bindings are retained; original results/checkpoints are unchanged.

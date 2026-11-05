@@ -164,8 +164,7 @@ contact/clearance/altitude/tilt diagnostics with fail-closed source and host che
   no Isaac/CUDA import and GPU NOT_RUN.
 
 Attempt 3 will write a fresh `results/sitl_ref_v1_r2/g9_attempt3/g9_lee_steps.json`. All four envs and diagnostics
-will be reported. The legacy within-step sampling uncertainty (one 0.01 s physics dt) remains explicit. Results
-and independent interpretation are pending. G7 follows under its existing fixed preregistration.
+will be reported. The legacy within-step sampling uncertainty (one 0.01 s physics dt) remains explicit. See the completed attempt4 results below. G7 follows under its existing fixed preregistration.
 
 ## `g7/`: action-hold/delay premise probe, prepared before measurement
 
@@ -182,3 +181,20 @@ fixed analysis and independent results review are pending.
 ## Resource-bound correction before the confirmation/G7
 
 G9 attempt3 produced finite responses in all four envs with zero measured contacts, but its user-systemd MemoryMax setting was not enforced on the cgroup-v1 memory controller. Its report and launch record are retained under g9/ as operational-deviation evidence, not a compliant primary measurement. Amendment4 fixes an aggregate process-tree RSS watchdog (12GiB, poll0.25s; explicitly not a kernel hardcap) before the unchanged simulator is repeated at g9_attempt4 and G7 runs. Source and six actual child/descendant/timeout controls are in g7/run_capped.py and resource_checks_prelaunch.json.
+
+## G9 attempt 4: measured response reference (reported only)
+
+Primary `g9/attempt4_report.json` comes from the unchanged v2 runner at commit `06383eb`; launch, completion and
+watchdog receipts, all-env summary and independent audit are in `g9/`. All four envs have complete finite step
+metrics, actual bar count one, zero measured contacts and host faults 0→0. The sampled 12GiB RSS watchdog
+completed without a stop or lingering descendants. Attempt3 remains the resource-deviation record.
+
+The reported upper-middle translation rise values are 0.61–0.62s; onset 0.07–0.09s; settling 0.86–0.87s. Yaw rise
+is 0.11s. Full per-env/per-transition metrics and operational bindings are preserved, without selecting an env.
+Independent review `g9/REVIEW_results_r1.md` reads **LIMITED_VALIDITY for descriptive measured-record use**;
+G9 stays **REPORTED ONLY**, with no transfer/flight acceptance.
+
+Limits: raw per-step traces/sample counts were not persisted; the four-env reducer selects the upper middle
+rather than the arithmetic even-sample median; sampling alignment uncertainty is 0.01s. Controller gains/root
+placement are fixed, but inherited motor reset/bar-asset sampling remains; seed and realized motor states are
+NOT_RECORDED. No effect of that sampling is inferred. No exact PX4 latency equivalence or reproducibility claim.
