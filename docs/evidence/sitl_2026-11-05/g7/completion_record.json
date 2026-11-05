@@ -1,0 +1,53 @@
+{
+  "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+  "argv": [
+    "nice",
+    "-n",
+    "10",
+    "taskset",
+    "-c",
+    "6,7,12,13",
+    "python3",
+    "-B",
+    "/home/fair/motar_tmp/g7_20261105/run_capped.py",
+    "--rss-limit-mib",
+    "12288",
+    "--timeout-s",
+    "7000",
+    "--report",
+    "/home/fair/motar_tmp/g7_20261105/resources.json",
+    "--",
+    "taskset",
+    "-c",
+    "0-3,8-11,14-23",
+    "timeout",
+    "-k",
+    "60",
+    "6900",
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/actionhold_run.py",
+    "--approved-commit",
+    "06383eba74134a594bd38ba933cb5e0512f1d342",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1",
+    "--max-hours",
+    "1.5"
+  ],
+  "host_before": {
+    "time": "2026-11-05T14:27:50.197394+09:00",
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23"
+  },
+  "output": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1",
+  "scope": "user explicitly approved through G7; no training or checkpoint substitution",
+  "exit": 0,
+  "host_after": {
+    "time": "2026-11-05T14:48:09.459453+09:00",
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23"
+  },
+  "source_still_clean": true
+}

@@ -789,7 +789,10 @@ family that is in the test's scope.
     unverified raw asset count. The additive v2 one-bar correction produced four contact-free responses in
     attempt 3, but its systemd memory cap was unenforced. Amendment 4 fixes the RSS watchdog.
     G9 attempt4 is recorded with independent review LIMITED_VALIDITY for descriptive response use (REPORTED ONLY);
-    no transfer or real-flight acceptance follows. G7 results/review are being recorded separately.
+    no transfer or real-flight acceptance follows.
+  - G7 completed7/7 cells at06383eb with byte identity. Opus5.5 independently reproduces k2d0 INCONCLUSIVE,
+    k4d0 HARMFUL and k1d1 TOLERANT under the fixed pooled crash rules. One seed/two densities; TOLERANT permits
+    bounded harm and is not a PX4/real-flight latency guarantee. No chunked training or later gate was started.
   - The bridge is built.
     - S3a reads NOT_EQUIVALENT. The bridge had dropped F's lateral mu scale (fixed; action error 0.388 → 1.7e-3),
       and a target-slice error is still open.
@@ -809,6 +812,8 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_reference_g8g9_v1_amendment3_2026-11-05.md` (G9 additive one-bar correction before attempt 3)
   - → `docs/plans/prereg_sitl_reference_g8g9_v1_amendment4_2026-11-05.md` (retain attempt 3's resource deviation; enforce RSS watchdog for confirmation/G7)
   - → `docs/plans/prereg_actionhold_g7_v1.md` (G7: F under held / delayed actions; chunking premise and latency budget)
+  - → `docs/evidence/sitl_2026-11-05/g9/attempt4_report.json` (four-env one-bar response; descriptive LIMITED_VALIDITY)
+  - → `docs/evidence/sitl_2026-11-05/g7/analysis.json` (fixed G7 readings, actual Opus5.5 independent verification)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,

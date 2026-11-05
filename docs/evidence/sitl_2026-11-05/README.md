@@ -176,7 +176,7 @@ as logical/result equality. The historical shared helper remains unchanged.
 `cpu_checks_prelaunch.json` records 11 passing hook/identity tests; `REVIEW_byte_guard_r1.md` is the fresh
 independent source review (PASS_WITH_LIMITS). Neither is a GPU measurement or experimental PASS. The first
 identity cell must pass before six held/delayed treatment cells may run. Output `results/actionhold_g7_v1/`,
-fixed analysis and independent results review are pending.
+fixed analysis and independent results review are completed below.
 
 ## Resource-bound correction before the confirmation/G7
 
@@ -198,3 +198,43 @@ Limits: raw per-step traces/sample counts were not persisted; the four-env reduc
 rather than the arithmetic even-sample median; sampling alignment uncertainty is 0.01s. Controller gains/root
 placement are fixed, but inherited motor reset/bar-asset sampling remains; seed and realized motor states are
 NOT_RECORDED. No effect of that sampling is inferred. No exact PX4 latency equivalence or reproducibility claim.
+
+## G7 completed results (fixed preregistered rules)
+
+The seven-cell run completed at source `06383eb`, including a byte-identical native identity control. Each cell
+has 2,048 in-quota episodes (128 envs × 16). The three treatment arms pool 70 and 205 bars, seed 4501 only.
+
+| Arm | Quota crash difference (pp) | Fixed 95% episode-bootstrap CI (pp) | Reading |
+| --- | ---: | --- | --- |
+| k2d0 | +2.001953 | [+0.976562, +3.027344] | INCONCLUSIVE |
+| k4d0 | +10.473633 | [+9.228516, +11.743164] | HARMFUL |
+| k1d1 | +1.513672 | [+0.537109, +2.514648] | TOLERANT |
+
+`g7/analysis.json` is the unchanged analyser output, and `g7/run_report.json` retains all cell/identity/sidecar
+checks. The 0.2s hold's +2.001953pp is above the fixed ≤2pp tolerance bound, so its reading is INCONCLUSIVE;
+rounding it to 2.00 does not change that rule. The 0.4s hold is HARMFUL. The additional100ms actor-output delay
+meets this study's TOLERANT rule while still increasing crash; this is not an end-to-end PX4 latency guarantee.
+
+Per-density crash differences (pp), reported rather than separately gated:
+
+| Arm | 70 bars | 205 bars |
+| --- | ---: | ---: |
+| k2d0 | +0.781250 | +3.222656 |
+| k4d0 | +3.515625 | +17.431641 |
+| k1d1 | +0.439453 | +2.587891 |
+
+Capture rates and F-relative values for every cell are in the analysis JSON. The controller, altitude PI and
+per-step governor stay unchanged; only the held/delayed policy output changes. One seed/two densities and
+episode-bootstrap assumptions limit generalization. Previously recorded shared-RNG/reset coupling also prevents
+a claim of exactly paired counterfactual target trajectories. These limits do not rewrite the fixed labels.
+No chunked-policy training, new checkpoint promotion, PX4 equivalence or real-flight qualification follows.
+
+Actual Opus5.5 independent review `g7/REVIEW_results_r1.md` confirms measurement integrity and all three fixed
+readings. `review_provenance.json` binds the actual serving-model metadata and the byte-identical analyser rerun;
+the independent ledger/receipt/source/statistics probes and audit indices are retained in `g7/`.
+
+Further limits: identity was directly measured only at205/4501, not70/4501. The governor remains closed-loop each
+step; only the policy command is held/delayed. No trained chunked policy was measured, so the preregistration
+and review's motivational “upper bound on harm” wording is not a formal or measured bound on trained-policy
+performance. Env-cluster/bootstrap sensitivity is exploratory and does not resolve shared-RNG/reset coupling.
+The native10Hz path is maintained; no subsequent dev08/PPO run is included in this completion.
