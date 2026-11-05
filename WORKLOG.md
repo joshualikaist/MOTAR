@@ -24457,3 +24457,94 @@ global history phase.
 - **Next:** rerun G8 → G9 → G3 with `~/motar_tmp/gpu_queue_20261105/run_g8_g9_g3_r2.sh` (outputs `results/sitl_ref_v1_r2/`,
   logs `*_r2.log`; G3 output unchanged, `results/camonly_c2trace_v1`).
 
+## 2026-11-05 — G8 r2 TARGET_DEPENDS_ON_PURSUER (consistent with global-RNG coupling); S3a NOT_EQUIVALENT (bridge missed F's lateral mu scale); G9 crashed on the locale; navrl_quad EKF divergence traced to ODE iterations
+
+**G8 r2** (`results/sitl_ref_v1_r2/g8/`, commit `c4bc416`, 09:12:22-09:15:17 KST, host faults 0 → 0;
+`g8_report.json` SHA-256 `3430415f8232f109…`). Reading **TARGET_DEPENDS_ON_PURSUER** (amendment 2), as recorded.
+
+| Cell | Outcome (128 games) | First-episode noninterference | Target independence (common frames) |
+| --- | --- | --- | --- |
+| full 70/4501 | 127 capture, 1 crash | 128 rows, 0 mismatches | - |
+| full 205/4501 | 118 capture, 10 crash | 128 rows, 0 mismatches | - |
+| zero-action 70/4501 | 6 capture, 122 timeout | - | 5139 frames, max diff 5.63 m, FAIL |
+| zero-action 205/4501 | 4 capture, 124 timeout | - | 5907 frames, max diff 8.82 m, FAIL |
+
+- The 70-bar state record is byte-identical to attempt 1's (`0cb68971…`). Every data array of the 70-bar obs dump
+  equals attempt 1's; only `run_pid` and `run_obs_dump_path` differ. The hook fix did not change the recording.
+- **Where the targets diverge** (exploratory, `~/motar_tmp/sitl_g8_20261105/g8_target_dependence.py` and
+  `g8_div_heading.py`, JSON outputs there):
+  - Identical first-episode target trajectories: 127 of 128 envs (70 bars), 121 of 128 (205 bars).
+  - No env diverges before the first reset anywhere in either cell (frame 26 at 70 bars, 17 at 205 bars). First
+    divergence frames are 31 (70 bars) and 28-55 (205 bars).
+  - In all 8 diverged envs, the target starts turning at the same frame k and the same speed in both cells, but in a
+    different direction (for example +15° per frame against −15°).
+  - This is consistent with a waypoint resample drawing a different value from the global CUDA RNG, whose stream other
+    envs' resets advance. It is not consistent with a target that reacts to its pursuer.
+  - All target and reset draws use `torch.rand` on the device (`navrl_task.py` `_sample_waypoints` and others).
+  - Not tested directly. Hypothesis "the E2 target reacts to the pursuer" not supported: measured the same turn timing
+    in both cells.
+- **For S3b:** the zero-action cells give 60 s E2 trajectories of the same scenes. They match F-flying Isaac exactly
+  until a resample after another env's reset. They are valid target samples for SITL, not Isaac's exact trajectory.
+
+**S3a** (CPU, `tools/sitl_s3a_equivalence.py` on G8 r2 70 bars, 8 envs, 287 steps; output
+`~/motar_tmp/sitl_g8_20261105/s3a_70.json`): **NOT_EQUIVALENT**, as recorded.
+
+| Quantity | Max error | Gate |
+| --- | --- | --- |
+| obs scan / obstacles / robot | 6.7e-6 / 2.3e-6 / 1.2e-7 | ≤ 1e-3, pass |
+| obs target | 6.9e-3 (env 6, call 7, index 885); other envs ≤ 1.5e-4 | ≤ 1e-3, fail |
+| action, bridge obs | 0.388 | ≤ 1e-4, fail |
+| action, Isaac's dumped obs | 0.388 | diagnostic |
+| governor | 1.8e-7 | ≤ 1e-4, pass |
+
+- **Cause of the action error:** a bridge bug. `sitl_bridge.Policy` built the player without
+  `audit.apply_schema_environment(schema)`, so the CPU model ran `NAVRL_ACTION_MU_SCALE=1` instead of the checkpoint's
+  `1.0,0.4,1.0,1.0`.
+  - The error is in the lateral axis only. Recorded y = tanh(0.4·atanh(CPU y)) at every step.
+  - With the schema exported (diagnostic `s3a_action_diag_fixed.py`), the per-axis max errors are 1.2e-3, 1.6e-3,
+    4.3e-4 and 5.7e-4 (y down from 0.388).
+  - S3a on the fixed bridge (`s3a_70_smoke_fixed.json`): act_err_bridge 1.7e-3, act_err_dumpobs 1.6e-3, other values
+    unchanged. Still **NOT_EQUIVALENT** against the plan's 1e-4 action tolerance and because of env 6's target slice.
+  - The remaining 1e-3 is consistent with TF32 in the Isaac process; not tested. The 6.9e-3 target-slice error in
+    env 6 is not yet explained.
+- **Consequence:** S3b dev01-dev06 flew a CPU F with 2.5× the lateral pre-tanh gain, a second confound besides the
+  EKF divergence below. Those dev results measure neither transfer nor F.
+- **Fix:** `Policy` calls `apply_schema_environment` before `build_player`. New static test
+  `tests/test_sitl_bridge_policy_contract.py`; S3a is rerun on the fixed bridge.
+
+**G9 r2 attempt** (`run_g9_g3_r2.sh`, 09:15:47-09:16:13): crashed at `host_faults_after` with `UnicodeDecodeError`.
+- The measurement had run; no output was written.
+- **Cause:** Isaac Gym sets this process's locale to C (ASCII), while journalctl's month names follow LC_TIME
+  (Korean). `text=True` then decoded them as ASCII. Reproduced in scratch: same byte 0xec at position 87 after
+  `setlocale(LC_ALL, "C")`.
+- **Other runners:** `gr_run.py` and the G8/G3 runners count faults in processes that never import Isaac Gym. G8
+  recorded its counts.
+- **Fix:** read bytes, decode as UTF-8, run journalctl under `LC_ALL=C`.
+
+**navrl_quad EKF divergence, bisection** (CPU SITL in an empty world, cores 6,7,12,13 nice 10, during G3, RTF
+0.999-1.0, windows 09:24-09:28; `~/motar_tmp/sitl_s3b_20261105/debug/VIBRATION_BISECTION_2026-11-05.md`):
+
+| Variant | VIBRATION z ground / flight | EKF vel ratio, flight |
+| --- | --- | --- |
+| original, empty.world (quickstep iters 10) | 0.57 / 0.43 | 0.83 |
+| IMU link 0.002 kg, inertia 1.5e-7 | 0.573 / 0.431 | 0.848 |
+| iris IMU noise parameters | 0.574 / 0.424 | 0.872 |
+| base mass and inertia of iris | 0.055 / 0.058 | 0.04 |
+| original, iters 100 | 0.055 / 0.058 | 0.045 |
+| original, solver `world` | 0.055 / 0.058 | 0.049 |
+
+- Rejected: the IMU-link mass hypothesis (measured 0.573) and the IMU-noise hypothesis (measured 0.574).
+- The light base with quickstep at 10 iterations is consistent with the cause. The model file is restored to the
+  original. The S3b runner now writes worlds with iters 100 (`ODE_ITERS`, recorded in the report).
+- **CPU windows during the G3 GPU run** (cores 6,7,12,13, nice 10, CUDA hidden, memory capped):
+  - S3a-70, 09:18:20-09:18:27;
+  - three short action diagnostics, 09:19-09:22;
+  - the SITL tests above. Listed in `~/motar_tmp/sitl_g8_20261105/cpu_windows.log`.
+
+**G3 trace run** (`results/camonly_c2trace_v1/`, commit `c4bc416`, 09:16:13-09:48:43, host faults 0 → 0):
+**NONINTERFERENCE_PASS**. All 12 cells OK (full / no_lidar_out_fov / no_lidar × 70/115/160/205 bars, seed 4501).
+The analysis (`tools/camonly_c2trace_analyse.py`) runs next.
+
+**Order now:** commit; G9 rerun; GR-1b evaluation (gainrand); during it on the disjoint cores: G3 analysis, the S3a record
+run, S3b dev on the fixed bridge and iters-100 worlds; then G7.
+

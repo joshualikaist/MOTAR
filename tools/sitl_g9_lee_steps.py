@@ -49,7 +49,10 @@ if not str(pathlib.Path(aerial_gym.__file__).resolve()).startswith(str(TREE) + o
 
 
 def host_faults():
-    j = subprocess.run(["journalctl", "-k", "-b", "0", "--no-pager"], capture_output=True, text=True).stdout
+    # Bytes decoded as UTF-8, journalctl under LC_ALL=C: Isaac Gym sets this process's locale to C (ASCII), and the
+    # kernel log's month names follow LC_TIME (Korean on this host). G9 r2 crashed here at host_faults_after.
+    j = subprocess.run(["journalctl", "-k", "-b", "0", "--no-pager"], capture_output=True,
+                       env=dict(os.environ, LC_ALL="C")).stdout.decode("utf-8", errors="replace")
     return sum(1 for line in j.splitlines() if any(k in line for k in ("Machine check", "segfault", "general protection")))
 
 DT_ACTION = 0.1

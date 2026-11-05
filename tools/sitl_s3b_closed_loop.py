@@ -53,6 +53,9 @@ COMMAND_YAW = os.environ.get("S3B_COMMAND_YAW", "truth")
 PARAMS = {"MC_ROLLRATE_P": 0.013, "MC_ROLLRATE_I": 0.017, "MC_ROLLRATE_D": 0.00026, "MC_PITCHRATE_P": 0.013,
           "MC_PITCHRATE_I": 0.017, "MC_PITCHRATE_D": 0.00026, "MPC_XY_VEL_P_ACC": 2.5, "MPC_XY_VEL_I_ACC": 0.1,
           "MPC_XY_VEL_D_ACC": 0.0, "THR_MDL_FAC": 1.0}
+# ODE quickstep iterations for S3b worlds (empty.world: 10). At 10 the light navrl_quad's IMU saw constraint noise
+# (VIBRATION z 0.57, EKF diverged); at 100 it is 0.055 with a clean EKF (2026-11-05 bisection).
+ODE_ITERS = 100
 TM_POS_XYZ = (8 | 16 | 32 | 64 | 128 | 256 | 1024 | 2048)
 TM_POS_Z_VEL_XY_YAWRATE = (1 | 2 | 32 | 64 | 128 | 256 | 1024)
 
@@ -69,6 +72,9 @@ def yaw_of(q):
 
 def write_world(name, centers, halves, p0, yaw0):
     base = (WORLDS / "empty.world").read_text()
+    if base.count("<iters>10</iters>") != 1:
+        raise SystemExit("empty.world: expected one <iters>10</iters>")
+    base = base.replace("<iters>10</iters>", "<iters>%d</iters>" % ODE_ITERS)
     models = []
     for i, (c, h) in enumerate(zip(centers, halves)):
         gx, gy = rot(-yaw0, c[0] - p0[0], c[1] - p0[1])
@@ -374,7 +380,7 @@ def main():
     eps = episodes_from_trace(cell, n, first_env, B.ROOT, target_cell)
     B.setup(eps[0]["receipt_env"])
     policy = B.Policy()
-    report = {"unit": "S3b v0", "cell": str(cell), "params": PARAMS, "episodes": []}
+    report = {"unit": "S3b v0", "cell": str(cell), "params": PARAMS, "ode_iters": ODE_ITERS, "episodes": []}
     for i, spec in enumerate(eps):
         r = run_episode(B, spec, out_dir, i, policy)
         r["isaac_steps"] = spec["isaac_steps"]

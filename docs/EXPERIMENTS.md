@@ -778,7 +778,12 @@ family that is in the test's scope.
   exploratory.
   - Found and fixed: ODE per-step damping, the thrust model, PX4's norm speed limit.
   - The velocity loop is still to be matched to G9.
-  - G8/G9 preregistered, not run. The bridge (S3a/S3b) is designed, not built.
+  - G8 r2 (2026-11-05) read TARGET_DEPENDS_ON_PURSUER, consistent with global-RNG coupling across envs. G9 is not
+    yet measured: the run crashed on a locale bug, since fixed.
+  - The bridge is built.
+    - S3a reads NOT_EQUIVALENT. The bridge had dropped F's lateral mu scale (fixed; action error 0.388 → 1.7e-3),
+      and a target-slice error is still open.
+    - S3b dev runs so far are confounded (the mu-scale bug; PX4's EKF diverged under ODE iters 10, fixed with 100).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

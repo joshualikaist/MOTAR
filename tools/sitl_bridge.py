@@ -177,6 +177,10 @@ class Policy:
         audit.install_cpu_only_aerial_gym_packages()
         state = torch.load(str(ckpt), map_location="cpu", weights_only=False)
         schema = audit.read_checkpoint_schema(state)
+        # The checkpoint's action-distribution contract (NAVRL_ACTION_MU_SCALE, _STD, _POLICY, ...) is read by the
+        # model at construction. Without this export the CPU player ran mu_scale 1 instead of F's 1.0,0.4,1.0,1.0
+        # (S3a on G8 r2: lateral action error 0.388; S3b dev01-dev06 flew that player).
+        self.schema_env = audit.apply_schema_environment(schema)
         # rl_games' restore calls torch.load without map_location; on a CPU-only process map its storages to the
         # CPU for the duration of the restore only
         original_load = torch.load
