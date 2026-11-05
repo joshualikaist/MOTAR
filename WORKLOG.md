@@ -24802,3 +24802,33 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - Report preserves design/source/validation and restored ignored-asset provenance, exact prefix checkpoint/censoring semantics, old strict600 blocker, runtime NOT_IMPLEMENTED/measurement NOT_RUN, existing approvals, raw/F/PX4 preservation and one concrete next action: motar-5md OwnedSession launcher/owned-only cleanup/fresh external rootfs implementation and CPU fixtures. Proposed42episodes are not authorized or launched. New actual account/window must be established before --new-window; no quota deadline is invented.
 - Close the current session early at the user's requested transfer using agent_session.py close; original15:47:14KST start and five-hour fallback schedule remain recorded (actual quota deadline UNKNOWN). This is a handoff, not a deadline/quota reset or a new gate. No owned job needs termination/continuation; no implementation/source, experiment, checkpoint, push or main merge action in this unit.
 - Validation for this unit is read-only report/path/JSON/hash/Git/process consistency. Prior PUBLIC_CPU3298/0fail0error/10skip5excluded, focused13/145 and record71/39 PASS remain the measured test evidence; no broad test rerun for a WORKLOG-only handoff entry. Only WORKLOG.md is staged in the local handoff record commit.
+
+## 2026-11-05 — dev08 runtime stack (motar-5md): owned session, link guards, prefix step, recorder, guarded runner (CPU only)
+
+- Resumed from the Codex handoff at camonly/dev `9051cea` as Claude Code (Opus 5.5); new session clock 17:17 KST (five-hour fallback; quota UNKNOWN). Scope: motar-5md source, CPU fixtures, independent reviews, records. No PX4, Gazebo, SITL or GPU process was started; dev08 measurement NOT_RUN; every new module reports live_verified / execution_supported / launch_ready = false; `tools/sitl_s3b_dev08_prefix.py main` refuses.
+- New sources and CPU fixtures (amendment1 runtime-stack rows):
+
+| Row | Source | Tests |
+| --- | --- | --- |
+| Owned session | tools/sitl_owned_session.py | tests/test_sitl_owned_session.py (48) |
+| Parameter/telemetry | tools/sitl_dev08_link.py | tests/test_sitl_dev08_link.py (39) |
+| Policy/command step | tools/sitl_dev08_step.py | tests/test_sitl_dev08_step.py (13) |
+| Attempt recorder | tools/sitl_dev08_attempt.py | tests/test_sitl_dev08_attempt.py (15) |
+| Integration, guarded execute() | tools/sitl_s3b_dev08_prefix.py | tests/test_sitl_s3b_dev08_prefix.py (10) |
+
+- Findings while building (records in docs/evidence/sitl_2026-11-05/dev08/runtime_stack/ and /home/fair/motar_tmp/dev08_runtime_stack_20261105/):
+  - The historical runner booted PX4 in the shared build rootfs; all 23 dev07 PX4 logs import parameters.bson (22 with INT32:13/FLOAT:16), so dev07's non-overridden effective parameters, the yaw-rate gains included, are NOT_RECORDED. New: an empty rootfs per episode and a booted-value check of 27 REAL32 parameters against airframe/parameters.json expectations.
+  - Hypothesis "a 1e-9 tolerance in the checkpoint sample comparison is harmless" rejected: over start samples 1500–1999, 463/500 diverge within 600 checkpoints (198 at k = 1–2); with the real bridge + Policy F on the CPU the 600-checkpoint scene differed from k = 164. After the fix both scenes are identical over all nonterminal checkpoints (599 and 63 commands); the historical runner adds its terminal-step command.
+  - Hypothesis "HIL_STATE_QUATERNION carries PX4's clock" rejected (link review r1; PX4 v1.14.3 never sets time_usec; source-pinned test). Truth is now taken by arrival (latest within −0.03/+0.003 s and before the next position message); the receipt skew is recorded; the per-boot stream phase (0–16 ms earlier pass, +4 ms under receive delay) is disclosed.
+  - All twenty fixed scenes have identity bar quaternions; the world writer is byte-identical to the historical one and refuses others.
+  - dev07_70/ep02 used a position sample 0.136 s late at k = 28 after a 218.4 ms runner compute at k = 27 (step-log column 21); the frozen runner's compute_ms_* report fields index p_true y, not compute time. Under a 0.05 s skip/late bound such a member aborts; at 1/20 a 42-member unit aborts with p ≈ 0.88. The bound is carried by the approval record (skip_max_s) and is a decision for the approval.
+- Independent reviews (Agent model opus), copies in the evidence folder:
+  - owned session r1 FAIL, r2 FAIL, r3 PASS_WITH_LIMITS;
+  - link r1 FAIL (BLOCKER: truth time_usec = 0), r2 and r3 PASS_WITH_LIMITS with conditions;
+  - step/recorder/runner/amendment2 r1–r3 FAIL, r4 FAIL (narrow: kill-grace text, three signal windows).
+  Fixes applied after the last round of each are listed in the evidence README and were not re-reviewed. Surviving mutants and the notes are recorded as open.
+- Validation: the five new test modules pass (125 tests); final PUBLIC_CPU on the staged tree (log bound in validation.json); check_public_docs PASS; kernel faults 0 → 0 for every run.
+- Execution proposal: docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md (no change to amendment1's estimand/cohort/order/stop rules/analysis). Not approved.
+- Beads: motar-5md stays OPEN. Its runtime/CPU parts are done, but its acceptance needs a reviewed proposal awaiting approval, and the last round is FAIL (narrow) with fixes applied afterwards and not re-reviewed.
+- Next single action: a fresh-context review of the post-r4 bytes (amendment2, attempt, runner) against REVIEW_step_runner_r4.md. Then, only with a new scoped approval that names skip_max_s, the CLI entry that calls execute() and the 2-member smoke. No SITL/GPU run, push or merge without the user.
+

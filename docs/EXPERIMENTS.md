@@ -811,6 +811,12 @@ family that is in the test's scope.
       The strict600 parent remains BLOCKED; no prefix measurement or formal stage advancement.
     - Local historical-asset availability is repaired with hash-matched copies of absent files;
       shared PUBLIC_CPU is PASS. This is local validation, not a SITL/flight result.
+    - **dev08 runtime stack (motar-5md):** the owned session, parameter/telemetry guards, prefix step, attempt
+      recorder and guarded runner are implemented with CPU fixtures only. No PX4/Gazebo/SITL was started.
+      - live NOT_VERIFIED; measurement NOT_RUN.
+      - Native prefix identity with the historical loop holds on the CPU with the real bridge and Policy F.
+      - Amendment2 proposes the bounded 42-member execution; it awaits a scoped approval, including the skip/late
+        bound decision.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -828,6 +834,8 @@ family that is in the test's scope.
   - → `docs/evidence/sitl_2026-11-05/dev08/` (source/input audit, CPU preparation checks; measurement NOT_RUN)
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md` (observed-prefix input/runtime design)
   - → `docs/evidence/sitl_2026-11-05/dev08/local_availability/` (canonical local asset copies and full CPU validation)
+  - → `docs/evidence/sitl_2026-11-05/dev08/runtime_stack/` (runtime stack CPU implementation, reviews, identity evidence)
+  - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md` (runtime facts, bounded execution proposal)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -835,7 +843,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment3_2026-11-05.md`,
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment4_2026-11-05.md`,
   `docs/plans/prereg_actionhold_g7_v1.md`, `docs/plans/prereg_sitl_dev08_candidate_gains_v1.md`,
-  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md`
+  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md`,
+  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md`
 
 ## Not yet in the repository
 
