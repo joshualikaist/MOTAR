@@ -24832,3 +24832,15 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - Beads: motar-5md stays OPEN. Its runtime/CPU parts are done, but its acceptance needs a reviewed proposal awaiting approval, and the last round is FAIL (narrow) with fixes applied afterwards and not re-reviewed.
 - Next single action: a fresh-context review of the post-r4 bytes (amendment2, attempt, runner) against REVIEW_step_runner_r4.md. Then, only with a new scoped approval that names skip_max_s, the CLI entry that calls execute() and the 2-member smoke. No SITL/GPU run, push or merge without the user.
 
+## 2026-11-05 — dev08 runtime stack: review r5 corrections (amendment3)
+
+- Review r5 (Opus 5.5) of the committed `a672fc8`: FAIL, narrow, one MAJOR (MJ1-r5). `pthread_sigmask` held signals in the calling thread only. With the runner's other threads (torch pool, session watchdog, MAVLink receiver), a SIGTERM could run the handler inside the "held" ledger/final.json write, and the review probe lost final.json in 8 of 8 multi-threaded runs. No false COMPLETE path; r4's text corrections were confirmed in the committed bytes; validation.json hashes verified.
+- Repair: `signals_held()` now swaps the Python handlers for a recorder and re-delivers the first signal after the write, the same way OwnedSession defers. New test with another thread alive (8 repetitions). It fails on the `a672fc8` recorder and passes on the repaired one (`/home/fair/motar_tmp/dev08_runtime_stack_20261105/signal_hold_check/results.txt`). Also: interrupted-member test; 30 s journalctl timeout; amendment3 added to the recorder's bound sources.
+- docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md corrects the immutable amendment2:
+  - the held-signal statement holds from this commit;
+  - the outer timeout becomes 5800 s, because setup counts against it (r5 n5-a);
+  - the complete list of added stops (r5 n5-b).
+  No change to amendment1's estimand, cohort, order or analysis; no execution authorized.
+- Hypothesis "pthread_sigmask in the main thread holds a process-directed signal" rejected: the kernel may deliver it to another thread, and CPython then runs the handler in the main thread.
+- These corrections are not independently re-reviewed. motar-5md stays OPEN. Next single action: a fresh-context check of this commit against REVIEW_step_runner_r5.md. Then the user's skip_max_s decision and a scoped approval for the CLI entry and the 2-member smoke. No SITL/GPU run, push or merge without the user.
+

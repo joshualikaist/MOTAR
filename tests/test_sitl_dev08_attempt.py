@@ -10,6 +10,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -352,6 +353,41 @@ class RecordRules(RecorderBase):
             A.read_ledger(self.tmp / "held")
         finally:
             sig.signal(sig.SIGTERM, old)
+
+    def test_signals_are_held_with_other_threads_alive(self):
+        """Review r5 MJ1-r5: with another thread alive the kernel may deliver the signal to it; the hold must still
+        defer the handler until final.json is complete. Repeated, since delivery varies."""
+        import signal as sig
+        import threading as th
+
+        class Stop(BaseException):
+            pass
+
+        def handler(signum, frame):
+            raise Stop()
+        stop = th.Event()
+        idle = th.Thread(target=stop.wait, daemon=True)
+        idle.start()
+        old = sig.signal(sig.SIGTERM, handler)
+        try:
+            for i in range(8):
+                r = self.recorder("threads%d" % i)
+                r.open()
+
+                def faults_then_signal():
+                    os.kill(os.getpid(), sig.SIGTERM)
+                    time.sleep(0.01)                                   # let any thread take it
+                    return 0
+                r.faults = faults_then_signal
+                with self.assertRaises(Stop):
+                    r.abort("TEST")
+                final = json.loads((self.tmp / ("threads%d" % i) / "final.json").read_text())
+                self.assertEqual(final["reason"], "TEST")
+            self.assertIs(sig.getsignal(sig.SIGTERM), handler)          # restored after each hold
+        finally:
+            sig.signal(sig.SIGTERM, old)
+            stop.set()
+            idle.join()
 
     def test_unreadable_kernel_log_is_an_error(self):
         class R:

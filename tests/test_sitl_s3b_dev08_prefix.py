@@ -465,6 +465,17 @@ class ExecuteStops(Execute):
         self.assertEqual(lines[-1]["operational_status"], "BINDING_CHANGED")
         self.assertEqual(final["recorded"], 5)
 
+    def test_an_interrupted_member_is_named(self):
+        def run_interrupted(member, *a, **k):
+            if member["index"] == 2:
+                raise R.RunnerTerminated("signal during member 2")
+            return self.run_fake(member, *a, **k)
+        with self.assertRaises(R.RunnerTerminated):
+            self.go(self.approval(), "interrupted", run_interrupted)
+        final = json.loads((self.tmp / "interrupted" / "final.json").read_text())
+        self.assertEqual((final["interrupted_member"], final["recorded"]), (AT.schedule()[2]["name"], 2))
+        self.assertIn(AT.schedule()[2]["name"], final["unrun"])
+
     test_approval_gate = test_complete_unit_order_and_parameters = None
     test_source_change_and_invalid_member_stop_the_unit = None
 

@@ -32,6 +32,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 PROTOCOL = "observed-prefix-v1"
 AMENDMENT = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md"
 AMENDMENT2 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md"
+AMENDMENT3 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md"
 # Every file the unit runs or reads as code/configuration: the runtime stack, the historical runner and bridge, and
 # the production modules the bridge loads. Each must be tracked and equal to HEAD.
 SOURCES = ("tools/sitl_owned_session.py", "tools/sitl_dev08_link.py", "tools/sitl_dev08_step.py",
@@ -45,7 +46,8 @@ SOURCES = ("tools/sitl_owned_session.py", "tools/sitl_dev08_link.py", "tools/sit
            "aerial_gym/rl_training/rl_games/navrl_players.py", "aerial_gym/rl_training/rl_games/navrl_transformer_network.py",
            "aerial_gym/rl_training/rl_games/navrl_action_models.py", "aerial_gym/rl_training/rl_games/ppo_update_safety.py",
            "aerial_gym/rl_training/rl_games/navrl_mode_probe.py", "aerial_gym/task/navrl_task/navrl_corridor.py",
-           "aerial_gym/task/navrl_task/navrl_search_state.py", "aerial_gym/utils/math.py", AMENDMENT, AMENDMENT2)
+           "aerial_gym/task/navrl_task/navrl_search_state.py", "aerial_gym/utils/math.py", AMENDMENT, AMENDMENT2,
+           AMENDMENT3)
 # Code loaded from another work tree (tools/sitl_bridge.py CPLANNER): bound by hash and that tree's HEAD/state.
 EXTERNAL_SOURCES = (("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-cplanner", "cplanner/motar/replay.py"),)
 SEED, EPISODE = 4501, 0
@@ -76,8 +78,11 @@ def sha256_file(path):
 
 
 def kernel_faults():
-    r = subprocess.run(["journalctl", "-k", "-b", "0", "--no-pager"], capture_output=True,
-                       env=dict(os.environ, LC_ALL="C"))
+    try:
+        r = subprocess.run(["journalctl", "-k", "-b", "0", "--no-pager"], capture_output=True, timeout=30,
+                           env=dict(os.environ, LC_ALL="C"))
+    except subprocess.TimeoutExpired:
+        raise AttemptError("kernel log read timed out: the fault check would be vacuous") from None
     if r.returncode != 0 or not r.stdout:
         raise AttemptError("kernel log unreadable (journalctl rc %d): the fault check would be vacuous" % r.returncode)
     out = r.stdout.decode("utf-8", errors="replace")
@@ -191,17 +196,23 @@ def idle_check(cores=CORES, min_idle=0.9, seconds=1.0, tries=3):
 
 @contextlib.contextmanager
 def signals_held():
-    """Hold SIGTERM/SIGHUP/SIGINT while a ledger line or final.json is written (main thread only); a held signal is
-    delivered when the write is complete."""
+    """Hold SIGTERM/SIGHUP/SIGINT while a ledger line or final.json is written; a held signal is re-delivered when
+    the write is complete. The Python handlers are swapped for a recorder, so this holds whichever thread the kernel
+    delivers the signal to: pthread_sigmask would block the calling thread only, and the runner has more threads
+    (torch, watchdog, MAVLink receiver; review r5 MJ1-r5). Main thread only (Python sets handlers only there)."""
     held = (signal.SIGTERM, signal.SIGHUP, signal.SIGINT)
     if threading.current_thread() is not threading.main_thread():
         yield
         return
-    old = signal.pthread_sigmask(signal.SIG_BLOCK, held)
+    pending = []
+    saved = {s: signal.signal(s, lambda signum, frame: pending.append(signum)) for s in held}
     try:
         yield
     finally:
-        signal.pthread_sigmask(signal.SIG_SETMASK, old)
+        for s, h in saved.items():
+            signal.signal(s, h)
+        if pending:
+            signal.raise_signal(pending[0])
 
 
 def _finite_json(record):

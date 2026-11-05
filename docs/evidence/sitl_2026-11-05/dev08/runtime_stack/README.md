@@ -90,6 +90,7 @@ SHA-256.
 | | r2 | FAIL | amendment2 statements; idle-core precondition |
 | | r3 | FAIL | amendment2 statements only (text) |
 | | r4 | FAIL (narrow) | Kill-grace reconciliation (text); three signal windows in the recorder/runner |
+| | r5 (on `a672fc8`) | FAIL (narrow) | The signal hold covered one thread only; corrected in amendment3 and the following commit |
 
 **Applied after the last round, not independently re-reviewed:**
 - Owned session (after r3):
@@ -108,6 +109,13 @@ SHA-256.
   - the reviewer's exact text corrections;
   - signals held over the ledger line with its chain update, and over all of final.json (with a test);
   - the interrupted-member naming.
+
+**After r5 (amendment3's commit, not independently re-reviewed):**
+- the handler-swap signal hold, tested with another thread alive;
+- `signal_hold_check/results.txt`: the test fails on the `a672fc8` recorder and passes on the repaired one;
+- the interrupted-member test;
+- a 30 s timeout on the kernel-log read;
+- amendment3: the outer timeout becomes 5800 s, and the complete stop list.
 
 **Open:**
 - surviving mutants listed in the reviews: step M19–M21, M27, M28; attempt A10, A19, A20, A23, A24, A26, A27, A29;
