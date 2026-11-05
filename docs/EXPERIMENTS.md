@@ -835,6 +835,13 @@ family that is in the test's scope.
         `docs/evidence/sitl_2026-11-05/dev08/execution/analysis.json` and the result review there.
         `motar-1ab` is complete; `motar-agq` follows the shared205/env2 bar failure and differing205/env5 outcomes
         using existing traces/ULogs first. Minor coverage limits remain `motar-bmg`.
+      - **AGQ follow-up:** existing four ULogs distinguish pre-contact-proxy tracking differences from later
+        angular disturbances, altitude loss and growing position discrepancy. Actual contacts are NOT_RECORDED;
+        the diagnosis does not establish causality or select gains. An additive opt-in SDF correction removes
+        four extra rotor colliders while preserving the training base box and every dynamics/sensor byte.
+        Source review r1 FAIL is retained; repaired source review r2 PASS_WITH_LIMITS covers offline preparation.
+        New model live response remains NOT_TESTED. S3a and complete601-state inputs still block formal validation;
+        the new structural readiness audit cannot authorize a gate. Read `dev08/agq/README.md` in the evidence folder.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -858,6 +865,8 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md` (one compute thread; timing basis for skip_max_s)
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md` (authorized CLI, numeric records, pre-main smoke timing)
   - → `docs/evidence/sitl_2026-11-05/dev08/execution/` (authorized execution preparation, source/result reviews and records)
+  - → `docs/evidence/sitl_2026-11-05/dev08/agq/` (existing-log mechanism diagnosis and additive CPU preparation)
+  - → `docs/plans/sitl_agq_followup_v1_2026-11-06.md` (geometry-only intervention, S3a precision controls and new input lineage proposal)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -869,7 +878,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md`,
-  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md`
+  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md`,
+  `docs/plans/sitl_agq_followup_v1_2026-11-06.md`
 
 ## Not yet in the repository
 

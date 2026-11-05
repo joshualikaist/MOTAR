@@ -1,0 +1,130 @@
+{
+  "bindings": [
+    {
+      "bytes": 142985,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/integrity_v1/validation.json",
+      "sha256": "bb35e9bc32503f96fdbf704615efa59f1c2c0d07d71d216e85ed55c5effb2193"
+    },
+    {
+      "bytes": 1624,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/public_cpu_v1/record.json",
+      "sha256": "a1dc0a6eecfee894ffcc6a70464d2397ceaf7d9635438ed85e18a49a58fcb26c"
+    },
+    {
+      "bytes": 9821,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/public_cpu_v1/stdout.log",
+      "sha256": "aff341dc94d0edbfbf53fc25a82bc5cc75fa4ec4c5a180087868bb6bc4f68d2f"
+    },
+    {
+      "bytes": 7363,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/public_cpu_v1/stderr.log",
+      "sha256": "422c1ebccbd8494b95bdb78f1791600f437d1163635905c8fdaa76694a3f6f45"
+    },
+    {
+      "bytes": 9406,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/source_review_r1/REVIEW.md",
+      "sha256": "e663ec42430c36d25de004e02d992173fbf2036912e1e7ca97242d8b49f2a32a"
+    },
+    {
+      "bytes": 1837,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/source_review_r1/probe_summary.json",
+      "sha256": "2c48616b8d75c5f3a852f5b81f40b6ea591775df0455af8100c6c4de059ee1b3"
+    },
+    {
+      "bytes": 7852,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/source_review_r2/REVIEW.md",
+      "sha256": "aa7ef31aa9b29fa3644ac2219fbd922ca44953ecc1bc86ac5a6036fd6dd77c8d"
+    },
+    {
+      "bytes": 5613,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/source_review_r2/manifest.json",
+      "sha256": "973c036cf6d757049a2d6d2be12e9e6b815eb8d1b2e229e2953cb7faae4ef8cf"
+    },
+    {
+      "bytes": 11791,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/evidence_review_r1/REPORT.md",
+      "sha256": "767e2c52a8a6da0d912921ad79a9f6764dab6db5f7a60f8d1d9fd514056c91f7"
+    },
+    {
+      "bytes": 8609,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/evidence_review_r1/manifest.json",
+      "sha256": "109643b312529d57f9dd77cde2402a958b0c1e88bacc65be4ad2a245372029f2"
+    },
+    {
+      "bytes": 43128,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/models_v2/validation.json",
+      "sha256": "d0ac85ec1f6923e3b2b0c8db18854d31c8fc0723c05de8b26e751b970d14d5a9"
+    },
+    {
+      "bytes": 459,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/environment_r1/record.json",
+      "sha256": "a1c1a66af0822d464c73693c4dc25f007db8a339de6ae48775017bf9116eb96e"
+    },
+    {
+      "bytes": 762,
+      "path": "/home/fair/motar_tmp/agq_diagnosis_20261106/root/report_generation_v2.json",
+      "sha256": "3ab9d20bb5b835cdccc1af4623ddc240622a460428d2ca6d94951180458c78b9"
+    },
+    {
+      "bytes": 66330,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/diagnosis.json",
+      "sha256": "50aebcef568280f5f3f28159c6561a90585a599ffbb11bd3f188c200ad58ae9b"
+    },
+    {
+      "bytes": 13539,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/DIAGNOSIS.md",
+      "sha256": "e24582b6b5431f1fbb3e3ef593d766debc3074287f4acea693522b840743bbdd"
+    },
+    {
+      "bytes": 8145,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/S3A_INPUT_AUDIT.md",
+      "sha256": "dfcb3fb9d972f374f806b282f7f23c76f74484b134384992c99b699e29ca5435"
+    },
+    {
+      "bytes": 9406,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/SOURCE_REVIEW_r1.md",
+      "sha256": "e663ec42430c36d25de004e02d992173fbf2036912e1e7ca97242d8b49f2a32a"
+    },
+    {
+      "bytes": 7852,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/SOURCE_REVIEW_r2.md",
+      "sha256": "aa7ef31aa9b29fa3644ac2219fbd922ca44953ecc1bc86ac5a6036fd6dd77c8d"
+    },
+    {
+      "bytes": 11791,
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/RESULTS_REVIEW_r1.md",
+      "sha256": "767e2c52a8a6da0d912921ad79a9f6764dab6db5f7a60f8d1d9fd514056c91f7"
+    }
+  ],
+  "closeout": "User requested early quota handoff to Claude; exact remaining quota percent NOT_AVAILABLE",
+  "closeout_record_note": "Initial binding assembly referenced nonexistent r1/manifest.json and refused before writing; final record binds actual r1/probe_summary.json and report. No raw/source changed.",
+  "docs": {
+    "diff_check": "PASS",
+    "experiment_index": "9/9 OK",
+    "public_docs": "PASS"
+  },
+  "evidence_review": "LIMITED_VALIDITY; contacts/causality/live correction NOT_TESTED",
+  "formal_gate_authorized": false,
+  "formal_readiness": "BLOCKED: S3a NOT_EQUIVALENT, missing412targetstates",
+  "live_or_gpu_measurement": "NOT_RUN",
+  "old_raw_and_f_integrity": "507files/697582825bytes verified; canonicalF hash unchanged",
+  "public_cpu": {
+    "kernel_faults_after": 0,
+    "kernel_faults_before": 0,
+    "process_elapsed_s": 301.7952409219579,
+    "skipped": 10,
+    "source_hashes": {
+      "tests/test_sitl_formal_readiness.py": "ecda56ed96a424b938c85aefb7880199e7464f91b2e53fc03c9225125fb71d09",
+      "tests/test_sitl_training_geometry.py": "9f0712df400d9afffffd34699aad780203f6a6c4642fd6698b1b043d1dbd706c",
+      "tools/sitl_formal_readiness.py": "c6ff36dc954e40dc1b83182810c2d2c2704723f13e38c8ca89d2469846022c6d",
+      "tools/sitl_training_geometry.py": "cadd5167e874c2101118d3d24d9e6c517604571a64ed50a34391aeb3b7b0df35"
+    },
+    "sources_stable": true,
+    "status": "PASS",
+    "test_elapsed_s": 298.402,
+    "tests": 3451
+  },
+  "schema": "motar.agq-preparation-validation.v1",
+  "scope": "CPU preparation and existing-log descriptive review only",
+  "source_review": "PASS_WITH_LIMITS r2; r1 FAIL preserved"
+}

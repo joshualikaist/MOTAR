@@ -377,3 +377,22 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Sources:** user2026-11-05: "안전한 연구보다는 모험심 많은 연구를 지향하고 싶어"; "오케이. 본 측정까지 하고
   나한테 말해. 얼마나 걸려?"; "지금부터 새 5시간 작업 세션으로 진행";
   [amendment5](plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md).
+
+## D-2026-11-06-0 — Diagnose existing failures and repair formal-validation preparation
+
+- **Decision:** the user requests priority diagnosis of the existing four dev08 failure/counterpart logs,
+  a report/judgment on control response, justified repairs and environment preparation toward formal validation.
+  This authorizes the CPU audit, additive model/readiness implementation, tests/reviews and local records.
+- **Implementation scope:** preserve Frozen F, old raw/preregistrations and all historical launchers/assets.
+  Prepare an opt-in external model with the training collision box, keeping native OFF byte-identical.
+  Do not choose gains from the old bundled contrast or infer EKF causality from terminal snapshots.
+- **Boundary:** no new GPU measurement, full-horizon input regeneration, live diagnostic or formal stage is
+  silently included in the consumed D-2026-11-05-3 approval. The new follow-up plan makes the geometry-only
+  intervention and S3a numerical controls concrete; each new execution unit needs its scoped reviewed approval.
+  S3a remains NOT_EQUIVALENT and complete state0..600 input coverage remains blocked.
+- **Clock:** continuation retains the known13:45:22UTC start/18:35:22UTC finish-by. An early closed helper record
+  is preserved; separate continuation metadata uses the identical dates, with no new time allowance.
+- **Source:** user2026-11-06KST: "공식 검증 들어갈 정도까지의 환경 세팅좀 마무리하고, 제어 응답에서 어떤 이상이
+  있었는지 보고 및 판단해서 수정해줘."
+- **Record:** [AGQ preparation](evidence/sitl_2026-11-05/dev08/agq/README.md),
+  [next-unit proposal](plans/sitl_agq_followup_v1_2026-11-06.md).
