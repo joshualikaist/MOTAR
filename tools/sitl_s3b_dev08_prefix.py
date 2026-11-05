@@ -1,4 +1,4 @@
-"""dev08 observed-prefix runner: integration of the runtime stack (amendment1; motar-5md). EXECUTION REFUSED.
+"""dev08 observed-prefix runner: integration of the runtime stack (amendment1; motar-5md).
 
 Composes tools/sitl_owned_session.py (owned PX4/Gazebo session, fresh rootfs), tools/sitl_dev08_link.py
 (parameter echo/readback, telemetry gate), tools/sitl_dev08_step.py (historical transform, prefix stopping) and
@@ -11,8 +11,9 @@ receiver -> heartbeat and 50 Hz streams -> settle -> parameters (booted values, 
 exception makes the member operationally invalid (the attempt then stops); a valid member ends in capture, crash
 or CENSORED_TRACE_END. Timings default to the historical runner's; tests shorten them.
 
-Nothing here is executed by `main`: it prints the plan and refuses, because the unit needs a separate, scoped
-approval after review. Not verified live.
+The default CLI refuses. --execute requires a recorded scope/clean-commit approval, the fixed 0.15 s bound and
+an external fresh attempt directory. It runs the unchanged two-smoke +40-main schedule in the main thread.
+Live verification is reported in attempt evidence, never inferred from CLI availability.
 """
 import hashlib
 import json
@@ -21,7 +22,7 @@ import pathlib
 import threading
 import time
 
-STATUS = {"component": "dev08_prefix_runner", "live_verified": False, "execution_supported": False,
+STATUS = {"component": "dev08_prefix_runner", "live_verified": False, "execution_supported": True,
           "launch_ready": False}
 
 ODE_ITERS = 100
@@ -231,14 +232,17 @@ def _fly(member, spec, recorded_frames, arm_params, T, session, conn, inbox, tra
     for k in range(recorded_frames):
         session.check(required=("gzserver", "px4"))
         snap = gate.checkpoint(k)
+        compute0 = time.monotonic()
         r = ep.step(k, snap)
         r.update(pos_seq=snap["pos"]["seq"], att_seq=snap["att"]["seq"], truth_seq=snap["truth"]["seq"],
                  pos_lateness_s=snap["pos_lateness_s"], att_skew_s=snap["att_skew_s"],
                  truth_recv_skew_s=snap["truth_recv_skew_s"], wall_s=time.monotonic() - wall0)
         rows.append(r)
         if r["command"] is None:
+            r["compute_ms"] = 1000.0 * (time.monotonic() - compute0)
             break
         cmdr.setpoint(*r["command"])
+        r["compute_ms"] = 1000.0 * (time.monotonic() - compute0)
     c = ep.counts()
     if c["outcome"] is None:
         raise HarnessInvalid("HARNESS_INVALID prefix ended without a decision")
@@ -249,6 +253,7 @@ def _fly(member, spec, recorded_frames, arm_params, T, session, conn, inbox, tra
                start_sim_time_s=gate.start, final_sim_time_s=rows[-1]["sim_s"],
                scheduled_elapsed_s=round(k * DT, 10), min_dist_m=c["min_dist_m"],
                crash_reason=rows[-1].get("crash_reason"),
+               compute_ms_max=max(r["compute_ms"] for r in rows),
                real_time_factor=(rows[-1]["sim_s"] - gate.start) / wall if wall > 0 else None,
                ignored_foreign=dict(gate.ignored))
     cmdr.cmd(MAV_CMD_DO_SET_MODE, 1, 4, 6)                        # outside the scored prefix, as the historical runner
@@ -389,6 +394,18 @@ def package_manifest(name):
     return {"path": str(root), "version": getattr(mod, "__version__", None), "py_files_sha256": h.hexdigest()}
 
 
+def smoke_problems(record):
+    """Amendment5's pre-main live timing checks; telemetry/parameters/cleanup retain their existing guards."""
+    problems = []
+    rtf = record.get("real_time_factor")
+    if not isinstance(rtf, (int, float)) or isinstance(rtf, bool) or not math.isfinite(rtf) or not 0.95 <= rtf <= 1.05:
+        problems.append("smoke real_time_factor must be in [0.95, 1.05]")
+    compute = record.get("compute_ms_max")
+    if not isinstance(compute, (int, float)) or isinstance(compute, bool) or not math.isfinite(compute) or not 0 <= compute < 100:
+        problems.append("smoke compute_ms_max must be in [0, 100)")
+    return problems
+
+
 def execute(attempt_dir, approval, *, deps=None, specs=None, B=None, policy=None, run=None, root=ROOT,
             make_recorder=None, git_state=None, environment=None):
     """The fixed 42-member unit under a recorded approval. Not called by main in this repository unit.
@@ -478,6 +495,11 @@ def execute(attempt_dir, approval, *, deps=None, specs=None, B=None, policy=None
                     r = dict(r, operational_status="BINDING_CHANGED")
             if git_state(root) != git0:                              # a change during this member, the last too
                 r = dict(r, operational_status="SOURCE_CHANGED")
+            if member["phase"] == "smoke" and r.get("operational_status") == "VALID":
+                problems = smoke_problems(r)
+                r = dict(r, smoke_timing_problems=problems)
+                if problems:
+                    r = dict(r, operational_status="HARNESS_INVALID", error="; ".join(problems))
             rec.append(r)
             current = None
             if rec.status is not None:
@@ -495,9 +517,34 @@ def execute(attempt_dir, approval, *, deps=None, specs=None, B=None, policy=None
     return rec.status
 
 
-def main():
-    print(json.dumps(dict(STATUS, refused="observed-prefix execution needs a new scoped approval", scope=SCOPE)))
-    return 2
+def main(argv=None):
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--execute", action="store_true", help="run the recorded two-smoke +40-main approval")
+    parser.add_argument("--approval-file", type=pathlib.Path)
+    parser.add_argument("--attempt-dir", type=pathlib.Path)
+    args = parser.parse_args(argv)
+    if not args.execute:
+        print(json.dumps(dict(STATUS, refused="--execute and a scoped approval are required", scope=SCOPE)))
+        return 2
+    if args.approval_file is None or args.attempt_dir is None:
+        parser.error("--execute requires --approval-file and --attempt-dir")
+    try:
+        if threading.current_thread() is not threading.main_thread():
+            raise PermissionError("execute must run in the main thread")
+        raw = args.approval_file.read_bytes()
+        approval = json.loads(raw)
+        if not isinstance(approval, dict) or type(approval.get("skip_max_s")) is not float or approval["skip_max_s"] != 0.15:
+            raise PermissionError("D-2026-11-05-2 fixes skip_max_s at 0.15 s")
+        approval = dict(approval, approval_file={"path": str(args.approval_file.resolve()),
+                                               "sha256": hashlib.sha256(raw).hexdigest()})
+        status = execute(args.attempt_dir, approval)
+    except (Exception, RunnerTerminated, KeyboardInterrupt) as e:
+        print(json.dumps({"status": "REFUSED_OR_ABORTED", "error": "%s: %s" % (type(e).__name__, e),
+                          "attempt_dir": str(args.attempt_dir)}))
+        return 1
+    print(json.dumps({"status": status, "attempt_dir": str(args.attempt_dir), "scope": SCOPE}))
+    return 0 if status == "COMPLETE" else 1
 
 
 if __name__ == "__main__":

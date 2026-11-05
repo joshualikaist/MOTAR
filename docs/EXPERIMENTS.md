@@ -815,12 +815,15 @@ family that is in the test's scope.
       recorder and guarded runner are implemented with CPU fixtures only. No PX4/Gazebo/SITL was started.
       - live NOT_VERIFIED; measurement NOT_RUN.
       - Native prefix identity with the historical loop holds on the CPU with the real bridge and Policy F.
-      - Amendment2, corrected by amendments3/4, proposes the bounded 42-member execution; it awaits a scoped
-        approval. The user fixed `skip_max_s = 0.15` s in [D-2026-11-05-2](DECISIONS.md#d-2026-11-05-2--dev08-skiplate-tolerance-fixed-at-015-s).
+      - Amendment2, corrected by amendments3/4, proposes the bounded 42-member execution. The user fixed
+        `skip_max_s = 0.15` s in [D-2026-11-05-2](DECISIONS.md#d-2026-11-05-2--dev08-skiplate-tolerance-fixed-at-015-s).
         This is the tolerance decision only. Independent r7 review of `821706d` and the small earlier owned/link
         repairs is PASS_WITH_LIMITS; `motar-5md` CPU/runtime acceptance is complete. Permanent-test and inherited
-        limits continue in `motar-bmg`; guarded CLI/two-smoke preparation is `motar-1ab`. Separate execution
-        approval remains pending; no live result or formal stage advancement follows.
+        limits continue in `motar-bmg`; guarded CLI and execution are `motar-1ab`. No formal stage advancement follows.
+      - The user subsequently authorized completion through the two smoke and40main members in a new five-hour
+        session ([D-2026-11-05-3](DECISIONS.md#d-2026-11-05-3--complete-dev08-through-main-measurement-in-a-new-five-hour-session)).
+        Amendment5 adds the guarded CLI, numeric ledger handling and pre-main smoke timing checks;
+        the original42-member schedule is retained. Source review/commit precede launch; measurement NOT_RUN.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -842,6 +845,8 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md` (runtime facts, bounded execution proposal)
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md` (review r5 corrections: held signals, outer timeout, stop list)
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md` (one compute thread; timing basis for skip_max_s)
+  - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md` (authorized CLI, numeric records, pre-main smoke timing)
+  - → `docs/evidence/sitl_2026-11-05/dev08/execution/` (authorized execution preparation, source/result reviews and records)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -852,7 +857,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md`,
-  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md`
+  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md`,
+  `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md`
 
 ## Not yet in the repository
 

@@ -284,6 +284,32 @@ class RecordRules(RecorderBase):
         lines, final = A.read_ledger(self.tmp / "nan")
         self.assertEqual((len(lines), final["reason"]), (1, "SMOKE_FAILED"))
 
+    def test_numpy_numbers_arrays_and_unsupported_values_keep_numeric_schema(self):
+        import numpy as np
+        r = self.recorder("numeric")
+        r.open()
+        first = dict(record(A.schedule()[0]), final_frame_index=np.int64(30),
+                     min_dist_m=np.float32(0.25), extra={"samples": np.array([1.0, 2.0]),
+                                                       "count": np.int64(2), "flag": np.bool_(True)})
+        r.append(first)
+        self.assertIsNone(r.status)                                # finite numpy data is accepted
+        saved = json.loads((self.tmp / "numeric" / "ledger.jsonl").read_text())
+        self.assertIs(type(saved["final_frame_index"]), int)
+        self.assertIs(type(saved["min_dist_m"]), float)
+        self.assertEqual(saved["extra"], {"samples": [1.0, 2.0], "count": 2, "flag": True})
+        r.append(dict(record(A.schedule()[1]), extra=np.array([1.0, float("nan")])))
+        lines, final = A.read_ledger(self.tmp / "numeric")
+        self.assertEqual(lines[1]["extra"], [1.0, None])
+        self.assertTrue(any("non-finite" in x for x in lines[1]["record_problems"]))
+        self.assertEqual(final["reason"], "SMOKE_FAILED")
+        other = self.recorder("unsupported")
+        other.open()
+        other.append(dict(record(A.schedule()[0]), opaque=object()))
+        lines, final = A.read_ledger(self.tmp / "unsupported")
+        self.assertIsNone(lines[0]["opaque"])
+        self.assertTrue(any("unsupported value" in x for x in lines[0]["record_problems"]))
+        self.assertEqual(final["reason"], "SMOKE_FAILED")
+
     def test_fault_check_failure_still_writes_final(self):
         calls = {"n": 0}
 
@@ -370,24 +396,32 @@ class RecordRules(RecorderBase):
         stop = th.Event()
         idle = th.Thread(target=stop.wait, daemon=True)
         idle.start()
-        old = sig.signal(sig.SIGTERM, handler)
+        old = {s: sig.signal(s, handler) for s in (sig.SIGTERM, sig.SIGHUP, sig.SIGINT)}
         try:
-            for i in range(8):
-                r = self.recorder("threads%d" % i)
-                r.open()
+            for signum in old:
+                for directed in (False, True):
+                    for i in range(3):
+                        name = "threads_%d_%s_%d" % (signum, directed, i)
+                        r = self.recorder(name)
+                        r.open()
 
-                def faults_then_signal():
-                    os.kill(os.getpid(), sig.SIGTERM)
-                    time.sleep(0.01)                                   # let any thread take it
-                    return 0
-                r.faults = faults_then_signal
-                with self.assertRaises(Stop):
-                    r.abort("TEST")
-                final = json.loads((self.tmp / ("threads%d" % i) / "final.json").read_text())
-                self.assertEqual(final["reason"], "TEST")
-            self.assertIs(sig.getsignal(sig.SIGTERM), handler)          # restored after each hold
+                        def faults_then_signal():
+                            if directed:
+                                sig.pthread_kill(idle.ident, signum)
+                            else:
+                                os.kill(os.getpid(), signum)
+                            time.sleep(0.01)
+                            return 0
+
+                        r.faults = faults_then_signal
+                        with self.assertRaises(Stop):
+                            r.abort("TEST")
+                        final = json.loads((self.tmp / name / "final.json").read_text())
+                        self.assertEqual(final["reason"], "TEST")
+                        self.assertIs(sig.getsignal(signum), handler)
         finally:
-            sig.signal(sig.SIGTERM, old)
+            for s, h in old.items():
+                sig.signal(s, h)
             stop.set()
             idle.join()
 

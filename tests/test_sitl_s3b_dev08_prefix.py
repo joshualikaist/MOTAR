@@ -1,5 +1,6 @@
 """CPU fixtures for the dev08 observed-prefix runner integration (tools/sitl_s3b_dev08_prefix.py; motar-5md)."""
 import importlib.util
+import hashlib
 import json
 import math
 import os
@@ -11,6 +12,7 @@ import sys
 import tempfile
 import threading
 import time
+import types
 import unittest
 from unittest import mock
 
@@ -80,8 +82,51 @@ class WorldWriter(unittest.TestCase):
                          self.p0, self.yaw0)
 
     def test_main_refuses_execution(self):
-        self.assertEqual(R.main(), 2)
-        self.assertFalse(R.STATUS["execution_supported"])
+        self.assertEqual(R.main([]), 2)
+        self.assertTrue(R.STATUS["execution_supported"])
+
+
+class CLI(unittest.TestCase):
+    def test_explicit_flag_approval_bound_and_main_thread(self):
+        tmp = Path(tempfile.mkdtemp(prefix="dev08_cli_"))
+        try:
+            approval = tmp / "approval.json"
+            data = {"approved_by": "fixture", "approved_at": "2026-11-05", "scope": R.SCOPE,
+                    "commit": "fixture-head", "skip_max_s": 0.15}
+            approval.write_text(json.dumps(data))
+            args = ["--execute", "--approval-file", str(approval), "--attempt-dir", str(tmp / "out")]
+            with mock.patch.object(R, "execute", return_value="COMPLETE") as execute:
+                self.assertEqual(R.main([]), 2)
+                execute.assert_not_called()
+                self.assertEqual(R.main(args), 0)
+                passed = execute.call_args[0][1]
+                self.assertEqual(passed["scope"], R.SCOPE)
+                self.assertEqual(passed["skip_max_s"], 0.15)
+                self.assertEqual(passed["approval_file"]["sha256"], hashlib.sha256(approval.read_bytes()).hexdigest())
+                execute.reset_mock()
+                for bound in (0.1, 0.05, None, "0.15"):
+                    approval.write_text(json.dumps(dict(data, skip_max_s=bound)))
+                    self.assertEqual(R.main(args), 1)
+                execute.assert_not_called()
+                approval.write_text(json.dumps(data))
+                result = []
+                th = threading.Thread(target=lambda: result.append(R.main(args)))
+                th.start()
+                th.join(timeout=5)
+                self.assertFalse(th.is_alive())
+                self.assertEqual(result, [1])
+                execute.assert_not_called()
+                execute.return_value = "ABORTED"
+                self.assertEqual(R.main(args), 1)
+            # Real execution guards reject a wrong scope/commit before loading the bridge or creating output.
+            with mock.patch.object(R, "warm_up") as warm:
+                for change in ({"scope": "smoke only"}, {"commit": "wrong"}):
+                    approval.write_text(json.dumps(dict(data, **change)))
+                    self.assertEqual(R.main(args), 1)
+                warm.assert_not_called()
+            self.assertFalse((tmp / "out").exists())
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
 
 
 class FakeMsg:
@@ -339,7 +384,7 @@ class Execute(unittest.TestCase):
         f.write_bytes(b"f")
         self.f = f
         scene = EpisodeDriver.spec(None, 5)
-        self.specs = ({(b, e): dict(scene, env=e) for b in (70, 205) for e in range(10)},
+        self.specs = ({(b, e): dict(scene, env=e, receipt_env={}) for b in (70, 205) for e in range(10)},
                       {(b, e): {"recorded_frames": 208 if (b, e) == (70, 5) else 600}
                        for b in (70, 205) for e in range(10)})
         self.B = type("B", (), {"F_CKPT": str(f), "Episode": SI.StubEpisode})
@@ -368,6 +413,7 @@ class Execute(unittest.TestCase):
                                                                          "world": {"sha256": member["name"]}}},
                 "operational_status": "VALID", "outcome": "CENSORED_TRACE_END", "final_frame_index": k,
                 "observation_checks": k + 1, "commands_issued": k, "start_sim_time_s": 40.0,
+                "real_time_factor": 1.0, "compute_ms_max": 1.0,
                 "final_sim_time_s": 40.0 + k * 0.1, "scheduled_elapsed_s": round(k * 0.1, 10)}
 
     def go(self, approval, name="attempt", run=None, environment=None):
@@ -408,6 +454,26 @@ class Execute(unittest.TestCase):
             208 if (b, e) == (70, 5) else 600) for b in (70, 205) for e in range(10)}
         load("pc_exec_t2", "tools/sitl_dev08_prefix_contract.py").summarize_complete_pairs(mains, windows)
 
+    def test_smoke_timing_is_checked_before_any_main(self):
+        good = dict(real_time_factor=1.0, compute_ms_max=5.0)
+        self.assertEqual(R.smoke_problems(good), [])
+        for key, value in (("real_time_factor", 0.5), ("real_time_factor", None),
+                           ("real_time_factor", float("nan")), ("compute_ms_max", 100.0),
+                           ("compute_ms_max", None), ("compute_ms_max", float("inf"))):
+            self.assertTrue(R.smoke_problems(dict(good, **{key: value})))
+        for field, value in (("real_time_factor", 0.5), ("compute_ms_max", 101.0)):
+            self.calls = []
+
+            def bad_smoke(member, *a, **kw):
+                return dict(self.run_fake(member, *a, **kw), **{field: value})
+
+            self.assertEqual(self.go(self.approval(), "bad_" + field, bad_smoke), "ABORTED")
+            self.assertEqual(len(self.calls), 1)
+            lines, final = AT.read_ledger(self.tmp / ("bad_" + field))
+            self.assertEqual(final["reason"], "SMOKE_FAILED")
+            self.assertTrue(lines[0]["smoke_timing_problems"])
+
+
     def test_source_change_and_invalid_member_stop_the_unit(self):
         def run_then_change(member, *a, **k):
             if member["index"] == 3:
@@ -437,6 +503,56 @@ class Execute(unittest.TestCase):
         self.assertEqual(len(self.calls), 2)
         final = json.loads((self.tmp / "invalid" / "final.json").read_text())
         self.assertEqual(final["reason"], "SMOKE_FAILED")
+
+
+class ProductionThreads(Execute):
+    test_approval_gate = test_complete_unit_order_and_parameters = None
+    test_source_change_and_invalid_member_stop_the_unit = test_smoke_timing_is_checked_before_any_main = None
+
+    def test_real_import_branch_sets_threads_and_refuses_before_warm_up(self):
+        for case in ("good", "wrong_torch", "bad_omp", "bad_mkl"):
+            events, count = [], [8]
+            bridge = types.ModuleType("sitl_bridge")
+            bridge.setup = lambda env: events.append("setup")
+            bridge.Policy = SI.StubPolicy
+            bridge.Episode, bridge.F_CKPT = SI.StubEpisode, str(self.f)
+            torch = types.ModuleType("torch")
+
+            def setter(n):
+                events.append(("threads", n))
+                count[0] = n
+
+            torch.set_num_threads = setter
+            torch.get_num_threads = lambda: 8 if case == "wrong_torch" else count[0]
+            aerial = types.ModuleType("aerial_gym")
+            aerial.__path__ = [str(ROOT / "aerial_gym")]
+            env = dict(self.env_ok[0])
+            if case in ("bad_omp", "bad_mkl"):
+                env["OMP_NUM_THREADS" if case == "bad_omp" else "MKL_NUM_THREADS"] = "4"
+            saved_path = list(sys.path)
+            self.calls = []
+            try:
+                with mock.patch.dict(sys.modules, {"sitl_bridge": bridge, "torch": torch, "aerial_gym": aerial,
+                                                   "pymavlink": types.ModuleType("pymavlink")}), \
+                        mock.patch.object(R, "warm_up", side_effect=lambda *a: events.append("warm") or {}), \
+                        mock.patch.object(R, "package_manifest", return_value={}):
+                    call = lambda: R.execute(self.tmp / case, self.approval(skip_max_s=0.15), B=None,
+                                            specs=self.specs, deps={}, run=self.run_fake, make_recorder=self.recorder,
+                                            git_state=lambda root: dict(self.git), environment=(env, AT.CORES))
+                    if case == "good":
+                        self.assertEqual(call(), "COMPLETE")
+                        self.assertEqual(events, ["setup", ("threads", 1), "warm"])
+                        self.assertEqual(len(self.calls), 42)
+                    else:
+                        with self.assertRaises(PermissionError):
+                            call()
+                        self.assertNotIn("warm", events)
+                        self.assertFalse((self.tmp / case).exists())
+                        self.assertEqual(self.calls, [])
+                        if case != "wrong_torch":
+                            self.assertEqual(events, [])
+            finally:
+                sys.path[:] = saved_path
 
 
 class ExecuteStops(Execute):
@@ -477,8 +593,38 @@ class ExecuteStops(Execute):
         self.assertEqual((final["interrupted_member"], final["recorded"]), (AT.schedule()[2]["name"], 2))
         self.assertIn(AT.schedule()[2]["name"], final["unrun"])
 
+    def test_interrupt_after_run_names_member_but_after_append_does_not(self):
+        for where, recorded in (("host", 2), ("faults", 3)):
+            self.calls = []
+            make = self.recorder
+
+            def recorder(d, scope):
+                rec = make(d, scope)
+                fired = [False]
+
+                def check():
+                    ready = len(self.calls) == 3 if where == "host" else rec.next == 3
+                    if ready and not fired[0]:
+                        fired[0] = True
+                        raise R.RunnerTerminated("signal in " + where)
+                    return (True, {}) if where == "host" else 0
+
+                if where == "host":
+                    rec.host_check = check
+                else:
+                    rec.faults = check
+                return rec
+
+            with mock.patch.object(self, "recorder", recorder):
+                with self.assertRaises(R.RunnerTerminated):
+                    self.go(self.approval(), "interrupted_" + where)
+            final = json.loads((self.tmp / ("interrupted_" + where) / "final.json").read_text())
+            self.assertEqual(final["recorded"], recorded)
+            self.assertEqual(final["interrupted_member"], AT.schedule()[2]["name"] if where == "host" else None)
+
     test_approval_gate = test_complete_unit_order_and_parameters = None
     test_source_change_and_invalid_member_stop_the_unit = None
+    test_smoke_timing_is_checked_before_any_main = None
 
 
 class SlowEpisode(SI.StubEpisode):

@@ -34,6 +34,7 @@ AMENDMENT = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-
 AMENDMENT2 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md"
 AMENDMENT3 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md"
 AMENDMENT4 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md"
+AMENDMENT5 = "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md"
 # Every file the unit runs or reads as code/configuration: the runtime stack, the historical runner and bridge, and
 # the production modules the bridge loads. Each must be tracked and equal to HEAD.
 SOURCES = ("tools/sitl_owned_session.py", "tools/sitl_dev08_link.py", "tools/sitl_dev08_step.py",
@@ -48,7 +49,7 @@ SOURCES = ("tools/sitl_owned_session.py", "tools/sitl_dev08_link.py", "tools/sit
            "aerial_gym/rl_training/rl_games/navrl_action_models.py", "aerial_gym/rl_training/rl_games/ppo_update_safety.py",
            "aerial_gym/rl_training/rl_games/navrl_mode_probe.py", "aerial_gym/task/navrl_task/navrl_corridor.py",
            "aerial_gym/task/navrl_task/navrl_search_state.py", "aerial_gym/utils/math.py", AMENDMENT, AMENDMENT2,
-           AMENDMENT3, AMENDMENT4)
+           AMENDMENT3, AMENDMENT4, AMENDMENT5)
 # Code loaded from another work tree (tools/sitl_bridge.py CPLANNER): bound by hash and that tree's HEAD/state.
 EXTERNAL_SOURCES = (("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-cplanner", "cplanner/motar/replay.py"),)
 SEED, EPISODE = 4501, 0
@@ -217,18 +218,31 @@ def signals_held():
 
 
 def _finite_json(record):
-    """The record with non-finite floats replaced by None, and whether any was found."""
+    """JSON numeric primitives, including numpy scalars/arrays, and explicit record problems.
+
+    Non-finite and unsupported values become None so the failed record can still be retained. No numpy import
+    is needed before the environment gate; numpy's tolist() returns ordinary scalar/list values recursively.
+    """
     bad = []
 
     def clean(x, path):
-        if isinstance(x, numbers.Real) and not isinstance(x, (bool, int)) and not math.isfinite(float(x)):
-            bad.append(path)                       # Python and numpy floats alike
-            return None
         if isinstance(x, dict):
             return {k: clean(v, path + "." + str(k)) for k, v in x.items()}
         if isinstance(x, (list, tuple)):
             return [clean(v, "%s[%d]" % (path, i)) for i, v in enumerate(x)]
-        return x
+        if x is None or isinstance(x, (bool, str)):
+            return x
+        if isinstance(x, numbers.Integral):
+            return int(x)
+        if isinstance(x, numbers.Real):
+            if not math.isfinite(float(x)):
+                bad.append("non-finite value at %s" % path)
+                return None
+            return float(x)
+        if type(x).__module__.split(".")[0] == "numpy" and hasattr(x, "tolist"):
+            return clean(x.tolist(), path)
+        bad.append("unsupported value at %s (%s)" % (path, type(x).__name__))
+        return None
     return clean(record, "record"), bad
 
 
@@ -375,12 +389,12 @@ class AttemptRecorder:
             raise AttemptError("record %s is not the next scheduled member %s" % (key, m["name"]))
         if m["phase"] == "main":
             self.block_t0.setdefault(m["bars"], self.clock())
-        record, nonfinite = _finite_json(record)
+        record, serialization_problems = _finite_json(record)
         problems = record_problems(record) if record.get("operational_status") == "VALID" else []
-        problems += ["non-finite value at %s" % p for p in nonfinite]
+        problems += serialization_problems
         line = dict(record, schedule_index=m["index"], name=m["name"], seq=self.next, prev_sha256=self.prev_sha,
                     protocol=PROTOCOL, seed=SEED, env_episode_index=EPISODE, record_problems=problems)
-        text = json.dumps(line, sort_keys=True, allow_nan=False, default=str)
+        text = json.dumps(line, sort_keys=True, allow_nan=False)
         with signals_held():                       # the line and its chain update land together (review r4 Q1)
             with open(self.dir / "ledger.jsonl", "a") as fh:
                 fh.write(text + "\n")

@@ -357,3 +357,23 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Sources:** the user's 2026-11-05 instruction, "skip_max_s : 0.15s 로 지정 부탁할게";
   [amendment4](plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md);
   [Fable analysis](evidence/sitl_2026-11-05/dev08/runtime_stack/ANALYSIS_skip_bound_fable.md).
+
+## D-2026-11-05-3 — Complete dev08 through main measurement in a new five-hour session
+
+- **Decision:** the user authorizes the essential CPU fixes, guarded CLI, source review, two native smoke
+  episodes and forty main members of the existing dev08 observed-prefix-v1 schedule, then analysis, independent
+  result review and local records. This supersedes the earlier pending smoke-only execution request; retain the
+  original combined schedule and stop before main if a smoke fails. No additional permission question is needed
+  inside this approved unit. Failed attempts remain preserved; no outcome-dependent rerun/substitution follows.
+- **Fixed conditions:** Frozen Policy F, the twenty scenes and admitted target prefixes, native/candidate gain
+  maps and pair order remain unchanged. `skip_max_s=0.15` and one compute thread remain fixed. Amendment5 is
+  written/reviewed/committed before launch; the execution approval binds its final clean source commit.
+- **Research preference:** prioritize informative experiments after the core execution/recording fixes; carry
+  explicitly documented minor coverage limits forward. Reports explain the problem, its effect, the proposed
+  repair and the remaining work rather than only reporting issue IDs or PASS labels.
+- **Session:** the user explicitly starts a new five-hour work window at2026-11-05 13:45:22 UTC. Wrap-up17:45:22,
+  finish-by18:35:22 UTC. This is a user-defined work window, not a claim about hidden provider quota.
+- **Scope limits:** development diagnostic only; no GPU, later formal gate, flight, push or main merge.
+- **Sources:** user2026-11-05: "안전한 연구보다는 모험심 많은 연구를 지향하고 싶어"; "오케이. 본 측정까지 하고
+  나한테 말해. 얼마나 걸려?"; "지금부터 새 5시간 작업 세션으로 진행";
+  [amendment5](plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md).
