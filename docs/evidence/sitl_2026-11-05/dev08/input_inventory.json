@@ -1,0 +1,370 @@
+{
+  "scope": "read-only dev08 configuration preparation; no experiment or checkpoint load",
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8",
+  "cells": {
+    "70": {
+      "full": {
+        "directory": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501",
+        "files": {
+          "receipt.json": {
+            "bytes": 4426,
+            "sha256": "9de38dae0cceb1cf1eef64c51bba1aa0682e3bfb712caa566d358f12e9d6123b"
+          },
+          "episodes.jsonl": {
+            "bytes": 91966,
+            "sha256": "36c419189a591c1a829e0419db94eda4382c24db75a5638a81e67b07be0c652f"
+          },
+          "occlusion_trace_summary.json": {
+            "bytes": 3113,
+            "sha256": "06cc2840cda6c74202bdda4ee214f7b14787b5322ae0aa1e6fc14e6b9a59245c"
+          },
+          "occlusion_frames.bin": {
+            "bytes": 1010688,
+            "sha256": "74504f9e93519775955fe9c888c4dd8b5658c43cb5660ac7fa7325d8b7eb833b"
+          },
+          "occlusion_layouts.npz": {
+            "bytes": 240055,
+            "sha256": "df8de9f05a8c5b85a6d5743e9c34258e9726f035a23ff4c4b585122b90442ea4"
+          }
+        },
+        "first_ten_frame_counts": {
+          "0": 32,
+          "1": 50,
+          "2": 44,
+          "3": 27,
+          "4": 41,
+          "5": 33,
+          "6": 30,
+          "7": 30,
+          "8": 50,
+          "9": 37
+        },
+        "first_ten_contiguous_from_zero": true
+      },
+      "zero": {
+        "directory": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/zero/E2_obstacle_aware__70bars__seed4501",
+        "files": {
+          "receipt.json": {
+            "bytes": 4223,
+            "sha256": "7b3c8504582ab92066e2a3f89ddd57af11b63b4bc1ac8ae3dbd6cb6244322a44"
+          },
+          "episodes.jsonl": {
+            "bytes": 54107,
+            "sha256": "091c5bd5d34ec39f5de127308cee26700a83271ea9a7ceafdca5a1eb59b0f3ae"
+          },
+          "occlusion_trace_summary.json": {
+            "bytes": 3113,
+            "sha256": "7628257a2c3159fdd3b51831625a27528f97fbecb97f6ea3a562e7225f8e53a2"
+          },
+          "occlusion_frames.bin": {
+            "bytes": 7219200,
+            "sha256": "093ab91ce8ed5c626af5b23e1e1b5518e4315a925356282d1b8d60c060e81fe3"
+          },
+          "occlusion_layouts.npz": {
+            "bytes": 96425,
+            "sha256": "0b137bb0b26eeedd6caa98aa8dca4f19d12d353e986418565a9baaa5564d44b9"
+          }
+        },
+        "first_ten_frame_counts": {
+          "0": 600,
+          "1": 600,
+          "2": 600,
+          "3": 600,
+          "4": 600,
+          "5": 208,
+          "6": 600,
+          "7": 600,
+          "8": 600,
+          "9": 600
+        },
+        "first_ten_contiguous_from_zero": true
+      },
+      "full_zero_target_common_frame_comparison": [
+        {
+          "env": 0,
+          "common_frames": 32,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 1,
+          "common_frames": 50,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 2,
+          "common_frames": 44,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 3,
+          "common_frames": 27,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 4,
+          "common_frames": 41,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 5,
+          "common_frames": 33,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 6,
+          "common_frames": 30,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 7,
+          "common_frames": 30,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 8,
+          "common_frames": 50,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 9,
+          "common_frames": 37,
+          "target_positions_differ_count": 0
+        }
+      ]
+    },
+    "205": {
+      "full": {
+        "directory": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__205bars__seed4501",
+        "files": {
+          "receipt.json": {
+            "bytes": 4435,
+            "sha256": "d2e977b419102c4c2d3d858495ce7be79959046637aaf3f91dd7c0bd14aee6c8"
+          },
+          "episodes.jsonl": {
+            "bytes": 75434,
+            "sha256": "5877c1b15898e2fb89989672b5f83382730903f0ac9880796f0f41b96d84310c"
+          },
+          "occlusion_trace_summary.json": {
+            "bytes": 3116,
+            "sha256": "735ae1b523874a60a8eccf51a058326862d3446207269e9fa61f5fb662c465e1"
+          },
+          "occlusion_frames.bin": {
+            "bytes": 1010688,
+            "sha256": "8ca095c2447c83839498faf00e5a1cf20e02bf4ac57a21fd69c7b72fb4fc035b"
+          },
+          "occlusion_layouts.npz": {
+            "bytes": 587571,
+            "sha256": "a07792b84a3b426bebf9a8ddd5dbd7efa10851e5b0715353d9139fbe0f95b6a4"
+          }
+        },
+        "first_ten_frame_counts": {
+          "0": 31,
+          "1": 47,
+          "2": 53,
+          "3": 63,
+          "4": 34,
+          "5": 52,
+          "6": 35,
+          "7": 57,
+          "8": 17,
+          "9": 38
+        },
+        "first_ten_contiguous_from_zero": true
+      },
+      "zero": {
+        "directory": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/zero/E2_obstacle_aware__205bars__seed4501",
+        "files": {
+          "receipt.json": {
+            "bytes": 4231,
+            "sha256": "41c8cd4b14204a26b68bd61988612523c63e7bbc9b0534114fad085a622ad9e5"
+          },
+          "episodes.jsonl": {
+            "bytes": 54482,
+            "sha256": "0b6f1bcc70383c9738a09509ae18251f66ad6335f0dcf6436233320b8231037f"
+          },
+          "occlusion_trace_summary.json": {
+            "bytes": 3117,
+            "sha256": "286d92e7738b246231d07d4c65f15e4082c2143b0ad672837eeb0e62c28695d3"
+          },
+          "occlusion_frames.bin": {
+            "bytes": 7219200,
+            "sha256": "00a89a0ec93213791c2b822bd75fcf6569ec94635b1104df9eb27f005015f222"
+          },
+          "occlusion_layouts.npz": {
+            "bytes": 259904,
+            "sha256": "6379cdffc80d9f309b9df2ea3e2f64e80c3d62d616c381c62a536e86bb067b92"
+          }
+        },
+        "first_ten_frame_counts": {
+          "0": 600,
+          "1": 600,
+          "2": 600,
+          "3": 600,
+          "4": 600,
+          "5": 600,
+          "6": 600,
+          "7": 600,
+          "8": 600,
+          "9": 600
+        },
+        "first_ten_contiguous_from_zero": true
+      },
+      "full_zero_target_common_frame_comparison": [
+        {
+          "env": 0,
+          "common_frames": 31,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 1,
+          "common_frames": 47,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 2,
+          "common_frames": 53,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 3,
+          "common_frames": 63,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 4,
+          "common_frames": 34,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 5,
+          "common_frames": 52,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 6,
+          "common_frames": 35,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 7,
+          "common_frames": 57,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 8,
+          "common_frames": 17,
+          "target_positions_differ_count": 0
+        },
+        {
+          "env": 9,
+          "common_frames": 38,
+          "target_positions_differ_count": 0
+        }
+      ]
+    }
+  },
+  "assets": [
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_s3b_closed_loop.py",
+      "bytes": 20379,
+      "sha256": "d170b0271f73822280d8c92af68ab2bb56e350bbdf598702c353d8b79f0284b4"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_bridge.py",
+      "bytes": 11561,
+      "sha256": "f0031f114f4428ddd5f3b126067c80b1808071e1864402fb119b342259083db7"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/motar_eval/occlusion_trace.py",
+      "bytes": 9904,
+      "sha256": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/s3b_dev/dev07_70_s3b_report.json",
+      "bytes": 8081,
+      "sha256": "e35d5d0f0909ef986c836bdbb3022f02b072fd0334f8744d4254f31144466bc8"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_s3b_20261105/dev07_70/s3b_report.json",
+      "bytes": 8081,
+      "sha256": "e35d5d0f0909ef986c836bdbb3022f02b072fd0334f8744d4254f31144466bc8"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/s3b_dev/dev07_205_s3b_report.json",
+      "bytes": 8094,
+      "sha256": "e7210f50730e3c4e266842d178f296f6b0187227e3cb5d86c0b6d3c13d7eaaee"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_s3b_20261105/dev07_205/s3b_report.json",
+      "bytes": 8094,
+      "sha256": "e7210f50730e3c4e266842d178f296f6b0187227e3cb5d86c0b6d3c13d7eaaee"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/vehicle/2026-11-05_dev07/navrl_quad.sdf",
+      "bytes": 19480,
+      "sha256": "f9188e906a23dfa498328beef0eb69b57b50e4d2c8acc06c8ba7d3f022fcd8b2"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/vehicle/2026-11-05_dev07/10090_gazebo-classic_navrl_quad",
+      "bytes": 3273,
+      "sha256": "f7cc8cd58eaebc16434445cad2a6a4414a4ab0b922b442ce19e767d29d65fa46"
+    },
+    {
+      "path": "/home/fair/workspaces/px4_ws/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/navrl_quad/navrl_quad.sdf",
+      "bytes": 19480,
+      "sha256": "f9188e906a23dfa498328beef0eb69b57b50e4d2c8acc06c8ba7d3f022fcd8b2"
+    },
+    {
+      "path": "/home/fair/workspaces/px4_ws/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/navrl_quad/navrl_quad.sdf.jinja",
+      "bytes": 19163,
+      "sha256": "9ff9fc39f84483c9e5288a913271ebf25b3fca0806b34df3bb2891ed2a17d81c"
+    },
+    {
+      "path": "/home/fair/workspaces/px4_ws/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/worlds/empty.world",
+      "bytes": 1096,
+      "sha256": "26fa1651862737227d1fcaf3ac4808d06609c74debe733ad313fd93c7a29134b"
+    },
+    {
+      "path": "/home/fair/workspaces/px4_ws/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/10090_gazebo-classic_navrl_quad",
+      "bytes": 3273,
+      "sha256": "f7cc8cd58eaebc16434445cad2a6a4414a4ab0b922b442ce19e767d29d65fa46"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_s3b_20261105/run_dev07.sh",
+      "bytes": 1145,
+      "sha256": "09d52ae24d743472c761e19b841d7f9ca1f1bad1717f998004b0aac1d4e719bf"
+    }
+  ],
+  "notes": [
+    "G8 r2 reading TARGET_DEPENDS_ON_PURSUER; zero-action target replay is not an exact F counterfactual.",
+    "First-ten zero-action targets: 70bars env5 has208 frames; other first-ten targets600. Dev07 runner clamps the final target frame upon exhaustion; preparation must disclose this. No native live target model is implied.",
+    "Current generated SDF and airframe match recorded dev07 assets; jinja lacks appended rangefinder and must not regenerate them."
+  ],
+  "supersedes_note_in": "/home/fair/motar_tmp/dev08_preparation_20261105/input_audit/input_inventory.json",
+  "short_target_explanation": {
+    "cell": "zero/E2_obstacle_aware__70bars__seed4501",
+    "env": 5,
+    "env_episode_index": 0,
+    "trace_frames": 208,
+    "ledger_outcome": "capture",
+    "ledger_capture": true,
+    "ledger_crash": false,
+    "ledger_completion_step": 208,
+    "ledger_min_relative_distance_m": 0.49897634983062744,
+    "dev07_sitl_outcome": "capture",
+    "dev07_sitl_steps": 35,
+    "historical_tail_exhausted": false,
+    "strict600_future_cohort": "BLOCKED; retain env5 and20 episode denominator; no padding, dropping, extension, rerun without scoped approval and new preregistration"
+  },
+  "future_runtime_requirements": [
+    "Exact env0..9 episode0 membership and nonmissing outcome/layout/frame keys; legacy selector silently skips gaps.",
+    "Explicit zero-action target required; legacy selector falls back to same-cell target.",
+    "Full600-frame preflight for fixed20 cohort fails on70/env5; data remedies require new authorization and preregistration.",
+    "MAVLink PARAM_VALUE readback and explicit fresh PX4 parameter state; legacy runner only sends PARAM_SET and has no echo validation.",
+    "Owned process group cleanup; legacy stop_sitl calls broad pkill for current user.",
+    "Create worlds and outputs exclusively; legacy world names reused motar_s3b_00..09 and world write can overwrite.",
+    "Host fault/source/import/CPU/memory/deadline checks require future scoped execution wrapper.",
+    "Pin generated dev07 SDF; do not regenerate unsynchronized jinja.",
+    "S3a stays NOT_EQUIVALENT; truth sensor rendering/replayed target/rangefinder/single-seed development scope must remain disclosed."
+  ]
+}
