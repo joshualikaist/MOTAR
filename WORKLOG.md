@@ -23838,3 +23838,23 @@ Records: `docs/evidence/gain_randomization_2026-11-04/gr1/`; raw `results/gain_r
   `AGENTS.md` in this worktree during `rand40` training. It was reverted within a minute and nothing was committed.
 - **Next:** GR-1b evaluation via `~/motar_tmp/gpu_queue_20261105/run_gr1b_eval.sh`, after the `camonly/dev` G8/G9/G3 queue.
 
+
+## 2026-11-05 — GR-1b completed and reviewed: NOT_CONFIRMED; second seed does not reproduce GR-1
+
+- **Approval:** original GR-1b GPU session and the user's resume through G7 on 2026-11-05. This commit records the completed GR-1b unit only; no new GPU, training, push or merge.
+- **Source and outputs:** training `31d5761`, reproduction/evaluation `7498c81`; `results/gain_randomization_gr1b_v1/{train_rand40_s2,train_ctrl_s2,repro,eval_rand40_s2,eval_ctrl_s2}` in the main checkout. Both arms TRAINED; reproduction GR1_REPRO_PASS; both evaluation arms COMPLETE (36 cells × 2,048 quota episodes each, 147,456 episodes together). Host report fault counts 0 → 0, same boot and online CPU set. Rand40 ended 11:27:57 KST and ctrl 12:55:14 KST. Raw results and checkpoints preserved.
+- **Evidence:** `docs/evidence/gain_randomization_2026-11-04/gr1b/`: unchanged analyser output `gr1b_analysis.json`, reviewed `confirmation.json`, `independent_audit.json`, `audit_gr1b.py`, `REVIEW_r1.md` and `review_provenance.json`. Family README and EXPERIMENTS index updated.
+
+| Quantity (pp) | Seed 1 mean | Seed 2 mean [95 % bootstrap CI] | Mean over pairs | Seed 2 − seed 1 |
+| --- | ---: | ---: | ---: | ---: |
+| P1 | -2.209473 | +0.443522 [+0.000000, +0.874837] | -0.882975 | +2.652995 |
+| P2 | +1.196289 | -0.447591 [-0.850423, -0.093587] | +0.374349 | -1.643880 |
+| P3 | +2.209473 | -0.451660 [-0.887044, -0.008138] | +0.878906 | -2.661133 |
+| DiD | -1.017253 | +0.004069 [-0.622559, +0.618490] | -0.506592 | +1.021322 |
+
+- **Reading:** GR1_NOT_SUPPORTED → **NOT_CONFIRMED**, exactly as preregistered. Hypothesis "the first pair's gain-randomization improvement reproduces with a second training seed" rejected under the fixed confirmation rule. This is not a universal result against gain randomization. Historical GR-1 GR1_SUPPORTED remains recorded, labelled **not reproduced with a second seed**.
+- **Reported, not gated:** both pairs' log-ratio DiD (block and pooled forms), pair mean/difference, all F-relative contrasts, pooled/per-density rates and aggregate-window crash causes are retained in the JSON and review. Two training runs per arm give no useful training-variance interval.
+- **Independent review:** fresh-context Claude CLI, actual model metadata `claude-opus-5-5`, **PASS**, no High/Medium findings. The actual audit artifacts exist; the reviewer's analyser rerun is byte-identical (SHA-256 `423e69e221efb5cf5597b9338b3a9782a343064ddf21a45fa19d600847eaf241`). Blocked initial commands were recovered using allowed tools. Low findings and all review limits stay in REVIEW_r1.md, including reliance on recorded faults, no checkpoint-content load and no CPU-overlap reconstruction.
+- **CPU/concurrency window:** the capped analysis watcher ran from 2026-11-05T11:44:50.798353+09:00 to 2026-11-05T12:55:36.899630+09:00, cores 6,7,12,13, nice 10, CUDA hidden, address-space cap 3 GiB, CPU cap 900 s and wall cap 11,400 s. It waited without changing the worktree, then analysed after the original queue exited. External G9 scene/journal CPU smoke used the same disjoint cores with CUDA hidden while evaluation was active; T-LOAD read LOAD_INVARIANT. Review occurred after GPU evaluation ended, on the same disjoint cores with capped probes. No tracked write or commit was made during the active evaluation. The earlier training-time AGENTS edit remains disclosed in the family README.
+- **Next:** apply the preregistered NOT_CONFIRMED rule: **no further gain-randomization PPO variants**. Frozen F remains the reference; no GR-2/third-seed run or checkpoint substitution. Parent continues the separately approved G9 repair/retest and G7 on `camonly/dev`.
+- **Validation:** record hashes/bindings checked against the external review; analyser rerun byte-identical; `python3 -B -m unittest discover -s tests -p test_experiment_index.py`: **9/9 PASS**. `git diff --check` clean. Checks ran with CUDA hidden, cores 6,7,12,13, nice 10, 4 GiB address-space cap and 180 s timeout.

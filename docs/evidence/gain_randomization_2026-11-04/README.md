@@ -196,3 +196,23 @@ optional; the readings stand.
 - **The copy itself** was applied after both trainings had ended and before the GR-1b evaluation, in the commit that
   adds this section.
 - Source note: `~/motar_tmp/gainrand_20261104/gr1b_deviations.md`.
+
+## GR-1b (2026-11-05): second training seed — **NOT_CONFIRMED**
+Preregistration: [`prereg_gain_randomization_gr1b_v1.md`](../../plans/prereg_gain_randomization_gr1b_v1.md). Both arms trained on `31d5761`; reproduction and evaluation ran on `7498c81`. Both evaluation arms are COMPLETE, with 36 cells and 2,048 quota episodes per cell. Ctrl finished at 12:55:14 KST; report fault counts stay 0 → 0.
+
+**Pair reading:** GR1_NOT_SUPPORTED. **Confirmation:** NOT_CONFIRMED. The first pair's improvement was not reproduced with a second seed; the historical GR-1 reading stays recorded.
+
+Sources: [`gr1b/gr1b_analysis.json`](gr1b/gr1b_analysis.json), [`gr1b/confirmation.json`](gr1b/confirmation.json), [`gr1b/independent_audit.json`](gr1b/independent_audit.json).
+
+| Fixed quantity (pp, 95 % block-bootstrap CI) | Seed 1 | Seed 2 | Mean of pairs | Seed 2 − seed 1 |
+| --- | ---: | ---: | ---: | ---: |
+| P1 crash at S40, rand40 − ctrl | -2.209 [-2.677, -1.762] | +0.444 [+0.000, +0.875] | -0.883 | +2.653 |
+| P2 nominal capture, rand40 − ctrl | +1.196 [+0.753, +1.701] | -0.448 [-0.850, -0.094] | +0.374 | -1.644 |
+| P3 capture at S40, rand40 − ctrl | +2.209 [+1.762, +2.686] | -0.452 [-0.887, -0.008] | +0.879 | -2.661 |
+| DiD crash gap | -1.017 [-1.371, -0.712] | +0.004 [-0.623, +0.618] | -0.507 | +1.021 |
+
+The pair mean and difference are descriptive; two training runs per arm do not estimate training variance. The exploratory log-ratio DiD, its two formulae, F-relative contrasts at each level and crash causes are in `independent_audit.json` and [`gr1b/REVIEW_r1.md`](gr1b/REVIEW_r1.md). Crash causes use the aggregate result window rather than the quota ledger; no causal or real-flight claim follows.
+
+**Independent review: PASS**, Claude Opus 5.5 (`claude-opus-5-5`, confirmed by response model metadata; [`gr1b/review_provenance.json`](gr1b/review_provenance.json)). The reviewer recomputed from raw ledgers and reran the unchanged analyser byte-identically. No High or Medium findings. Low findings remain: generic GR-1 labels in evaluation reports, the disclosed training-time AGENTS edit, the missing `nn/` path component, the unused EVAL_BINDING_FAIL mapping, and bootstrap discreteness/t-interval disagreement. The reviewer relied on recorded host faults, did not load checkpoint contents and did not reconstruct evaluation CPU overlap.
+
+**Rule now applied:** no further gain-randomization PPO variants. Policy F stays frozen; the newly trained policies do not replace it. No GR-2 or third seed is started. Next work follows the separately approved G9/G7 SITL-reference queue on `camonly/dev`.

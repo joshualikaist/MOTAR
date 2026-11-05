@@ -1,0 +1,63 @@
+{
+  "unit": "GR-1b",
+  "prereg": "docs/plans/prereg_gain_randomization_gr1b_v1.md",
+  "pair_reading": "GR1_NOT_SUPPORTED",
+  "confirmation_reading": "NOT_CONFIRMED",
+  "review_verdict": "PASS",
+  "review_model": "claude-opus-5-5",
+  "source_commit": "7498c8141b4f45e069d0cb5082157d1ae5399b08",
+  "analysis_sha256": "423e69e221efb5cf5597b9338b3a9782a343064ddf21a45fa19d600847eaf241",
+  "review_sha256": "3e929266370d6a7d122ef87083421badc9393bae0e568dba917846772e3d6b00",
+  "analysis_completed": "2026-11-05T12:55:36.899630+09:00",
+  "evaluation_report_sha256": {
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1b_v1/eval_rand40_s2/gr1eval_run_report.json": "028be3787c22cb802f2aa0226e5a6b58997b799929928bdb239323974757cfa7",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1b_v1/eval_ctrl_s2/gr1eval_run_report.json": "1145adb036164475d11894995dc15734d51a5047c98ba9f642dc230e917cd63d"
+  },
+  "across_pairs": {
+    "P1": {
+      "s1": -2.20947265625,
+      "s2": 0.4435221354166667,
+      "mean": -0.8829752604166666,
+      "s2_minus_s1": 2.6529947916666665
+    },
+    "P2": {
+      "s1": 1.1962890625,
+      "s2": -0.4475911458333333,
+      "mean": 0.37434895833333337,
+      "s2_minus_s1": -1.6438802083333333
+    },
+    "P3": {
+      "s1": 2.20947265625,
+      "s2": -0.45166015625,
+      "mean": 0.87890625,
+      "s2_minus_s1": -2.6611328125
+    },
+    "DiD": {
+      "s1": -1.0172526041666667,
+      "s2": 0.004069010416666667,
+      "mean": -0.506591796875,
+      "s2_minus_s1": 1.0213216145833335
+    },
+    "log_ratio_DiD_block_mean": {
+      "s1": -0.05403866984400679,
+      "s2": -0.015951423415378488,
+      "mean": -0.03499504662969264,
+      "s2_minus_s1": 0.038087246428628305
+    },
+    "log_ratio_DiD_pooled": {
+      "s1": -0.035828831864517297,
+      "s2": -0.035097319721564046,
+      "mean": -0.03546307579304067,
+      "s2_minus_s1": 0.0007315121429532501
+    }
+  },
+  "log_ratio_DiD_definition": {
+    "block_mean": "mean_b(log(crash_rand40_S40_b/crash_rand40_S00_b)-log(crash_ctrl_S40_b/crash_ctrl_S00_b))",
+    "pooled": "log(mean(crash_rand40_S40)/mean(crash_rand40_S00))-log(mean(crash_ctrl_S40)/mean(crash_ctrl_S00))",
+    "interval": "NOT_ESTIMATED",
+    "gated": false
+  },
+  "next_rule": "Keep GR-1 as recorded, labelled not reproduced with a second seed; no further gain-randomization PPO variants. Frozen Policy F unchanged.",
+  "training_variance_interval": "NOT_ESTIMATED: two training runs per arm are only a replication check",
+  "raw_results": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1b_v1"
+}

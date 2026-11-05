@@ -1,0 +1,34 @@
+{
+  "reviewer": "Claude Opus 5.5, fresh-context Claude CLI",
+  "actual_model_metadata": {
+    "claude-opus-5-5": {
+      "inputTokens": 66,
+      "outputTokens": 53434,
+      "cacheReadInputTokens": 2587018,
+      "cacheCreationInputTokens": 137152,
+      "webSearchRequests": 0,
+      "costUSD": 2.6835636000000003,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 12699,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "review_duration_ms": 467913,
+  "permission_denials_count": 6,
+  "permission_denials_disposition": "Recovered with allowed read/Python tools; actual audit artifacts and rerun verified by recording agent. See review limitations.",
+  "review_response_path": "/home/fair/motar_tmp/gr1b_resume_20261105/opus_review/response.json",
+  "review_response_sha256": "5621d634a6adf42d8ee7f6f62978b8d5bcaeeb1cc00d9637b0b983578ffce84c",
+  "review_artifacts": {
+    "REQUEST.txt": "ca0deff4e65b949615a87f4b4cf7720f0d2d2eadabd3d4678aa1d3434975db6c",
+    "review_process.json": "537293efd440c8775b7674a3a44678204b4a02c3bda5fe556cc5408dae4da283",
+    "audit_gr1b.py": "356f49a30b06829aae9bf435d56092107c07be4c60eda354aa02e85c99e1f503",
+    "audit_results.json": "f8dae9475d77c0aabe45053948b360302ced8164055cb424fd8b14d5774a44db",
+    "rerun_pair_analysis_s2.json": "423e69e221efb5cf5597b9338b3a9782a343064ddf21a45fa19d600847eaf241"
+  },
+  "analysis_sha256": "423e69e221efb5cf5597b9338b3a9782a343064ddf21a45fa19d600847eaf241",
+  "rerun_byte_identical": true,
+  "source_commit": "7498c8141b4f45e069d0cb5082157d1ae5399b08"
+}

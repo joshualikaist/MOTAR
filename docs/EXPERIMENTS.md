@@ -675,7 +675,7 @@ family that is in the test's scope.
   capture and crash rates change when the gains vary per episode? Does that motivate training with gain
   randomization?
 - **Policy:** Frozen Policy F, unchanged; gain randomization is an opt-in switch with default OFF. Any newly trained
-  checkpoint (GR-1, not yet preregistered) would be a new policy compared with F (D-2026-11-04-1).
+  checkpoint is a separate policy compared with F (D-2026-11-04-1); F stays frozen.
 - **Status:** identity_01 IDENTITY_FAIL (runner placement, no comparison made); amendment 1 (A3 placement);
   identity_02 IDENTITY_PASS. GR-0 COMPLETE and independently reviewed (PASS): S20 GAIN_ROBUST, S40
   GAIN_SENSITIVE (crash +3.69 pp). GR-1: both arms TRAINED on `8f64631`; amendment 1 after the design review
@@ -686,7 +686,9 @@ family that is in the test's scope.
   disclosed in either record. It is recorded as a deviation in `load_overlap/`; the readings stand as recorded,
   and an idle-host byte-compare rerun awaits the user. Follow-up 2026-11-05: T-LOAD (`camonly/dev` `26a4a57`) read
   LOAD_INVARIANT, and the loaded GR-0 cells 205/4501 and 70/4501 equal idle reruns, so the rerun is optional. GR-1b
-  (second training seed) preregistered. Compare with `policy-r-ref5in`
+  (second training seed): both arms TRAINED, repro PASS and all 72 evaluation cells COMPLETE; GR1_NOT_SUPPORTED /
+  NOT_CONFIRMED, independent Opus 5.5 review PASS. The GR-1 improvement was not reproduced with a second seed;
+  no further gain-randomization PPO variants. Compare with `policy-r-ref5in`
   (the failed 2026-08 airframe adaptation) and `b1r-classical-baseline` (the F condition GR-0's S00 mirrors).
 - **Read first:** [`docs/evidence/gain_randomization_2026-11-04/README.md`](evidence/gain_randomization_2026-11-04/README.md)
 - **Lineage:**
@@ -698,6 +700,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_gain_randomization_gr1_v1_amendment1_2026-11-04.md` (after both trainings, before evaluation)
   - → `docs/evidence/gain_randomization_2026-11-04/load_overlap/` (deviation found afterwards: CPU load during GR-0/GR-1)
   - → `docs/plans/prereg_gain_randomization_gr1b_v1.md` (GR-1b: a second training seed per arm; user approval 2026-11-05)
+  - → `docs/evidence/gain_randomization_2026-11-04/gr1b/` (NOT_CONFIRMED; analysis, two-pair audit, Opus review)
 - **Compare with:** `policy-r-ref5in`, `b1r-classical-baseline`
 - **Members:** `docs/plans/prereg_gain_randomization_gr0_v1.md`,
   `docs/plans/prereg_gain_randomization_gr0_v1_amendment1_2026-11-04.md`, `docs/evidence/gain_randomization_2026-11-04/`,
