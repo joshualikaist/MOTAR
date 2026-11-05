@@ -1,0 +1,15 @@
+{
+  "installed_sha256": "a41a4e1aadacabc023f37ae9b1efddbf01b212b18eeff559b53c35e87c2441a1",
+  "checks": {
+    "valid": "ACCEPT",
+    "wrong_count": "REJECT",
+    "wrong_arena": "REJECT",
+    "physical": "REJECT",
+    "distractor": "REJECT",
+    "healthy": "PASS",
+    "fault": "PASS",
+    "journal_error": "REJECT"
+  },
+  "isaac_imported": false,
+  "gpu_run": "NOT_RUN"
+}

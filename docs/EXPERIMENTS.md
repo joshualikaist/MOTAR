@@ -784,8 +784,10 @@ family that is in the test's scope.
   exploratory.
   - Found and fixed: ODE per-step damping, the thrust model, PX4's norm speed limit.
   - The velocity loop is still to be matched to G9.
-  - G8 r2 (2026-11-05) read TARGET_DEPENDS_ON_PURSUER, consistent with global-RNG coupling across envs. G9 is not
-    yet measured: the run crashed on a locale bug, since fixed.
+  - G8 r2 (2026-11-05) read TARGET_DEPENDS_ON_PURSUER, consistent with global-RNG coupling across envs.
+  - G9 attempt 1 lost its report to a locale bug; attempt 2 was contaminated by random placement and an
+    unverified raw asset count. The additive v2 one-bar correction is prepared for attempt 3 under amendment 3;
+    it is not yet measured or accepted. G7 is prepared, not run.
   - The bridge is built.
     - S3a reads NOT_EQUIVALENT. The bridge had dropped F's lateral mu scale (fixed; action error 0.388 → 1.7e-3),
       and a target-slice error is still open.
@@ -802,11 +804,13 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_reference_g8g9_v1.md` (G8 reference dump, G9 Isaac velocity response)
   - → `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md` (G8 adds a state recorder; before any run)
   - → `docs/plans/prereg_sitl_reference_g8g9_v1_amendment2_2026-11-05.md` (G8 adds zero-action cells: full target trajectories)
+  - → `docs/plans/prereg_sitl_reference_g8g9_v1_amendment3_2026-11-05.md` (G9 additive one-bar correction before attempt 3)
   - → `docs/plans/prereg_actionhold_g7_v1.md` (G7: F under held / delayed actions; chunking premise and latency budget)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
   `docs/plans/prereg_sitl_reference_g8g9_v1_amendment2_2026-11-05.md`,
+  `docs/plans/prereg_sitl_reference_g8g9_v1_amendment3_2026-11-05.md`,
   `docs/plans/prereg_actionhold_g7_v1.md`
 
 ## Not yet in the repository

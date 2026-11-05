@@ -24692,3 +24692,14 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   4. Apply the candidate gains to the S3b runner, then dev08.
   5. Sync the PX4 jinja template and the evidence `vehicle/` copies.
 
+
+## 2026-11-05 — User resumes through G7; G9 additive one-bar correction prepared before attempt 3
+
+- User instruction: "오케이 G7 까지 얼른 다 진행하자" (finish through G7). No new PPO, checkpoint promotion, push or merge is included.
+- GR-1b finished both evaluation arms at 36 cells each, kernel faults 0; its unchanged analysis and Opus 5.5 review read GR1_NOT_SUPPORTED / NOT_CONFIRMED. The gainrand/dev closeout records this separately.
+- Source audit found NAVRL_NUM_BARS=1 does not constrain raw SimBuilder assets; NAVRL_MAX_BARS defaults to 150. Historical actual counts remain NOT_RECORDED. Attempt 2 remains exploratory and unqualified.
+- New tools/sitl_g9_lee_steps_v2.py preserves the old runner and pins/asserts one actual bar, clears the test path, refits Warp, records all-env diagnostics, propagates journal failures and preserves INVALID reports with failure exit.
+- Preregistration amendment 3 fixes these changes before any new measurement. Preparation evidence/reviews are in docs/evidence/sitl_2026-11-05/g9/. Source review r3 PASS_WITH_LIMITS is preparation-only; GPU NOT_RUN.
+- During GR-1b freeze, all resume work stayed outside repositories: ~/motar_tmp/gr1b_resume_20261105/ and ~/motar_tmp/g9_resume_20261105/. CPU controls used cores6,7,12,13/nice10/CUDA hidden/memory and time caps. Watcher start11:44:50 and finish12:55:36KST are machine recorded in started.json/completion.json; the analysis ran only after the original queue ended.
+- Next inside this authorization: verify installed source/CPU controls and G7 tests, commit, run G9 attempt3 into results/sitl_ref_v1_r2/g9_attempt3/, then G7 into a fresh results/actionhold_g7_v1/; analyse/review and record results after runners end.
+- Prelaunch validation: installed G9 source matches the reviewed SHA; 8 CPU scene/journal controls, 8 existing action-hold hook tests and 9 experiment-index tests PASS. No simulator was imported in the G9 smoke.

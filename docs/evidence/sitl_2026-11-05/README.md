@@ -148,3 +148,21 @@ changes in order).
   `tools/sitl_s3b_closed_loop.py` still uses P_ACC 2.5. A dev08 with the candidate would show whether the outcome
   agreement is sensitive to the loop.
 - The table numbers are rounded from `tune_summary.json`.
+
+## `g9/`: additive one-bar correction prepared before attempt 3
+
+The original G9 runner is preserved. Amendment 3 fixes the new `tools/sitl_g9_lee_steps_v2.py` before measurement.
+Raw SimBuilder reads `NAVRL_MAX_BARS` (default 150), rather than the task-level `NAVRL_NUM_BARS=1`. Historical
+actual asset counts were not recorded; neither a one-bar scene nor 150 actual bars is asserted for those attempts.
+The new runner pins and asserts one actual bar, relocates the test path, refits Warp and records all-env
+contact/clearance/altitude/tilt diagnostics with fail-closed source and host checks.
+
+- `candidate_manifest.json`: exact reviewed source hash and intended additive path.
+- `REVIEW_preparation_r1.md`, `REVIEW_preparation_r2.md`, `REVIEW_preparation_r3.md`: independent Codex preparation
+  audits; r3 is PASS_WITH_LIMITS for source preparation only. It is not a GPU result or transfer acceptance.
+- `cpu_smoke_external.json`, `cpu_smoke_installed.json`: scene/journal guard checks on the same reviewed bytes;
+  no Isaac/CUDA import and GPU NOT_RUN.
+
+Attempt 3 will write a fresh `results/sitl_ref_v1_r2/g9_attempt3/g9_lee_steps.json`. All four envs and diagnostics
+will be reported. The legacy within-step sampling uncertainty (one 0.01 s physics dt) remains explicit. Results
+and independent interpretation are pending. G7 follows under its existing fixed preregistration.
