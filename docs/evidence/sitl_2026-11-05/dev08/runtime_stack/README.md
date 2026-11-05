@@ -74,9 +74,9 @@ every module reports `live_verified=false`, `execution_supported=false`, `launch
 
 ## Reviews
 
-Independent reviewers: Claude Opus 5.5 (Agent model opus), fresh context, read-only. Each round reviewed the bytes
-named in its report. Copies of the reports are in this folder; [validation.json](validation.json) binds them by
-SHA-256.
+Independent reviewers: Claude Opus 5.5 (Agent model opus) through r6; Codex fresh-context reviewer for r7
+(GPT-6 family; exact model variant NOT_RECORDED). Each round was read-only and reviewed the bytes named in its
+report. Copies are in this folder; the validation records bind the reports and external evidence by SHA-256.
 
 | Component | Round | Verdict | Main points |
 | --- | --- | --- | --- |
@@ -92,8 +92,9 @@ SHA-256.
 | | r4 | FAIL (narrow) | Kill-grace reconciliation (text); three signal windows in the recorder/runner |
 | | r5 (on `a672fc8`) | FAIL (narrow) | The signal hold covered one thread only; corrected in amendment3's commit `c4974f4` |
 | | r6 (on `c4974f4`) | PASS_WITH_LIMITS | MJ1-r5 resolved; 3 MINOR (test shapes, a re-written external record) and notes |
+| Amendment4 delta and small earlier owned/link repairs | r7 (on `821706d`) | PASS_WITH_LIMITS | No BLOCKER/MAJOR; CPU/runtime acceptance scope satisfied; permanent torch-branch regression coverage remains open |
 
-**Applied after the last round, not independently re-reviewed:**
+**Applied after the original component rounds (later review scope is recorded below):**
 - Owned session (after r3):
   - SIGINT deferred during cleanup;
   - a robust import test;
@@ -118,7 +119,7 @@ SHA-256.
 - a 30 s timeout on the kernel-log read;
 - amendment3: the outer timeout becomes 5800 s, and the complete stop list.
 
-**After r6 (amendment4's commit, not independently re-reviewed):**
+**After r6 (amendment4's commit `821706d`, reviewed in r7):**
 - one compute thread enforced (amendment4);
 - more tests for the step mutants M19, M21, M27 and M28, the attempt mutants A10, A19, A20, A23, A24, A26, A27 and
   A29, and the owned-session escape cases X18 and X20.
@@ -130,7 +131,27 @@ SHA-256.
 - `/home/fair/motar_tmp/dev08_skip_bound_20261105/`: the benchmark plan, fixed before running, and the timing
   runs summarised in amendment4.
 
-**Open:**
+## CPU/runtime acceptance closeout (r7)
+
+[Independent review r7](REVIEW_step_runner_r7.md) closes the previously pending amendment4 review and inspects
+the small owned-session/link changes after their r3 snapshots. Verdict: **PASS_WITH_LIMITS**, sufficient to close
+`motar-5md` for CPU/runtime implementation and the reviewed proposal only. Earlier verdicts stay tied to their
+own snapshots. The two unrecoverable historical external files remain disclosed; the old binding is not repaired.
+
+[validation_review_r7.json](validation_review_r7.json) binds the new review, probes and a fresh focused run:
+131 tests OK, kernel faults 0 to 0. A separate CPU fixture confirms `skip_max_s=0.15` reaches all 42 fake member
+calls and the approval header, with 40 fake main records excluding the two fake smokes. These are synthetic
+controls, not live episode results. The previous full PUBLIC_CPU result was not rerun in this source-unchanged
+closeout.
+
+The user fixed 0.15 s in [D-2026-11-05-2](../../../../DECISIONS.md#d-2026-11-05-2--dev08-skiplate-tolerance-fixed-at-015-s).
+CLI/approval-boundary preparation is tracked as `motar-1ab`: a smoke-only approval must not start the 40-main
+phase. `main()` still refuses; CLI activation and live execution need a separately scoped approval. Measurement
+remains NOT_RUN and live assumptions remain NOT_VERIFIED.
+
+**Open (carried to `motar-bmg`):**
+- r7 m7-a: permanent Execute tests inject the bridge and bypass the added torch thread branch; the independent
+  external probe verifies the current branch, including positive/refusal controls and a killed mutant;
 - surviving mutants still open: step M20 (crash-reason precedence); owned session R2_N27; the r6 test-shape
   items (m6-a, m6-b);
 - numpy scalars or arrays serialised as strings by `default=str` are not flagged;

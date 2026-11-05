@@ -817,7 +817,10 @@ family that is in the test's scope.
       - Native prefix identity with the historical loop holds on the CPU with the real bridge and Policy F.
       - Amendment2, corrected by amendments3/4, proposes the bounded 42-member execution; it awaits a scoped
         approval. The user fixed `skip_max_s = 0.15` s in [D-2026-11-05-2](DECISIONS.md#d-2026-11-05-2--dev08-skiplate-tolerance-fixed-at-015-s).
-        This is the tolerance decision only; review of `821706d` and separate execution approval remain pending.
+        This is the tolerance decision only. Independent r7 review of `821706d` and the small earlier owned/link
+        repairs is PASS_WITH_LIMITS; `motar-5md` CPU/runtime acceptance is complete. Permanent-test and inherited
+        limits continue in `motar-bmg`; guarded CLI/two-smoke preparation is `motar-1ab`. Separate execution
+        approval remains pending; no live result or formal stage advancement follows.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

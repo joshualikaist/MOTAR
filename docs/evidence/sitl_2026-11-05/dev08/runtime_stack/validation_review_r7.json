@@ -1,0 +1,140 @@
+{
+  "unit": "motar-5md CPU/runtime acceptance closeout after independent r7 review",
+  "base_head": "80bb687f5db092cb67f92848bcf159bb1679aa43",
+  "reviewed_commit": "821706de308ad8ef739c124d73c972dace16d778",
+  "reviewed_parent": "c4974f416249e543384f7dedf8128d805c408b68",
+  "branch": "camonly/dev",
+  "review": {
+    "path": "docs/evidence/sitl_2026-11-05/dev08/runtime_stack/REVIEW_step_runner_r7.md",
+    "sha256": "4d61322da055e37cd87353f19319948ba57412c10d88ac033bb709cc3c38c619",
+    "reviewer": "Codex fresh-context delegated reviewer /root/dev08_review_r7",
+    "model": "GPT-6 family; exact runtime model variant NOT_RECORDED",
+    "verdict": "PASS_WITH_LIMITS",
+    "blocker_count": 0,
+    "major_count": 0,
+    "open_minor": [
+      "m7-a: permanent Execute fixture bypasses torch thread branch"
+    ]
+  },
+  "focused_tests": {
+    "command": [
+      "timeout",
+      "-s",
+      "TERM",
+      "-k",
+      "20s",
+      "240s",
+      "nice",
+      "-n",
+      "10",
+      "taskset",
+      "-c",
+      "6,7,12,13",
+      "/home/fair/miniconda3/envs/aerialgym/bin/python",
+      "-B",
+      "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/focused_driver.py"
+    ],
+    "cwd": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+    "env": {
+      "CUDA_VISIBLE_DEVICES": "",
+      "PYTHONNOUSERSITE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "PYTHONPATH": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly"
+    },
+    "rlimit_as_bytes": 8589934592,
+    "kernel_faults_before": 0,
+    "source_head": "80bb687f5db092cb67f92848bcf159bb1679aa43",
+    "exit_code": 0,
+    "seconds": 58.54464088199893,
+    "kernel_faults_after": 0,
+    "status": "PASS",
+    "ran": 131,
+    "test_seconds": 58.429,
+    "log": "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/focused.log",
+    "sha256": "e4798d290437a9bc26fb1938700b198722a8ff12cbe9a218fb837c912d70196c"
+  },
+  "skip_bound_cpu_fixture": {
+    "status": "PASS",
+    "scope": "CPU injected fake-member loop only",
+    "skip_max_s": 0.15,
+    "fake_members": 42,
+    "fake_main_records": 40,
+    "fake_smoke_records": 2,
+    "live_execution": false
+  },
+  "sources": {
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md": "17edabedb20d60f10a80e5bc3332b9e7143f0776104bb64f67cae506036267b8",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md": "16d6b2a4ed4843c8fdc643d4a85607f7e1788305f6de66772f2098558e4e5059",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md": "67b194189722af4f89e300ef49f8287ff17354cdc7de1ab0e89539ab6639c8de",
+    "tests/test_sitl_dev08_attempt.py": "0c46da54aadf0b4f645813e5535cf4a297076d040852d51c483ef6d8e5152530",
+    "tests/test_sitl_dev08_link.py": "c4b8f1cf00a2c04c87ab12f5623a8353fbb5e4753d9eecde3ac39323f1009045",
+    "tests/test_sitl_dev08_step.py": "24dd4438478f5d2f613981664da95fc73e9fe3dffb788c239852e9d61b14aa1d",
+    "tests/test_sitl_owned_session.py": "8171339298d000b36c16adedcd593f18b2bad19b947874cf06e93e96776ecdaf",
+    "tests/test_sitl_s3b_dev08_prefix.py": "6d6865d85fccead2cc20fed69c5ac6aa2f1fc97933ef48af9b29c3344a9f5cbd",
+    "tools/sitl_dev08_attempt.py": "63c08a5f956fcf39e4dc8a76b60bb549a8a66cbdd5705d0a68b4f97ddf7f9e02",
+    "tools/sitl_dev08_link.py": "adcd73dfa996e5850a3d1207efcb9834d8dacd05bb57d780d5cda461551b2fca",
+    "tools/sitl_dev08_step.py": "9b1c9135d9e0b44c6f915bd2f0925780456c87ddfbd84551f0d5961b40ab984e",
+    "tools/sitl_owned_session.py": "e4fbdd2180de14a9aa9a944f699bc633d6ea81ebc9a2cbe941df47c493165c84",
+    "tools/sitl_s3b_dev08_prefix.py": "1ac196e33de2962807aaa7c4a9afd3615d7c8da46b730e730847382a5371dc16"
+  },
+  "external_evidence": {
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/MANIFEST.json": "af0761ed9f81d39034fc7e98795b74345118bbd45685b54240cc269972124532",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/REVIEW_r7.md": "4d61322da055e37cd87353f19319948ba57412c10d88ac033bb709cc3c38c619",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/prior_delta_results.json": "e6e7b443d143c75337c97372d08628baf9eeee30402d32555baea23e6d90ebce",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/prior_snapshot_comparisons.diff": "dcba35430e13313f00c99da165f5134716b7b99f7e5ff3a76dbb0d08a99447eb",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/probe_prior_deltas.log": "e1697e23b7f6f802686d9bc8730c15a9d8f05da5276a5255a868b7202936d8ea",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/probe_prior_deltas.py": "fdbcd966e1be5700ee0095f4fb3f35cb980ea9b93a9b78548e06a902bfeb9d98",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/probe_r7.log": "208df6eb25dafbbcdb34a1740a70637962efa307a07f5f18d490db08cc747683",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/probe_r7.py": "8621f6895e185d78405d3d0c25e44fb54bb1e053daaba743133b6b5ab13dcb27",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/probe_results.json": "60d6654efffab6e9437c82cc99e6c5afc3d991812081e7fb023a5058c8978def",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/review_r7/reviewed_diff.patch": "12a634ac558ec5aaf29acc6710b5c0e2584110e06c9e1357c93d12803de3cbb1",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/focused.log": "e4798d290437a9bc26fb1938700b198722a8ff12cbe9a218fb837c912d70196c",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/focused_driver.py": "cb8daff7968a9783476f69e7145a7c3fca9d5dc7b3a4e2624f2b5fb7fc0dee1f",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/focused_record.json": "375026ce570bd794ea00750a9c535eafa3e2a83b967b6b45b25e61fb27b98670",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/followup_issues.json": "a857c8b6e7cab670f3a59b9f2d17dcddeaa0758780ecaa233944faa5214dfad5",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/run_focused.py": "7acb5d69f3f8a6c838b6756898bc5e19c239b829ec7696c4cd0f1fea8b368dc2",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/skip015_probe.json": "35918854137264524aba95ae7ed950b7a65a1b2c4c9e0e3345042f6debdbf204",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/skip015_probe.py": "3b96da8310d8c466dcc0f54123644b196ff6d3672481860a84d47ef41e678125",
+    "/home/fair/motar_tmp/dev08_review_821706d_20261105_codex/root_validation/doc_checks.json": "570adce2ab83cf1b95140b6562e72685313e7ced17c82ba382db899186ba68f1"
+  },
+  "inherited_limits": [
+    "step M20",
+    "owned-session R2_N27",
+    "r6 m6-a/m6-b",
+    "numpy default=str",
+    "between-member budget checks",
+    "prior report notes and sampled process/resource limits",
+    "two historically overwritten external files remain unrecoverable"
+  ],
+  "followup_issues": [
+    "motar-bmg",
+    "motar-1ab"
+  ],
+  "historical_public_cpu": {
+    "log": "/home/fair/motar_tmp/dev08_runtime_stack_20261105/public_cpu_a4.log",
+    "ran": [
+      3429
+    ],
+    "seconds": [
+      285.001
+    ],
+    "sha256": "d5529f8819828865534a8351a4b2cd054c213171a0c3196d6cb381054e5364e6",
+    "status": [
+      "OK (skipped=10)"
+    ],
+    "rerun_in_this_unit": false
+  },
+  "measurement_status": "NOT_RUN",
+  "live_verified": false,
+  "cli_activation_approved": false,
+  "execution_approved": false,
+  "selected_skip_max_s": 0.15,
+  "integrity": "Runtime/test/preregistration sources equal the reviewed amendment4 hashes; no source, raw or checkpoint changes in this closeout.",
+  "documentation_checks": {
+    "public_docs": "PASS",
+    "experiment_index_tests": 9,
+    "experiment_index_status": "OK",
+    "diff_check": "PASS"
+  }
+}
