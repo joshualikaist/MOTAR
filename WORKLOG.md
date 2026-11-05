@@ -20232,3 +20232,13 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
   plan v2의 고정 파라미터는 정책이 스스로 찾지 않는다고 가정했는데, 이 정책에는 맞지 않았다. "탐색 방향이 정책의 회전과
   반대여서 먼 쪽으로 돈다"는 설명은 가설이며 검정하지 않았다. 사후 파라미터 조정은 새 사전등록 없이 하지 않는다.
 - 다음: 논문에는 B를 `INCONCLUSIVE` + 위 기술 통계(첫 획득 지연 증가)로 보고. B1 재설계는 범위 밖(별도 결정).
+
+## 2026-11-05 — Standing all-agent five-hour closeout and cross-account continuation
+
+- User requested automatic pre-deadline closeout for all agents, so a different account can immediately continue. Narrowly strengthen AGENTS session policy; preserve branch-specific research/authorization rules and frozen CLAUDE text.
+- Default: wrap at4h, hand off/stop by4h50, deadline5h; an earlier visible quota/user deadline wins. Reconnect/compaction does not reset the clock. Workers inherit the root deadline; no new long unit enters the wrap window.
+- tools/agent_session.py persists an account-neutral clock and immutable closeout outside Git trees under ~/motar_tmp/agent_sessions. It does not wake idle models, inspect provider credentials/quotas, authorize execution or kill processes. Test module covers real deadline/guard/reconnect cases.
+- Shared session-handoff skill now respects no automatic push/merge/revert/termination, full source freeze, owned-process inventory, incomplete-work preservation, WORKLOG/Beads and one exact next action. Cursor always-apply pointer added; Claude already imports AGENTS.
+- Same narrow unit is deployed to the five active worktrees only; locked historical worktrees, raw results and checkpoints are untouched. Workspace entrypoints route a new account to its actual worktree and latest handoff. Local commits only, no push/merge.
+- Validation: final helper tests cover earlier-deadline tightening, closed-clock preservation, restart/subdirectory reuse and interrupted-close recovery without changing immutable handoff bytes. Independent source review r2 PASS_WITH_LIMITS; helper remains on-demand, with no guaranteed idle wakeup. Root clocks also remain binding across worktree switches.
+- Final validation: session10/10 and branch-policy4/4 PASS in this worktree; canonical-docs checks PASS (26 on research branches,25 on main). Final section/helper/test/skill/Cursor hashes match across all5 active worktrees. Independent reviews: ~/motar_tmp/session_policy_20261105/REVIEW.md and REVIEW_r2.md; review r2 PASS_WITH_LIMITS. No experiment or GPU launch.

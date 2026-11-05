@@ -48,6 +48,56 @@ For operations and commands see [`docs/OPERATIONS.md`](docs/OPERATIONS.md); for 
   - There is no real-flight claim and no state-of-the-art claim.
   - Class A matched external comparisons = 0.
 
+## Session deadline and handoff
+
+Standing user instruction (2026-11-05): **every agent** (Codex, Claude Code, Cursor and delegated workers) must
+close out before a five-hour session ends so another account can resume from disk. This applies without a
+separate reminder. A client restart, compaction or reconnect does not create a new five-hour allowance.
+
+- **At session start:** read the latest WORKLOG/Beads and `~/motar_tmp/agent_sessions/latest_handoff.json` if present.
+  Check its project/worktree before using it; records are continuation evidence, not new execution approval.
+  Record the root session clock with `python3 tools/agent_session.py start --agent <agent>`; if a real quota/user
+  deadline is visible, supply `--deadline <ISO8601-with-timezone>`. Use `--started-at` for a known earlier start.
+  The earlier of that deadline and five hours from the known start wins. Unknown quota timing stays explicitly
+  unknown; do not invent a fresh allowance from a long-lived chat's creation time or a reconnect.
+- **Default closeout schedule:** start +4h (or deadline −60min) enters WRAP_UP: no new research/implementation unit,
+  training/evaluation, expensive review, or major edit. Finish the in-flight authorized unit only if validation,
+  records and a local commit fit. By deadline −10min, finish the handoff and stop session work; retain this slack
+  for an early quota cutoff. When a reliable remaining-usage signal indicates imminent exhaustion, close out
+  earlier. The wall clock does not guarantee the provider will permit five hours of use.
+- **Check time:** `python3 tools/agent_session.py status` at every turn/work-unit boundary, before a long tool call,
+  and at least every ten minutes while active. Before a new unit use
+  `python3 tools/agent_session.py check --minutes <measured-work> --verification-minutes <review-test-record-time>`.
+  A successful clock check grants no GPU, gate, commit, push or merge approval. Budget from measured durations
+  including review/tests/recording, not GPU time alone. Workers inherit the root deadline, never reset it. Pass the root worktree/clock/deadline when delegating;
+  workers check that root clock with `--worktree <root-worktree>` and never close it on the parent's behalf.
+- **Switching worktrees is not a new session:** keep checking the original root worktree's clock with
+  `--worktree <original-root-worktree>`; record every changed worktree/branch/HEAD in the handoff lists. The
+  helper's automatic Git snapshot is of the clock's root worktree only.
+- **Make handoff durable throughout:** record a checkpoint after each completed unit, and before a long run, in
+  WORKLOG and Beads when the tree is editable. During a GPU/guarded-run freeze, write only outside repositories
+  (for example `~/motar_tmp/agent_sessions`), and give the next owner the path. Do not depend on chat memory,
+  provider account history, `.codex`/`.claude` caches, or files under `/tmp` alone. Never store credentials.
+- **Before stopping:** commit verified authorized changes locally, with named files and Git Traceability; do not
+  auto-push/merge, automatically revert work, delete evidence, or mark unfinished work complete. Inventory owned
+  processes with PID/owner, command, log/output, limits, state, existing continue authorization and safe next action.
+  Preserve approved ongoing jobs with an explicit process handoff; do not kill another agent's jobs or a training
+  run merely to make a clean-looking ending. Preserve source freeze and report incomplete paths/tests honestly.
+- **Account-neutral closeout:** write a JSON summary outside the repository, with `completed`, `remaining`,
+  `running_processes`, `pending_approvals`, `validation` (lists) and exactly one concrete `next_action` (string:
+  file/command plus required gate). Run `python3 tools/agent_session.py close --handoff <summary.json>`; it captures
+  worktree/branch/base/HEAD/dirty paths and publishes an immutable session handoff plus the shared latest pointer.
+  Reflect this in WORKLOG/Beads when editable. No tracked HANDOFF.md or second task tracker is created.
+- **Next account:** read that handoff, WORKLOG and Beads; verify branch/HEAD/process state and pending approvals,
+  then resume the single recorded action. `start` reuses an existing clock. `--new-window` is used only after the
+  previous session closed and a genuinely new account/window is established; otherwise retain the earlier deadline.
+  An explicit user change to the schedule overrides it. A closed session is not permission to reopen a frozen gate.
+
+The helper saves clocks outside Git trees, serializes per-worktree updates and shares records across provider
+accounts. It does **not** wake an idle model or close an application by itself. The agent performs the time checks
+and wrap-up while working; no guaranteed background timer or hidden quota access is claimed. Follow the project
+session-handoff skill under these rules, including the source-freeze, evidence-preservation and authorization rules.
+
 ## Git rules
 
 - No force-push, no `reset --hard`, no rebase of published history, no history rewrite.
