@@ -338,3 +338,22 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Alternatives:** Codex-only memory, implicit chat timestamps or a forced process-kill timer; none reliably preserves a transferable, truthful project state.
 - **Reversal:** explicit user schedule change.
 - **Source:** user2026-11-05: "코덱스만의 규칙은 아니고, 전체 에이전트들한테 규칙을 세우고 싶은데, 5시간 세션 끝날때 쯤 알아서 정리해서 끝내줘. 그래야 내가 다른 계정으로 바로 구현하고 있었던거 이어서 하지."
+
+## D-2026-11-05-2 — Dev08 skip/late tolerance fixed at 0.15 s
+
+- **Decision:** the user selects `skip_max_s = 0.15` seconds (150 ms) for the dev08 observed-prefix diagnostic.
+  The subsequent scoped execution approval must carry this value for both `CLOCK_SKIP` and `RUNNER_LATE`,
+  fixed before the smoke and retained across native/candidate members of the proposed unit.
+- **Basis:** explicit user choice after the runtime-stack handoff presented the timing-only CPU measurements
+  and Fable's analysis. The benchmark rule's recorded conclusion that 0.10 s suffices after the one-thread fix
+  remains as measured; this decision selects 0.15 s without changing that result.
+- **Scope and conditions:** this records the tolerance decision only. Amendment4's one-compute-thread setting
+  remains in force. Review of `821706d` remains pending and `motar-5md` remains open. CLI entry activation,
+  the two-episode smoke and the main measurement still require a separate scoped approval; measurement is
+  NOT_RUN and live assumptions are NOT_VERIFIED.
+- **Alternatives:** the measured rule's 0.10 s; Fable recommended 0.15 s from the earlier dev07 conditions.
+- **Reversal:** a new explicit user decision, recorded before execution; committed preregistrations and
+  measurements retain their original bytes.
+- **Sources:** the user's 2026-11-05 instruction, "skip_max_s : 0.15s 로 지정 부탁할게";
+  [amendment4](plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md);
+  [Fable analysis](evidence/sitl_2026-11-05/dev08/runtime_stack/ANALYSIS_skip_bound_fable.md).

@@ -815,8 +815,9 @@ family that is in the test's scope.
       recorder and guarded runner are implemented with CPU fixtures only. No PX4/Gazebo/SITL was started.
       - live NOT_VERIFIED; measurement NOT_RUN.
       - Native prefix identity with the historical loop holds on the CPU with the real bridge and Policy F.
-      - Amendment2 proposes the bounded 42-member execution; it awaits a scoped approval, including the skip/late
-        bound decision.
+      - Amendment2, corrected by amendments3/4, proposes the bounded 42-member execution; it awaits a scoped
+        approval. The user fixed `skip_max_s = 0.15` s in [D-2026-11-05-2](DECISIONS.md#d-2026-11-05-2--dev08-skiplate-tolerance-fixed-at-015-s).
+        This is the tolerance decision only; review of `821706d` and separate execution approval remain pending.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
