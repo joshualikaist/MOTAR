@@ -24664,3 +24664,31 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - then a preregistered S3b on an idle host with more episodes and seeds, and Gazebo-rendered sensors or a real
     detector, for the real-flight path.
 
+## 2026-11-05 — PX4 velocity-loop sweep against MOTAR's Lee loop (exploratory); paused at the user's request
+
+- **Sweep:** `docs/evidence/sitl_2026-11-05/tune_velloop/` (summary `tune_summary.json`).
+  - Runs: MPC_XY_VEL_P_ACC 2.5 / 2.1 / 2.0 / 1.8 / 1.4 / 1.1, and YAWRATE P 0.2 / I 0.1 at 2.1 and 2.0.
+  - Rise medians: 0.38 / 0.48 / 0.52 / 0.77 / 1.03 / 1.31 s, against MOTAR's 0.62 s (G9 attempt 2, env 1).
+  - PX4's onset (0.16-0.23 s, against 0.08 s) and settling (1.26-2.30 s, against 0.87 s) do not match at any gain.
+  - Candidate: P_ACC 2.0 with YAWRATE P 0.2 / I 0.1, not yet applied.
+- **Paused at about 10:40 KST** at the user's request ("하던거까지 마무리하고 잠깐 멈춰줘": finish what is in hand,
+  then pause).
+- **State at the pause:**
+  - **GPU:** the GR-1b evaluation is still running (`gainrand/dev` `7498c81`, `run_gr1b_eval.sh`):
+    - repro GR1_REPRO_PASS;
+    - rand40 at about 19 of 36 cells;
+    - ctrl follows.
+    - Logs: `~/motar_tmp/gpu_queue_20261105/gr1b_*.log`, `queue.log`.
+  - **No SITL or CPU job is running.**
+  - **Not started:**
+    - G9 attempt 3 (fix prepared: `~/motar_tmp/gpu_queue_20261105/apply_g9_bar_placement_fix.py`);
+    - G7 (`tools/actionhold_run.py`);
+    - dev08 with the candidate gains;
+    - the jinja sync of the rangefinder model.
+- **Resume here:**
+  1. When GR-1b ends: `tools/gr1_analyse.py` and the confirmation reading, then an Opus results review.
+  2. Apply the G9 fix, commit, smoke-check it, then run G9 attempt 3 into `results/sitl_ref_v1_r2/g9_attempt3/`.
+  3. G7.
+  4. Apply the candidate gains to the S3b runner, then dev08.
+  5. Sync the PX4 jinja template and the evidence `vehicle/` copies.
+

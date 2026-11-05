@@ -119,3 +119,32 @@ changes in order).
   - PX4's velocity loop is not yet matched to MOTAR's (G9 env 1: rise 0.61 s; PX4 S2 tune: 0.36-0.42 s).
   - S3a is NOT_EQUIVALENT (a target-velocity slice difference).
   - The rangefinder is an addition to the training-spec vehicle.
+
+## `tune_velloop/`: PX4 velocity loop against MOTAR's Lee loop (exploratory, 2026-11-05 10:18-10:39)
+
+- **Method:**
+  - `s12_offboard_mavlink_w.py`: the S1/S2 test script, plus a world selector.
+  - navrl_quad with the rangefinder, worlds at ODE iters 100, the S3b runner's gains with overrides.
+  - Cores 6,7,12,13 at nice 10, during the GR-1b GPU evaluation.
+  - RTF 1.000 and host faults 0 in every run.
+- **Reference:** G9 attempt 2, env 1, the only clean env. Summary in `tune_summary.json` (`summarize_tune.py`):
+  velocity rise 0.62 s, onset 0.08 s, overshoot 0.9 %, settling 0.87 s, yaw rate rise 0.11 s.
+
+| Overrides | Rise (median, range) | Onset | Overshoot | Settling | Yaw rise |
+| --- | --- | --- | --- | --- | --- |
+| P_ACC 2.5 (S3b dev07) | 0.38 s (0.34-0.42) | 0.18 s | 5.5 % | 1.57 s | 0.27 s |
+| P_ACC 2.1 | 0.48 s (0.46-0.96) | 0.16 s | 3.3 % | 1.28 s | 0.27 s |
+| P_ACC 2.1, YAWRATE P 0.2 / I 0.1 | 0.49 s (0.44-0.94) | 0.16 s | 3.4 % | 1.26 s | 0.20 s |
+| P_ACC 2.0, YAWRATE P 0.2 / I 0.1 | 0.52 s (0.48-0.94) | 0.19 s | 3.1 % | 1.28 s | 0.20 s |
+| P_ACC 1.8 | 0.77 s (0.62-0.97) | 0.18 s | 3.0 % | 1.32 s | 0.28 s |
+| P_ACC 1.4 | 1.03 s | 0.22 s | 4.4 % | 1.90 s | 0.28 s |
+| P_ACC 1.1 | 1.31 s | 0.23 s | 5.5 % | 2.30 s | 0.27 s |
+
+- **Reading:** no single gain matches MOTAR's loop.
+  - PX4 responds about 0.1 s later (onset 0.16-0.23 s against 0.08 s).
+  - It settles more slowly (1.26-2.30 s against 0.87 s).
+  - Its rise time is not proportional to the gain.
+- **Candidate:** P_ACC about 2.0 with YAWRATE P 0.2 / I 0.1, the closest rise. Not yet applied to the S3b runner;
+  `tools/sitl_s3b_closed_loop.py` still uses P_ACC 2.5. A dev08 with the candidate would show whether the outcome
+  agreement is sensitive to the loop.
+- The table numbers are rounded from `tune_summary.json`.
