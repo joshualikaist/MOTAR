@@ -328,3 +328,13 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   - "AGENTS.md가 아직 예전 PPO 금지(D-2026-10-14-0)를 현행으로 적고 있어 문구 수정이 필요합니다. -> 수정해.": fix the
     stale PPO wording.
 
+
+## D-2026-11-05-SESSION — All-agent five-hour closeout and account-neutral handoff
+
+- **Decision:** Codex, Claude Code, Cursor and delegated workers must proactively close out a five-hour session without another reminder. Begin wrap-up at4h, finish handoff and stop by4h50; an earlier visible quota/user deadline wins. Restart/compaction/worktree switches never reset the allowance.
+- **Reason:** the user wants to switch accounts and immediately resume the actual implementation from disk instead of reconstructing a lost conversation.
+- **Implementation:** shared AGENTS session policy, corrected session-handoff skill and Cursor always-apply pointers across the five active worktrees; tools/agent_session.py records the outside-repository clock and immutable handoff. Known Git paths, verified/incomplete work, owned process details, validations, pending approvals and one next command are preserved in WORKLOG/Beads and the account-neutral handoff.
+- **Scope/limits:** this is a cooperative agent procedure and on-demand clock, not an application timer/guaranteed quota API. Existing long-job/source-freeze/approval rules remain. No auto-push, auto-revert, job kill or gate promotion. Locked historical worktrees and evidence/checkpoints are untouched.
+- **Alternatives:** Codex-only memory, implicit chat timestamps or a forced process-kill timer; none reliably preserves a transferable, truthful project state.
+- **Reversal:** explicit user schedule change.
+- **Source:** user2026-11-05: "코덱스만의 규칙은 아니고, 전체 에이전트들한테 규칙을 세우고 싶은데, 5시간 세션 끝날때 쯤 알아서 정리해서 끝내줘. 그래야 내가 다른 계정으로 바로 구현하고 있었던거 이어서 하지."
