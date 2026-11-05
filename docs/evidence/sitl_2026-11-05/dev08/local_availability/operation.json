@@ -1,0 +1,254 @@
+{
+  "unit": "local historical asset availability repair",
+  "base": "aa047269fdbeee4e65c8e99c6b7f29e817ee0b89",
+  "status": "COPIED_VERIFIED",
+  "checkpoint_policy_changed": false,
+  "new_experiment": false,
+  "source_write": false,
+  "overwrite": false,
+  "links_created": false,
+  "copied_assets_staged": false,
+  "checkpoint_deserialized_by_copy": false,
+  "files": 19,
+  "bytes": 54147345,
+  "checkpoint_files": 6,
+  "canonical_source_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator",
+  "destination_root": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+  "manifest_sha256": "bb595589dcf7141eb7295cb876940426b6b88c1526b6fba87210282da49c8783",
+  "started_at": "2026-11-05T07:42:22.844437+00:00",
+  "finished_at": "2026-11-05T07:42:23.183104+00:00",
+  "destinations": [
+    {
+      "relative_path": "results/navrl_physical_target_braking_lower1p25_headingrest_seed827/receipt.json",
+      "bytes": 13063,
+      "sha256": "4e87eb9ddf5dd9cea1fc0354d272a5d18ec6a05427e0f41e672749a57df9047a",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_braking_lower1p25_headingrest_seed827/source_manifest.json",
+      "bytes": 2530,
+      "sha256": "0e44062e49d03e06d44308892971fcd85d44d15461d39411c380d9e1110962cc",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_braking_lower1p25_headingrest_seed827/summary.json",
+      "bytes": 5705,
+      "sha256": "722937789bab3f5bbd6fdfea2152443a526ea9269a2f23bcfc528e9b9bd8c406",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/receipt.json",
+      "bytes": 88278,
+      "sha256": "707636fcbcfe0c855267b39e307af7ac133a0feabbf25d2e7feba726465f1f96",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/source_manifest.json",
+      "bytes": 70950,
+      "sha256": "05bdbbaa3309cb03644624285653e2d8a479fa175e0e6d133beacd3c02e84823",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_recovery_v2_gate_lower1p25_seed827/summary.json",
+      "bytes": 288671,
+      "sha256": "a85e95764061b7b20cacaa622efc44e2d7e31e054e398f57cfdf48ec98e6c04f",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/receipt.json",
+      "bytes": 305667,
+      "sha256": "81f53f49f7897c8978a0be0d5ab8466515591c5695fd96220f28db0d5a0f63ae",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_physical_target_recovery_v2_no_connector_forensics_seed827/summary.json",
+      "bytes": 7087,
+      "sha256": "bc5d05a3f36da9213989c84ae28eda9ad65b0ba60b55dc2bbe4b5d262a12b8ee",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/off/205bars.log",
+      "bytes": 28655,
+      "sha256": "9e76ed3a1a159f26d10c64ad250da6740ee47ca4fc5d0444913af1c5d77963d4",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/off/checkpoint_snapshot.pth",
+      "bytes": 8869844,
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+      "kind": "checkpoint"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/fixed2p0/205bars.log",
+      "bytes": 28849,
+      "sha256": "c2286557c68f427021408db256bd0f423d310909f9200669eaa64796963cc261",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/fixed2p0/checkpoint_snapshot.pth",
+      "bytes": 8869844,
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+      "kind": "checkpoint"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/riskcap/205bars.log",
+      "bytes": 28873,
+      "sha256": "b76403879035a9ffcfb932ccece9b4c867cca8dc9b48880119cd9ada50956fbf",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/riskcap/checkpoint_snapshot.pth",
+      "bytes": 8869844,
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+      "kind": "checkpoint"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/stopcap/205bars.log",
+      "bytes": 29137,
+      "sha256": "ea943b1aa3c619bf94f94a8c5599a422cba2e9bacf80f0eaef7de0fab8356f5e",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/stopcap/checkpoint_snapshot.pth",
+      "bytes": 8869844,
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+      "kind": "checkpoint"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/ttc/205bars.log",
+      "bytes": 29026,
+      "sha256": "194ff4b8f5884c13fd1ce745585a44691070c1099577fc156c01ed83e34e5826",
+      "kind": "manifest_or_raw_log"
+    },
+    {
+      "relative_path": "results/navrl_v2_ep25000_stopcap_seed49_screen/ttc/checkpoint_snapshot.pth",
+      "bytes": 8869844,
+      "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+      "kind": "checkpoint"
+    },
+    {
+      "relative_path": "aerial_gym/rl_training/rl_games/runs/ppo_260813_0540_navrl_v2-ref5in-smoke-c-s197/nn/last_gen_ppo_ep_900_rew_137.08087.pth",
+      "bytes": 8871634,
+      "sha256": "f1670a1d74dd92cb00d6a58898e9cc1b96eb9cbe155d1e85812a345e7aaae6bf",
+      "kind": "checkpoint"
+    }
+  ],
+  "focused_tests": {
+    "ran": 145,
+    "status": "PASS"
+  },
+  "PUBLIC_CPU": {
+    "profile": "PUBLIC_CPU",
+    "status": "PASS",
+    "ran": 3298,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    },
+    "duration_s": 221.701
+  },
+  "cpu_limits": {
+    "CUDA_VISIBLE_DEVICES": "",
+    "PYTHONNOUSERSITE": "1",
+    "nice": 10,
+    "affinity": "6,7,12,13",
+    "rlimit_as_kib_per_process": 8388608,
+    "timeout_s": 900,
+    "kill_grace_s": 20,
+    "threads": 2
+  },
+  "host_faults": {
+    "before": 0,
+    "after": 0
+  },
+  "independent_postoperation_checks": {
+    "source_destination_pairs": 19,
+    "regular_nonaliased_destinations": 19,
+    "canonical_asserted_paths": 453,
+    "canonical_hashes": 245,
+    "hash_drift": 0
+  },
+  "occupied_destination_refused_after_copy": true,
+  "external_artifacts": {
+    "audit/availability.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/audit/availability.json",
+      "sha256": "dce42883849fcb66531196dd28be488176096c8a415344b6d8ef920a016d5952"
+    },
+    "audit/PLAN.md": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/audit/PLAN.md",
+      "sha256": "08e5d9bf189e6a1a2369af0ba9d5f3500a63ba5691b5fe51780e555e96ce048b"
+    },
+    "audit/destination_checks.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/audit/destination_checks.json",
+      "sha256": "1ebbef0cd4700a5685529b05f4e8b3dac31bcb2e9f80aeffdf0b4b938083fdfb"
+    },
+    "materialize_missing.py": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/materialize_missing.py",
+      "sha256": "bb9b1aea4dfb907f30c1cf355fe248a26a467273eabca319e0814ba0d8e725a7"
+    },
+    "materialization_receipt.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/materialization_receipt.json",
+      "sha256": "fbebfb55bd7ef47ec4bdacb81d23ee8d0ff73b4cff00639747d09d0a6c6aa7a7"
+    },
+    "progress.jsonl": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/progress.jsonl",
+      "sha256": "5fe29522a100cad4aa731ccd8c30e8223f6dd927de3c2507650ad763acbc9323"
+    },
+    "focused.log": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/focused.log",
+      "sha256": "ca18d1c86619a4dd5e58b8f2a2d77d0952368ea469cedcd0f4fe262f2a6f5f44"
+    },
+    "public_cpu.log": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/public_cpu.log",
+      "sha256": "8f93c16e1894bffbcd5ac695144c3143ddb157a08cde61452f062464c7e2352d"
+    },
+    "host_before.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/host_before.json",
+      "sha256": "84659e1c2578c385abdf65ab2cc6420092fc80faa5f67c7dc920aacab71e0be0"
+    },
+    "host_after.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/host_after.json",
+      "sha256": "84659e1c2578c385abdf65ab2cc6420092fc80faa5f67c7dc920aacab71e0be0"
+    },
+    "occupied_refusal.log": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/occupied_refusal.log",
+      "sha256": "5c15f31b58fcf6a5cecef12f6afe2f340c0b1f3e9d54b816909fe15726099a7c"
+    },
+    "source_review_r1/REPORT.md": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/source_review_r1/REPORT.md",
+      "sha256": "17604a23acab3a9c3ec30be117d6773a0aa0c819f642e4b0699ab35e2f228c28"
+    },
+    "source_review_r1/POST_OPERATION.md": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/source_review_r1/POST_OPERATION.md",
+      "sha256": "280b47961b21de2c4011ce87e4ce34008f45b75789323797de68bef2b98d2f4e"
+    },
+    "source_review_r1/post_operation_checks.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/source_review_r1/post_operation_checks.json",
+      "sha256": "39bbbc5964d752a70ad75229f1a702a9242c4520410f1d724d019c902dd14e86"
+    },
+    "source_review_r1/final_validation_checks.json": {
+      "path": "/home/fair/motar_tmp/dev08_asset_availability_20261105/source_review_r1/final_validation_checks.json",
+      "sha256": "c6e5732d23cf9d47467f89f8e795b82411180b4f03331258485c581bce20c8f9"
+    }
+  },
+  "independent_review": {
+    "preoperation": "PASS_WITH_LIMITS for exclusive materialization plan/script only",
+    "postoperation": "PASS for local restoration and reported validation integrity",
+    "reports": [
+      "REVIEW_preoperation_r1.md",
+      "REVIEW_postoperation_r1.md"
+    ],
+    "reviewer": "Codex /root/dev08_prefix_review",
+    "exact_backend_model": "NOT_RECORDED"
+  },
+  "record_checks": {
+    "ran": 39,
+    "status": "PASS",
+    "log": "/home/fair/motar_tmp/dev08_asset_availability_20261105/record_checks.log",
+    "sha256": "4e77d2099f706aefd8d2edfeeabbe8fc7ac5121e5bd6b6eaf7265afa144e00b4"
+  }
+}

@@ -809,6 +809,8 @@ family that is in the test's scope.
       records end at checkpoint207/599 with explicit censoring when no physical terminal occurs.
       Offline input/checkpoint/ledger contracts are implemented; live runtime remains NOT_IMPLEMENTED.
       The strict600 parent remains BLOCKED; no prefix measurement or formal stage advancement.
+    - Local historical-asset availability is repaired with hash-matched copies of absent files;
+      shared PUBLIC_CPU is PASS. This is local validation, not a SITL/flight result.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -825,6 +827,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1.md` (configuration preparation, incomplete target input blocker)
   - → `docs/evidence/sitl_2026-11-05/dev08/` (source/input audit, CPU preparation checks; measurement NOT_RUN)
   - → `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md` (observed-prefix input/runtime design)
+  - → `docs/evidence/sitl_2026-11-05/dev08/local_availability/` (canonical local asset copies and full CPU validation)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
