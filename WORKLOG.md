@@ -24711,3 +24711,11 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - tests/test_actionhold_identity.py pairs accepted equal bytes with logically-equal/differently-formatted and missing-file rejections. Combined actionhold tests: 11 PASS, CUDA hidden, cores6,7,12,13/nice10, 4GiB memory cap and timeout180.
 - Fresh independent Codex byte-guard review PASS_WITH_LIMITS: no blocker; inherited malformed/missing reference failures can stop without a structured report. Source readiness/test/review records: docs/evidence/sitl_2026-11-05/g7/.
 - G7 GPU NOT_RUN at this commit. Next: G9 attempt3, then G7 identity plus six treatment cells in results/actionhold_g7_v1/, without tracked writes during the runners.
+
+## 2026-11-05 — G9 attempt 3 retained; correct the unenforced systemd memory bound before confirmation/G7
+
+- Attempt3 at 16d351f completed: actual bars1, all4env finite, contact forces all0, minimum bar XY distance22.67m, host faults0→0. Raw results/sitl_ref_v1_r2/g9_attempt3/ remains unchanged.
+- Operational deviation: user systemd accepted MemoryMax12G but its cgroup-v1 memory controller was not delegated; the scope had no effective memory limit. This is not represented as compliant/accepted.
+- Amendment4 fixes process-tree RSS watchdog12GiB/poll0.25s and timeout before confirming unchanged G9 code at a new attempt4 path, then G7. This is explicitly a watchdog, not a kernel hard cap; inter-observation transients are unmeasured.
+- CPU watchdog controls accept a healthy child and reject actual RSS overflow, descendant overflow and timeout. Exact script/validation/review records are preserved with the SITL evidence. No policy/controller/RNG/threshold change and no raw overwrite.
+- Resource wrapper repairs/reviews r1-r3 are retained. Final independent source review PASS_WITH_LIMITS; six real bounded/RSS/timeout/descendant/late-fork controls PASS with zero live descendants. The standalone subreaper watchdog explicitly does not claim a kernel hardcap or a receipt after external forced termination.

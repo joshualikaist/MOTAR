@@ -178,3 +178,7 @@ as logical/result equality. The historical shared helper remains unchanged.
 independent source review (PASS_WITH_LIMITS). Neither is a GPU measurement or experimental PASS. The first
 identity cell must pass before six held/delayed treatment cells may run. Output `results/actionhold_g7_v1/`,
 fixed analysis and independent results review are pending.
+
+## Resource-bound correction before the confirmation/G7
+
+G9 attempt3 produced finite responses in all four envs with zero measured contacts, but its user-systemd MemoryMax setting was not enforced on the cgroup-v1 memory controller. Its report and launch record are retained under g9/ as operational-deviation evidence, not a compliant primary measurement. Amendment4 fixes an aggregate process-tree RSS watchdog (12GiB, poll0.25s; explicitly not a kernel hardcap) before the unchanged simulator is repeated at g9_attempt4 and G7 runs. Source and six actual child/descendant/timeout controls are in g7/run_capped.py and resource_checks_prelaunch.json.
