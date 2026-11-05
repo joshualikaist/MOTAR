@@ -1,7 +1,10 @@
 """G8 state recorder hook (docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md). Opt-in, default OFF.
 
-Loaded only by ``tools/staterec_site/sitecustomize.py`` when ``MOTAR_STATE_RECORD`` (an .npz path that must not exist)
-is set. It patches ``NavRLPpoPlayerContinuous.get_action`` after import (the B1-R hook's mechanism) to read, for every
+Loaded only by ``tools/staterec_site/sitecustomize.py`` when ``MOTAR_STATE_RECORD`` (an .npz path) is set. Every
+Python process the launcher starts inherits the variable, so install only registers the patch; the path must not
+exist when the recording process makes its first record (checked then, and the save opens it with "xb"). Processes
+that never call the player (the launcher's receipt writer, for one) leave the file alone. G8 attempt 1
+(results/sitl_ref_v1, 2026-11-05) failed because install itself refused the existing file in such a process. It patches ``NavRLPpoPlayerContinuous.get_action`` after import (the B1-R hook's mechanism) to read, for every
 env at every action request, the task tensors the observation was built from and the policy's deterministic action,
 then returns that action unchanged. It reads detached copies only; nothing is written back.
 
@@ -22,7 +25,7 @@ import sys
 
 TARGET_MODULE = "aerial_gym.rl_training.rl_games.navrl_players"
 TARGET_CLASS = "NavRLPpoPlayerContinuous"
-STATE = {"recorder": None, "finder": None, "written_by": None}
+STATE = {"recorder": None, "finder": None, "written_by": None, "path": None}
 FIELDS = ("robot_position", "robot_linvel", "robot_vehicle_orientation", "robot_orientation", "robot_body_angvel",
           "env_bounds_min", "env_bounds_max")
 
@@ -125,6 +128,18 @@ def patch_player_module(module, recorder_factory):
     cls.run = run
 
 
+def recorder():
+    """The process's recorder, created at its first record; refuses a path that already exists (fail closed)."""
+    if STATE["recorder"] is None:
+        path = STATE["path"]
+        if path is None:
+            raise RuntimeError("staterec: install() was not called")
+        if Path(path).exists():
+            raise FileExistsError("MOTAR_STATE_RECORD already exists: %s" % path)
+        STATE["recorder"] = Recorder(path)
+    return STATE["recorder"]
+
+
 def _save(trigger="atexit"):
     rec = STATE["recorder"]
     if rec is None or STATE["written_by"] is not None:
@@ -141,15 +156,8 @@ def install(environ=os.environ):
     path = environ.get("MOTAR_STATE_RECORD", "").strip()
     if not path.endswith(".npz"):
         raise ValueError("MOTAR_STATE_RECORD must name an .npz file")
-    if Path(path).exists():
-        raise ValueError("MOTAR_STATE_RECORD already exists: %s" % path)
-
-    def factory():
-        if STATE["recorder"] is None:
-            STATE["recorder"] = Recorder(path)
-        return STATE["recorder"]
-
-    finder = PostImportPatch(TARGET_MODULE, lambda module: patch_player_module(module, factory))
+    STATE["path"] = path
+    finder = PostImportPatch(TARGET_MODULE, lambda module: patch_player_module(module, recorder))
     sys.meta_path.insert(0, finder)
     STATE["finder"] = finder
     atexit.register(_save)

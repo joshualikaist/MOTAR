@@ -24426,3 +24426,34 @@ global history phase.
      `tools/actionhold_analyse.py`.
   6. SITL: the IMU-link test, or switch S3b to iris.
 
+## 2026-11-05 — G8 attempt 1 INCOMPLETE (state-recorder hook refused its own file in a later process); hook fixed, rerun to `sitl_ref_v1_r2`
+
+- **Attempt 1** (09:04:24-09:04:50 KST, commit `c189b0b`, host faults 0 → 0, GPU otherwise idle):
+  - Queue `~/motar_tmp/gpu_queue_20261105/run_g8_g9_g3.sh`; it stopped at G8, so G9 and G3 did not start.
+  - The first cell (`full`, 70 bars, seed 4501) ran to the end: 125 of 128 captured, 3 bar crashes. It wrote
+    `obs_dump_70bars_seed4501.npz` and `state_record_70bars_seed4501.npz` (84 calls × 128 envs, every field present).
+  - The launcher then started another Python process to write `receipt.json`. That process inherited
+    `MOTAR_STATE_RECORD`, and `tools/staterec_site/sitecustomize.py` ran `install()`, which refused the path because the
+    recording process had just written it. Exit 3; no `receipt.json`; reading INCOMPLETE.
+  - My error: I had smoke-tested the hook with unit tests only, not through the launcher, which starts several Python
+    processes (the 2026-11-04 checklist: smoke every changed runner path before commit).
+  - Kept as recorded in `results/sitl_ref_v1/g8/`. SHA-256: `g8_report.json` `43be2e66…`, the state record `0cb68971…`,
+    the obs dump `7408206e…`. Log: `~/motar_tmp/gpu_queue_20261105/g8_attempt1.log` (`c5264915…`).
+- **Fix** (`tools/staterec_hook.py`): `install()` checks only the `.npz` suffix and registers the patch. The recorder
+  refuses an existing path when it is created, at the process's first record, and the save still opens with `"xb"`.
+  A process that never calls the player touches nothing. The recorded fields and the patch are unchanged. The
+  preregistration and amendments do not fix the hook's install-time check or the output path, so no amendment.
+- **Checks:**
+  - `tests/test_staterec_hook.py` 4/4 (new: an existing file is accepted at install, refused at the first record, and
+    left unchanged), `tests/test_zeroaction_hook.py` 2/2.
+  - Subprocess smoke with `tools/staterec_site` on `PYTHONPATH`: an existing file in a non-player process gives exit 0
+    and the file is unchanged; a new path in a non-player process creates nothing; a `.txt` path gives exit 3.
+  - PUBLIC_CPU: 3263 run, 2 failures, 4 errors, 17 skipped. All six need files this worktree or host lacks, and
+    none touches the hook: two legacy `results/` folders absent from this worktree
+    (`navrl_physical_target_braking_lower1p25_headingrest_seed827`, `navrl_v2_ep25000_stopcap_seed49_screen`;
+    `test_result_manifest` ×2, `test_navrl_stopcap_screen_contract`), `/tmp/codex_occ` gone since the reboot
+    (`test_boia_planner` ×2), and the P1c smoke checkpoint absent from this worktree's `runs/`
+    (`test_navrl_ref5in_run_contract`).
+- **Next:** rerun G8 → G9 → G3 with `~/motar_tmp/gpu_queue_20261105/run_g8_g9_g3_r2.sh` (outputs `results/sitl_ref_v1_r2/`,
+  logs `*_r2.log`; G3 output unchanged, `results/camonly_c2trace_v1`).
+

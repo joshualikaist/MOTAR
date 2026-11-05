@@ -2,7 +2,8 @@
 
 Checks that the patched get_action returns the policy action unchanged, that every recorded array has one row per
 call with the env axis intact and the recorded values are copies (later in-place changes do not leak in), that the
-npz is written exactly once and refuses to overwrite, and that install validates its path. Negative checks are
+npz is written exactly once and refuses to overwrite, that install validates its path, and that an existing
+file is refused at the first record, not at install (G8 attempt 1). Negative checks are
 paired with positive ones.
 """
 import importlib.util
@@ -90,17 +91,38 @@ class StateRecTests(unittest.TestCase):
         self.assertEqual(len(seen), 1)
 
     def test_install_validates_path(self):
+        import sys
         with tempfile.TemporaryDirectory() as d:
-            existing = Path(d) / "x.npz"
-            existing.write_bytes(b"")
-            with self.assertRaises(ValueError):
-                H.install({"MOTAR_STATE_RECORD": str(existing)})
             with self.assertRaises(ValueError):
                 H.install({"MOTAR_STATE_RECORD": str(Path(d) / "x.txt")})
             finder = H.install({"MOTAR_STATE_RECORD": str(Path(d) / "new.npz")})
-            import sys
-            self.assertIn(finder, sys.meta_path)
-            sys.meta_path.remove(finder)                         # leave the shared process as it was
+            try:
+                self.assertIn(finder, sys.meta_path)
+                self.assertIsInstance(H.recorder(), H.Recorder)  # positive: a new path gives a recorder
+                self.assertFalse((Path(d) / "new.npz").exists())  # nothing written before the save
+            finally:
+                sys.meta_path.remove(finder)                     # leave the shared process as it was
+                H.STATE.update(recorder=None, path=None)
+
+    def test_existing_file_refused_at_first_record_not_at_install(self):
+        """G8 attempt 1: a later process of the same launcher (the receipt writer) inherits MOTAR_STATE_RECORD after
+        the recording process has written the file. Its install must succeed and touch nothing; only a process that
+        would record refuses the existing file."""
+        import sys
+        with tempfile.TemporaryDirectory() as d:
+            existing = Path(d) / "x.npz"
+            existing.write_bytes(b"kept")
+            finder = H.install({"MOTAR_STATE_RECORD": str(existing)})
+            try:
+                self.assertIn(finder, sys.meta_path)
+                with self.assertRaises(FileExistsError):
+                    H.recorder()
+                self.assertIsNone(H.STATE["recorder"])
+                H._save()                                        # the atexit path with no recorder writes nothing
+                self.assertEqual(existing.read_bytes(), b"kept")
+            finally:
+                sys.meta_path.remove(finder)
+                H.STATE.update(recorder=None, path=None)
 
 
 if __name__ == "__main__":
