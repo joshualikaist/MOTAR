@@ -811,9 +811,9 @@ family that is in the test's scope.
       The strict600 parent remains BLOCKED; no prefix measurement or formal stage advancement.
     - Local historical-asset availability is repaired with hash-matched copies of absent files;
       shared PUBLIC_CPU is PASS. This is local validation, not a SITL/flight result.
-    - **dev08 runtime stack (motar-5md):** the owned session, parameter/telemetry guards, prefix step, attempt
-      recorder and guarded runner are implemented with CPU fixtures only. No PX4/Gazebo/SITL was started.
-      - live NOT_VERIFIED; measurement NOT_RUN.
+    - **dev08 runtime stack (motar-5md, CPU preparation record):** the owned session, parameter/telemetry guards,
+      prefix step, attempt recorder and guarded runner were implemented with CPU fixtures. No simulator ran
+      during that preparation unit; its live status was NOT_VERIFIED and measurement NOT_RUN. Later execution follows below.
       - Native prefix identity with the historical loop holds on the CPU with the real bridge and Policy F.
       - Amendment2, corrected by amendments3/4, proposes the bounded 42-member execution. The user fixed
         `skip_max_s = 0.15` s in [D-2026-11-05-2](DECISIONS.md#d-2026-11-05-2--dev08-skiplate-tolerance-fixed-at-015-s).
@@ -823,7 +823,18 @@ family that is in the test's scope.
       - The user subsequently authorized completion through the two smoke and40main members in a new five-hour
         session ([D-2026-11-05-3](DECISIONS.md#d-2026-11-05-3--complete-dev08-through-main-measurement-in-a-new-five-hour-session)).
         Amendment5 adds the guarded CLI, numeric ledger handling and pre-main smoke timing checks;
-        the original42-member schedule is retained. Source review/commit precede launch; measurement NOT_RUN.
+        the original42-member schedule is retained. Source and launcher reviews are PASS_WITH_LIMITS; the
+        reviewed source was committed as `d8f9bc6` before launch.
+      - **Dev08 execution COMPLETE:** all42 members (two excluded smoke +40main) recorded, no unrun, host faults0→0.
+        Native18capture/2crash versus candidate19capture/1crash, no censoring. At70bars both10/0; at205bars native8/2,
+        candidate9/1. Paired transitions18capture→capture,1crash→crash,1crash→capture; jointly captured18pairs have
+        candidate-minus-native nominal checkpoint-time median0.0s (min−0.9,max+1.3).
+      - Independent result review is **LIMITED_VALIDITY**, acceptable for the preregistered observed-prefix
+        descriptive record; integrity/recomputation checks PASS. Exact packet/stream phase/send-receive evidence
+        is NOT_RECORDED. No gain choice, complete60s claim or formal stage advancement. Read
+        `docs/evidence/sitl_2026-11-05/dev08/execution/analysis.json` and the result review there.
+        `motar-1ab` is complete; `motar-agq` follows the shared205/env2 bar failure and differing205/env5 outcomes
+        using existing traces/ULogs first. Minor coverage limits remain `motar-bmg`.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

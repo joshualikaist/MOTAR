@@ -1,0 +1,114 @@
+{
+  "scope": "post hoc descriptive summaries of recorded failure/counterpart traces; no causal attribution or new primary endpoint",
+  "cases": [
+    {
+      "name": "26_main_205bars_env2_native",
+      "bars": 205,
+      "env": 2,
+      "arm": "native",
+      "outcome": "crash",
+      "recorded_crash_reason": "bar",
+      "final_frame_index": 74,
+      "sampled_true_z_range_m": [
+        0.4019999999999868,
+        1.225999999999999
+      ],
+      "terminal_true_position": [
+        17.57264554759992,
+        21.59998475452005,
+        0.9830000000000041
+      ],
+      "terminal_estimated_position": [
+        17.444378061870683,
+        21.23182493469567,
+        0.9694870114326477
+      ],
+      "terminal_snapshot_position_discrepancy_m": 0.3900984512766514,
+      "checkpoint_source": "/home/fair/motar_tmp/sitl_s3b_20261105/dev08_prefix_attempt01/26_main_205bars_env2_native/checkpoints.jsonl",
+      "checkpoint_sha256": "55de498d09c33d5f8c60b766a0b304ebf50c31d067f1893ce985b16fb48d17e6"
+    },
+    {
+      "name": "27_main_205bars_env2_candidate",
+      "bars": 205,
+      "env": 2,
+      "arm": "candidate",
+      "outcome": "crash",
+      "recorded_crash_reason": "bar",
+      "final_frame_index": 83,
+      "sampled_true_z_range_m": [
+        0.5090000000000146,
+        1.2040000000000077
+      ],
+      "terminal_true_position": [
+        19.131419523100647,
+        24.14186237856383,
+        0.5090000000000146
+      ],
+      "terminal_estimated_position": [
+        19.912858773550003,
+        21.60254861643908,
+        0.6106130480766296
+      ],
+      "terminal_snapshot_position_discrepancy_m": 2.6587754505031858,
+      "checkpoint_source": "/home/fair/motar_tmp/sitl_s3b_20261105/dev08_prefix_attempt01/27_main_205bars_env2_candidate/checkpoints.jsonl",
+      "checkpoint_sha256": "3129069a473379d5a45bee74431d78cd904df4efde87749767f4b60318627fcb"
+    },
+    {
+      "name": "32_main_205bars_env5_candidate",
+      "bars": 205,
+      "env": 5,
+      "arm": "candidate",
+      "outcome": "capture",
+      "recorded_crash_reason": null,
+      "final_frame_index": 130,
+      "sampled_true_z_range_m": [
+        0.7630000000000337,
+        1.1519999999999868
+      ],
+      "terminal_true_position": [
+        11.643356886739763,
+        30.379118243074654,
+        0.9900000000000091
+      ],
+      "terminal_estimated_position": [
+        11.75298668384264,
+        30.27313932374176,
+        0.9602035880088806
+      ],
+      "terminal_snapshot_position_discrepancy_m": 0.1553642491802121,
+      "checkpoint_source": "/home/fair/motar_tmp/sitl_s3b_20261105/dev08_prefix_attempt01/32_main_205bars_env5_candidate/checkpoints.jsonl",
+      "checkpoint_sha256": "cec9f5ce208935c1bb8f95367de4a7450fa71588630a2b9758e90072bbe7bc31"
+    },
+    {
+      "name": "33_main_205bars_env5_native",
+      "bars": 205,
+      "env": 5,
+      "arm": "native",
+      "outcome": "crash",
+      "recorded_crash_reason": "altitude",
+      "final_frame_index": 70,
+      "sampled_true_z_range_m": [
+        0.018000000000029104,
+        1.059000000000026
+      ],
+      "terminal_true_position": [
+        9.324284886033379,
+        36.025947744685915,
+        0.018000000000029104
+      ],
+      "terminal_estimated_position": [
+        9.42011900914045,
+        35.622204712648056,
+        0.288877010345459
+      ],
+      "terminal_snapshot_position_discrepancy_m": 0.4955471418588781,
+      "checkpoint_source": "/home/fair/motar_tmp/sitl_s3b_20261105/dev08_prefix_attempt01/33_main_205bars_env5_native/checkpoints.jsonl",
+      "checkpoint_sha256": "8f48b73c7ea22769661eb5dbf4717e0bc252e1402adb77b62e548bebef195213"
+    }
+  ],
+  "limits": [
+    "sampled positions, not continuous minima",
+    "position/truth samples have declared stream-phase ambiguity",
+    "no rerun or intervention performed"
+  ]
+}
