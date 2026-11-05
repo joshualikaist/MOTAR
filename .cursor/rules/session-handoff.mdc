@@ -1,0 +1,8 @@
+---
+description: All-agent five-hour session closeout and account-neutral handoff
+alwaysApply: true
+---
+Read AGENTS.md, especially "Session deadline and handoff", before working. This standing rule applies to all
+agents and delegated workers. Preserve the root session clock across reconnects; start closeout at deadline−60min
+and finish the durable handoff by deadline−10min. Read the shared latest handoff before resuming under another
+account. Never infer GPU/gate/push/merge authorization from a timer. Follow source-freeze and evidence rules.
