@@ -183,3 +183,16 @@ to idle:
 Two of this unit's loaded cells are among them: GR-0 S00 205/4501 (one-process same-core probe) and 70/4501 (the
 heavy D2-A1 gate, 95 s of overlap). Both equal the idle runs. The idle rerun of the remaining overlapped cells is now
 optional; the readings stand.
+
+## GR-1b protocol deviation (2026-11-05): a tracked file edited during training
+
+- **What happened:** at about 03:12 KST, during GR-1b `rand40` training (started 02:53 from this worktree at
+  `31d5761`), I copied the narrowed AGENTS.md from `camonly/dev` (`a278c2b`) into this worktree. That edited a tracked
+  file of the running unit's worktree, against the AGENTS.md freeze rule.
+- **Reverted:** I noticed at once and reverted it with `git checkout -- AGENTS.md`. Within a minute the tree was clean
+  and HEAD was still `31d5761`. Nothing was committed.
+- **Effect:** the training process does not read AGENTS.md, and `tools/gr1b_train.py` checks the tree is clean at the
+  end of the run. Both training reports read TRAINED with no problems: `rand40_s2` and `ctrl_s2`, host faults 0 → 0.
+- **The copy itself** was applied after both trainings had ended and before the GR-1b evaluation, in the commit that
+  adds this section.
+- Source note: `~/motar_tmp/gainrand_20261104/gr1b_deviations.md`.

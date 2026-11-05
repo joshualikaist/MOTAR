@@ -246,3 +246,50 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   removed, GPU approvals will be given freely, and the user asks whether control gain randomization can
   run first, in parallel with the C-Planner V1 repair). The same message's earlier part chose to repair
   the C-Planner V1 direction gap rather than accept it as tolerance (recorded on `cplanner/dev`).
+
+## D-2026-11-05-1 — Concurrent CPU work alongside GPU runs: a definition replaces the blanket ban
+
+- **Decision:** the one-line rule "Do not start heavy CPU or disk work alongside an evaluation" is replaced by
+  AGENTS.md "Concurrent work":
+  - **Always forbidden while a run is active** (these routes are certain):
+    - writing the run's worktree, the main checkout or the run's output;
+    - CUDA use by another job;
+    - an uncapped job;
+    - the offlined cores.
+  - **CPU compute during PPO training:** allowed on disjoint cores, recorded.
+  - **CPU compute during an evaluation:** allowed only after the load-invariance test T-LOAD reads LOAD_INVARIANT
+    (DISJOINT_ONLY: disjoint cores only; otherwise still forbidden).
+- **Reason:** an evaluation can change under another process's load only through a shared resource or a
+  timing dependence inside it.
+  - Code reading (2026-11-05) found no clock-dependent logic in the evaluation path. The two
+    `time.perf_counter()` sites are timing telemetry.
+  - It cannot exclude thread-timing effects (PhysX CPU workers, `num_threads = 10`).
+  - The evidence is mixed:
+    - against: one loaded evaluation differed in 2026-09 (A8 `S_off` 22.35 % vs 21.47 % twice; mechanism not
+      identified; that run was also the first cell after three training runs);
+    - for: three loaded cells on 2026-11-04 were byte-identical to idle twins
+      (`gainrand/dev` `352b919`, `load_overlap/`).
+  - T-LOAD settles it at a stronger load than either.
+- **Alternatives:**
+  - keep the blanket ban: it costs idle CPU time during every run;
+  - allow everything now: one unexplained difference stands against it.
+- **Impact:**
+  - AGENTS.md "Concurrent work" and "What needs the user" (the PPO wording now cites D-2026-11-04-1).
+  - docs/OPERATIONS.md sections 1 and 7.
+  - The same rule text is copied to `gainrand/dev`.
+- **Reversal:** a user decision, or a T-LOAD reading other than LOAD_INVARIANT (then the evaluation clause stays
+  closed).
+- **Outcome and narrowing (2026-11-05, T-LOAD review r1 MAJOR-1):** T-LOAD read LOAD_INVARIANT; review r1 was
+  PASS_WITH_LIMITS.
+  - The evaluation clause applies to the per-episode outcome files of Isaac Gym evaluation cells.
+  - These keep an idle host: wall-clock timing results (latency gates, benchmarks, durations), real-time SITL runs
+    and CPU-side decision paths T-LOAD did not cover. The reason is that disjoint cores slowed cells by 15-27 %.
+- **Sources:** the user's messages of 2026-11-05:
+  - "gpu 작업이랑 근데 cpu작업이랑 같이 하면 무슨 문제가 있어? … 그건 프로세스상 문제 될 일이 없잖아. 자 그 부분은
+    확실하게 정의해야돼": what is wrong with running CPU work alongside GPU work; process-wise there should be no
+    problem; define it precisely.
+  - "동시 실행 정의 난 괜찮아. 반영해도 돼. 비었는데 굳이 안쓸 이유가 있나?": the definition is fine, apply it;
+    why leave an idle CPU unused.
+  - "AGENTS.md가 아직 예전 PPO 금지(D-2026-10-14-0)를 현행으로 적고 있어 문구 수정이 필요합니다. -> 수정해.": fix the
+    stale PPO wording.
+

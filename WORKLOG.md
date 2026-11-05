@@ -23826,3 +23826,15 @@ Records: `docs/evidence/gain_randomization_2026-11-04/gr1/`; raw `results/gain_r
   is optional.
 - **Next:** GR-1b training, rand40 then ctrl.
 
+## 2026-11-05 — gainrand: concurrent-work rule (narrowed) and D-2026-11-05-1 copied from `camonly/dev`; GR-1b deviation disclosed
+
+- Both GR-1b trainings have ended (`rand40_s2` and `ctrl_s2` TRAINED, host faults 0 → 0). The GR-1b evaluation has
+  not started.
+- `AGENTS.md`: the "Concurrent work" section now matches `camonly/dev` `c189b0b`, with the T-LOAD narrowing: timing
+  results, SITL acceptance runs and untested CPU decision paths keep an idle host.
+- `docs/DECISIONS.md`: added D-2026-11-05-1 (text from `camonly/dev`, with its 2026-11-05 outcome and narrowing line).
+  The camera-only decision D-2026-11-04-3 stays on `camonly/dev`.
+- `docs/evidence/gain_randomization_2026-11-04/README.md`: new section disclosing the 2026-11-05 03:12 edit of
+  `AGENTS.md` in this worktree during `rand40` training. It was reverted within a minute and nothing was committed.
+- **Next:** GR-1b evaluation via `~/motar_tmp/gpu_queue_20261105/run_gr1b_eval.sh`, after the `camonly/dev` G8/G9/G3 queue.
+
