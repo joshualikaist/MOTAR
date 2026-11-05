@@ -57,3 +57,27 @@ flight; SITL checks first whether Policy F can close the loop through PX4.
 `navrl_quad.sdf.jinja`, `model.config` and `10090_gazebo-classic_navrl_quad`, as installed after the fixes above;
 `check_vehicle_spec.py` and `spec_check_01.json` (CPU spec check of 2026-11-04, PASS); `s2_install.out` (hashes and
 changes in order).
+
+## `s3a/`: does the bridge rebuild F's observation and action? (CPU, plan stage S3a)
+
+- **Inputs:** `tools/sitl_s3a_equivalence.py` on the G8 r2 dump (`results/sitl_ref_v1_r2/g8/`), first 8 envs per cell,
+  each env's first episode.
+- **Run:** on `camonly/dev` `9882889`, which has the bridge fix. Records `s3a_70bars_9882889.json` (`35d2bebf…`) and
+  `s3a_205bars_9882889.json` (`c371a864…`).
+- **Gate** (plan S3a: every obs slice ≤ 1e-3, actions ≤ 1e-4, governor ≤ 1e-4): **NOT_EQUIVALENT** in both cells.
+  Alignment mismatches 0.
+
+| Cell | obs scan / obstacles / robot / target | action, bridge obs | action, Isaac's obs | governor |
+| --- | --- | --- | --- | --- |
+| 70 bars | 6.7e-6 / 2.3e-6 / 1.2e-7 / 6.9e-3 | 1.7e-3 | 1.6e-3 | 1.8e-7 |
+| 205 bars | 2.3e-5 / 6.1e-6 / 1.2e-7 / 1.2e-2 | 9.8e-3 | 1.0e-3 | 5.5e-6 |
+
+- **Bridge bug before the fix:** the bridge dropped F's lateral mu scale. Before `9882889` the lateral action error
+  was 0.388 (WORKLOG 2026-11-05). This is fixed.
+- **What remains:**
+  - **Target slice:** the largest errors are the newest history slot's target relative velocity, x and z (obs indices
+    885 and 887). The tracker's velocity estimate differs by up to 0.024 m/s, in early calls (call 4 at 205 bars,
+    call 7 at 70 bars). At 205 bars it carries into the action (9.8e-3).
+  - **Policy numerics:** the policy on Isaac's own observation differs by about 1e-3, consistent with TF32 in the
+    Isaac process.
+  - Neither cause is tested.

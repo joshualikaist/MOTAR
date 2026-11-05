@@ -286,3 +286,10 @@ work later):
    bearing and whether it was ever inside the FOV.
 2. A zero-shot rotation control: give the camera-only F a camera aimed along its travel direction, or a wider FOV.
    If the cause is FOV geometry, the crash rate falls toward A.
+
+## `c2trace/`: G3, which bar camera-only F hits (GPU trace and CPU analysis, preregistered)
+
+- 12 traced reruns of C2 cells on `c4bc416` (2026-11-05). Gate NONINTERFERENCE_PASS. Reading **BLIND_SIDE_SUPPORTED**.
+- Independent review r1 (Opus 5.5): PASS_WITH_LIMITS.
+- The numbers, the per-density counts (review F1), the camera-eye variant (F4) and the limits are in
+  [`c2trace/README.md`](c2trace/README.md).

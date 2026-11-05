@@ -1,0 +1,362 @@
+{
+ "conditions": {
+  "A": {
+   "n": 475,
+   "out_last_vehicle_yaw_pct": 48.8421052631579,
+   "out_last_body_yaw_pct": 48.8421052631579,
+   "out_last_body_yaw_camera_eye_pct": 62.73684210526316,
+   "flip_vehicle_vs_body": 0.0,
+   "yaw_gap_deg_all_frames": {
+    "median": 6.9126331166885285e-06,
+    "p99": 0.8152171199548349,
+    "max": 3.883973520112288
+   },
+   "yaw_gap_deg_frame0": {
+    "median": 3.493697091133705e-06,
+    "max": 3.392840839300011e-05
+   },
+   "invalid_gt0p6": [
+    {
+     "dist": 1.43,
+     "nframes": 11,
+     "density": 115,
+     "speed": 1.05,
+     "z": 0.16,
+     "out": true
+    },
+    {
+     "dist": 2.174,
+     "nframes": 9,
+     "density": 115,
+     "speed": 4.26,
+     "z": 0.17,
+     "out": true
+    },
+    {
+     "dist": 1.197,
+     "nframes": 8,
+     "density": 115,
+     "speed": 0.78,
+     "z": 0.4,
+     "out": true
+    },
+    {
+     "dist": 3.259,
+     "nframes": 58,
+     "density": 115,
+     "speed": 3.12,
+     "z": 0.97,
+     "out": true
+    },
+    {
+     "dist": 0.735,
+     "nframes": 8,
+     "density": 160,
+     "speed": 4.9,
+     "z": 0.11,
+     "out": true
+    },
+    {
+     "dist": 2.069,
+     "nframes": 9,
+     "density": 160,
+     "speed": 1.18,
+     "z": 0.21,
+     "out": false
+    },
+    {
+     "dist": 0.895,
+     "nframes": 7,
+     "density": 160,
+     "speed": 3.72,
+     "z": 0.25,
+     "out": true
+    },
+    {
+     "dist": 1.268,
+     "nframes": 8,
+     "density": 160,
+     "speed": 2.22,
+     "z": 0.39,
+     "out": true
+    },
+    {
+     "dist": 1.297,
+     "nframes": 164,
+     "density": 205,
+     "speed": 3.1,
+     "z": 1.09,
+     "out": true
+    },
+    {
+     "dist": 0.957,
+     "nframes": 84,
+     "density": 205,
+     "speed": 2.47,
+     "z": 0.98,
+     "out": true
+    },
+    {
+     "dist": 1.459,
+     "nframes": 57,
+     "density": 205,
+     "speed": 3.01,
+     "z": 1.04,
+     "out": false
+    },
+    {
+     "dist": 1.005,
+     "nframes": 11,
+     "density": 205,
+     "speed": 1.85,
+     "z": 0.11,
+     "out": true
+    },
+    {
+     "dist": 1.644,
+     "nframes": 81,
+     "density": 205,
+     "speed": 1.97,
+     "z": 1.02,
+     "out": true
+    }
+   ],
+   "invalid_count": 13
+  },
+  "B_out": {
+   "n": 5138,
+   "out_last_vehicle_yaw_pct": 72.0708446866485,
+   "out_last_body_yaw_pct": 72.09030751265084,
+   "out_last_body_yaw_camera_eye_pct": 84.2351109381082,
+   "flip_vehicle_vs_body": 1.0,
+   "yaw_gap_deg_all_frames": {
+    "median": 7.107900167135611e-06,
+    "p99": 0.7851569914247043,
+    "max": 4.986260348632928
+   },
+   "yaw_gap_deg_frame0": {
+    "median": 3.603720331945314e-06,
+    "max": 3.441866458759939e-05
+   },
+   "invalid_gt0p6": [
+    {
+     "dist": 4.679,
+     "nframes": 9,
+     "density": 70,
+     "speed": 2.29,
+     "z": 0.17,
+     "out": false
+    },
+    {
+     "dist": 1.195,
+     "nframes": 8,
+     "density": 70,
+     "speed": 2.01,
+     "z": 0.28,
+     "out": true
+    },
+    {
+     "dist": 1.469,
+     "nframes": 10,
+     "density": 70,
+     "speed": 1.39,
+     "z": 0.1,
+     "out": true
+    },
+    {
+     "dist": 2.72,
+     "nframes": 10,
+     "density": 115,
+     "speed": 1.44,
+     "z": 0.22,
+     "out": true
+    },
+    {
+     "dist": 1.483,
+     "nframes": 27,
+     "density": 115,
+     "speed": 3.3,
+     "z": 0.41,
+     "out": true
+    },
+    {
+     "dist": 3.243,
+     "nframes": 132,
+     "density": 160,
+     "speed": 1.78,
+     "z": 0.88,
+     "out": true
+    },
+    {
+     "dist": 1.288,
+     "nframes": 8,
+     "density": 160,
+     "speed": 1.5,
+     "z": 0.39,
+     "out": true
+    },
+    {
+     "dist": 1.554,
+     "nframes": 9,
+     "density": 205,
+     "speed": 2.63,
+     "z": 0.23,
+     "out": true
+    },
+    {
+     "dist": 1.995,
+     "nframes": 84,
+     "density": 205,
+     "speed": 1.49,
+     "z": 1.01,
+     "out": true
+    }
+   ],
+   "invalid_count": 9
+  },
+  "C": {
+   "n": 5109,
+   "out_last_vehicle_yaw_pct": 72.85183010373851,
+   "out_last_body_yaw_pct": 72.85183010373851,
+   "out_last_body_yaw_camera_eye_pct": 83.989038950871,
+   "flip_vehicle_vs_body": 0.0,
+   "yaw_gap_deg_all_frames": {
+    "median": 7.052323234145585e-06,
+    "p99": 0.8091981291600086,
+    "max": 5.69331646166831
+   },
+   "yaw_gap_deg_frame0": {
+    "median": 3.5395270886704763e-06,
+    "max": 3.380581187724811e-05
+   },
+   "invalid_gt0p6": [
+    {
+     "dist": 1.167,
+     "nframes": 8,
+     "density": 70,
+     "speed": 2.13,
+     "z": 0.35,
+     "out": true
+    },
+    {
+     "dist": 2.307,
+     "nframes": 9,
+     "density": 115,
+     "speed": 1.7,
+     "z": 0.13,
+     "out": true
+    },
+    {
+     "dist": 2.991,
+     "nframes": 8,
+     "density": 160,
+     "speed": 3.29,
+     "z": 0.25,
+     "out": true
+    },
+    {
+     "dist": 2.14,
+     "nframes": 8,
+     "density": 160,
+     "speed": 1.85,
+     "z": 0.3,
+     "out": true
+    },
+    {
+     "dist": 1.906,
+     "nframes": 9,
+     "density": 160,
+     "speed": 2.74,
+     "z": 0.13,
+     "out": false
+    },
+    {
+     "dist": 2.718,
+     "nframes": 9,
+     "density": 160,
+     "speed": 1.96,
+     "z": 0.12,
+     "out": false
+    },
+    {
+     "dist": 1.22,
+     "nframes": 9,
+     "density": 160,
+     "speed": 2.01,
+     "z": 0.12,
+     "out": true
+    },
+    {
+     "dist": 1.416,
+     "nframes": 8,
+     "density": 160,
+     "speed": 2.01,
+     "z": 0.28,
+     "out": true
+    },
+    {
+     "dist": 1.51,
+     "nframes": 37,
+     "density": 205,
+     "speed": 1.99,
+     "z": 1.03,
+     "out": true
+    },
+    {
+     "dist": 0.724,
+     "nframes": 9,
+     "density": 205,
+     "speed": 1.93,
+     "z": 0.15,
+     "out": false
+    },
+    {
+     "dist": 1.459,
+     "nframes": 9,
+     "density": 205,
+     "speed": 2.6,
+     "z": 0.2,
+     "out": false
+    },
+    {
+     "dist": 1.083,
+     "nframes": 10,
+     "density": 205,
+     "speed": 1.83,
+     "z": 0.24,
+     "out": true
+    },
+    {
+     "dist": 1.958,
+     "nframes": 9,
+     "density": 205,
+     "speed": 2.69,
+     "z": 0.11,
+     "out": false
+    }
+   ],
+   "invalid_count": 13
+  }
+ },
+ "C-A_out_v": {
+  "delta": 24.00972484058061,
+  "ci95": [
+   19.34454368451958,
+   28.787888246747222
+  ]
+ },
+ "C-A_out_b": {
+  "delta": 24.00972484058061,
+  "ci95": [
+   19.314073204149544,
+   28.64620329449577
+  ]
+ },
+ "C-A_out_eye_b": {
+  "delta": 21.252196845607852,
+  "ci95": [
+   16.669766459601735,
+   25.815150765934213
+  ]
+ }
+}

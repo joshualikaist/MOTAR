@@ -24548,3 +24548,85 @@ The analysis (`tools/camonly_c2trace_analyse.py`) runs next.
 **Order now:** commit; G9 rerun; GR-1b evaluation (gainrand); during it on the disjoint cores: G3 analysis, the S3a record
 run, S3b dev on the fixed bridge and iters-100 worlds; then G7.
 
+## 2026-11-05 — G3 BLIND_SIDE_SUPPORTED (review r1 PASS_WITH_LIMITS); S3a records on the fixed bridge; G9 attempt 2 partly hit its bar; SITL altitude fixed with a rangefinder
+
+**G3 analysis** (`tools/camonly_c2trace_analyse.py`, CPU, 09:53 KST, during the GR-1b evaluation on cores 6,7,12,13
+nice 10; `docs/evidence/camonly_2026-11-04/c2trace/`). Reading **BLIND_SIDE_SUPPORTED**.
+
+| Condition | Crash episodes | out_last | never_in_1s | travel_out | left |
+| --- | --- | --- | --- | --- | --- |
+| A full | 475 | 48.8 % | 33.7 % | 52.1 % | 63.6 % |
+| B_out | 5138 | 72.1 % | 56.5 % | 70.2 % | 93.3 % |
+| C no_lidar | 5109 | 72.9 % | 56.7 % | 70.7 % | 93.4 % |
+
+- Contrasts: C − A +24.0 pp, CI [19.3, 28.7]; B_out − A +23.2 pp, CI [18.6, 27.9]. Validity 97.3 / 99.8 / 99.7 %.
+- **Independent review r1** (Opus 5.5, read-only, `~/motar_tmp/reviews/g3_c2trace_r1/`, copied as `REVIEW_r1.md` and
+  `review_r1/`): **PASS_WITH_LIMITS**. Every number reproduces exactly.
+  - F1 MINOR: the preregistered per-density counts were missing. They are added to `c2trace/README.md` from the
+    reviewer's JSON; the analysis JSON is unchanged.
+  - F4 MINOR: bearings are measured from the vehicle centre. From the camera eye: A 62.7 %, C 84.0 %, C − A +21.3 pp,
+    CI [16.7, 25.8].
+  - The other findings are NOTEs.
+- **Reading:** consistent with blind-side contacts. Not a causal test.
+
+**S3a records** on `9882889` (`docs/evidence/sitl_2026-11-05/s3a/`): **NOT_EQUIVALENT** at 70 and 205 bars.
+
+| Cell | target obs | action, bridge obs | action, Isaac's obs |
+| --- | --- | --- | --- |
+| 70 bars | 6.9e-3 | 1.7e-3 | 1.6e-3 |
+| 205 bars | 1.2e-2 | 9.8e-3 | 1.0e-3 |
+
+- Other slices are ≤ 2.3e-5 and the governor is ≤ 5.5e-6.
+- The target errors sit in the newest slot's target relative velocity, x and z (obs 885/887): the tracker's velocity
+  differs by up to 0.024 m/s. Not explained.
+
+**G9 attempt 2** (`results/sitl_ref_v1_r2/g9_attempt2/g9_lee_steps.json`, commit `9882889`, 09:50:15-09:50:41,
+host faults 0 → 0): ran to the end.
+- Envs 0 and 2 stopped mid-sequence, with final tilt 46° and 90°. Env 3 had a transient in the y 1→2.5 step (rise
+  2.67 s, final 2.18 m/s). These are consistent with contact with the bar.
+- **My error:** the script's docstring says the bar is "placed far from the test area", but the code left the bar and
+  the start to the env's random placement.
+- **Env 1 is clean** (exploratory reference):
+  - velocity 10-90 % rise 0.61-0.62 s;
+  - onset 0.07-0.09 s;
+  - overshoot 0.6-1.1 %;
+  - 5 % settling 0.86-0.87 s;
+  - yaw rate rise 0.11 s, overshoot 9.4 %;
+  - diagonal 3.52 m/s at tilt 31.4°.
+- **Attempt 3:** start at bounds_min + (5, 5, 1.0) and the bar at (max_x − 2, min_y + 2), with the minimum bar
+  distance recorded (`~/motar_tmp/gpu_queue_20261105/apply_g9_bar_placement_fix.py`). It runs after the GR-1b
+  evaluation.
+
+**SITL altitude** (dev, CPU, RTF 0.997-1.001; scripts `~/motar_tmp/sitl_s3b_20261105/debug/dbg_alt.py`, logs there):
+
+| PX4 height setup (navrl_quad, ODE iters 100) | truth − EKF altitude |
+| --- | --- |
+| default: EKF2_HGT_REF 1 (GPS), GPS_CTRL 7 | 0.27 m at start, drifting to 1.4 m by 27 s of S3b flight (smoke 1) |
+| EKF2_HGT_REF 0 (baro) | constant 0.25 m in flight (smoke 2); ground −0.15 m, hover drift 0.20 → 0.30 m in 8 s |
+| + EKF2_GPS_CTRL 5 (no GPS height) | ground −0.05 m, hover 0.085 → 0.15 m in 8 s |
+| downward rangefinder, EKF2_HGT_REF 2, RNG_CTRL 2 | hover within 0.012 m; S3b smoke median 0.000 m, p90 0.03 m |
+
+- **Cause:** PX4 v1.14 defaults to GPS height, and Gazebo's GPS model has a vertical random walk (`gpsZRandomWalk 4.0`).
+- **Changes in the PX4 tree** (outside the repositories; files not yet copied into `vehicle/`):
+  - `navrl_quad.sdf`: `model://lidar` on a fixed joint at z −0.03; base 0.21 → 0.20 kg, total 0.25 kg.
+  - Airframe 10090: `EKF2_HGT_REF 2`, `EKF2_RNG_CTRL 2`, `EKF2_GPS_CTRL 5`.
+  - The jinja template is not yet updated; the generated SDF was edited directly.
+- **S3b smoke episode** (70 bars, env 0; Isaac: capture at 32 steps):
+
+  | Smoke | Height setup | Outcome |
+  | --- | --- | --- |
+  | 1 | GPS height | crash after 356 steps, closest 0.69 m, flew 0.8 m above the target |
+  | 2 | baro | crash at 55 steps, closest 0.67 m |
+  | 3 | rangefinder | **capture at 35 steps**, min 0.49 m, EKF−truth xy median 0.11 m |
+
+**GR-1b evaluation** (`gainrand/dev` `7498c81`, docs-only since the prereg commit `31d5761`): `gr1repro`
+**GR1_REPRO_PASS** (09:51:52-09:57:16, host faults 0). `gr1eval` rand40 started 09:57:16; ctrl follows.
+
+**CPU windows during the GPU evaluation:** listed in `~/motar_tmp/sitl_g8_20261105/cpu_windows.log` (G3 analysis, S3a
+records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 10, CUDA hidden, memory capped.
+
+**Next:**
+- dev07 batches (10 episodes each at 70 and 205 bars) are running.
+- Then: copy the vehicle files into the evidence; update the jinja; tune PX4's velocity loop to G9 env 1.
+- G9 attempt 3 and G7 run after GR-1b.
+

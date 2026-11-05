@@ -1,0 +1,343 @@
+{
+ "audit_stats": {
+  "bar_zc_max": 1.5,
+  "bar_zc_min": 1.5,
+  "capture_last_frame_target_dist_m": {
+   "max": 0.9489016178286741,
+   "median": 0.5802636005358415,
+   "n": 22394,
+   "p99": 0.8278112576916632
+  },
+  "crash_no_spanning_bar": 0,
+  "crash_without_frames": 0,
+  "crash_without_layout": 0,
+  "episodes_noncontiguous_frames": 0,
+  "frames_ne_actions": 0,
+  "half_xy_max": 0.3950999975204468,
+  "half_xy_min": 0.20145000517368317,
+  "half_z_max": 1.5,
+  "half_z_min": 1.5,
+  "ledger_kroc_outcome_mismatch": 0,
+  "ledger_rows": 33117,
+  "ledger_without_frames": 0,
+  "ledger_without_kroc": 0,
+  "ledger_without_layout": 0,
+  "max_abs_yaw_vehicle_minus_body_deg": 5.69331646166831,
+  "quat_nonidentity_rows": 0,
+  "quat_rows": 4837630
+ },
+ "conditions": {
+  "A": {
+   "contact_ambiguous_second_within_0p1m": 2,
+   "crash_episodes": 475,
+   "crash_quota": 363,
+   "last_dist_inf": 0,
+   "last_dist_median_m": 0.21208241625722796,
+   "last_dist_p95_m": 0.3120028540492055,
+   "left_pct": 63.578947368421055,
+   "mean_abs_bearing_deg": 54.334902150464984,
+   "moving_frames": 435374,
+   "never_in_1s_ge11frames_pct": 35.483870967741936,
+   "never_in_1s_pct": 33.68421052631579,
+   "out_last_camera_eye_pct": 62.73684210526316,
+   "out_last_pct": 48.8421052631579,
+   "out_last_pct_excluding_ambiguous": 48.83720930232558,
+   "out_last_quota_only_pct": 46.5564738292011,
+   "out_last_valid_only_pct": 47.83549783549783,
+   "short_lt11_frames": 41,
+   "travel_out_ledger_eps_only_pct": 52.198896016849524,
+   "travel_out_of_fov_pct": 52.06420227206953,
+   "valid_share_pct": 97.26315789473684
+  },
+  "B_out": {
+   "contact_ambiguous_second_within_0p1m": 84,
+   "crash_episodes": 5138,
+   "crash_quota": 3537,
+   "last_dist_inf": 0,
+   "last_dist_median_m": 0.22716539587938434,
+   "last_dist_p95_m": 0.3381630837917326,
+   "left_pct": 93.3242506811989,
+   "mean_abs_bearing_deg": 65.98276749176677,
+   "moving_frames": 548015,
+   "never_in_1s_ge11frames_pct": 58.399029714978774,
+   "never_in_1s_pct": 56.4616582327754,
+   "out_last_camera_eye_pct": 84.2351109381082,
+   "out_last_pct": 72.0708446866485,
+   "out_last_pct_excluding_ambiguous": 71.98258804907005,
+   "out_last_quota_only_pct": 72.49081142210913,
+   "out_last_valid_only_pct": 72.04133359329305,
+   "short_lt11_frames": 191,
+   "travel_out_ledger_eps_only_pct": 70.22358448422783,
+   "travel_out_of_fov_pct": 70.24807715117286,
+   "valid_share_pct": 99.82483456597897
+  },
+  "C": {
+   "contact_ambiguous_second_within_0p1m": 60,
+   "crash_episodes": 5109,
+   "crash_quota": 3662,
+   "last_dist_inf": 0,
+   "last_dist_median_m": 0.2274777591228485,
+   "last_dist_p95_m": 0.3398864150047302,
+   "left_pct": 93.38422391857506,
+   "mean_abs_bearing_deg": 66.19606439642398,
+   "moving_frames": 539717,
+   "never_in_1s_ge11frames_pct": 58.661497653540096,
+   "never_in_1s_pct": 56.74300254452926,
+   "out_last_camera_eye_pct": 84.02818555490312,
+   "out_last_pct": 72.85183010373851,
+   "out_last_pct_excluding_ambiguous": 72.90552584670232,
+   "out_last_quota_only_pct": 72.55598033861278,
+   "out_last_valid_only_pct": 72.88069073783359,
+   "short_lt11_frames": 208,
+   "travel_out_ledger_eps_only_pct": 70.66680383382199,
+   "travel_out_of_fov_pct": 70.67833698030634,
+   "valid_share_pct": 99.74554707379136
+  }
+ },
+ "contrast_C-A_density_weighted_by_A_pp": 23.658559156808234,
+ "contrast_C-A_other_seed": [
+  19.48123435423556,
+  28.78787691483553
+ ],
+ "contrast_C-A_per_density_pp": {
+  "115": 18.055010850524233,
+  "160": 28.211062254107844,
+  "205": 20.871196373067246,
+  "70": 32.597117794486216
+ },
+ "contrast_C-A_quota_only": {
+  "ci95": [
+   20.653649347855193,
+   31.338081675701456
+  ],
+  "delta": 25.99950650941168
+ },
+ "contrast_C-A_two_stage_cell_bootstrap_ci95": [
+  17.651414376818032,
+  31.326699191070887
+ ],
+ "contrasts_same_rng_as_tool": {
+  "B_out-A": {
+   "ci95": [
+    18.597119501751656,
+    27.878272315666543
+   ],
+   "delta": 23.228739423490612
+  },
+  "C-A": {
+   "ci95": [
+    19.32419466163942,
+    28.650421856167128
+   ],
+   "delta": 24.00972484058061
+  }
+ },
+ "inputs_sha_mismatch_vs_analysis_json": [],
+ "json_contrasts": {
+  "B_out-A_out_last_pp": {
+   "ci95": [
+    18.597119501751656,
+    27.878272315666543
+   ],
+   "delta": 23.228739423490612
+  },
+  "C-A_out_last_pp": {
+   "ci95": [
+    19.32419466163942,
+    28.650421856167128
+   ],
+   "delta": 24.00972484058061
+  }
+ },
+ "json_reading": "BLIND_SIDE_SUPPORTED",
+ "json_vs_recomputed": {
+  "A": {
+   "crash_episodes": [
+    475,
+    475
+   ],
+   "left_pct": [
+    63.578947368421055,
+    63.578947368421055
+   ],
+   "mean_abs_bearing_deg": [
+    54.33490215046502,
+    54.334902150464984
+   ],
+   "moving_frames": [
+    435374,
+    435374
+   ],
+   "never_in_1s_pct": [
+    33.68421052631579,
+    33.68421052631579
+   ],
+   "out_last_pct": [
+    48.8421052631579,
+    48.8421052631579
+   ],
+   "travel_out_of_fov_pct": [
+    52.06420227206953,
+    52.06420227206953
+   ],
+   "valid_share_pct": [
+    97.26315789473684,
+    97.26315789473684
+   ]
+  },
+  "B_out": {
+   "crash_episodes": [
+    5138,
+    5138
+   ],
+   "left_pct": [
+    93.3242506811989,
+    93.3242506811989
+   ],
+   "mean_abs_bearing_deg": [
+    65.98276749176661,
+    65.98276749176677
+   ],
+   "moving_frames": [
+    548015,
+    548015
+   ],
+   "never_in_1s_pct": [
+    56.4616582327754,
+    56.4616582327754
+   ],
+   "out_last_pct": [
+    72.0708446866485,
+    72.0708446866485
+   ],
+   "travel_out_of_fov_pct": [
+    70.24807715117286,
+    70.24807715117286
+   ],
+   "valid_share_pct": [
+    99.82483456597897,
+    99.82483456597897
+   ]
+  },
+  "C": {
+   "crash_episodes": [
+    5109,
+    5109
+   ],
+   "left_pct": [
+    93.38422391857506,
+    93.38422391857506
+   ],
+   "mean_abs_bearing_deg": [
+    66.19606439642403,
+    66.19606439642398
+   ],
+   "moving_frames": [
+    539717,
+    539717
+   ],
+   "never_in_1s_pct": [
+    56.74300254452926,
+    56.74300254452926
+   ],
+   "out_last_pct": [
+    72.85183010373851,
+    72.85183010373851
+   ],
+   "travel_out_of_fov_pct": [
+    70.67833698030634,
+    70.67833698030634
+   ],
+   "valid_share_pct": [
+    99.74554707379134,
+    99.74554707379136
+   ]
+  }
+ },
+ "per_density": {
+  "A/115": {
+   "crash": 66,
+   "crash_quota": 51,
+   "out_last_pct": 56.06060606060606,
+   "out_last_quota_pct": 52.94117647058823,
+   "valid_pct": 93.93939393939394
+  },
+  "A/160": {
+   "crash": 145,
+   "crash_quota": 103,
+   "out_last_pct": 44.13793103448276,
+   "out_last_quota_pct": 35.922330097087375,
+   "valid_pct": 97.24137931034483
+  },
+  "A/205": {
+   "crash": 226,
+   "crash_quota": 181,
+   "out_last_pct": 50.88495575221239,
+   "out_last_quota_pct": 51.93370165745856,
+   "valid_pct": 97.78761061946902
+  },
+  "A/70": {
+   "crash": 38,
+   "crash_quota": 28,
+   "out_last_pct": 42.10526315789474,
+   "out_last_quota_pct": 39.285714285714285,
+   "valid_pct": 100.0
+  },
+  "B_out/115": {
+   "crash": 974,
+   "crash_quota": 782,
+   "out_last_pct": 72.27926078028747,
+   "out_last_quota_pct": 72.89002557544757,
+   "valid_pct": 99.79466119096509
+  },
+  "B_out/160": {
+   "crash": 1405,
+   "crash_quota": 979,
+   "out_last_pct": 72.24199288256227,
+   "out_last_quota_pct": 73.54443309499489,
+   "valid_pct": 99.85765124555161
+  },
+  "B_out/205": {
+   "crash": 1984,
+   "crash_quota": 1227,
+   "out_last_pct": 71.62298387096774,
+   "out_last_quota_pct": 72.29013854930726,
+   "valid_pct": 99.8991935483871
+  },
+  "B_out/70": {
+   "crash": 775,
+   "crash_quota": 549,
+   "out_last_pct": 72.64516129032258,
+   "out_last_quota_pct": 70.49180327868852,
+   "valid_pct": 99.61290322580645
+  },
+  "C/115": {
+   "crash": 1159,
+   "crash_quota": 828,
+   "out_last_pct": 74.11561691113029,
+   "out_last_quota_pct": 74.51690821256038,
+   "valid_pct": 99.9137187230371
+  },
+  "C/160": {
+   "crash": 1490,
+   "crash_quota": 1068,
+   "out_last_pct": 72.3489932885906,
+   "out_last_quota_pct": 71.91011235955057,
+   "valid_pct": 99.59731543624162
+  },
+  "C/205": {
+   "crash": 1788,
+   "crash_quota": 1244,
+   "out_last_pct": 71.75615212527964,
+   "out_last_quota_pct": 71.30225080385853,
+   "valid_pct": 99.72035794183445
+  },
+  "C/70": {
+   "crash": 672,
+   "crash_quota": 522,
+   "out_last_pct": 74.70238095238095,
+   "out_last_quota_pct": 73.75478927203065,
+   "valid_pct": 99.85119047619048
+  }
+ }
+}
