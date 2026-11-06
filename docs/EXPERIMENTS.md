@@ -857,6 +857,11 @@ family that is in the test's scope.
         - GPU_ON reproduces the recorded actions exactly.
         - GPU_OFF matches the CPU within S3a's action tolerance. The values are in `dev08/agq/s3a_p1/`.
         - Policy precision only: no sensing result, no S3a verdict change and no new tolerance.
+  - **S3b formal v1 (preregistered 2026-11-06, NOT_RUN):** Frozen F through PX4 SITL on the G8 r2 scenes whose
+    zero-action target ran all 600 actions. Block A is 70 bars, all 122 eligible scenes, and carries the plan's
+    rule: FEASIBLE_IN_SITL if the SITL crash rate is at most the Isaac crash rate + 5 pp. Block B (205 bars, 30
+    scenes) and block C (10 second boots) are reported. Each episode gets a fresh rootfs, a parameter read-back and a
+    0.15 s lateness bound. Entering S3b with S3a NOT_EQUIVALENT is the user's decision.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -884,6 +889,7 @@ family that is in the test's scope.
   - → `docs/plans/sitl_agq_followup_v1_2026-11-06.md` (geometry-only intervention, S3a precision controls and new input lineage proposal)
   - → `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md` (four-member geometry diagnostic: recording, stop rules, fixed reading; attempt01 2026-11-06: INCONCLUSIVE_NOT_REPRODUCED)
   - → `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md` (S3a-P1: stored-observation CPU/GPU TF32 control; gpu_run01 2026-11-06: TF32_EXPLAINS_POLICY_RESIDUAL)
+  - → `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md` (S3b formal v1: 70-bar crash-margin rule on 122 G8 r2 scenes, 205-bar and repeat blocks reported)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -897,7 +903,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md`,
   `docs/plans/sitl_agq_followup_v1_2026-11-06.md`, `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md`,
-  `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`
+  `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
+  `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`
 
 ## Not yet in the repository
 

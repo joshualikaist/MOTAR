@@ -25080,3 +25080,65 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - A repeatability check of one fixed member, before any further geometry comparison: boot-to-boot, and contact recording on versus off.
   - S3a comparison 2 (sensing raster/KF).
   - The 601-state input lineage. Formal S3b/S3c/S4/S5 stay BLOCKED.
+
+## 2026-11-06 — S3b formal v1 preregistered: 122 G8 r2 scenes at 70 bars carry the plan's +5 pp crash rule (NOT_RUN)
+
+- **Session.**
+  - At 15:05 KST the user overrode the closed session's schedule: a full repository survey, then S3a–S4 today, so
+    that S5 can run over the weekend. A new session clock was started (`--new-window`, recorded as a user override).
+  - The four read-only survey reports are summarised in the user-level memory `motar-target-detector-facts`. The
+    target is a drone; F sees a red sphere through a colour rule with perturbations OFF; a YOLOv5s NPS+Det-Fly lineage
+    exists; the planned payload is Mid-360/D435i/Orin NX/Pixhawk 6C. `docs/PROJECT_STATE.md` is stale (2026-10-21).
+- **Unit.** `tools/sitl_s3b_formal.py`, `tests/test_sitl_s3b_formal.py`,
+  `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`.
+- **Inputs (fixed before measurement):** the G8 r2 scenes whose zero-action target ran all 600 actions.
+
+| Density | Eligible scenes | Isaac first episodes on them | Scheduled |
+| --- | ---: | --- | --- |
+| 70 bars | 122 of 128 (excluded envs 5, 14, 19, 42, 45, 63) | 121 capture, 1 crash | block A: all 122 (primary) |
+| 205 bars | 124 of 128 | 114 capture, 10 crash | block B: first 30 (reported) |
+| 70 bars | — | — | block C: first 10 again, a second boot each (reported) |
+
+- **Rule (plan S3b, fixed):** FEASIBLE_IN_SITL if the SITL crash rate is at most the Isaac crash rate + 5.0 pp on the
+  VALID block-A scenes; VOID if not COMPLETE, if the integrity checks fail, or if fewer than 110 block-A episodes are
+  VALID.
+- **Loop:** the dev07 development loop, unchanged in what it computes. Added:
+  - an owned fresh-rootfs session per episode;
+  - a parameter read-back;
+  - a 0.15 s lateness bound (the user's dev08 value, adopted for this unit);
+  - a 2 s bounded step wait with session checks;
+  - launch refusals: sources equal to HEAD, Policy F SHA `f7022139…`, a clean external replay module, idle
+    cores, single use.
+- **Independent review** (Claude Opus 5.5, fresh context):
+  - r1 FAIL, retained as `REVIEW_r1.md`. The findings were:
+    - BLOCKER: the MAVLink socket was never closed, so a second episode could not start;
+    - MAJOR M1: an unbounded step wait;
+    - MAJOR M2: sources not compared with HEAD, and F not pinned;
+    - MAJOR M3: no live-path tests.
+  - All were repaired, and the minors were repaired or disclosed in the preregistration.
+  - r2 FAIL, retained as `REVIEW_r2.md`. The findings were:
+    - MAJOR-1: the PX4/Gazebo stack under test was never bound;
+    - MINOR-1 to MINOR-4: prereg statements, a missing `final.json` on some failure paths, inherited
+      environment, and an idle check at launch only.
+  - All were repaired with:
+    - a per-episode runtime binding (`BINDING_CHANGED`);
+    - SIGTERM and exception paths that write `final.json`;
+    - refusals for `NAVRL_*`, `PX4_*`, `S3B_*` and `GAZEBO_*` variables;
+    - a per-episode idle check (`HOST_BUSY`);
+    - INT32 parameter decoding, truth-age recording, and a three-consecutive-invalid stop with
+      `STOPPED_AFTER_A`.
+  - r3 PASS_WITH_LIMITS, retained as `REVIEW_r3.md`, with no BLOCKER, MAJOR or MINOR. It probed:
+    - the real-plan binding (61 files, 40 plugins, none missing, equal to AGQ attempt01's);
+    - the real `launch()` under SIGTERM and exceptions;
+    - false environment refusals (none).
+    - The reviewed SHA-256s are runner `90662692…`, tests `eccff215…` and prereg `bf6a6b87…`, the bytes committed.
+    - LOWs L1–L4 stay open: the `empty.world` template is not in the compared binding; a timeout in block B or C
+      voids block A, as preregistered; p99 and read-backs are reported per episode only; there is no separate
+      command-yaw negative test.
+- **Validation:**
+  - `tests/test_sitl_s3b_formal.py`: 33 OK. This includes fake-PX4 tests of two consecutive episodes (links closed,
+    receivers joined), a stalled clock, a dead process, a time jump (LATE), PARAM_VALUE and INT32 parsing, every stop rule,
+    BINDING_CHANGED, HOST_BUSY, a tree change, STOPPED_AFTER_A, every launch refusal and a missing `final.json`.
+  - `--check`: inputs pinned, schedule 122/30/10, environment OK.
+- **Not run.** Execution needs the user's approval. Approving it is also the user's decision to enter S3b while S3a
+  reads NOT_EQUIVALENT.
