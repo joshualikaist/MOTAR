@@ -1,8 +1,10 @@
 # AGQ geometry-v1 — recording and four-member launcher, CPU preparation, 2026-11-06
 
-**Status:** CPU implementation and independent reviews only. **Measurement NOT_RUN; live behaviour NOT_VERIFIED.**
-No PX4, Gazebo, SITL or GPU process was started. Execution needs the user's scoped approval bound to the clean
-commit that adds this folder.
+**Status (2026-11-06, after attempt01):** the single approved attempt ran at `f286e29` and completed.
+**Both pair readings are INCONCLUSIVE_NOT_REPRODUCED**: no native-model member reproduced a rotor contact followed by
+an angular-rate excursion. Results review r1: PASS_WITH_LIMITS. See [Result: attempt01](#result-attempt01-2026-11-06) below.
+The preparation record follows unchanged: before attempt01, CPU implementation and independent reviews only,
+with no PX4, Gazebo, SITL or GPU process started.
 
 Read the [preregistration](../../../../../plans/prereg_sitl_agq_geometry_v1_2026-11-06.md) first. It fixes the
 members, the recording, the stop rules and the pair reading. The parent is the
@@ -65,3 +67,104 @@ Numbers in this table are from the bound records in [`validation.json`](validati
 
 Every finding and its repair is listed in the review files. The repaired rules are in the preregistration's
 section 6.
+
+## Result: attempt01 (2026-11-06)
+
+- **Approval.** The approval file was written at 11:40 KST. It names the code's SCOPE ("AGQ geometry-v1: 4 fixed
+  development members…"), commit `f286e29` and `skip_max_s` 0.15.
+  - The user wrote it by running a snippet the session provided. That one process also wrote the S3a-P1
+    approval, so both files share one `recorded_at`.
+  - The session's own two attempts to write the files were refused by the auto-mode classifier.
+  - The independent review verified authorization from these files only (results review r1, LOW A-l1).
+- **Execution.** `tools/sitl_agq_geometry_launch.py --launch` ran once, 11:54:42–11:57:56 KST, exit code 0.
+  - The unit read COMPLETE: 4 of 4 members recorded, all VALID, with no record, recorder or timing problem.
+  - Kernel faults were 0 → 0. The tree stayed clean at `f286e29`.
+  - The runner's idle checks on its cores 6/7/12/13 passed before and after every member. No other work ran.
+- **Records.**
+  - [`execution_record.json`](execution_record.json) holds the bindings, the member events and the descriptive
+    comparisons below. `~/motar_tmp/agq_geometry_diag_20261106/make_results.py` wrote it from the raw files,
+    run with px4 Python for the ULog peaks.
+  - [`reading_attempt01.json`](reading_attempt01.json) is a byte-identical copy of the fixed analyzer's output
+    (`--analyze`, px4 Python, `analysis_v1/reading.json`).
+  - The raw attempt stays outside Git in `~/motar_tmp/agq_geometry_diag_20261106/attempt01/`.
+
+| Scene (pair) | Fixed reading | Native member: first rotor–bar contact, rate onsets | Clock order |
+| --- | --- | --- | --- |
+| 205/env5 (0 native, 1 training-box) | INCONCLUSIVE_NOT_REPRODUCED | none, none | SUPPORTED |
+| 205/env2 (3 native, 2 training-box) | INCONCLUSIVE_NOT_REPRODUCED | rotor_0 on bar 169 at 2.764 s, none | SUPPORTED |
+
+| Member | Outcome (end, s) | First bar contact (part, bar, s, max force) | Rate > 5 rad/s | Peak rate, rad/s (s) | z < 0.8 m | estimate error > 0.5 m |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 0 env5 native gains, native model | capture (4.520) | none | none | 3.50 (4.448) | none | none |
+| 1 env5 native gains, training-box model | capture (4.520) | none | none | 2.62 (0.236) | none | none |
+| 2 env2 candidate gains, training-box model | capture (7.504) | base, 169, 2.768, 46.66 N | 2.776 | 12.26 (2.796) | 3.800 | none |
+| 3 env2 candidate gains, native model | capture (5.616) | rotor, 169, 2.764, 4.19 N | none | 4.31 (3.068) | none | none |
+
+- Times are seconds after each member's gate start.
+- A rate is the largest absolute body rate on any axis in the ULog over the gate window.
+- Under the preregistration, a NOT_REPRODUCED pair runs no replacement member and gets no further pair reading.
+
+**The two NOT_REPRODUCED readings mean different things** (descriptive, from `execution_record.json`):
+- **env5: the historical encounter was never reached.**
+  - Member 0 captured at 4.520 s.
+  - In dev08 the same member (`33_main_205bars_env5_native`) first overlapped a bar (168, footprint proxy) at
+    5.728 s, according to the committed [dev08 diagnosis](../diagnosis.json).
+  - The reading says nothing for or against the rotor-contact explanation of the dev08 env5 failure.
+- **env2: the encounter was reached, but the pass was shallower.**
+  - Member 3 touched bar 169 with rotor 0 at 2.764 s. dev08 `27_main_205bars_env2_candidate` first overlapped
+    bar 169 at 2.736 s.
+  - Its box_hit clearance to bar 169 at checkpoint 28 was 0.311 m, against 0.199 m for dev08 27 and 0.185 m for
+    training-box member 2. Checkpoint 28 is the closest point of all three paths.
+  - Its peak body rate stayed below 5 rad/s: 4.31 rad/s at 3.068 s.
+  - A light rotor touch on a shallower pass without an excursion does not test the dev08 failure.
+  - The env2 contrast between the two models confounds the geometry with how close each pass was. Member 2's
+    base box hit at 0.185 m (46.66 N); a rate above 5 rad/s followed 8 ms later, and the height fell below 0.8 m
+    at 3.800 s. It still captured.
+
+**These members did not repeat their historical dev08 counterparts**, which had the same scene inputs, gains and
+native collision model (descriptive):
+- Member 0 against dev08 33:
+  - 0.0319 m apart at the gate start;
+  - first actions up to 0.1105 apart in one dimension;
+  - more than 0.5 m apart from checkpoint 28.
+  - dev08 crashed (altitude); member 0 captured.
+- Member 3 against dev08 27: 0.0321 m apart at the gate start and more than 0.5 m apart from checkpoint 33. dev08
+  crashed (bar); member 3 captured.
+- All four members start 0.025–0.031 m from the dev08 starts, mainly along x, with identical target positions.
+  Within this attempt the paired members start 0.007 m (env5) and 0.017 m (env2) apart.
+- The cause is not identified. Candidates, not separated:
+  - boot or takeoff variation;
+  - start timing;
+  - the added recording, since the contact subscriber makes Gazebo build contact messages.
+- Results review r1 notes that dev08's own gain pair (33 against 32) separated by 0.5 m only at checkpoint 32. What
+  differs between boots therefore moves the path about as much as that gain change did.
+
+**What does not follow:**
+- no geometry effect;
+- no rotor-contact causality, for or against;
+- no gain ranking;
+- no S3b acceptance;
+- no flight readiness.
+
+The historical dev08 failures are neither explained nor refuted. Before any further geometry comparison, the open
+question is the repeatability of one fixed member: boot to boot, and with contact recording on and off. It is not
+preregistered and not approved.
+
+## Results review r1 (Claude Opus 5.5, fresh context)
+
+[RESULTS_REVIEW_r1.md](RESULTS_REVIEW_r1.md) is a copy of `~/motar_tmp/agq_geometry_diag_20261106/results_review_r1/REVIEW.md`.
+The verdict for this unit is **PASS_WITH_LIMITS**, with no BLOCKER or MAJOR.
+- **Checks.**
+  - Authorization, envelope, ledger chain and file bindings: PASS.
+  - The 250/250 floor-contact control and the contact-log continuity in every member: PASS.
+  - Re-running the fixed analyzer gave byte-identical output, and an independent parser recomputed every value.
+- **Findings, all repaired in this section before commit:**
+  - MINOR A-m1: the two NOT_REPRODUCED readings mean different things;
+  - MINOR A-m2: member 3's peak rate;
+  - LOW A-l2: approval wording;
+  - LOW A-l3: idle-check scope;
+  - LOW A-l4: "mainly along x".
+- LOW A-l1 is answered under *Approval* above.
+- The clearances and peak rates the review computed are recomputed by `make_results.py` into
+  `execution_record.json`. Member 0's peak is 3.50 rad/s there, against 3.52 rad/s at 4.868 s in the review, which is
+  after the 4.520 s end of the gate window used here.

@@ -25015,3 +25015,68 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - AGQ geometry-v1: the user records `~/motar_tmp/agq_geometry_diag_20261106/execution_approval.json`, naming SCOPE, this commit and `skip_max_s = 0.15`. Then `python3 tools/sitl_agq_geometry_launch.py --launch`. About 7 min; host idle; tree frozen. Then `--analyze` in the px4 env and an independent review.
   - S3a-P1: the prereg §5 GPU command, once. Under 2 min; no other CUDA job; tree frozen.
   - Still BLOCKED or unprepared: formal S3b/S3c/S4/S5, the 601-state input lineage and the S3a sensing control (comparison 2).
+
+## 2026-11-06 — S3a-P1 reads TF32_EXPLAINS_POLICY_RESIDUAL; AGQ geometry-v1 attempt01 reads INCONCLUSIVE_NOT_REPRODUCED for both pairs (members did not repeat dev08)
+
+- **Session.** Claude Code (Opus 5.5) started a new window at 10:41 KST (session clock started with `--new-window`). The previous window had closed with a handoff.
+  - The user approved both runs in chat: "오케이 진행해", then "승인해야지".
+  - The auto-mode classifier twice refused the agent writing the approval files itself.
+  - The user then wrote both `execution_approval.json` files at 11:40 KST by running a snippet the session provided. One process wrote both, so they share one `recorded_at`. They name the code SCOPE strings, commit `f286e29` and, for AGQ, `skip_max_s` 0.15.
+  - At the user's request, one allow rule was added to the user-level `~/.claude/settings.json`: `Edit(~/motar_tmp/*/execution_approval.json)`. This is outside every repository.
+  - The two runs were sequential, and the tree was frozen during each.
+- **S3a-P1 gpu_run01** (prereg §5 command, once).
+  - Ran 11:54:08–11:54:13 KST on the RTX 3070 (torch 2.4.1+cu121), cores 6/7/12/13, nice 10. The measurement took 4.68 s.
+  - Faults 0→0; clean at `f286e29`; `aerial_gym` resolved inside the worktree.
+  - The switches read back as preregistered.
+
+| Density | GPU_ON vs recorded | GPU_OFF vs CPU | GPU_ON vs GPU_OFF | CPU vs recorded |
+| --- | ---: | ---: | ---: | ---: |
+| 70 bars | 0 | 2.3544e-6 | 1.7198e-3 | 1.7202e-3 |
+| 205 bars | 0 | 1.4901e-6 | 1.7296e-3 | 1.7297e-3 |
+
+  - **Reading: TF32_EXPLAINS_POLICY_RESIDUAL**, for both densities.
+  - The policy part of the S3a residual is GPU TF32 arithmetic in F's forward pass: the replay is bit-exact with TF32 on, and within 2.4e-6 of the CPU with TF32 off.
+  - It gives no sensing result, no S3a verdict change, no tolerance change, and no change to the G8 bytes.
+  - Records: `docs/evidence/sitl_2026-11-05/dev08/agq/s3a_p1/gpu_run01_record.json` and `gpu_run01_result.json`. Raw: `~/motar_tmp/s3a_policy_precision_20261106/gpu_run01/`.
+- **AGQ geometry-v1 attempt01** (`tools/sitl_agq_geometry_launch.py --launch`, once).
+  - Ran 11:54:42–11:57:56 KST, exit 0; COMPLETE, 4/4 VALID; no record, recorder or timing problem.
+  - Faults 0→0; clean at `f286e29`.
+  - The fixed `--analyze` (px4 Python) produced `analysis_v1/reading.json`.
+
+| Member | Outcome (end s) | First bar contact (part, bar, s, N) | Rate > 5 rad/s | z < 0.8 m |
+| --- | --- | --- | ---: | ---: |
+| 0 env5 native gains, native | capture (4.520) | none | none | none |
+| 1 env5 native gains, training-box | capture (4.520) | none | none | none |
+| 2 env2 candidate gains, training-box | capture (7.504) | base, 169, 2.768, 46.66 | 2.776 | 3.800 |
+| 3 env2 candidate gains, native | capture (5.616) | rotor, 169, 2.764, 4.19 | none | none |
+
+  - **Readings: env5 INCONCLUSIVE_NOT_REPRODUCED, env2 INCONCLUSIVE_NOT_REPRODUCED.** Cross-clock order SUPPORTED for both pairs. Under the preregistration, no replacement member is run.
+  - **The two NOT_REPRODUCED readings differ** (descriptive, `execution_record.json`):
+    - env5 never reached the historical encounter: member 0 captured at 4.520 s, while dev08 33 first overlapped bar 168 at 5.728 s.
+    - env2 reached it with a shallower pass. Box_hit clearance to bar 169 at checkpoint 28 was 0.311 m, against 0.199 m for dev08 27 and 0.185 m for member 2. Member 3's peak rate was 4.31 rad/s at 3.068 s.
+    - Neither reading is evidence for or against rotor contact.
+  - **Expectation "the dev08 members repeat under the same inputs" not met in this attempt:** the members did not repeat their dev08 counterparts (descriptive).
+    - Member 0 against dev08 `33_main_205bars_env5_native`: 0.0319 m apart at the gate start; first actions differ by up to 0.1105; more than 0.5 m apart from checkpoint 28. dev08 crashed (altitude); member 0 captured.
+    - Member 3 against dev08 `27_main_205bars_env2_candidate`: 0.0321 m at the start, more than 0.5 m from checkpoint 33. dev08 crashed (bar); member 3 captured.
+    - All four members start 0.025–0.031 m from the dev08 starts, mainly along x, with identical target positions. Paired members start 0.007 m (env5) and 0.017 m (env2) apart.
+    - The cause of the offset is not identified. Candidates are boot/takeoff variation, start timing and an effect of the added contact recording; none was separated.
+    - Results review r1: dev08's own gain pair (33/32) separated by 0.5 m only at checkpoint 32, so the variation between boots is about as large as that gain change.
+  - **env2, descriptive:** both models touched bar 169 at about 2.76 s.
+    - Native: rotor 0, 4.19 N, peak 4.31 rad/s.
+    - Training-box: base box, 46.66 N, rate above 5 rad/s 8 ms later (peak 12.26 rad/s), z below 0.8 m at 3.8 s.
+    - Both captured. One boot each; no geometry effect follows.
+  - Records: `docs/evidence/sitl_2026-11-05/dev08/agq/geometry_v1/execution_record.json` and `reading_attempt01.json` (byte copy). Raw: `~/motar_tmp/agq_geometry_diag_20261106/attempt01/`. Generator: `~/motar_tmp/agq_geometry_diag_20261106/make_results.py`.
+- **Independent results review r1** (Claude Opus 5.5, fresh context; `~/motar_tmp/agq_geometry_diag_20261106/results_review_r1/`, copied as `RESULTS_REVIEW_r1.md` into both evidence folders): **PASS_WITH_LIMITS for both units**, no BLOCKER or MAJOR.
+  - Authorization, envelope, ledger chain, the 10/10 bindings per member, the 250/250 floor control and contact-log continuity: PASS.
+  - The analyzer re-run was byte-identical, and every AGQ and S3a value recomputed.
+  - Repaired in the draft records before commit:
+    - MINOR A-m1: the two NOT_REPRODUCED meanings;
+    - MINOR A-m2: member 3's peak rate;
+    - MINOR S-m1: the S3a outer `timeout` and "no other CUDA job" were in no record, now marked NOT_RECORDED;
+    - LOWs A-l2 to A-l4 and S-l1.
+  - LOW A-l1/S-l2 (shared `recorded_at`) is explained above.
+  - The review's clearances and peak rates are recomputed by `make_results.py` (px4 Python).
+- **Next (each needs a new preregistration and approval).**
+  - A repeatability check of one fixed member, before any further geometry comparison: boot-to-boot, and contact recording on versus off.
+  - S3a comparison 2 (sensing raster/KF).
+  - The 601-state input lineage. Formal S3b/S3c/S4/S5 stay BLOCKED.

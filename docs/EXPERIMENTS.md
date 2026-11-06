@@ -842,14 +842,21 @@ family that is in the test's scope.
         Source review r1 FAIL is retained; repaired source review r2 PASS_WITH_LIMITS covers offline preparation.
         New model live response remains NOT_TESTED. S3a and complete601-state inputs still block formal validation;
         the new structural readiness audit cannot authorize a gate. Read `dev08/agq/README.md` in the evidence folder.
-      - **AGQ geometry-v1 (preregistered, NOT_RUN):** four fixed development members (205/env5 native gains
-        native→training-box collision; 205/env2 candidate gains training-box→native) with evaluation-only Gazebo
-        contact, MAVLink send/arrival and snapshot recording, a pre-takeoff floor-contact positive control and a
-        fixed pair reading. CPU implementation and reviews only; execution needs a new scoped approval.
-      - **S3a-P1 policy precision (preregistered; GPU NOT_RUN):** Frozen F on the stored G8 r2 observations, CPU
-        versus GPU with TF32 ON and OFF set after player construction, one 128-environment batch per call as recorded.
-        The CPU preflight reproduces the known action residual (the CPU-versus-recorded maximum is in
-        `dev08/agq/s3a_p1/`). The GPU conditions need a scoped approval; no S3a verdict changes.
+      - **AGQ geometry-v1 (attempt01 ran 2026-11-06; both pairs INCONCLUSIVE_NOT_REPRODUCED):** four fixed
+        development members (205/env5 native gains native→training-box collision; 205/env2 candidate gains
+        training-box→native) with evaluation-only Gazebo contact, MAVLink send/arrival and snapshot recording, a
+        pre-takeoff floor-contact positive control and a fixed pair reading.
+        - The unit read COMPLETE and VALID, with faults 0→0. All four members captured. No native member had a
+          rotor contact followed by a rate excursion, so neither pair is read further.
+        - The members also did not repeat their historical dev08 counterparts; this is descriptive. Their start
+          offsets and divergence are in `dev08/agq/geometry_v1/`.
+        - No geometry effect follows.
+      - **S3a-P1 policy precision (gpu_run01 ran 2026-11-06; TF32_EXPLAINS_POLICY_RESIDUAL):** Frozen F on the stored
+        G8 r2 observations, CPU versus GPU with TF32 ON and OFF set after player construction, one 128-environment
+        batch per call as recorded.
+        - GPU_ON reproduces the recorded actions exactly.
+        - GPU_OFF matches the CPU within S3a's action tolerance. The values are in `dev08/agq/s3a_p1/`.
+        - Policy precision only: no sensing result, no S3a verdict change and no new tolerance.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -875,8 +882,8 @@ family that is in the test's scope.
   - → `docs/evidence/sitl_2026-11-05/dev08/execution/` (authorized execution preparation, source/result reviews and records)
   - → `docs/evidence/sitl_2026-11-05/dev08/agq/` (existing-log mechanism diagnosis and additive CPU preparation)
   - → `docs/plans/sitl_agq_followup_v1_2026-11-06.md` (geometry-only intervention, S3a precision controls and new input lineage proposal)
-  - → `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md` (four-member geometry diagnostic: recording, stop rules, fixed reading; NOT_RUN)
-  - → `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md` (S3a-P1: stored-observation CPU/GPU TF32 control; GPU NOT_RUN)
+  - → `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md` (four-member geometry diagnostic: recording, stop rules, fixed reading; attempt01 2026-11-06: INCONCLUSIVE_NOT_REPRODUCED)
+  - → `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md` (S3a-P1: stored-observation CPU/GPU TF32 control; gpu_run01 2026-11-06: TF32_EXPLAINS_POLICY_RESIDUAL)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
