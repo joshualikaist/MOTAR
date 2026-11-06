@@ -24932,3 +24932,86 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - External persistent unit /home/fair/motar_tmp/agq_diagnosis_20261106/ is INDEX registered. Source packages and dry launch receipts are in root/models_v2; root/integrity_v1, agent_analysis_r1, s3a_audit_r1 and independent source/evidence review directories preserve reproduction scripts and full CSV/NPZ/plots. Own processes and final validation/results will be recorded before the local commit.
 - Independent fresh-context Codex evidence review r1 is LIMITED_VALIDITY for descriptive diagnosis, no BLOCKER/MAJOR. It verifies610bindings, recomputes four transforms/onsets/27effective parameters, actual-rounded-world proxy counts18/25/0/8,48command projections and S3a/412-state results. Four MINOR wording/datum clarifications are applied in root README without rewriting the worker reports: measured rate frequency125Hz; proxy world-z omits~9cm settled-centre offset (independent actual-world probe reproduces every sampled intersection for these tall bars); CPU1vs16 does not rule out GPU128kernel effects; sampled trajectory_setpoint is upstream of controller shaping. Report copied byte-identically as RESULTS_REVIEW_r1.md. User then explicitly requests early quota closeout and Claude handoff; no new work/probes start. motar-agq closes only its existing-log diagnosis criteria; motar-z5f remains in progress for actual formal prerequisites and the next recording/diagnostic preparation.
 - Final validation: PUBLIC_CPU3451 OK/10skip in298.402s (301.795s process), four new source/test hashes stable and kernel faults0→0;8GiBAS/CUDAhidden/threads1/cores6,7,12,13/nice10/timeout900s-k20. Public docs PASS, staged experiment-index9/9 OK and diff check PASS. validation.json binds CPU logs, source/evidence reviews, generated packages and integrity proofs. All owned test/review jobs ended. Final local record commit only; no push/main merge. Next single CPU action for Claude: read motar-z5f and docs/plans/sitl_agq_followup_v1_2026-11-06.md, then implement/review the evaluation-only recording and guarded four-member geometry diagnostic before requesting new live scope; preserve blocked S3a/full-horizon inputs and all old evidence. Shared latest_handoff.json carries exact final HEAD/process state and inherited clock. Initial closeout binding assembly refused a nonexistent r1 manifest path before writes; final record binds actual r1 probe/report.
+
+## 2026-11-06 — AGQ geometry-v1 recording/launcher and S3a-P1 policy precision control preregistered (CPU only; measurements NOT_RUN)
+
+- **Session and scope.** Claude Code (Opus 5.5) opened a new window on 2026-11-05 at 16:40:06 UTC (01:40 KST). Worktree MOTAR-camonly, branch `camonly/dev`, base `0abb766`. It followed the next action in the Codex handoff (`latest_handoff.json`, motar-z5f). No PX4, Gazebo, SITL or GPU process was started. No push or merge.
+- **AGQ geometry-v1** (`docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md`, PROPOSED, NOT_RUN).
+  - Four fixed members:
+    - 205/env5 with native gains: native, then training-box collision;
+    - 205/env2 with candidate gains: training-box, then native.
+  - `tools/sitl_agq_geometry_diag.py` injects evaluation-only recording into the unchanged dev08 `run_episode`:
+    - the Inbox dump;
+    - timed `*_send` calls;
+    - checkpoint snapshots;
+    - an owned `stdbuf -oL gz topic -u -e /gazebo/default/physics/contacts` subscriber with a pre-takeoff floor-contact positive control, a freshness check and a 4 ms continuity audit over the reading window.
+  - The same file holds:
+    - the guarded unit: stop rules, an envelope guard on `--execute`, single use;
+    - the fixed `--analyze` reading:
+      - rate windows with ULog coverage;
+      - exposure to the contacted bar;
+      - the takeoff clock check;
+      - hash-verified member files;
+      - a void attempt when the fault count changes.
+  - `tools/sitl_agq_geometry_launch.py`: `timeout -s TERM -k 120 1200`, cores 6/7/12/13, nice 10, 16 GiB address space, CUDA hidden, one thread.
+- **Source facts checked** (Gazebo 11.15.1 upstream and PX4 v1.14.3):
+  - one Contacts message per 4 ms world step, empty or not, stamped with simulator time, queue 50;
+  - PX4 lockstep hrt equals Gazebo SimTime;
+  - the vehicle rests on `asphalt_plane` (top z = 0.05 m), not `ground_plane`, which explains the earlier ~9 cm settled offset.
+- **CPU checks.**
+  - A C++ `std::cout << "\n"` writer keeps 0/50 lines through SIGTERM without `stdbuf -oL` and 50/50 with it.
+  - The dry plan and binding with the real PX4 tree has 60 identical runtime files across the four members; only `model_sdf` differs, and the native package equals the installed SDF.
+  - Mutant kill checks:
+    - v4: 39/39 killed (r3 bytes);
+    - v5: 8/10, with 2 survivors that tests then pinned;
+    - v6: 4/4.
+  - The v1 harness was invalid: its copied module resolved ROOT to its temp directory. It is preserved.
+- **Reviews of AGQ geometry-v1** (Claude Opus 5.5, fresh context each round; copies in `docs/evidence/sitl_2026-11-05/dev08/agq/geometry_v1/`):
+  - r1: FAIL, 4 MAJOR.
+    - The pair reading was favourable by construction: first excursion only, no late window, no exposure check.
+    - The clock anchor was a post-crash touchdown.
+    - `analyze()` read invalidated members.
+    - Tests depended on cores.
+  - r2: FAIL, 2 MAJOR.
+    - numpy-typed ULog values broke the clock check and the JSON output.
+    - Rate data was not required to cover the box window.
+  - r3: FAIL, 1 MAJOR. The exposure reference had a sampling-phase bias.
+  - r4: PASS_WITH_LIMITS. Two false preregistration sentences were corrected before commit.
+  - r5: PASS_WITH_LIMITS. MINOR R5-m1: the exposure reference errs towards INCONCLUSIVE when N slows down or turns away just before the contact.
+- **After r5, not re-reviewed.**
+  - R5-m1 and the 30 ms truth-age limit were disclosed in §6.5 and §8.
+  - Both candidate reference values are now reported.
+  - A test was renamed.
+  - These edits were covered by the focused tests and the final PUBLIC_CPU run.
+- **S3a-P1** (`docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`; GPU NOT_RUN).
+  - Frozen F runs on the stored G8 r2 observations: CPU versus GPU TF32 ON versus GPU TF32 OFF. The switches are set and read back after player construction. The batch is one call's 128 envs, as recorded.
+  - The run is single use in a fixed `gpu_run01/`. Every refusal comes before that directory exists, and `attempt.json`/`aborted.json` are written.
+  - The kernel fault count is read before and after the run. The reading is fixed:
+    - GPU_REPLAY_NOT_FAITHFUL is global;
+    - otherwise each density is classified and the result is MIXED when they differ;
+    - VOID_HOST_FAULT.
+- **S3a-P1 CPU preflight** (`dev08/agq/s3a_p1/cpu_preflight_v4.json`, committed tool bytes):
+
+| Density | CPU vs recorded GPU max | components > 1e-4 | shifted-pairing control |
+| --- | ---: | ---: | ---: |
+| 70 bars | 1.7202e-3 | 8453 / 43008 | 1.93 |
+| 205 bars | 1.7297e-3 | 8468 / 43008 | 1.93 |
+
+  - The full-grid residual exceeds the prior audit's envs-0–7 figures (1.585e-3 and 1.012e-3).
+  - The largest error is in action dimension 1, the lateral axis with the 0.4 mu scale.
+  - Four preflights (v1–v4) give the same action npz, `83c26c21…`.
+  - Reviews: r1 FAIL (1 MAJOR: not single use, no fault record, `--out` could sit inside the worktree); r2, r3, r4 and r5 PASS_WITH_LIMITS.
+- **Validation.**
+  - Focused tests: 25 (geometry) and 13 (S3a), OK.
+  - PUBLIC_CPU v4 on the final staged bytes: 3489 OK, 10 skipped, in 365.5 s; kernel faults 0→0; all 21 staged files unchanged during the run (`public_cpu_v4/summary.json`).
+  - Public docs PASS, and the staged diff check passes.
+  - Earlier PUBLIC_CPU attempts are preserved:
+    - v1 (3469 tests) failed 2 experiment-index tests because the new preregistrations were untracked;
+    - v2 passed (3489 OK, 10 skipped, faults 0→0) before the post-r5 edits;
+    - v3 (04:04 KST) never started. Only its starting fault count was written, with no `run.log`. Its completion waiter was left waiting, so the unit sat idle until the user asked at 10:41 KST. The session had passed its 06:40 KST deadline without a closeout.
+  - Records: `docs/evidence/sitl_2026-11-05/dev08/agq/{geometry_v1,s3a_p1}/validation.json`, which bind the external units `~/motar_tmp/agq_geometry_diag_20261106/` and `~/motar_tmp/s3a_policy_precision_20261106/`.
+- **Beads.** motar-z5f continues. New issues, each gated on the user's scoped approval: `motar-atb` (run AGQ geometry-v1) and `motar-ocd` (run S3a-P1 GPU).
+- **Next.**
+  - AGQ geometry-v1: the user records `~/motar_tmp/agq_geometry_diag_20261106/execution_approval.json`, naming SCOPE, this commit and `skip_max_s = 0.15`. Then `python3 tools/sitl_agq_geometry_launch.py --launch`. About 7 min; host idle; tree frozen. Then `--analyze` in the px4 env and an independent review.
+  - S3a-P1: the prereg §5 GPU command, once. Under 2 min; no other CUDA job; tree frozen.
+  - Still BLOCKED or unprepared: formal S3b/S3c/S4/S5, the 601-state input lineage and the S3a sensing control (comparison 2).

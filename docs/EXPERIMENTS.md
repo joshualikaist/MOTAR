@@ -842,6 +842,14 @@ family that is in the test's scope.
         Source review r1 FAIL is retained; repaired source review r2 PASS_WITH_LIMITS covers offline preparation.
         New model live response remains NOT_TESTED. S3a and complete601-state inputs still block formal validation;
         the new structural readiness audit cannot authorize a gate. Read `dev08/agq/README.md` in the evidence folder.
+      - **AGQ geometry-v1 (preregistered, NOT_RUN):** four fixed development members (205/env5 native gains
+        native→training-box collision; 205/env2 candidate gains training-box→native) with evaluation-only Gazebo
+        contact, MAVLink send/arrival and snapshot recording, a pre-takeoff floor-contact positive control and a
+        fixed pair reading. CPU implementation and reviews only; execution needs a new scoped approval.
+      - **S3a-P1 policy precision (preregistered; GPU NOT_RUN):** Frozen F on the stored G8 r2 observations, CPU
+        versus GPU with TF32 ON and OFF set after player construction, one 128-environment batch per call as recorded.
+        The CPU preflight reproduces the known action residual (the CPU-versus-recorded maximum is in
+        `dev08/agq/s3a_p1/`). The GPU conditions need a scoped approval; no S3a verdict changes.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -867,6 +875,8 @@ family that is in the test's scope.
   - → `docs/evidence/sitl_2026-11-05/dev08/execution/` (authorized execution preparation, source/result reviews and records)
   - → `docs/evidence/sitl_2026-11-05/dev08/agq/` (existing-log mechanism diagnosis and additive CPU preparation)
   - → `docs/plans/sitl_agq_followup_v1_2026-11-06.md` (geometry-only intervention, S3a precision controls and new input lineage proposal)
+  - → `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md` (four-member geometry diagnostic: recording, stop rules, fixed reading; NOT_RUN)
+  - → `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md` (S3a-P1: stored-observation CPU/GPU TF32 control; GPU NOT_RUN)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -879,7 +889,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md`,
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md`,
-  `docs/plans/sitl_agq_followup_v1_2026-11-06.md`
+  `docs/plans/sitl_agq_followup_v1_2026-11-06.md`, `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md`,
+  `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`
 
 ## Not yet in the repository
 

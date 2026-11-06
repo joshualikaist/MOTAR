@@ -1,0 +1,149 @@
+{
+ "schema": "motar.agq-geometry-v1.validation.v1",
+ "measurement": "NOT_RUN",
+ "live_verified": false,
+ "execution_authorized": false,
+ "simulator_or_gpu_started": false,
+ "sources": {
+  "tools/sitl_agq_geometry_diag.py": "072b7fc4fdbc301caad373c0b4f0185c138448bab78283375236355552cea5cb",
+  "tools/sitl_agq_geometry_launch.py": "189e05ef0d6b5a5f425616f5755b622909cfde8309adc22deacdcca533d0453b",
+  "tests/test_sitl_agq_geometry_diag.py": "877af0debd56ab0ec59b017986a34bdd4c001fab04e7fd2e57c69956db52c77c",
+  "docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md": "29a96683efb42185158b1e48aa80d83b6ae1805c0178a982f0b8e16090c78481",
+  "tools/sitl_training_geometry.py": "cadd5167e874c2101118d3d24d9e6c517604571a64ed50a34391aeb3b7b0df35"
+ },
+ "focused_tests": {
+  "log": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/logs/focused_v14.log",
+   "sha256": "ccd16587069199c648b51a7949ced1ca71f69dad6475749a013bafa84325e336",
+   "bytes": 457
+  },
+  "ran": "Ran 25 tests in 60.298s",
+  "status": "OK"
+ },
+ "stdbuf_check": {
+  "result": [
+   "plain lines_after_SIGTERM=0",
+   "stdbuf lines_after_SIGTERM=50",
+   "675a388fdd2400f9864014e71d536b204dae7d698c086bfbcac0c5cdb9aa4baa  probe.cpp"
+  ],
+  "record": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/stdbuf_check/result.txt",
+   "sha256": "b77e23f8ea789e366741da54072cdf6c18b05770923be277fdd17a2936cbf8a6",
+   "bytes": 134
+  },
+  "probe": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/stdbuf_check/probe.cpp",
+   "sha256": "675a388fdd2400f9864014e71d536b204dae7d698c086bfbcac0c5cdb9aa4baa",
+   "bytes": 335
+  }
+ },
+ "dry_binding": {
+  "core_identical_across_members": true,
+  "core_files": 60,
+  "model_sdf_matches_package": true,
+  "native_package_equals_px4_sdf": true
+ },
+ "dry_binding_record": {
+  "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/dry_binding_v1/out/dry_binding.json",
+  "sha256": "523e41c384fac697414737be83d40ac0885d0966bea366084e648c598057eae2",
+  "bytes": 32471
+ },
+ "dry_binding_note": "ran on the pre-review plan code; member_deps plan/binding later gained only the stdbuf files",
+ "mutants_v4": {
+  "all_killed_and_control_passes": true,
+  "killed": 39,
+  "total": 39,
+  "control_rc": 0,
+  "survivors": [],
+  "source_sha256": "3e86c658b1cf297330d06efcd867bf3cbc3d9439dd67dab4baef1f795036834b",
+  "record": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/mutants_v4/results.json",
+   "sha256": "bacaf3b816eb524c43c28add743d06c2b1b7bc014ee58d4155cf8f572e723499",
+   "bytes": 8929
+  }
+ },
+ "mutants_v5_targeted": {
+  "all_killed_and_control_passes": false,
+  "killed": 8,
+  "total": 10,
+  "control_rc": 0,
+  "survivors": [
+   "box_checkpoints_only",
+   "nonfinite_clearance_kept"
+  ],
+  "source_sha256": "80b42034c458352ec9e5056248132c2e2da74bfba99f29b8738784a3b1cc0796",
+  "record": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/mutants_v5/results.json",
+   "sha256": "dcbf9d9652409b2b50bdc0a11d767a17d6da1990137f3866f159f9f7af38e913",
+   "bytes": 2345
+  }
+ },
+ "mutants_v6_targeted": {
+  "all_killed_and_control_passes": true,
+  "killed": 4,
+  "total": 4,
+  "control_rc": 0,
+  "survivors": [],
+  "source_sha256": "540bc71cf7b78bfb543818e34ad2be46ddb6a59672c65e175d0f355b82e462ff",
+  "record": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/mutants_v6/results.json",
+   "sha256": "884bd3e10b014f443aad00dcf2a65ff3b4bb1a8779fd2139fa8e5e6004fa891d",
+   "bytes": 1196
+  }
+ },
+ "reviews": {
+  "r1": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r1/REVIEW.md",
+   "sha256": "392107f62d3db2f2475f97dcf31b24d18e6f0e06637007d3d37c48d311723364",
+   "bytes": 26547
+  },
+  "r2": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r2/REVIEW.md",
+   "sha256": "2baf61aa080f6ed13070b783863e814e71a6d9d8638ce63f9520f1648269edf7",
+   "bytes": 24180
+  },
+  "r3": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r3/REVIEW.md",
+   "sha256": "72a01ecb497c0264f6a224cc97a20319fb7fb395e458ed028c2c3836ef00d76b",
+   "bytes": 26149
+  },
+  "r4": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r4/REVIEW.md",
+   "sha256": "7c7b6f6a22000cc42a2373268a49e6bf9a727cfb4086726643be964d3898a6a9",
+   "bytes": 26271
+  },
+  "r5": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r5/REVIEW.md",
+   "sha256": "7ee51b68815160023504dbdd2798fba919f176794b28bea32f4d78d9824e7841",
+   "bytes": 20416
+  }
+ },
+ "public_cpu": {
+  "status": "OK",
+  "tests_run": 3489,
+  "skipped": 10,
+  "failures": 0,
+  "errors": 0,
+  "wall_s": 365.537,
+  "rc": 0,
+  "kernel_faults": [
+   0,
+   0
+  ],
+  "started_at": "2026-11-06T10:42:56+09:00",
+  "ended_at": "2026-11-06T10:49:05+09:00",
+  "envelope": "CUDA hidden, PYTHONNOUSERSITE=1, OMP/MKL=1, cores 8-11, nice 10, ulimit -v 8 GiB, timeout 900 -k 20",
+  "tree": "21 staged files at HEAD 0abb766 (final commit bytes; no unstaged changes)",
+  "sources_unchanged_during_run": true,
+  "sources_checked": 21,
+  "log": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/public_cpu_v4/run.log",
+   "sha256": "f706366fa43013b1ec227fda494f5c6e079828376a07a7a08977d070f48aee65"
+  },
+  "earlier_runs": {
+   "v1": "3469 tests, 2 failures: the experiment index saw the new preregistration as untracked (before staging)",
+   "v2": "3489 OK (skipped 10), faults 0->0, before the post-r5 edits",
+   "v3": "never started: only faults_before.txt written at 04:04 KST, no run.log"
+  }
+ }
+}

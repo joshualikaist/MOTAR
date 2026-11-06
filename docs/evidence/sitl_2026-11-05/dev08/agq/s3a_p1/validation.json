@@ -1,0 +1,123 @@
+{
+ "schema": "motar.s3a-p1.validation.v1",
+ "gpu_conditions": "NOT_RUN",
+ "execution_authorized": false,
+ "sources": {
+  "tools/sitl_s3a_policy_precision.py": "94f32e51918f7f14c6ea9fd87c2e9f0b56a0151d7b3fa2d35169f1268a6703ed",
+  "tests/test_sitl_s3a_policy_precision.py": "c461eb6ed90efc701bf3d24502b9a81bcb0a9b500d0109434a3b89345da8c5a1",
+  "docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md": "85eecbe1483838a015d2b418b5438813fd58d8b5624fc0131ea9c4e92255876e"
+ },
+ "focused_tests": {
+  "log": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/focused_v8.log",
+   "sha256": "f7dafef4d8f4de03fdc95023e7d7748e04c5ef6e54022ff31d5dfd3795e41c2d",
+   "bytes": 2893
+  },
+  "ran": "Ran 13 tests in 14.677s",
+  "status": "OK"
+ },
+ "cpu_preflight": {
+  "reading": "CPU_ONLY",
+  "record": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/cpu_only_v4/result.json",
+   "sha256": "e64405833f105d439a9add9c8c38c373924ad7f4c769abf271abe6ea666fa69c",
+   "bytes": 23659
+  },
+  "actions_npz": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/cpu_only_v4/result.npz",
+   "sha256": "83c26c21f5422ec69523c130ca63ecf28adfe62c4c6e074d00ae0354bf0777ab",
+   "bytes": 344576
+  },
+  "tool_sha256_at_run": "94f32e51918f7f14c6ea9fd87c2e9f0b56a0151d7b3fa2d35169f1268a6703ed",
+  "earlier_runs_npz_sha256": {
+   "cpu_only_v1": "83c26c21f5422ec69523c130ca63ecf28adfe62c4c6e074d00ae0354bf0777ab",
+   "cpu_only_v2": "83c26c21f5422ec69523c130ca63ecf28adfe62c4c6e074d00ae0354bf0777ab",
+   "cpu_only_v3": "83c26c21f5422ec69523c130ca63ecf28adfe62c4c6e074d00ae0354bf0777ab"
+  },
+  "per_density": {
+   "70": {
+    "cpu_vs_recorded_max": 0.0017202496528625488,
+    "argmax_call_env_dim": [
+     79,
+     119,
+     1
+    ],
+    "n_above_1e-4": 8453,
+    "n": 43008,
+    "negative_control_max": 1.9315916299819946,
+    "controls_ok": true
+   },
+   "205": {
+    "cpu_vs_recorded_max": 0.0017296969890594482,
+    "argmax_call_env_dim": [
+     28,
+     34,
+     1
+    ],
+    "n_above_1e-4": 8468,
+    "n": 43008,
+    "negative_control_max": 1.932861864566803,
+    "controls_ok": true
+   }
+  },
+  "kernel_faults": [
+   0,
+   0
+  ]
+ },
+ "reviews": {
+  "r1": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/review_r1/REVIEW.md",
+   "sha256": "d0dace6731e6882ee50818df71dbec61221d5d318d94aa1c119412b2d8dff1a6",
+   "bytes": 24496
+  },
+  "r2": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/review_r2/REVIEW.md",
+   "sha256": "fdb0e622a18c81904ba1f1e3b18fc43480a336a108b202070cbe0a3e639db8d4",
+   "bytes": 21362
+  },
+  "r3": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/review_r3/REVIEW.md",
+   "sha256": "3a3986515975d425f45dd89f4f8d2155674c1a85039296f0365746148800efb1",
+   "bytes": 21331
+  },
+  "r4_shared_with_geometry": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r4/REVIEW.md",
+   "sha256": "7c7b6f6a22000cc42a2373268a49e6bf9a727cfb4086726643be964d3898a6a9",
+   "bytes": 26271
+  },
+  "r5_shared_with_geometry": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/source_review_r5/REVIEW.md",
+   "sha256": "7ee51b68815160023504dbdd2798fba919f176794b28bea32f4d78d9824e7841",
+   "bytes": 20416
+  }
+ },
+ "public_cpu": {
+  "status": "OK",
+  "tests_run": 3489,
+  "skipped": 10,
+  "failures": 0,
+  "errors": 0,
+  "wall_s": 365.537,
+  "rc": 0,
+  "kernel_faults": [
+   0,
+   0
+  ],
+  "started_at": "2026-11-06T10:42:56+09:00",
+  "ended_at": "2026-11-06T10:49:05+09:00",
+  "envelope": "CUDA hidden, PYTHONNOUSERSITE=1, OMP/MKL=1, cores 8-11, nice 10, ulimit -v 8 GiB, timeout 900 -k 20",
+  "tree": "21 staged files at HEAD 0abb766 (final commit bytes; no unstaged changes)",
+  "sources_unchanged_during_run": true,
+  "sources_checked": 21,
+  "log": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/public_cpu_v4/run.log",
+   "sha256": "f706366fa43013b1ec227fda494f5c6e079828376a07a7a08977d070f48aee65"
+  },
+  "earlier_runs": {
+   "v1": "3469 tests, 2 failures: the experiment index saw the new preregistration as untracked (before staging)",
+   "v2": "3489 OK (skipped 10), faults 0->0, before the post-r5 edits",
+   "v3": "never started: only faults_before.txt written at 04:04 KST, no run.log"
+  }
+ }
+}
