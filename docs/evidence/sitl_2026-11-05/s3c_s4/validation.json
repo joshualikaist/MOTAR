@@ -1,0 +1,62 @@
+{
+ "units": [
+  "S3c v1",
+  "S4 v1"
+ ],
+ "date": "2026-11-06",
+ "measurement": "NOT_RUN",
+ "committed_bytes": {
+  "tools/sitl_s3c.py": "86058a402e691821bf7a00e989bfb8ecf16feaee49677f30faa89e81d25d9b63",
+  "tools/sitl_s4.py": "cd7ef074c422f97415b31f7d0a868e57c903c3e6f1d63535ab3a411e006e9cfa",
+  "tools/sitl_s4_gazebo.py": "d25610f5e2d6423ad2992fa8573ea61f40c3c7daf502125ddd85a851e8089dd0",
+  "tools/sitl_s4_model.py": "f81405fc02544f3539ab9df8f46844954a88241f1392a127d413e7b32db824e3",
+  "tools/sitl_s4/motar_s4_bridge.cc": "661a4d71623aba293cb21feee569837bd5866c7f2357125f432b759196f8e5fa",
+  "tools/sitl_s4/CMakeLists.txt": "14432be23437201c6bddcb5206e9fc36ee08e613f622ad74d6b754522a037b3a",
+  "tests/test_sitl_s3c_s4.py": "d0010a14042f85f18234df3a97b26b25e9e1d8c232720ae990c5176b2dcc79b5",
+  "docs/plans/prereg_sitl_s3c_v1_2026-11-06.md": "a163b1a3422ccf2e316fab68cf1147bd5b756c1cf74289ea99ae01db29d73c3e",
+  "docs/plans/prereg_sitl_s4_v1_2026-11-06.md": "02ae9cbdc067086b616b73c8593d1d265124bde1d6d739ed7f3c6287388ead62"
+ },
+ "reviews": {
+  "r1": {
+   "S3c": "PASS_WITH_LIMITS",
+   "S4": "FAIL"
+  },
+  "r2": {
+   "S3c": "PASS_WITH_LIMITS",
+   "S4": "PASS_WITH_LIMITS"
+  },
+  "reviewer": "Claude Opus 5.5 (claude-opus-5-5), fresh context, read-only",
+  "external_dirs": [
+   "/home/fair/motar_tmp/s3c_s4_review_20261106/review_r1",
+   "/home/fair/motar_tmp/s3c_s4_review_20261106/review_r2"
+  ],
+  "repaired_after_r2": [
+   "s1: RGB and depth stamped with the rendering scene's simulation time; prereg wording",
+   "s2: smoke01 must have run at this HEAD with these source bytes",
+   "s3: a development smoke is refused by --analyze",
+   "chain: stop on a host fault after each unit; plugin built in a clean directory without touch; timeouts 10800 s",
+   "LOW: --check of S4 runs its launch checks"
+  ]
+ },
+ "focused_tests": {
+  "file": "tests/test_sitl_s3c_s4.py",
+  "ran": 16,
+  "result": "OK"
+ },
+ "public_cpu": {
+  "note": "PUBLIC_CPU v2 (one thread, 3538 run, PASS, faults 0 -> 0) ran with these units' files present at their r2-review bytes; the post-r2 repairs above were verified by the focused tests only"
+ },
+ "outside_repositories": {
+  "px4_binary_sha256_unchanged": "b1da06f057a9fb98704388b33f4db7ee45485ca7c11f59e89970c0ce772c6265",
+  "navrl_iris_sdf": "a7915da66bae33d93cbad26b40254c42413a86f4c2cb2c2238417a674c444265",
+  "airframe_10091": "cf16dd64f50f2c0c6ec9ac6bcc3294c7eb35368146f59af5c3fbd666b05c6a80",
+  "navrl_quad_s4_sdf_visuals_removed": "d8bab5189b4f7fc733134e4cf81d81f53ae77c50c92cb6c0ce20d6b992d42038",
+  "airframe_10092": "076f852c37997dbe5ad056f8c032a37d0c09d8c1d232f2f76f64e5855c36376f",
+  "s4_component_smoke_script": "1285e5f9b04828500fdeda65c24408933df40663dfc766ee6693877782f40f42",
+  "s4_component_smoke_result": "95055080cdd0c672426bc6046426f4158d3260fd3451cf4bd6495efcae2e1e17"
+ },
+ "chain_launcher": {
+  "path": "/home/fair/motar_tmp/sitl_chain_20261106/run_chain.sh",
+  "sha256": "929d031b60d9faaa0ab0e5de3800dc2aaac199f417a5fead3fd6ecfdc874a2a4"
+ }
+}

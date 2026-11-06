@@ -862,6 +862,15 @@ family that is in the test's scope.
     rule: FEASIBLE_IN_SITL if the SITL crash rate is at most the Isaac crash rate + 5 pp. Block B (205 bars, 30
     scenes) and block C (10 second boots) are reported. Each episode gets a fresh rootfs, a parameter read-back and a
     0.15 s lateness bound. Entering S3b with S3a NOT_EQUIVALENT is the user's decision.
+  - **S3c v1 (preregistered 2026-11-06, NOT_RUN, reported only):** the S3b episode on PX4's iris (1.5 kg, T/W about
+    1.9, airframe 10091 with MOTAR limits and the rangefinder) and on navrl_quad with every command one 0.1 s step
+    late, 40 matched 70-bar scenes per arm.
+  - **S4 v1 (preregistered 2026-11-06, NOT_RUN, reported only):** the S3b episode with Gazebo's own gpu_ray LiDAR,
+    RGB and depth (body-fixed, lit, with a ground plane) in place of MOTAR's ray casts, through a world plugin.
+    - Arm `ground` removes ground returns first; arm `raw` keeps them.
+    - Detector recall in Gazebo is measured against a shadow of MOTAR's renderer.
+    - A component smoke found two gaps already: F's colour rule passes 4 of 35 shaded target pixels at 4.1 m, and
+      the ground appears in the LiDAR's −10° row and the depth image's lower rows.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -890,6 +899,8 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md` (four-member geometry diagnostic: recording, stop rules, fixed reading; attempt01 2026-11-06: INCONCLUSIVE_NOT_REPRODUCED)
   - → `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md` (S3a-P1: stored-observation CPU/GPU TF32 control; gpu_run01 2026-11-06: TF32_EXPLAINS_POLICY_RESIDUAL)
   - → `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md` (S3b formal v1: 70-bar crash-margin rule on 122 G8 r2 scenes, 205-bar and repeat blocks reported)
+  - → `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md` (S3c v1: iris and one-step command delay, 40 matched scenes each, reported)
+  - → `docs/plans/prereg_sitl_s4_v1_2026-11-06.md` (S4 v1: Gazebo sensors, ground-filtered and raw arms, detector recall, reported)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -904,7 +915,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md`,
   `docs/plans/sitl_agq_followup_v1_2026-11-06.md`, `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
-  `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`
+  `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
+  `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`
 
 ## Not yet in the repository
 

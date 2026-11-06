@@ -25142,3 +25142,85 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - `--check`: inputs pinned, schedule 122/30/10, environment OK.
 - **Not run.** Execution needs the user's approval. Approving it is also the user's decision to enter S3b while S3a
   reads NOT_EQUIVALENT.
+
+## 2026-11-06 — S3c v1 and S4 v1 preregistered (NOT_RUN): iris and a one-step delay; Gazebo's own sensors with a ground filter
+
+- **Units.**
+  - S3c: `tools/sitl_s3c.py`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`.
+  - S4:
+    - runner `tools/sitl_s4.py`;
+    - client, conversions and ground filter `tools/sitl_s4_gazebo.py`;
+    - model generator `tools/sitl_s4_model.py`;
+    - world plugin `tools/sitl_s4/motar_s4_bridge.cc`;
+    - preregistration `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`.
+  - Shared tests: `tests/test_sitl_s3c_s4.py`.
+  - Both units run S3b formal v1's episode and unit loop (`tools/sitl_s3b_formal.py`).
+  - Both report without a gate, as the plan's S3c and S4 rows say.
+- **S3c (reported).** The first 40 eligible 70-bar G8 r2 scenes in two arms:
+  - `iris`: PX4's iris, 1.5 kg, T/W about 1.9. Airframe 10091 adds MOTAR's limits and the navrl_quad rangefinder
+    height reference. The velocity loop is set as S3b; iris's own rate gains are kept.
+  - `delay1`: navrl_quad with every governed command one 0.1 s step late.
+  - A development smoke01 (one iris episode) must be COMPLETE and VALID before attempt01.
+- **S4 (reported).** Gazebo's gpu_ray LiDAR (72 × 4), RGB and depth (160 × 90, 87°) are body-fixed on
+  `navrl_quad_s4`. That model is navrl_quad with every `<visual>` removed; airframe 10092 is 10090's file with only
+  its @name changed. A world plugin moves the replayed target and serves the frames over TCP.
+  - Arm `ground` (40 scenes) removes returns that hit the ground plane.
+  - Arm `raw` (20 scenes) keeps them.
+  - Camera recall is measured against a shadow of MOTAR's own renderer at the same pose.
+  - A hover guard rejects returns nearer than 0.35 m at the start.
+  - smoke01 comes before attempt01.
+- **PX4 tree additions** (outside every repository; the PX4 binary SHA-256 is unchanged at `b1da06f0…`):
+  - `models/navrl_iris/`;
+  - airframes `10091_gazebo-classic_navrl_iris` and `10092_gazebo-classic_navrl_quad_s4`;
+  - `models/navrl_quad_s4/`;
+  - the matching lines in the airframe and target CMake lists;
+  - the ROMFS rebuilt with `DONT_RUN=1`.
+  - The plugin is built in `~/motar_tmp/s4_gazebo_20261106/build/`. The chain rebuilds it from the committed source
+    before S4's smoke.
+- **Component smoke** (development, 2026-11-06 15:2x; gzserver only, no PX4 and no policy; OpenGL on display :1;
+  record `docs/evidence/sitl_2026-11-05/s3c_s4/s4_component_smoke.json`):
+  - The LiDAR order is verified: a bar 3 m ahead reads 2.800 m in MOTAR column 36 at 0° elevation and 2.843 m at
+    ±10°; a bar 2 m left reads 1.800 m in column 18.
+  - Depth reads 2.700 m on the front bar.
+  - A moved target appears in the next frame.
+  - **Found:**
+    - Gazebo's shading leaves 4 of 35 reddish target pixels above F's colour-rule threshold at 4.1 m.
+    - The −10° LiDAR row hits the ground at about 5.5 m.
+    - MOTAR's camera fusion takes each column's minimum depth over all rows, so the floor in the lower image rows
+      would read as obstacles about 2 m ahead.
+    - The −10° row and the column-minimum fusion are why the S4 unit has a ground arm.
+- **Independent review** (Claude Opus 5.5, fresh context):
+  - r1 (`REVIEW_r1.md`): S3c PASS_WITH_LIMITS, S4 FAIL.
+    - S4 BLOCKER: navrl_quad_s4 kept navrl_quad's visuals. Ray casts showed the iris body mesh and propeller discs
+      in LiDAR beams at 0.20–0.31 m and in the camera at 0.05–0.15 m.
+    - S4 MAJOR: "recall" used fused visibility, which includes LiDAR association.
+    - Both, MAJOR: the analyzers lacked integrity checks and timing.
+    - Repaired:
+      - visuals removed; hover guard;
+      - camera-only recall, with LiDAR-only reported separately;
+      - shadow depth clamped at 10 m;
+      - frame age folded into lateness; −inf mapped to 0;
+      - RGB copied in the rendering thread;
+      - port, GPU and plugin-age refusals; target height offset;
+      - analyzers with integrity, timing and a SHA-bound S3b reference; S3c iris-footprint report;
+      - smoke gates; wording.
+  - r2 (`REVIEW_r2.md`): S3c PASS_WITH_LIMITS, S4 PASS_WITH_LIMITS, with no BLOCKER or MAJOR. From the Gazebo 11
+    source, collisions are not rendered by cameras or gpu_ray.
+  - Repaired after r2:
+    - RGB and depth are stamped with the rendering scene's simulation time;
+    - the smoke must match HEAD and the source bytes;
+    - `--analyze` refuses a smoke;
+    - the chain launcher (`~/motar_tmp/sitl_chain_20261106/run_chain.sh`) stops on a host fault, rebuilds the plugin
+      in a clean directory, and has 3 h timeouts.
+- **Validation:** `tests/test_sitl_s3c_s4.py`: 16 OK, covering:
+  - the delay through the real `run_episode` against a zero-delay control;
+  - LiDAR mapping with ±inf, NaN and limits; depth conversion; ground removal;
+  - the model stripping, with its vacuity check;
+  - S4's episode against a fake plugin; the hover guard;
+  - unit rules with per-arm bindings; the smoke gate; integrity; the S3b reference; the iris footprint.
+- **Approval (user, chat, 2026-11-06 about 16:35 KST).**
+  - S3b formal v1 at `c22a91b` is approved, together with the decision to enter S3b while S3a reads NOT_EQUIVALENT.
+  - S3c and S4 are approved to run after S3b, at the commit that holds these reviewed units (PASS or
+    PASS_WITH_LIMITS).
+  - The approval files are written per unit with each runner's SCOPE and that commit.
+- **Not run yet.** S4 renders with OpenGL on the RTX 3070 (no CUDA).
