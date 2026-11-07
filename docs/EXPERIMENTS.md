@@ -875,15 +875,28 @@ family that is in the test's scope.
     - The user entered S3b while S3a reads NOT_EQUIVALENT. No real-flight or 205-bar claim follows.
     - Disclosed: rotor-bar contacts the 0.14 m crash rule may not count. Counting the two block-A suspects gives
       Δ +0.82 pp, still within the margin.
-  - **S3c v1 (preregistered 2026-11-06, NOT_RUN, reported only):** the S3b episode on PX4's iris (1.5 kg, T/W about
-    1.9, airframe 10091 with MOTAR limits and the rangefinder) and on navrl_quad with every command one 0.1 s step
-    late, 40 matched 70-bar scenes per arm.
-  - **S4 v1 (preregistered 2026-11-06, NOT_RUN, reported only):** the S3b episode with Gazebo's own gpu_ray LiDAR,
-    RGB and depth (body-fixed, lit, with a ground plane) in place of MOTAR's ray casts, through a world plugin.
-    - Arm `ground` removes ground returns first; arm `raw` keeps them.
-    - Detector recall in Gazebo is measured against a shadow of MOTAR's renderer.
-    - A component smoke found two gaps already: F's colour rule passes 4 of 35 shaded target pixels at 4.1 m, and
-      the ground appears in the LiDAR's −10° row and the depth image's lower rows.
+  - **S3c v1 (attempt01 ran 2026-11-07; reported only, no label; results review r1 PASS_WITH_LIMITS):** the S3b
+    episode on PX4's iris (1.5 kg, T/W about 1.9) and on navrl_quad with every command one 0.1 s step late, 40
+    matched 70-bar scenes per arm.
+    - `iris`: 40 of 40 captured, as in Isaac and S3b.
+    - `delay1`: 37 captures and 3 crashes (+7.5 pp; 95 % CI of the crash rate 1.6–20.4 %). One of them is an
+      altitude crash after a 0.146 m bar pass and EKF divergence, consistent with an uncounted rotor contact
+      (inferred).
+    - Iris's rotor discs reach about 0.384 m; 4 iris captures came that close (inferred contact risk).
+    - 80/80 VALID; faults 0→0. The numbers are in `docs/evidence/sitl_2026-11-05/s3c_s4/`.
+  - **S4 v1 (attempt01 ran 2026-11-07; reported only, no label; results review r1 PASS_WITH_LIMITS, its MAJOR-1/-2
+    repaired):** the S3b episode with Gazebo's own gpu_ray LiDAR, RGB and depth (body-fixed, lit, with a ground
+    plane) in place of MOTAR's ray casts.
+    - `ground` (preregistered 0.10 m ground filter applied): 20 captures, 17 crashes and 2 timeouts of 39 VALID,
+      against Isaac and S3b's 39 captures.
+    - `raw`: 5 captures, 11 crashes and 3 timeouts of 19 VALID.
+    - On the 19 scenes VALID in both arms: `ground` 11 captures, `raw` 5.
+    - Camera recall in Gazebo: 0.634 and 0.479. One LATE episode per arm; faults 0→0.
+    - The filter left some ground returns: 11 of 39 at hover (inferred).
+    - Several sensor factors change together. Only the ground is separated, so the cause of the remaining loss is not
+      identified.
+    - Candidate, NOT_TESTED: the colour rule blanks only about 5 of 26 target pixels, so the rest may enter the
+      obstacle scan.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

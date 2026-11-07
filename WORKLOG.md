@@ -25330,3 +25330,82 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
     on the night of 2026-11-06.
 - **Next:** CAM-K1 smoke (GPU, about 5 min) → `run_s3c_s4.sh` (S3c smoke and attempt, S4 plugin build, smoke and
   attempt) → `run_camk1_chain.sh` (seeds 1 and 2 after the SITL chain).
+
+## 2026-11-07 — S3c v1 and S4 v1 attempt01: iris 40/40 capture, one-step delay 37/40; Gazebo's own sensors drop F to 51 % (ground filter) and 26 % (raw) capture
+
+- **Ran** at `5e58984` in one detached chain, `~/motar_tmp/sitl_chain_20261106/run_s3c_s4.sh`.
+  - The order: S3c smoke01, then attempt01 (11:33:57–12:33:10); the S4 plugin built in a clean directory; S4
+    smoke01, then attempt01 (12:34:12–13:35:44).
+  - Faults 0 → 0; the tree clean; HEAD unchanged.
+  - The idle check passed for every episode, on cores 6, 7, 12 and 13.
+  - CAM-K1 started after the chain ended.
+- **Disclosed:**
+  - The chain's timeout was 10,800 s, against the preregistered 7,200 s. It had no effect (59 and 61 min).
+  - I re-issued the approval files for `5e58984` (amendment 1) without a separate user confirmation of that commit.
+    The basis was the user's 2026-11-06 approval and "오케이 다음 내용 진행해줘" after I said the dataman repair would
+    be added.
+- **S3c** (`reading_s3c_attempt01.json`):
+
+| Arm | VALID | Capture | Crash (95 % CI) | Δcrash vs Isaac | Same outcome as S3b |
+| --- | --- | --- | --- | --- | --- |
+| `iris` | 40 | 40 | 0 (0–8.8 %) | 0.0 pp | 40/40 |
+| `delay1` | 40 | 37 | 3 (1.6–20.4 %) | +7.5 pp | 37/40 |
+
+  - **The `delay1` altitude crash (env 29):**
+    - clearance 0.146 m at k = 49;
+    - EKF error above 1 m from k = 58, up to 14.3 m;
+    - `px4.log` "Navigation failure!".
+    - This is consistent with an uncounted contact, as in S3b (inferred).
+  - **Iris's rotor discs** reach about 0.384 m; 4 iris captures came that close (inferred contact risk).
+  - **Hypothesis rejected:** "PX4's heavier iris loses captures on these scenes". Measured: 40/40.
+- **S4** (`reading_s4_attempt01.json`):
+
+| Arm | VALID | Capture | Crash | Timeout | Δcapture vs Isaac | Camera recall |
+| --- | --- | --- | --- | --- | --- | --- |
+| `ground` (0.10 m ground filter) | 39 | 20 | 17 | 2 | −48.7 pp | 0.634 |
+| `raw` | 19 | 5 | 11 | 3 | −73.7 pp | 0.479 |
+
+  - **INVALID:** one LATE episode per arm: `ground` env 37 (a capture), 0.160 s; `raw` env 20 (a timeout), 0.152 s.
+  - **Target pixels:** the colour rule passed a median of 5 Gazebo pixels against the shadow's 26 (`ground`).
+  - **Ground filter:** it left some ground returns. 11 of 39 hover frames show the raw arm's signature. How well it
+    worked in flight is NOT_RECORDED.
+  - **Descriptive, not preregistered:**
+    - On the 19 matched scenes, `ground` captured 11 and `raw` 5.
+    - In 5 of 39 `ground` episodes the colour rule never fired, and all of them failed.
+    - In the last 10 steps before the crash, 9 of 17 `ground` crashes and 8 of 11 `raw` crashes had a detection.
+    - Matched captures took a median of 179.5 steps, against S3b's 33.5.
+  - **Candidate mechanism, inferred from the code and NOT_TESTED:** perception blanks only the target pixels the
+    colour rule passes, so the rest of a shaded target may enter the obstacle scan.
+  - **Hypothesis rejected:** "F's SITL result carries over when Gazebo's sensors replace MOTAR's renderer". Measured:
+    51.3 % capture with the preregistered ground filter.
+  - **Not identified:** which of the following causes the remaining loss:
+    - mount tilt;
+    - target shading and partial blanking;
+    - the field of view and pixels;
+    - frame timing;
+    - residual ground.
+- **Results review r1** (Claude Opus 5.5, `RESULTS_REVIEW_r1.md`): S3c PASS_WITH_LIMITS; S4 PASS_WITH_LIMITS once
+  MAJOR-1 and MAJOR-2 are fixed.
+  - Repaired before this commit:
+    - MAJOR-1: the detection split was over-read;
+    - MAJOR-2: "ground removed" overstated the arm;
+    - MINOR-1 to MINOR-8 and LOW-1 to LOW-6.
+  - Every number recomputed with 0 mismatches. The repaired text was not reviewed again.
+- **Records:** `docs/evidence/sitl_2026-11-05/s3c_s4/`:
+  - `execution_record.json`: per-scene tables, a labelled descriptive block, and the NPY/log SHA-256 manifest and
+    chain times;
+  - the two `reading_*.json` byte copies;
+  - `make_results.py`;
+  - `RESULTS_REVIEW_r1.md`.
+  - The raw data stays in `~/motar_tmp/s3c_20261106/` and `~/motar_tmp/s4_20261106/`.
+- **Process incident:** the CAM-K1 chain waited 8 minutes after the SITL chain had ended.
+  - Its `pgrep -f run_s3c_s4.sh` matched the parent launcher shell, whose command text named both chains.
+  - I ended that shell (my own) at 13:44, and seed 1 started at 13:46.
+  - The SITL results are not affected.
+- **Next (needs the user):**
+  - an S4 follow-up that separates the factors (a preregistered factorial):
+    - shadow target with Gazebo obstacles, and the reverse;
+    - a level against a tilting mount;
+    - full-target blanking;
+  - a real detector (the drone target) in place of the colour rule;
+  - S5's ground filter, with margin.

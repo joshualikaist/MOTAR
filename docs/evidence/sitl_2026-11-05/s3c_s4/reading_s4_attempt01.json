@@ -1,0 +1,126 @@
+{
+ "arms": {
+  "ground": {
+   "capture_diff_pp": -48.717948717948715,
+   "crash_diff_pp": 43.58974358974359,
+   "detector_recall_steps": {
+    "camera_recall": 0.6336314847942754,
+    "camera_visible_of_those": 1771,
+    "denominator": "steps where MOTAR's shadow renderer (yaw-level camera) has >= 2 target pixels",
+    "lidar_only_visible_of_those": 42,
+    "motar_visible_steps": 2795
+   },
+   "frame_age_max_s": 0.14399999999999835,
+   "hover_guard_failures": 0,
+   "invalid": {
+    "LATE": 1
+   },
+   "isaac_capture_pct": 100.0,
+   "isaac_crash_pct": 0.0,
+   "isaac_same_envs": {
+    "capture": 39
+   },
+   "outcome_agreement": 20,
+   "scheduled": 40,
+   "sensor_medians_over_episodes": {
+    "colour_px_median_when_motar_visible": 5.0,
+    "depth_abs_diff_median_m": 0.0,
+    "frame_age_median_s": 0.028000000000005798,
+    "lidar_abs_diff_median_m": 0.0,
+    "motar_px_median_when_motar_visible": 26.0
+   },
+   "sitl": {
+    "capture": 20,
+    "crash": 17,
+    "timeout": 2
+   },
+   "sitl_capture_pct": 51.282051282051285,
+   "sitl_crash_pct": 43.58974358974359,
+   "valid": 39,
+   "vs_s3b_same_scenes": {
+    "arm_capture": 20,
+    "arm_crash": 17,
+    "pairs": 39,
+    "s3b_capture": 39,
+    "s3b_crash": 0,
+    "same_outcome": 20
+   }
+  },
+  "raw": {
+   "capture_diff_pp": -73.6842105263158,
+   "crash_diff_pp": 57.89473684210526,
+   "detector_recall_steps": {
+    "camera_recall": 0.47876106194690266,
+    "camera_visible_of_those": 541,
+    "denominator": "steps where MOTAR's shadow renderer (yaw-level camera) has >= 2 target pixels",
+    "lidar_only_visible_of_those": 16,
+    "motar_visible_steps": 1130
+   },
+   "frame_age_max_s": 0.14400000000000546,
+   "hover_guard_failures": 0,
+   "invalid": {
+    "LATE": 1
+   },
+   "isaac_capture_pct": 100.0,
+   "isaac_crash_pct": 0.0,
+   "isaac_same_envs": {
+    "capture": 19
+   },
+   "outcome_agreement": 5,
+   "scheduled": 20,
+   "sensor_medians_over_episodes": {
+    "colour_px_median_when_motar_visible": 1.0,
+    "depth_abs_diff_median_m": 0.015210717916488647,
+    "frame_age_median_s": 0.027999999999998693,
+    "lidar_abs_diff_median_m": 0.0,
+    "motar_px_median_when_motar_visible": 10.0
+   },
+   "sitl": {
+    "capture": 5,
+    "crash": 11,
+    "timeout": 3
+   },
+   "sitl_capture_pct": 26.31578947368421,
+   "sitl_crash_pct": 57.89473684210526,
+   "valid": 19,
+   "vs_s3b_same_scenes": {
+    "arm_capture": 5,
+    "arm_crash": 11,
+    "pairs": 19,
+    "s3b_capture": 19,
+    "s3b_crash": 0,
+    "same_outcome": 5
+   }
+  }
+ },
+ "attempt_reason": null,
+ "attempt_status": "COMPLETE",
+ "integrity_problems": [],
+ "protocol": "s4-v1",
+ "s3b_reference": {
+  "path": "/home/fair/motar_tmp/s3b_formal_20261106/attempt01/episodes.jsonl",
+  "reading": "FEASIBLE_IN_SITL",
+  "sha256": "97b94dfd6d0c67ff01077787697aa87eee64e540b0195edaa3a78731a482e4fa",
+  "status": "BOUND"
+ },
+ "timing_and_state": {
+  "ground": {
+   "compute_ms_max": 41.9158935546875,
+   "ekf_xy_err_max_m": 2.59216981586817,
+   "late_max_s": 0.14399999999999835,
+   "param_problem_episodes": 0,
+   "rtf_max": 1.0017157174057103,
+   "rtf_min": 0.99785657384811,
+   "truth_age_max_s": 0.019711732864379883
+  },
+  "raw": {
+   "compute_ms_max": 12.724161148071289,
+   "ekf_xy_err_max_m": 6.419584838693915,
+   "late_max_s": 0.14400000000000546,
+   "param_problem_episodes": 0,
+   "rtf_max": 1.0027688346945567,
+   "rtf_min": 0.9994127415479855,
+   "truth_age_max_s": 0.019241809844970703
+  }
+ }
+}
