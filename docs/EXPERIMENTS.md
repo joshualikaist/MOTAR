@@ -857,11 +857,17 @@ family that is in the test's scope.
         - GPU_ON reproduces the recorded actions exactly.
         - GPU_OFF matches the CPU within S3a's action tolerance. The values are in `dev08/agq/s3a_p1/`.
         - Policy precision only: no sensing result, no S3a verdict change and no new tolerance.
-  - **S3b formal v1 (preregistered 2026-11-06, NOT_RUN):** Frozen F through PX4 SITL on the G8 r2 scenes whose
-    zero-action target ran all 600 actions. Block A is 70 bars, all 122 eligible scenes, and carries the plan's
-    rule: FEASIBLE_IN_SITL if the SITL crash rate is at most the Isaac crash rate + 5 pp. Block B (205 bars, 30
-    scenes) and block C (10 second boots) are reported. Each episode gets a fresh rootfs, a parameter read-back and a
-    0.15 s lateness bound. Entering S3b with S3a NOT_EQUIVALENT is the user's decision.
+  - **S3b formal v1 (attempt01 ran 2026-11-06; FEASIBLE_IN_SITL; results review r1 PASS_WITH_LIMITS):**
+    Frozen F through PX4 SITL on the G8 r2 scenes whose zero-action target ran all 600 actions.
+    - Block A, the plan's rule at 70 bars: SITL captured 122 of 122 scenes against Isaac's 121, so Δcrash is
+      −0.82 pp against the +5 pp margin.
+    - Block B, 205 bars, reported: SITL 27 captures and 3 crashes against Isaac's 26 and 4.
+    - Block C: 10 of 10 second boots repeated their block-A outcome.
+    - All 162 episodes VALID; faults 0→0; identical runtime binding. The numbers are in
+      `docs/evidence/sitl_2026-11-05/s3b_formal/`.
+    - The user entered S3b while S3a reads NOT_EQUIVALENT. No real-flight or 205-bar claim follows.
+    - Disclosed: rotor-bar contacts the 0.14 m crash rule may not count. Counting the two block-A suspects gives
+      Δ +0.82 pp, still within the margin.
   - **S3c v1 (preregistered 2026-11-06, NOT_RUN, reported only):** the S3b episode on PX4's iris (1.5 kg, T/W about
     1.9, airframe 10091 with MOTAR limits and the rangefinder) and on navrl_quad with every command one 0.1 s step
     late, 40 matched 70-bar scenes per arm.

@@ -25224,3 +25224,56 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
     PASS_WITH_LIMITS).
   - The approval files are written per unit with each runner's SCOPE and that commit.
 - **Not run yet.** S4 renders with OpenGL on the RTX 3070 (no CUDA).
+
+## 2026-11-06 — S3b formal v1 reads FEASIBLE_IN_SITL: Frozen F through PX4 SITL captured 122/122 at 70 bars (Isaac 121/122)
+
+- **Approval.**
+  - The user approved the run in chat at about 16:35 KST, at `c22a91b`, together with entering S3b while S3a reads
+    NOT_EQUIVALENT.
+  - The run's tree was `0d44972`, which adds only the S3c/S4 files, `EXPERIMENTS.md` and `WORKLOG.md`.
+  - `git diff c22a91b..0d44972` is empty for every S3b and production source; the approval file records this.
+- **Execution.**
+  - `tools/sitl_s3b_formal.py --launch` ran once, 16:50:47–18:50:52 KST. Cores 6,7,12,13, nice 10, one thread, CUDA
+    hidden, `timeout -k 30 14400`.
+  - COMPLETE, 162 of 162 episodes VALID. Kernel faults 0 → 0; tree unchanged; runtime binding identical in every
+    episode.
+  - Package caches were deleted at 17:11, with the user's approval, to free disk (3.2 → 6.0 GB).
+
+| Block | Scenes | SITL capture / crash | Isaac, same scenes | Δcrash (pp) | Same outcome |
+| --- | ---: | --- | --- | ---: | ---: |
+| A, 70 bars (rule) | 122 | 122 / 0 | 121 / 1 | −0.82 | 121 |
+| B, 205 bars (reported) | 30 | 27 / 3 | 26 / 4 | −3.33 | 25 |
+| C, 70 bars, second boot | 10 | 10 / 0 | 10 / 0 | 0.00 | 10 (10/10 repeat A) |
+
+- **Reading: FEASIBLE_IN_SITL.** The rule is SITL crash ≤ Isaac crash + 5 pp at 70 bars.
+  - Block-A SITL crash rate: 0 %, Clopper-Pearson 95 % 0–2.98 %.
+  - The single Isaac crash scene (env 75) was captured in SITL.
+  - Block B:
+    - SITL crashed in env 10 (bar; Isaac crashed too), env 14 (bar; Isaac captured) and env 18 (altitude; Isaac
+      captured).
+    - Isaac's other three crashes were captured in SITL.
+  - Lateness was at most 0.024 s and RTF 0.995–1.006.
+  - EKF horizontal error, per-episode maximum: median 0.21 m; largest 0.54 m (A) and 1.12 m (B).
+- **Results review r1** (Claude Opus 5.5, fresh context; `RESULTS_REVIEW_r1.md`): PASS_WITH_LIMITS, no BLOCKER.
+  - Every number was recomputed independently and matches exactly. All 33 pinned sources are identical at
+    `c22a91b` and `0d44972`.
+  - **MAJOR-1, disclosed:** navrl_quad's rotor collision cylinders reach about 0.31 m against the 0.14 m crash
+    footprint, so rotor contacts may go uncounted.
+    - Five episodes show contact-like disturbances near bars (clearance 0.18–0.29 m).
+    - B env 18's crash is a fall after one, with "Attitude failure (roll)" in `px4.log`.
+    - Counting the two block-A suspects as crashes gives Δ +0.82 pp, still within the margin.
+  - The minors (the block-B dev07 overlap, the clearance definition, the attitude-failure log lines) are repaired in
+    the README.
+- **Records.**
+  - `docs/evidence/sitl_2026-11-05/s3b_formal/execution_record.json` and `reading_attempt01.json` (byte copy).
+  - Raw: `~/motar_tmp/s3b_formal_20261106/attempt01/`.
+- **What does not follow:**
+  - real flight;
+  - S3a equivalence;
+  - S4 sensor realism;
+  - S3c robustness;
+  - a 205-bar claim;
+  - target reactivity.
+- **Process note.** The conversation's next approval question (CAM-K1) waited overnight. S3c and S4 therefore did not
+  run on 2026-11-06; they resume on 2026-11-07.
+- **Next:** S3c and S4 (approved after S3b), after the reviewed disk/RustDesk repair is committed.
