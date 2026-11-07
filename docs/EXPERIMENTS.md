@@ -735,12 +735,16 @@ family that is in the test's scope.
     - Independent review r1 (Opus 5.5): PASS_WITH_LIMITS. Two MINOR findings: per-density counts added from the
       review; bearings from the vehicle centre, not the camera eye, where C − A is +21.3 pp.
     - Consistent with blind-side contacts; not a causal test. `docs/evidence/camonly_2026-11-04/c2trace/`.
-  - **CAM-K1 v1 (preregistered 2026-11-06, approved 2026-11-07, NOT_RUN):** the user decided the real vehicle has no
-    LiDAR (D-2026-11-06-1). Its camera is a Luxonis OAK-D Pro (autofocus RGB 66° × 54°).
+  - **CAM-K1 v1 (preregistered 2026-11-06, approved 2026-11-07; ran 2026-11-07, both seeds TRAINED):** the user
+    decided the real vehicle has no LiDAR (D-2026-11-06-1). Its camera is a Luxonis OAK-D Pro (autofocus RGB
+    66° × 54°).
     - This is a new policy lineage, a camera-only continuation of Frozen F (F stays frozen): `no_lidar`, camera FOV
       66° × 54°, `yaw_align_weight` 0.6 (F 0.3), `visibility_bonus` 0.03 (F 0.02), 3,000 epochs.
     - A 2-epoch development smoke runs first, then seed 1 and seed 2.
     - Training only; the evaluation needs its own preregistration. `docs/evidence/camonly_2026-11-04/camk1/`.
+    - Training rollouts (under exploration noise; not an evaluation): capture rose from about 8 % to 26.3 % (seed 1)
+      and 25.6 % (seed 2) over the 3,000 epochs, and crash fell from about 92 % to 74 %. GR-1 `ctrl`, with the
+      LiDAR, stayed near 80 % capture.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)

@@ -1,0 +1,66 @@
+{
+ "seed": 1,
+ "commit": "5e58984c89e7be0a06382a021733810c8edf3174",
+ "prereg": "docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md",
+ "scope": "CAM-K1 v1: camera-only (no_lidar) continuation of Frozen Policy F ep25000 for 3,000 epochs (25001..28000), fixed 205 bars, LR 5e-6, camera FOV 66x54 deg, yaw_align_weight 0.6, visibility_bonus 0.03; a 2-epoch development smoke (seed 1, not a result) first, then seed 1 then seed 2, each once",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-07T13:46:12.763235+09:00"
+ },
+ "preflight_problems": [],
+ "started": "2026-11-07T13:46:12.763279+09:00",
+ "exit": 0,
+ "wall_s": 14498.762771129608,
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-07T17:47:51.547112+09:00"
+ },
+ "new_run_dirs": [
+  "ppo_261107_1346_navrl_v2-camk1-ep25000-205bars-main-riskcap-camonly-s1"
+ ],
+ "camtrain_receipt": {
+  "ablation": {
+   "condition": "no_lidar",
+   "hbeams": 72,
+   "perception": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/navrl_perception.py",
+   "task": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/navrl_task.py",
+   "vbeams": 4
+  },
+  "ablation_module_sha256": "ea9ccacbc79918e3080486d47d63fed21569628657a20b240d198521036ff894",
+  "entry": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/camtrain_entry.py",
+  "entry_sha256": "bfe5e425e096360790015a3d6aad3fcdd22bd99b8424208ba8072475ee7133cf",
+  "overrides_after": {
+   "detector_hfov_deg": 66.0,
+   "detector_vfov_deg": 54.0,
+   "visibility_bonus": 0.03,
+   "yaw_align_weight": 0.6
+  },
+  "overrides_before": {
+   "detector_hfov_deg": 87.0,
+   "detector_vfov_deg": 58.0,
+   "visibility_bonus": 0.02,
+   "yaw_align_weight": 0.3
+  },
+  "script": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runner.py"
+ },
+ "checkpoint": {
+  "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_261107_1346_navrl_v2-camk1-ep25000-205bars-main-riskcap-camonly-s1",
+  "file": "last_gen_ppo_ep_28000_rew_-17.796482.pth",
+  "sha256": "d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb",
+  "copy": "/home/fair/motar_tmp/camk1_20261106/train_s1/checkpoint/last_gen_ppo_ep_28000_rew_-17.796482.pth",
+  "copy_sha256": "d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb"
+ },
+ "session_log": {
+  "file": "camk1_s1_261107_134612_2462254.log",
+  "sha256": "043a2ab9ba668fb50d98dc9a348cb0bdef90925ab0d46a59e2aa9f3c21ec87cb"
+ },
+ "fov_log_line_found": true,
+ "problems": [],
+ "development_smoke": false,
+ "verdict": "TRAINED",
+ "finished": "2026-11-07T17:47:51.569482+09:00"
+}

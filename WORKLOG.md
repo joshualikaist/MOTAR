@@ -25409,3 +25409,59 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
     - full-target blanking;
   - a real detector (the drone target) in place of the colour rule;
   - S5's ground filter, with margin.
+
+## 2026-11-07 — CAM-K1 v1 ran: both seeds TRAINED; camera-only training rollouts reach about 26 % capture against about 80 % with LiDAR
+
+- **Ran** at `5e58984` through `~/motar_tmp/camk1_20261106/run_camk1_chain.sh`, approved by the user on 2026-11-07 at
+  11:02 KST ("승인 (권장)").
+  - The smoke read SMOKE_OK at 11:32.
+  - Seed 1: 13:46:12–17:47:51 (14,499 s), **TRAINED**, host faults 0 → 0.
+  - Seed 2: 17:47:51–21:47:15 (14,364 s), **TRAINED**, host faults 0 → 0.
+  - Both preflights, camtrain receipts (`no_lidar`, 66° × 54°, 0.6, 0.03) and FOV log checks passed, with no
+    problems listed. The tree stayed clean and HEAD unchanged.
+- **Checkpoints** (`last_gen_ppo_ep_28000_*.pth`, copies in `~/motar_tmp/camk1_20261106/train_s{1,2}/checkpoint/`):
+  - seed 1: `..._rew_-17.796482.pth`, SHA-256 `d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb`;
+  - seed 2: `..._rew_-10.653644.pth`, SHA-256 `5128bf2e0461fb45c6b8c4463d4d0a950bb88c0d28923c41d02d99da1102a4b7`.
+- **Training rollouts** (descriptive; the runner's statistics under exploration noise, `training_curve.json`):
+
+| Window | Capture % | Crash % | Mean reward | Mean episode length |
+| --- | --- | --- | --- | --- |
+| seed 1, 25001–25100 | 8.45 | 91.55 | −49.85 | 62.5 |
+| seed 1, 27901–28000 | 26.29 | 73.70 | −15.72 | 60.9 |
+| seed 2, 25001–25100 | 7.79 | 92.20 | −50.57 | 61.0 |
+| seed 2, 27901–28000 | 25.55 | 74.45 | −15.51 | 62.3 |
+| GR-1 `ctrl` s1, 25901–26000 (camera + LiDAR, 87°) | 79.84 | 17.23 | +39.99 | 148.4 |
+
+  - Over the last 500 epochs, capture ranged 23.1–26.3 % (seed 1) and 25.6–26.1 % (seed 2). Whether more epochs
+    would raise it is NOT_TESTED.
+  - Mean episode length first fell to about 43 steps around epoch 25600, then returned to about 61–62.
+  - Timeouts stayed at or below 0.03 %.
+  - No capture, crash or transfer claim follows from these numbers. The evaluation, CAM-K1-E, needs its own
+    preregistration.
+- **Disclosed:**
+  - **Start incident:** the chain's SITL-end check (`pgrep -f run_s3c_s4.sh`) matched the parent launcher shell,
+    whose command text named both chains. That held seed 1 for 8 minutes, until I ended that shell (my own process)
+    at 13:44.
+  - **Disk:** I first budgeted the checkpoints from GR-1's 1,000-epoch run. A 3,000-epoch seed writes about 0.54 GB,
+    so seed 2's 2.0 GB preflight guard would have failed. The user approved deleting Chrome's disk caches at 14:47
+    (0.96 GB freed). Seed 2's preflight passed with 2.37 GB free; about 1.8 GB was free at the end.
+  - **Concurrency:** the runner was not pinned to cores. While the seeds trained, only reads and drafts ran outside
+    the repository, plus:
+    - one read-only Opus results review of S3c/S4 (13:53–14:35, `nice` 19);
+    - my record-building scripts, a few seconds each at `nice` 10–19;
+    - a free-disk logger (one `df` every 5 minutes).
+  - **Wall time:** each seed took about 4.0 h, against the 3.3 h I had projected from the smoke.
+  - **Schedule:** the session's five-hour fallback (finish by 15:54) was overridden by the user's explicit schedule
+    ("CAM-K1 시드 2 … ~20:30 여기까지 다 진행하자"). Seed 2 ended at 21:47, later than that schedule.
+- **Records:** `docs/evidence/camonly_2026-11-04/camk1/`:
+  - `train_report_s1.json` and `train_report_s2.json` (byte copies);
+  - `training_curve.json`;
+  - `make_camk1_record.py`.
+  - The checkpoint copies and launcher logs stay in `~/motar_tmp/camk1_20261106/`; the run folders in the ignored
+    `runs/`.
+- **Not reviewed:** this training record has no independent results review. It makes no claim beyond the labels.
+- **Next (needs the user):**
+  - the CAM-K1-E evaluation preregistration and its approval;
+  - whether a longer continuation or a curriculum is wanted before or after CAM-K1-E;
+  - the 0.5 kg vehicle and motor randomization;
+  - the OAK-D Pro stereo depth model.
