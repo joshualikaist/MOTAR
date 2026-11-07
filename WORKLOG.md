@@ -25277,3 +25277,56 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Process note.** The conversation's next approval question (CAM-K1) waited overnight. S3c and S4 therefore did not
   run on 2026-11-06; they resume on 2026-11-07.
 - **Next:** S3c and S4 (approved after S3b), after the reviewed disk/RustDesk repair is committed.
+
+## 2026-11-07 — CAM-K1 v1 preregistered (camera-only continuation of F on the OAK-D Pro FOV); S3c/S4 amendment 1 (NOT_RUN)
+
+- **User decisions, 2026-11-06** (D-2026-11-06-1):
+  - The real vehicle has no LiDAR. Its sensors are a Luxonis OAK-D Pro: stereo depth HFOV 80° / VFOV 55°, baseline
+    7.5 cm; autofocus RGB 66° / 54°.
+  - The simulated camera follows the RGB field of view.
+  - The reward for keeping things in view goes up.
+  - Motors are randomized around a nominal small motor.
+  - The vehicle weighs about 0.5 kg.
+  - The plan draft (Claude Fable 5.1, `~/motar_tmp/camonly_plan_20261106/PLAN.md`) found that only `r_ss` reads the
+    LiDAR among the reward terms. So the observation, the governor and the sensor model change, not the reward as a
+    whole.
+- **CAM-K1 v1** (`docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`):
+  - **Treatment:** a new lineage continued from Frozen F, under GR-1 `ctrl`'s contract plus:
+    - `no_lidar`;
+    - camera 66° × 54°;
+    - `yaw_align_weight` 0.6 (F 0.3), `visibility_bonus` 0.03 (F 0.02);
+    - 3,000 epochs.
+  - **Order:** a 2-epoch development smoke, then seed 1, then seed 2.
+  - **Code:** `tools/camtrain_entry.py` and `tools/camtrain_python` (runtime overrides for runner.py only),
+    `train_navrl_camk1.sh`, `tools/camk1_train.py` (fail-closed pre- and post-checks) and
+    `tests/test_camk1_train.py` (16 OK).
+  - **Launcher preflight:** PREFLIGHT PASS.
+  - Chained after the SITL units by `~/motar_tmp/camk1_20261106/run_camk1_chain.sh`.
+- **Review r1** (Claude Opus 5.5; `docs/evidence/camonly_2026-11-04/camk1/REVIEW_r1.md`):
+  - S3c/S4 repair: PASS.
+  - CAM-K1 code and prereg: PASS_WITH_LIMITS.
+  - Chain MAJOR K-1 (the smoke never ran) and the minors K-2 to K-11 are repaired:
+    - log proof of `hfov=66deg`;
+    - the smoke checkpoint;
+    - discounted loiter reasoning;
+    - disclosures;
+    - index and decision records;
+    - no training after a SITL host fault;
+    - a 24 h deadline;
+    - env stripping;
+    - a disk guard.
+- **Validation:**
+  - PUBLIC_CPU (one thread): PASS, 3557 run, 0 failures, 0 errors, 10 skipped; kernel faults 0 → 0.
+  - The C0 import guard (`tests/test_navrl_sensor_ablation.py`) now allows the opt-in
+    `tools/camtrain_entry.py`, with a positive control. Before that change it was the first run's only failure.
+- **S3c/S4 amendment 1** (`docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`), before either unit ran:
+  - PX4 `rootfs/dataman` (7.9 MB, mission storage, not evidence) is deleted after each episode, for disk;
+  - S4's GPU check allows exactly the user's RustDesk;
+  - a failing `nvidia-smi` refuses.
+- **Approvals (user):**
+  - S3c/S4 after S3b (2026-11-06).
+  - CAM-K1 (2026-11-07, answered about 11:00), conditional on its review.
+  - The approval files name the commit holding this entry. The CAM-K1 question waited overnight, so nothing ran
+    on the night of 2026-11-06.
+- **Next:** CAM-K1 smoke (GPU, about 5 min) → `run_s3c_s4.sh` (S3c smoke and attempt, S4 plugin build, smoke and
+  attempt) → `run_camk1_chain.sh` (seeds 1 and 2 after the SITL chain).

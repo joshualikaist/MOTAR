@@ -380,5 +380,46 @@ class TestHoverGuardAndRecords(unittest.TestCase):
             self.assertEqual((list(ref_rows), ref["status"], ref["reading"]), ([3], "BOUND", "NO_READING"))
 
 
+class TestDiskAndGpuRepairs(unittest.TestCase):
+    def test_remove_dataman(self):
+        with tempfile.TemporaryDirectory() as t:
+            d = pathlib.Path(t)
+            self.assertIsNone(SF.remove_dataman(d))                       # nothing to remove
+            (d / "rootfs").mkdir()
+            (d / "rootfs" / "dataman").write_bytes(b"x" * 1000)
+            (d / "rootfs" / "parameters.bson").write_bytes(b"p")
+            self.assertEqual(SF.remove_dataman(d), 1000)
+            self.assertFalse((d / "rootfs" / "dataman").exists())
+            self.assertTrue((d / "rootfs" / "parameters.bson").exists())  # only dataman is removed
+
+    def test_run_episode_records_dataman(self):
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        try:
+            B, pol = stepping_bridge()
+            V0, np_ = T3B.fake_v0(tmp, max_steps=3)
+            r = SF.run_episode(B, T3B.FakeOS, V0, T3B.fake_spec(np_), tmp / "e", pol, link_factory=T3B.FakeLink)
+            self.assertIn("dataman_removed_bytes", r)
+            self.assertIsNone(r["dataman_removed_bytes"])                 # the fake session boots no PX4
+        finally:
+            shutil.rmtree(tmp, ignore_errors=True)
+
+    def test_gpu_check_allows_only_the_remote_desktop(self):
+        import subprocess
+        real = subprocess.run
+        outs = {"none": "", "rustdesk": "576970, /usr/share/rustdesk/rustdesk",
+                "job": "576970, /usr/share/rustdesk/rustdesk\n1234, /home/fair/miniconda3/envs/aerialgym/bin/python"}
+        got = {}
+        try:
+            for k, v in outs.items():
+                subprocess.run = lambda *a, _v=v, **kw: types.SimpleNamespace(stdout=_v, returncode=0)
+                got[k] = [x for x in S4.s4_extra_problems() if "CUDA job" in x]
+        finally:
+            subprocess.run = real
+        self.assertEqual((got["none"], got["rustdesk"]), ([], []))
+        self.assertEqual(len(got["job"]), 1)
+        self.assertIn("aerialgym", got["job"][0])
+        self.assertNotIn("rustdesk", got["job"][0])
+
+
 if __name__ == "__main__":
     unittest.main()

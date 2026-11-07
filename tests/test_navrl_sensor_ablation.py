@@ -558,13 +558,17 @@ class SensorAblationC0(unittest.TestCase):
         hits = []
         for base in ("aerial_gym", "motar_eval", "tools"):
             for path in (ROOT / base).rglob("*.py"):
-                if path.name in ("navrl_sensor_ablation.py", "camonly_entry.py"):
+                # The opt-in entry points: camonly_entry.py (C-study evaluations) and camtrain_entry.py (CAM-K1
+                # training, D-2026-11-06-1), each selected only through its own wrapper (camonly_python,
+                # camtrain_python). No production module may import the ablation.
+                if path.name in ("navrl_sensor_ablation.py", "camonly_entry.py", "camtrain_entry.py"):
                     continue
                 if pattern.search(path.read_text(errors="ignore")):
                     hits.append(str(path.relative_to(ROOT)))
         self.assertEqual(hits, [])
-        # Positive control: the one allowed importer is found by the same pattern.
+        # Positive control: the allowed importers are found by the same pattern.
         self.assertTrue(pattern.search((ROOT / "tools/camonly_entry.py").read_text()))
+        self.assertTrue(pattern.search((ROOT / "tools/camtrain_entry.py").read_text()))
 
 
 class CamonlyEntryPoint(unittest.TestCase):

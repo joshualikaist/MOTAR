@@ -396,3 +396,31 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   있었는지 보고 및 판단해서 수정해줘."
 - **Record:** [AGQ preparation](evidence/sitl_2026-11-05/dev08/agq/README.md),
   [next-unit proposal](plans/sitl_agq_followup_v1_2026-11-06.md).
+
+## D-2026-11-06-1 — Real vehicle without LiDAR: camera-only lineage on the OAK-D Pro, FOV-keeping reward
+
+- **Decision (user, 2026-11-06).**
+  - The real vehicle carries no LiDAR. Its sensors are a Luxonis OAK-D Pro: a stereo depth pair (HFOV 80° / VFOV
+    55°, baseline 7.5 cm) and an autofocus IMX378 RGB camera (HFOV 66° / VFOV 54°).
+  - The simulated camera follows the RGB camera's field of view ("use this as the reference").
+  - Because the camera is the only sensor, the reward for keeping things in the camera's view is raised.
+  - Motor specifications are to be randomized around a nominal small-motor model.
+  - The real vehicle weighs about 0.5 kg.
+- **Implementation.**
+  - A new camera-only policy lineage, CAM-K1, continues from Frozen Policy F with `no_lidar`, a 66° × 54° camera,
+    `yaw_align_weight` 0.6 and `visibility_bonus` 0.03 (prereg `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`).
+  - Policy F stays frozen as the reference.
+  - The 0.5 kg vehicle, motor randomization, the stereo depth model (minimum depth, z² noise, holes) and separate
+    RGB/depth renders come in later, separately preregistered units.
+- **Boundary.**
+  - This changes the target sensor set of the real-vehicle line. The RGB-D + LiDAR contract of D-2026-10-18-0 and
+    AGENTS.md still governs Policy F's records and comparisons. `SENSOR_CONTRACT.md` and the AGENTS.md research-rule
+    text are not edited here; that revision is open.
+  - Each GPU run still needs its approval. The CAM-K1 training was approved on 2026-11-07, conditional on its
+    review.
+- **Source:** user 2026-11-06 KST:
+  - "라이다를 못쓰게 되서 ppo학습 리워드 튜닝부터 다시 해야될 것 같은데";
+  - "카메라 모델은 OAK-D Pro 이고, 모터 스펙은 작은 모터야. 기본 스펙으로 해야될거같은데";
+  - "카메라 밖에 센서가 없으니까 FOV 리워드 값을 조금 더 많이 줘야 될거야. 실기 무게는 500g정도".
+- **Record:** plan draft `~/motar_tmp/camonly_plan_20261106/PLAN.md` (Claude Fable 5.1);
+  [CAM-K1 evidence](evidence/camonly_2026-11-04/camk1/README.md).

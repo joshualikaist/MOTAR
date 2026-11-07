@@ -1,0 +1,50 @@
+{
+ "unit": "CAM-K1 v1 preparation (+ S3c/S4 amendment 1)",
+ "date": "2026-11-07",
+ "measurement": "NOT_RUN",
+ "committed_bytes": {
+  "tools/camtrain_entry.py": "bfe5e425e096360790015a3d6aad3fcdd22bd99b8424208ba8072475ee7133cf",
+  "tools/camtrain_python": "09f56855d215465a33ed7fd5c59c2a33c47b90e8d31f7c0f296eb365b1730efe",
+  "tools/camk1_train.py": "63e9a98d93e87f95e1644218d53c9d6720933f77fb9707418270a16fffe1e2ee",
+  "aerial_gym/rl_training/rl_games/train_navrl_camk1.sh": "6ac2e9a45831485df23bb2a54b131ba2816f8ab47e751ca1e3b8e9f31c44f629",
+  "tests/test_camk1_train.py": "0a3330b9540492cfc3e771bc6ab06e5d1ffa380ca4ba030640f2016e037751a0",
+  "docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md": "e4914f5ad1047990df599011feb70bda3dadd2347a066f403bcc03f397a96c16",
+  "tools/sitl_s3b_formal.py": "288078e3df93e6041eabfd634c2a45bc3747b8eaa2daaf35d08275f104e53534",
+  "tools/sitl_s4.py": "36fbe0592913b31aed0b39c53e7731ad1782bf2c477f542fb277eef54250afaa",
+  "tests/test_sitl_s3c_s4.py": "4631db9c4187f5bae850c663681b2611c1798862d3b35bd9ae39138e56b82235",
+  "tests/test_navrl_sensor_ablation.py": "286def7b5e7c8da89a852b7a831e23759f466ca52a5f8a0b17d6bda4f6916b9c",
+  "docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md": "2863040380c290e0248a057bd39e097f55eab64b09798eced0096014b757c30e"
+ },
+ "review": {
+  "r1": {
+   "s3c_s4_repair": "PASS",
+   "camk1_code_prereg": "PASS_WITH_LIMITS",
+   "camk1_chain": "MAJOR K-1 (repaired)"
+  },
+  "reviewer": "Claude Opus 5.5 (claude-opus-5-5), fresh context, read-only",
+  "external_dir": "/home/fair/motar_tmp/camk1_20261106/review_r1"
+ },
+ "focused_tests": {
+  "tests/test_camk1_train.py": "16 OK",
+  "tests/test_sitl_s3c_s4.py": "19 OK (before the nvidia-smi rc line)",
+  "tests/test_navrl_sensor_ablation.py": "15 OK"
+ },
+ "launcher_preflight": "[v2-search] PREFLIGHT PASS (seed 1; smoke)",
+ "public_cpu": {
+  "status": "PASS",
+  "ran": 3557,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 10,
+  "log": "/home/fair/motar_tmp/camk1_20261106/public_cpu2.log",
+  "log_sha256": "8ffbf379c09e3294f5317129990a458632ae1c5fab09ccefc85dadb0404eb53e",
+  "kernel_faults_before": 0,
+  "kernel_faults_after": 0,
+  "first_run_note": "The first run (public_cpu.log) failed 1 test: the C0 import guard test_navrl_sensor_ablation.test_no_production_import flagged the new opt-in entry tools/camtrain_entry.py. The guard's allow-list now names it, with a positive control; production modules still may not import the ablation.",
+  "excluded": 5
+ },
+ "chain_script": {
+  "path": "/home/fair/motar_tmp/camk1_20261106/run_camk1_chain.sh",
+  "sha256": "14b9fd5e36cd949a091da425fd52d790747bbd6389987b30909a3e03c86e449a"
+ }
+}

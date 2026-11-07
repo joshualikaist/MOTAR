@@ -735,6 +735,12 @@ family that is in the test's scope.
     - Independent review r1 (Opus 5.5): PASS_WITH_LIMITS. Two MINOR findings: per-density counts added from the
       review; bearings from the vehicle centre, not the camera eye, where C − A is +21.3 pp.
     - Consistent with blind-side contacts; not a causal test. `docs/evidence/camonly_2026-11-04/c2trace/`.
+  - **CAM-K1 v1 (preregistered 2026-11-06, approved 2026-11-07, NOT_RUN):** the user decided the real vehicle has no
+    LiDAR (D-2026-11-06-1). Its camera is a Luxonis OAK-D Pro (autofocus RGB 66° × 54°).
+    - This is a new policy lineage, a camera-only continuation of Frozen F (F stays frozen): `no_lidar`, camera FOV
+      66° × 54°, `yaw_align_weight` 0.6 (F 0.3), `visibility_bonus` 0.03 (F 0.02), 3,000 epochs.
+    - A 2-epoch development smoke runs first, then seed 1 and seed 2.
+    - Training only; the evaluation needs its own preregistration. `docs/evidence/camonly_2026-11-04/camk1/`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -746,10 +752,11 @@ family that is in the test's scope.
   - → `docs/evidence/camonly_2026-11-04/mechanism/` (CPU, exploratory: why C crashes)
   - → `docs/plans/prereg_camonly_c2trace_v1.md` (G3: which bar camera-only F hits; GPU session approval 2026-11-05)
   - → `docs/evidence/camonly_2026-11-04/c2trace/` (G3 results, review r1)
+  - → `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md` (CAM-K1: camera-only continuation training, OAK-D Pro RGB FOV, FOV-keeping reward weights, two seeds)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
-  `docs/plans/prereg_camonly_c2trace_v1.md`
+  `docs/plans/prereg_camonly_c2trace_v1.md`, `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
@@ -907,6 +914,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md` (S3b formal v1: 70-bar crash-margin rule on 122 G8 r2 scenes, 205-bar and repeat blocks reported)
   - → `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md` (S3c v1: iris and one-step command delay, 40 matched scenes each, reported)
   - → `docs/plans/prereg_sitl_s4_v1_2026-11-06.md` (S4 v1: Gazebo sensors, ground-filtered and raw arms, detector recall, reported)
+  - → `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md` (before either ran: PX4 dataman removed after each episode for disk; RustDesk allowed in S4's GPU check)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -922,7 +930,7 @@ family that is in the test's scope.
   `docs/plans/sitl_agq_followup_v1_2026-11-06.md`, `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
-  `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`
+  `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`
 
 ## Not yet in the repository
 

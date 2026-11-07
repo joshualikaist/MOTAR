@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# PYTHON for train_navrl.sh in the CAM-K1 training (docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md): runs
+# tools/camtrain_entry.py with the real interpreter, which installs the camera-only ablation and the FOV/reward
+# overrides and then runs runner.py unchanged. train_navrl.sh calls PYTHON exactly once, for runner.py; every check
+# before it in train_navrl_camk1.sh uses the real interpreter.
+set -euo pipefail
+REAL="${CAMTRAIN_REAL_PYTHON:?CAMTRAIN_REAL_PYTHON is required}"
+# train_navrl_v2_search.sh puts this wrapper's directory first on PATH; restore the interpreter's bin directory in
+# front of it so the tools runner.py builds with (ninja for gymtorch) are found as in a native run.
+export PATH="$(dirname "${REAL}"):${PATH}"
+exec "${REAL}" "$(dirname "$(readlink -f "$0")")/camtrain_entry.py" "$@"

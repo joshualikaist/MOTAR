@@ -303,7 +303,19 @@ def run_episode(B, OS, V0, spec, ep_dir, policy, condition=CONDITION, link_facto
             np.save(ep_dir / "steps.npy", np.array(steps_log, dtype=np.float64))
             receipt = ep_dir / "session.json"
             res["session_receipt_sha256"] = sha256_file(receipt) if receipt.is_file() else None
+            res["dataman_removed_bytes"] = remove_dataman(ep_dir)
     return res
+
+
+def remove_dataman(ep_dir):
+    """PX4's mission/fence storage file (about 7.9 MB per boot) is not evidence; it is removed after the episode, once
+    the session has ended, to keep the disk from filling (2026-11-06: 3.4 GB free for about 300 episodes)."""
+    f = pathlib.Path(ep_dir) / "rootfs" / "dataman"
+    if not f.is_file():
+        return None
+    n = f.stat().st_size
+    f.unlink()
+    return n
 
 
 def _fly(B, V0, L, session, spec, ep_dir, policy, condition, res, steps_log, lateness):

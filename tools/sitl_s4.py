@@ -42,6 +42,7 @@ PLUGIN_SRC = ROOT / "tools/sitl_s4/motar_s4_bridge.cc"
 PLUGIN_DIR = pathlib.Path.home() / "motar_tmp" / "s4_gazebo_20261106" / "build"
 ARMS = (("ground", 40), ("raw", 20))
 MODEL = "navrl_quad_s4"
+GPU_ALLOWED = ("/usr/share/rustdesk/rustdesk",)   # the user's remote desktop (screen encoding), not a compute job
 HOVER_GUARD_M = 0.35                  # any LiDAR return or depth pixel nearer than this at the start: HARNESS_INVALID
 INVALID_ABORT_TOTAL = 10                # more than 10 INVALID episodes of the 60 stop the unit
 OWN_SOURCES = ("tools/sitl_s4.py", "tools/sitl_s4_gazebo.py", "tools/sitl_s4_model.py", "tools/sitl_s4/motar_s4_bridge.cc",
@@ -128,6 +129,7 @@ def run_episode(B, OS, V0, spec, ep_dir, policy, arm, link_factory=None, client_
             np.save(ep_dir / "sensor_steps.npy", np.array(sens, dtype=np.float64))
             receipt = ep_dir / "session.json"
             res["session_receipt_sha256"] = SF.sha256_file(receipt) if receipt.is_file() else None
+            res["dataman_removed_bytes"] = SF.remove_dataman(ep_dir)
     return res
 
 
@@ -332,10 +334,14 @@ def s4_extra_problems():
     finally:
         s.close()
     try:
-        out = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader"],
-                             capture_output=True, text=True, timeout=20).stdout.strip()
-        if out:
-            p.append("a CUDA job is running on the GPU: %s" % out[:200])
+        done = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,process_name", "--format=csv,noheader"],
+                              capture_output=True, text=True, timeout=20)
+        if done.returncode != 0:
+            p.append("nvidia-smi failed (rc %d): the GPU check would be vacuous" % done.returncode)
+        out = done.stdout.strip()
+        jobs = [ln for ln in out.splitlines() if ln.strip() and not ln.strip().endswith(GPU_ALLOWED)]
+        if jobs:
+            p.append("a CUDA job is running on the GPU: %s" % "; ".join(jobs)[:200])
     except (OSError, subprocess.TimeoutExpired) as e:
         p.append("nvidia-smi unavailable: %s" % e)
     return p
