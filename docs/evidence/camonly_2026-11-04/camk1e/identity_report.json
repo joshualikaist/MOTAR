@@ -1,0 +1,270 @@
+{
+ "stage": "identity",
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+ "commit": "971ae6739bb0d35f9104340f1dbaa432ecdb6376",
+ "prereg": "docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md",
+ "scope": "CAM-K1-E v1: matched GPU evaluation of CAM-K1 seeds 1 and 2 and of camera-only Policy F at the 66 x 54 deg camera (no_lidar) on GR-0's S00 grid (4 densities x 3 seeds, quota 16), after an identity control; about 39 cells, cap 3 h; tools/camk1e_run.py",
+ "started": "2026-11-08T13:08:54.433590+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-08T13:08:54.433546+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/motar_eval/__init__.py"
+ },
+ "module_sha256": "ea9ccacbc79918e3080486d47d63fed21569628657a20b240d198521036ff894",
+ "entry_sha256": "bfe5e425e096360790015a3d6aad3fcdd22bd99b8424208ba8072475ee7133cf",
+ "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_camk1e_arms.sh",
+ "launcher_sha256": "bdd0b07b0cd1b2c20e8f80d5cca70ff9410eb7cc43ed38f7ad61e67e0ef79d47",
+ "c2_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/camonly_c1c2_v1/c2",
+ "checkpoints": {
+  "F": [
+   "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+   "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+  ],
+  "K1s1": [
+   "/home/fair/motar_tmp/camk1_20261106/train_s1/checkpoint/last_gen_ppo_ep_28000_rew_-17.796482.pth",
+   "d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb"
+  ],
+  "K1s2": [
+   "/home/fair/motar_tmp/camk1_20261106/train_s2/checkpoint/last_gen_ppo_ep_28000_rew_-10.653644.pth",
+   "5128bf2e0461fb45c6b8c4463d4d0a950bb88c0d28923c41d02d99da1102a4b7"
+  ]
+ },
+ "preflight_problems": [],
+ "max_hours": 3.0,
+ "env_allowlisted": {
+  "DISPLAY": ":1",
+  "HOME": "/home/fair",
+  "LANG": "en_US.UTF-8",
+  "LC_ADDRESS": "ko_KR.UTF-8",
+  "LC_IDENTIFICATION": "ko_KR.UTF-8",
+  "LC_MEASUREMENT": "ko_KR.UTF-8",
+  "LC_MONETARY": "ko_KR.UTF-8",
+  "LC_NAME": "ko_KR.UTF-8",
+  "LC_NUMERIC": "ko_KR.UTF-8",
+  "LC_PAPER": "ko_KR.UTF-8",
+  "LC_TELEPHONE": "ko_KR.UTF-8",
+  "LC_TIME": "ko_KR.UTF-8",
+  "PATH": "/home/fair/miniconda3/envs/aerialgym/bin:/home/fair/.local/bin:/home/fair/.bun/bin:/usr/local/cuda-11.7/bin:/home/fair/miniconda3/bin:/home/fair/miniconda3/condabin:/home/fair/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+  "PYTHONNOUSERSITE": "1",
+  "USER": "fair"
+ },
+ "comparison": {
+  "F87_identity": {
+   "result_equal": true,
+   "episodes_equal": true,
+   "outcome_a": {
+    "captured": 798,
+    "crash": 1250,
+    "timeout": 0,
+    "capture_rate": 0.3896484375,
+    "crash_rate": 0.6103515625,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.388671875,
+    "closest_nocrash_mean_m": 0.4120670274310841,
+    "closest_nocrash_best_m": 0.13417451083660126,
+    "closest_nocrash_count": 798
+   },
+   "outcome_b": {
+    "captured": 798,
+    "crash": 1250,
+    "timeout": 0,
+    "capture_rate": 0.3896484375,
+    "crash_rate": 0.6103515625,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.388671875,
+    "closest_nocrash_mean_m": 0.4120670274310841,
+    "closest_nocrash_best_m": 0.13417451083660126,
+    "closest_nocrash_count": 798
+   }
+  },
+  "F66_negative": {
+   "result_equal": false,
+   "episodes_equal": false,
+   "outcome_a": {
+    "captured": 798,
+    "crash": 1250,
+    "timeout": 0,
+    "capture_rate": 0.3896484375,
+    "crash_rate": 0.6103515625,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.388671875,
+    "closest_nocrash_mean_m": 0.4120670274310841,
+    "closest_nocrash_best_m": 0.13417451083660126,
+    "closest_nocrash_count": 798
+   },
+   "outcome_b": {
+    "captured": 587,
+    "crash": 1462,
+    "timeout": 0,
+    "capture_rate": 0.2864812103465105,
+    "crash_rate": 0.7135187896534895,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.2859931673987311,
+    "closest_nocrash_mean_m": 0.42446708222264123,
+    "closest_nocrash_best_m": 0.2184065282344818,
+    "closest_nocrash_count": 587
+   }
+  },
+  "K1s1_smoke": {
+   "result_equal": false,
+   "episodes_equal": false,
+   "outcome_a": {
+    "captured": 798,
+    "crash": 1250,
+    "timeout": 0,
+    "capture_rate": 0.3896484375,
+    "crash_rate": 0.6103515625,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.388671875,
+    "closest_nocrash_mean_m": 0.4120670274310841,
+    "closest_nocrash_best_m": 0.13417451083660126,
+    "closest_nocrash_count": 798
+   },
+   "outcome_b": {
+    "captured": 1526,
+    "crash": 522,
+    "timeout": 0,
+    "capture_rate": 0.7451171875,
+    "crash_rate": 0.2548828125,
+    "timeout_rate": 0.0,
+    "ever_reached_rate": 0.7451171875,
+    "closest_nocrash_mean_m": 0.4089711887437269,
+    "closest_nocrash_best_m": 0.13328446447849274,
+    "closest_nocrash_count": 1526
+   },
+   "differs_from_F66_negative": true
+  }
+ },
+ "verdict": "IDENTITY_PASS",
+ "records": [
+  {
+   "level": "F87_identity",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "971ae6739bb0d35f9104340f1dbaa432ecdb6376",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 173.1010069847107,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-08T13:11:47.514471+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 804,
+     "crash": 1244,
+     "timeout": 0
+    },
+    "duration_s": 173,
+    "result_sha256": "9103ce8d2692970fcfe8c9565021644bf987d4165290adf7de80b895e6a5f3c2"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "arm": "F87_identity",
+   "checkpoint": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+   "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+   "values": {
+    "NAVRL_CAMTRAIN_HFOV_DEG": "87.0",
+    "NAVRL_CAMTRAIN_VFOV_DEG": "58.0",
+    "NAVRL_CAMTRAIN_YAW_ALIGN_WEIGHT": "0.3",
+    "NAVRL_CAMTRAIN_VISIBILITY_BONUS": "0.02"
+   }
+  },
+  {
+   "level": "F66_negative",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "971ae6739bb0d35f9104340f1dbaa432ecdb6376",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 156.6192708015442,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-08T13:14:24.153021+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 607,
+     "crash": 1441,
+     "timeout": 0
+    },
+    "duration_s": 157,
+    "result_sha256": "06f307af2318882712030daac1a6b24ef0139193885ad66c4674d895bd4c00dc"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "arm": "F66_negative",
+   "checkpoint": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+   "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+   "values": {
+    "NAVRL_CAMTRAIN_HFOV_DEG": "66.0",
+    "NAVRL_CAMTRAIN_VFOV_DEG": "54.0",
+    "NAVRL_CAMTRAIN_YAW_ALIGN_WEIGHT": "0.6",
+    "NAVRL_CAMTRAIN_VISIBILITY_BONUS": "0.03"
+   }
+  },
+  {
+   "level": "K1s1_smoke",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "971ae6739bb0d35f9104340f1dbaa432ecdb6376",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 179.195556640625,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-08T13:17:23.365691+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1525,
+     "crash": 523,
+     "timeout": 0
+    },
+    "duration_s": 179,
+    "result_sha256": "4980a290f7728983d67dce1d6905852706f506f95cecfc5bfc946b7c633f9b55"
+   },
+   "problems": [],
+   "verdict": "OK",
+   "arm": "K1s1_smoke",
+   "checkpoint": "/home/fair/motar_tmp/camk1_20261106/train_s1/checkpoint/last_gen_ppo_ep_28000_rew_-17.796482.pth",
+   "checkpoint_sha256": "d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb",
+   "values": {
+    "NAVRL_CAMTRAIN_HFOV_DEG": "66.0",
+    "NAVRL_CAMTRAIN_VFOV_DEG": "54.0",
+    "NAVRL_CAMTRAIN_YAW_ALIGN_WEIGHT": "0.6",
+    "NAVRL_CAMTRAIN_VISIBILITY_BONUS": "0.03"
+   }
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-08T13:17:23.441664+09:00"
+ },
+ "finished": "2026-11-08T13:17:23.441731+09:00"
+}

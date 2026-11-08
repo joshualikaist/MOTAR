@@ -745,9 +745,12 @@ family that is in the test's scope.
     - Training rollouts (under exploration noise; not an evaluation): capture rose from about 8 % to 26.3 % (seed 1)
       and 25.6 % (seed 2) over the 3,000 epochs, and crash fell from about 92 % to 74 %. GR-1 `ctrl`, with the
       LiDAR, stayed near 80 % capture.
-  - **CAM-K1-E v1 (preregistered 2026-11-08, NOT_RUN):** both CAM-K1 seeds against camera-only F at the same 66°
+  - **CAM-K1-E v1 (ran 2026-11-08 at `971ae67`; gate R MATERIAL_RECOVERY and gate P MATERIAL_LOSS for both seeds;
+    results review r1 PASS_WITH_LIMITS):** both CAM-K1 seeds against camera-only F at the same 66°
     camera (gate R, crash, −10 pp) and against F with camera + LiDAR (gate P, crash, +10 pp), on GR-0's S00 grid.
     - An identity control runs first; C2's camera-only F at 87° is the known-bad control of gate P.
+    - Pooled crash: F66 53.9 %, K1s1 16.2 %, K1s2 17.1 %, A 4.5 %. R: −37.7 / −36.7 pp; P: +11.8 / +12.7 pp.
+      Training-rollout rates are not comparable.
     - `docs/evidence/camonly_2026-11-04/camk1e/`.
   - **CAM-K2 v1 (preregistered 2026-11-08, design reviews r1 AMEND_FIRST and r2, repaired; NOT_RUN):** each CAM-K1
     seed continued for 1,000 epochs on navrl_quad with three run-time treatments:

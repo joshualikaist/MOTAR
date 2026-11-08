@@ -25581,3 +25581,45 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   2 errors (`test_boia_planner`'s 3 GB free-disk floor; 2.2 GB free). Log:
   `~/motar_tmp/commits_20261108/public_cpu_s4f1_camk2.log`.
 - **Next:** after S4F-1, `tools/camk2_train.py 1 --smoke`, then seeds 1 and 2.
+
+## 2026-11-08 — CAM-K1-E v1: CAM-K1 cuts camera-only F's crash rate by 37.7 / 36.7 pp at 66° (gate R MATERIAL_RECOVERY) but stays 11.8 / 12.7 pp above F with LiDAR (gate P MATERIAL_LOSS)
+
+- **Ran** at `971ae67` through `~/motar_tmp/camk1e_20261108/run_camk1e.sh`, 13:08:54–14:52:13 KST; host faults 0 → 0.
+  - Identity: IDENTITY_PASS. F87 equals C2's `no_lidar` cell exactly; F66 differs from it; the K1s1 smoke differs
+    from F66.
+  - Eval: COMPLETE, 36 cells, median 157 s per cell.
+- **Pooled quota rates** (crash %, 12 blocks): A (F, LiDAR, 87°) 4.46; C87 44.40; F66 53.89; K1s1 16.22; K1s2 17.15.
+- **Gates** (crash pp, stratified bootstrap 95 % / t 8 df):
+
+| Contrast | Mean | Bootstrap | Label |
+| --- | --- | --- | --- |
+| R, K1s1 − F66 | −37.67 | [−38.45, −36.78] | MATERIAL_RECOVERY |
+| R, K1s2 − F66 | −36.74 | [−37.46, −35.98] | MATERIAL_RECOVERY |
+| P, K1s1 − A | +11.77 | [+11.26, +12.30] | MATERIAL_LOSS |
+| P, K1s2 − A | +12.69 | [+12.22, +13.21] | MATERIAL_LOSS |
+
+  - All four controls read as required. Timeouts did not rise.
+  - Reported, not gated:
+    - narrowing camera-only F from 87° to 66° (F66 − C87) adds +9.49 pp crash;
+    - the seeds differ by −0.92 pp [−1.53, −0.33];
+    - per density, K1 crash is 7–8 % at 70 bars and 27–28 % at 205 bars, against A's 1.2 % and 8.8 %.
+- **Hypotheses:**
+  - Rejected: "CAM-K1's training rollouts (about 26 % capture) mean the lineage did not learn". Measured: 83.8 % and
+    82.9 % evaluation capture. The rollouts ran under exploration noise at 205 bars only and are not comparable.
+  - Rejected: "camera-only training recovers F's camera + LiDAR crash rate". Measured: +11.8 / +12.7 pp, MATERIAL_LOSS.
+- **Results review r1** (Claude Opus 5.5, fresh context): **PASS_WITH_LIMITS**, with 0 MAJOR, 5 MINOR and 7 LOW
+  findings.
+  - Its own recomputation matched every number and label.
+  - The disclosures are in the evidence README.
+  - **m1:** the user's approval said each unit runs after an Opus review passes. This unit's design review read
+    AMEND_FIRST, and its repairs were not re-reviewed before launch. Whether that met the condition is the user's
+    call.
+- **Concurrency:** during the eval, CPU-only tests and reviews ran on cores 6–7 at `nice` 10–19, with an 8 GB cap
+  and no CUDA, between 13:08 and about 14:45, under the T-LOAD rule.
+- **Records:** `docs/evidence/camonly_2026-11-04/camk1e/`:
+  - `identity_report.json`, `eval_run_report.json`, `analysis.json`;
+  - `SHA256_MANIFEST.json`, covering 322 raw and run files in `~/motar_tmp/camk1e_20261108/`;
+  - `RESULTS_REVIEW_r1.md`.
+- **Next:**
+  - CAM-K2, which continues each CAM-K1 seed on the T/W 2.25 vehicle model with the OAK-D depth model;
+  - CAM-K2-E (to be preregistered), against CAM-K1 on this grid.
