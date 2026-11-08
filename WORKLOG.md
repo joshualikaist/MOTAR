@@ -25775,3 +25775,44 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   Leftover wording was fixed before the commit.
 - **PUBLIC_CPU:** 3,775 run, 0 failures, 2 errors (`test_boia_planner`'s 3 GB disk floor). `test_camk2e`: 27 OK.
 - **Next:** `~/motar_tmp/camk2e_20261108/run_camk2e.sh` (identity, then eval, then analysis; about 3 h, idle host).
+
+## 2026-11-09 — CAM-K2-E v1 results: lower crash under the treatments (gate A SMALL_ADAPTATION), gate N NO_MATERIAL_LOSS, gate I SEEDS_DISAGREE; not shown to be adaptation; results review r1 PASS
+
+- **Run:** `~/motar_tmp/camk2e_20261108/run_camk2e.sh` at `1237f9f`, approved by the user 2026-11-08 ~23:30 KST
+  ("오케이 v2평가부터 먼저 돌리자"). Identity 23:42–23:54 IDENTITY_PASS; eval 23:54–02:31 COMPLETE, 60/60 cells
+  (2.62 h, 157 s per cell); analysis 02:31. Host faults 0 → 0. Only RustDesk on the GPU. Tree frozen throughout.
+- **Rate gate:** passed; the runner did not record its projection. Recomputed (review r1): 177.2 / 169.7 s = 1.044,
+  60 × 158 s × 1.044 × 1.10 ≈ 3.02 h < 3.5 h.
+- **Pooled crash %** (quota rates; main arms 12 blocks, `_nom` 6 blocks at 70 and 205 bars):
+
+| Arm | Treatments | Crash |
+| --- | --- | ---: |
+| CAM-K1-E K1s1 / K1s2 | off | 16.22 / 17.15 |
+| K1s1 / K1s2 | on | 18.64 / 19.58 |
+| K2s1 / K2s2 | on | 14.84 / 14.84 |
+| K2s1_nom / K2s2_nom | off | 13.83 / 13.52 |
+
+- **Gates** (pp, bootstrap / t 95 %):
+  - A (K2 − K1, treated): −3.80 [−4.63, −2.93; t −5.04, −2.57] and −4.74 [−5.26, −4.24; t −5.48, −4.01]:
+    SMALL_ADAPTATION both, read only as "lower crash under the treatments".
+  - N (K2_nom − CAM-K1-E's K1, F's vehicle): −2.99 [−4.14, −1.85; t −5.06, −0.93] and −4.18 [−4.46, −3.95;
+    t −4.64, −3.72]: NO_MATERIAL_LOSS both.
+  - I (interaction): −0.15 [−1.57, +1.78; t −3.18, +2.88] INTERACTION_NOT_DETECTED; −0.69 [−1.22, −0.20; t −1.60,
+    +0.22] INTERACTION_UNRESOLVED → SEEDS_DISAGREE. `adaptation_supported` false for both seeds.
+  - Reported: the treatments cost CAM-K1 +2.42 / +2.44 pp; seed spread K2s1 − K2s2 0.00 [−0.52, +0.55].
+  - Timeouts 0 everywhere; CONTROLS_OK; all 22 binding flags true.
+- **Hypothesis "CAM-K2 v2 adapted to the simulated real-vehicle treatments" not supported:** measured an interaction of
+  −0.15 / −0.69 pp. K2's gain under the treatments is about as large as its gain on F's vehicle, so the 1,000 extra
+  epochs explain it as well as adaptation does.
+- **Equal pooled K2 rates (14.84 %) are a coincidence:** 3,647 crashes / 24,576 episodes for each seed, but the
+  per-block counts and episode-file SHAs differ in all 12 blocks, and receipts name the two checkpoints (review r1).
+- **Raised limit used:** 1.6–1.9 % of treated motor commands exceeded navrl_quad's own limit, 1.1–1.4 % at 2.4525 N.
+- **Results review r1** (Claude Opus 5.5): PASS. Recomputed from raw `episodes.jsonl` with its own code (to 1e-7 pp);
+  labels stay under a different bootstrap generator. Three low-severity record additions, all made in the README.
+- **Not tested:** whether the near-bar depth gap (CPU probe, ceab4a0/1237f9f) changes the crash rate.
+- **Records:** `docs/evidence/camonly_2026-11-04/camk2e/` (README Results, `analysis.json`, `eval_run_report.json`,
+  `identity_report.json`, `RESULTS_REVIEW_r1.md`, `SHA256_MANIFEST.json` over 572 files in
+  `~/motar_tmp/camk2e_20261108/`).
+- **Next:** v3 (depth-validity rule) is a user decision. Its WIP is untracked in `~/motar_tmp/camk2v3_20261108/wip/`.
+  The recommended first step is a real OAK-D Pro bench recording of its invalid-pixel pattern near bars and against
+  sky or bare walls, once the vehicle is ready.

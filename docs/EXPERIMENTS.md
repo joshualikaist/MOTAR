@@ -767,8 +767,9 @@ family that is in the test's scope.
     - Randomized: thrust ±15 %, motor imbalance ±5 % and τ 0.02–0.04 s.
     - The OAK-D Pro depth model is as in v1.
     - Translational capacity matches; roll capacity is 1.1–2.6× the real vehicle's (INFERRED inertia).
-  - **CAM-K2-E v1 (preregistered 2026-11-08; reviews r1 and r2 AMEND_FIRST, repaired; NOT_RUN):** CAM-K2 v2 against
-    CAM-K1 under the v2 treatments.
+  - **CAM-K2-E v1 (preregistered 2026-11-08; ran 2026-11-08/09 at `1237f9f`; results review r1 PASS):** CAM-K2 v2
+    against CAM-K1 under the v2 treatments. Gate A SMALL_ADAPTATION (−3.80 / −4.74 pp, read as lower crash under the
+    treatments), gate N NO_MATERIAL_LOSS (−2.99 / −4.18 pp), gate I SEEDS_DISAGREE; `adaptation_supported` false.
     - Gate A: crash, −5 pp. Gate N: nominal, +3 pp. Gate I: interaction. "Adaptation" only when A and I both hold.
     - Before launch, a CPU depth probe found that v2's MinZ + no-return convention erases near bars in about the last
       0.26 m. `docs/evidence/camonly_2026-11-04/camk2e/`.
