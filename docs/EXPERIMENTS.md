@@ -760,7 +760,8 @@ family that is in the test's scope.
     - thrust ±15 %, motor imbalance ±5 % and motor τ 0.03–0.06 s randomized;
     - an OAK-D Pro stereo depth model: 800P with extended disparity, MinZ 0.4 m, z² noise, holes.
     - The robot lineage is unchanged. Training only. `docs/evidence/camonly_2026-11-04/camk2/`.
-  - **CAM-K2 v2 (preregistered 2026-11-08, design review r1 AMEND_FIRST, repaired; r2 see evidence; NOT_RUN):**
+  - **CAM-K2 v2 (preregistered 2026-11-08, reviews r1 AMEND_FIRST repaired / r2 PASS_WITH_LIMITS; ran 2026-11-08, both
+    seeds TRAINED; the raised limit was used by 5.95 / 5.25 % of motor commands):**
     each CAM-K1 seed continued for 1,000 epochs on navrl_quad.
     - Its per-motor limit is raised at run time to T/W 4.0 (INFERRED), for the 1.1 kg vehicle of D-2026-11-08-1.
     - Randomized: thrust ±15 %, motor imbalance ±5 % and τ 0.02–0.04 s.

@@ -25688,3 +25688,29 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Approval:** the user's 12:07 KST answer, which named "실기체 모델 학습", together with the 16:10 instruction above.
 - **Next:** `~/motar_tmp/camk2v2_20261108/run_camk2v2_chain.sh` (smoke, then seed 1, then seed 2; nothing committed in
   this tree until it ends). Then CAM-K2-E: its files wait in `src/MOTAR-realveh` until the K2 pins can be filled.
+
+## 2026-11-08 — CAM-K2 v2 ran: both seeds TRAINED; the raised thrust limit was used (5.95 / 5.25 % of motor commands above 2 N)
+
+- **Ran** at `aa0e691` through `~/motar_tmp/camk2v2_20261108/run_camk2v2_chain.sh`; faults 0 → 0.
+  - Smoke: SMOKE_OK at 19:27:55, with the limit read back live as 2.4525 N.
+  - Seed 1: 19:27:55–20:48:11 (4,816 s), TRAINED.
+  - Seed 2: 20:48:12–22:05:31 (4,639 s), TRAINED.
+- **Raise counters:** commands above navrl_quad's 2 N were 5.95 % and 5.25 % of motor commands; commands at the raised
+  limit were 4.17 % and 3.61 %. Both seeds are above the preregistered 1 % inert floor.
+- **Crash causes** (training rollouts, last 10 windows): bar contact 99.9 % and 99.95 %. Floor strikes were at or below
+  0.04 %.
+- **Training-rollout capture** (descriptive, not an evaluation): seed 1 rose from 24.78 to 28.43 %, seed 2 from
+  25.47 to 28.61 %. CAM-K1 ended at 26.29 / 25.55 % without the treatments.
+- **Records:** `docs/evidence/camonly_2026-11-04/camk2/`:
+  - `train_report_v2_s{1,2}.json`, `manifest_v2_s{1,2}.json`, `training_curve_v2.json`;
+  - `make_camk2v2_record.py`.
+  - Checkpoint copies are in `~/motar_tmp/camk2v2_20261108/train_s{1,2}/checkpoint/`.
+- **Thrust prediction** (no thrust-stand data, per the user):
+  - scaling the 2400KV point (26,144 rpm, 1,084 g) to 2550KV gives about 1,220 g per motor, a bench T/W of about 4.4,
+    and about 3.8–4.0 in flight;
+  - if 1.1 kg excludes the battery, T/W is about 3.4–3.8;
+  - the training range 3.4–4.6 covers both.
+- **Not reviewed independently** (training record only).
+- **Next:** CAM-K2-E. Install its files from `~/motar_tmp/realveh_wip_20261108_1927/` and fill the K2 pins from
+  these reports. Then run its tests, controls, a short review and PUBLIC_CPU, commit, and run it. After that, the S5
+  tests and a second review.
