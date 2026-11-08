@@ -907,6 +907,13 @@ family that is in the test's scope.
       identified.
     - Candidate, NOT_TESTED: the colour rule blanks only about 5 of 26 target pixels, so the rest may enter the
       obstacle scan.
+  - **S4F-1 v1 (preregistered 2026-11-08, design reviews r1 AMEND_FIRST and r2 PASS_WITH_LIMITS, repaired; NOT_RUN;
+    reported only):** S4's `ground` arm as a 2×2 of target appearance {lit, emissive} × ground {rendered, unrendered}
+    on S4's 40 scenes, in a Williams Latin-square order.
+    - Primary: the main effects of appearance and of ground on capture, Holm over the two.
+    - Found while designing it: S4's 0.10 m ground filter is measured from world z = 0, while the rendered floor's
+      top is at 0.05 m, so its margin was 0.05 m.
+    - `docs/evidence/sitl_2026-11-05/s4f1/`.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -938,6 +945,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md` (S3c v1: iris and one-step command delay, 40 matched scenes each, reported)
   - → `docs/plans/prereg_sitl_s4_v1_2026-11-06.md` (S4 v1: Gazebo sensors, ground-filtered and raw arms, detector recall, reported)
   - → `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md` (before either ran: PX4 dataman removed after each episode for disk; RustDesk allowed in S4's GPU check)
+  - → `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md` (S4F-1 v1: 2×2 target appearance × ground on S4's ground arm, reported)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -953,7 +961,8 @@ family that is in the test's scope.
   `docs/plans/sitl_agq_followup_v1_2026-11-06.md`, `docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
-  `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`
+  `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`,
+  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`
 
 ## Not yet in the repository
 

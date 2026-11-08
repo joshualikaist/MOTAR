@@ -25515,3 +25515,34 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `~/motar_tmp/camk1e_20261108/public_cpu_precommit.log`.
 - **Next:** run `~/motar_tmp/camk1e_20261108/run_camk1e.sh` (identity, then eval, then analysis), then the results
   review.
+
+## 2026-11-08 — S4F-1 v1 preregistered (SITL 2×2: target appearance × ground on S4's ground arm; NOT_RUN)
+
+- **Why:** S4 attempt01 dropped F's capture from 39/39 to 20/39 with Gazebo's own sensors (ground filter on), with the
+  causes not separated. The SITL survey (`~/motar_tmp/sitl_next_20261108/SURVEY.md`) found that S4's 0.10 m filter
+  is measured from world z = 0, while the rendered floor's top is at 0.05 m, so the margin was 0.05 m.
+- **Unit:** `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`; runner `tools/sitl_s4f1.py`; tests
+  `tests/test_sitl_s4f1.py` (54 OK; 106 OK with the S3c/S4 and S3b tests in one process, both orders).
+  - Design: S4's `ground` arm (body-fixed mount, F at 87°, 0.10 m filter on) as a 2×2 of target appearance {lit,
+    emissive} × ground {rendered, unrendered collision-only floor at the same height}, on S4's 40 70-bar scenes, in a
+    Williams Latin-square order.
+  - Primary: the main effects of appearance and of ground on capture, Holm over the two.
+  - Readings: REPORTED, INSUFFICIENT (fewer than 30 complete scenes) or VOID.
+  - ULogs are gzipped after each episode, keeping disk to about 0.7 GB.
+  - S4's plugin is pinned by SHA-256, never rebuilt.
+- **Outside the repository:** chain `~/motar_tmp/s4f1_20261108/run_s4f1.sh` and component smoke `component_smoke.py`,
+  bound by SHA-256 in the prereg. The chain's order:
+  1. the approval check;
+  2. the component smoke (C1–C9 must pass);
+  3. four cell smokes;
+  4. the attempt, under `timeout -k 30 18000`;
+  5. the analysis.
+- **Reviews** (Claude Opus 5.5, fresh context):
+  - r1 AMEND_FIRST (3 MAJOR: plugin mtime refusal, a smoke floor count that included the bar feet, no replication
+    check against S4 attempt01; 8 MINOR; 8 LOW), all repaired;
+  - r2 PASS_WITH_LIMITS (N1–N5 LOW/MINOR), all closed;
+  - copies: `docs/evidence/sitl_2026-11-05/s4f1/REVIEW_design_r{1,2}.md`.
+- **Implementation:** a delegated agent (Claude Opus 5.5) in the short-lived worktree `src/MOTAR-realveh`
+  (`realveh/dev` from `814c28a`) while CAM-K1-E froze this tree. Files copied here byte for byte (SHA-256 in
+  `~/motar_tmp/s4f1_20261108/IMPLEMENTATION.md`).
+- **Next:** in the next session window, `run_s4f1.sh` on an idle host (about 2.2–2.7 h).
