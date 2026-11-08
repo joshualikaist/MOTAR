@@ -25465,3 +25465,53 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - whether a longer continuation or a curriculum is wanted before or after CAM-K1-E;
   - the 0.5 kg vehicle and motor randomization;
   - the OAK-D Pro stereo depth model.
+
+## 2026-11-08 — CAM-K1-E v1 preregistered: CAM-K1 against camera-only F at 66° (gate R, −10 pp) and F with LiDAR (gate P, +3 pp)
+
+- **User instruction, 2026-11-08 11:07 KST:** "오늘 1,2,3 번 다 해야돼. 실행 후 다음 계획 세우고, 또 실행 후 다음 계획 세우고
+  실행하느 방식으로 오늘 하루 내내 진행해줄래?" The three tracks are:
+  1. CAM-K1-E;
+  2. the real-vehicle simulation (0.5 kg, motors, OAK-D Pro depth, detector);
+  3. SITL follow-ups and S5.
+- **Approvals, 2026-11-08 12:07 KST (AskUserQuestion):**
+  - "예, 오늘 전부 (권장)": today's GPU evaluation, PPO training and SITL units, each after a committed
+    preregistration, an Opus review and a preflight;
+  - "CAM-K1 중간 체크포인트 (권장)": deleting CAM-K1's 118 intermediate checkpoints (1.05 GB; ep28000 and
+    `gen_ppo.pth` kept; list in `~/motar_tmp/camk1_20261106/deleted_intermediate_ckpts_20261108.txt`). Free disk
+    went from 1.86 to 3.0 GB.
+- **Unit:** `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`, with code `tools/camk1e_run.py`,
+  `tools/camk1e_analyse.py`, `eval_navrl_camk1e_arms.sh` and `tests/test_camk1e.py` (18 OK).
+  - Arms on GR-0's S00 grid: F66 (camera-only F at 66°), K1s1 and K1s2 (CAM-K1 seeds), all new; A (F with LiDAR) and
+    C87 (camera-only F at 87°) reused.
+  - Stage 1 runs three identity cells first.
+- **Design review r1** (Claude Opus 5.5, fresh context): **AMEND_FIRST**, with no BLOCKER, four MAJOR, eleven MINOR and
+  five LOW findings. All were repaired before this commit:
+  - M1: a receipt check passed vacuously and depended on the working directory;
+  - M2: the intervals treated the fixed densities as random; they are now stratified by density, with 8 df;
+  - M3: gate P's +10 pp band was too loose; it is now 3 pp, and parity wording is forbidden;
+  - M4: C2's condition and snapshot bindings had been dropped; they are restored.
+  - The repaired files were not reviewed again; stage 1 is the execution check.
+- **Controls computed before the run on existing data** (no CAM-K1-E data):
+
+| Control | Crash Δ, pp | Required | Reads |
+| --- | --- | --- | --- |
+| gate P on C87 − A | +39.95 | MATERIAL_LOSS | MATERIAL_LOSS |
+| gate R on A − C87 | −39.95 | MATERIAL_RECOVERY | MATERIAL_RECOVERY |
+| gate P on S20 − A | +0.61 | NO_MATERIAL_LOSS | NO_MATERIAL_LOSS |
+| gate R on S20 − A | +0.61 | not a recovery | NEGLIGIBLE |
+
+  - GR-0's S40 − A (+3.69 pp) reads MATERIAL_LOSS under gate P's 3 pp band, consistent with GR-0's GAIN_SENSITIVE.
+- **Surveys** (read-only agents, outside the repository):
+  - `~/motar_tmp/realveh_design_20261108/SURVEY.md`: 0.5 kg vehicle, motor randomization, OAK-D Pro depth, the P9
+    detector error model;
+  - `~/motar_tmp/sitl_next_20261108/SURVEY.md`: an S4 factorial, CAM-K1 in SITL, S5. Its finding: S4's 0.10 m ground
+    filter is measured from world z = 0, but the rendered floor's top is at 0.05 m, so the margin was 0.05 m.
+- **Worktree:** `src/MOTAR-realveh` (branch `realveh/dev` from `814c28a`, 565 MB) for the vehicle, depth and S4F-1
+  code while this unit's GPU run freezes `MOTAR-camonly`. It is to be merged and removed after its unit.
+- **Beads:** epic `motar-783` with tasks `.1`–`.6`.
+- **PUBLIC_CPU** on the staged files (cores 6–7, one thread, faults 0 → 0): 3,575 run, 0 failures, 2 errors, 10
+  skipped. Both errors are `test_boia_planner`'s replay, which refuses below its 3 GB free-disk floor (2.5 GB free).
+  They are environmental and unrelated to this unit. `test_camk1e` passes inside the suite. Log:
+  `~/motar_tmp/camk1e_20261108/public_cpu_precommit.log`.
+- **Next:** run `~/motar_tmp/camk1e_20261108/run_camk1e.sh` (identity, then eval, then analysis), then the results
+  review.

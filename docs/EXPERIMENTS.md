@@ -745,6 +745,10 @@ family that is in the test's scope.
     - Training rollouts (under exploration noise; not an evaluation): capture rose from about 8 % to 26.3 % (seed 1)
       and 25.6 % (seed 2) over the 3,000 epochs, and crash fell from about 92 % to 74 %. GR-1 `ctrl`, with the
       LiDAR, stayed near 80 % capture.
+  - **CAM-K1-E v1 (preregistered 2026-11-08, NOT_RUN):** both CAM-K1 seeds against camera-only F at the same 66°
+    camera (gate R, crash, −10 pp) and against F with camera + LiDAR (gate P, crash, +10 pp), on GR-0's S00 grid.
+    - An identity control runs first; C2's camera-only F at 87° is the known-bad control of gate P.
+    - `docs/evidence/camonly_2026-11-04/camk1e/`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -757,10 +761,12 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_c2trace_v1.md` (G3: which bar camera-only F hits; GPU session approval 2026-11-05)
   - → `docs/evidence/camonly_2026-11-04/c2trace/` (G3 results, review r1)
   - → `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md` (CAM-K1: camera-only continuation training, OAK-D Pro RGB FOV, FOV-keeping reward weights, two seeds)
+  - → `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md` (CAM-K1-E: matched evaluation against camera-only F at 66° and F with LiDAR)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
-  `docs/plans/prereg_camonly_c2trace_v1.md`, `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`
+  `docs/plans/prereg_camonly_c2trace_v1.md`, `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`,
+  `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
