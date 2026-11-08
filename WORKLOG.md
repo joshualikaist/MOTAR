@@ -25714,3 +25714,29 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** CAM-K2-E. Install its files from `~/motar_tmp/realveh_wip_20261108_1927/` and fill the K2 pins from
   these reports. Then run its tests, controls, a short review and PUBLIC_CPU, commit, and run it. After that, the S5
   tests and a second review.
+
+## 2026-11-08 — Diagnosis (exploratory, from training logs): with the OAK-D depth model on, the bars that are hit are mostly missing from the obstacle tokens
+
+- **Prompt:** the user asked whether the training details were judged, after "99.9 % of crashes are bar contacts".
+  That figure is the share of crash causes, not the crash rate. The training-rollout crash rate is 18 % for F with
+  LiDAR (GR-1 `ctrl`) and about 71 % for CAM-K2 v2.
+- **From the runner's diagnostic lines** (`barprobe v2`, `speedgov`; means of 5 windows, descriptive, not
+  preregistered):
+
+| Run | Hit bar in camera FOV | Hit bar among obstacle tokens | Perceived clearance at contact | Tokens used (of 8) | Governor intervenes |
+| --- | --- | --- | --- | --- | --- |
+| F + LiDAR (GR-1 `ctrl`, end) | 0.89 | 0.86 | 0.88 m | 7.9 | 0.30 |
+| CAM-K1 s1 (end) | — | 0.68 | 0.35 m | 4.5 | 0.81 |
+| CAM-K2 v2 s1 (start) | — | 0.19 | 1.09 m | 4.0 | 0.81 |
+| CAM-K2 v2 s1/s2 (end) | 0.96 / 0.98 | 0.17 / 0.19 | 1.09 m | 4.1 / 3.8 | 0.77 / 0.81 |
+
+- **Reading (INFERRED):** the bar that is hit is in view, at a true distance of about 0.54 m, but in about 82 % of
+  crashes it is not an obstacle token, and the perceived clearance is about 1.1 m.
+  - The drop from 0.68 to 0.19 happens in CAM-K2's first windows, when the OAK-D depth model is switched on.
+  - So the depth model, or its invalid → 20 m encoding in the obstacle path, probably erases near bars. This is a
+    candidate defect, NOT_TESTED.
+  - Separately, camera-only perception fills only about half of the 8 token slots.
+- **Decision:** CAM-K2-E is on HOLD. As it stands it would measure this defect.
+- **Next:** a CPU probe. Feed a depth frame with a bar at 0.5–1 m through the depth model and the token pipeline, ON
+  and OFF, and locate where the bar is lost. Then repair, preregister CAM-K2 v3 with the hit-token share as a
+  preregistered check, and retrain.
