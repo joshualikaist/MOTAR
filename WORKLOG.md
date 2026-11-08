@@ -25740,3 +25740,38 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** a CPU probe. Feed a depth frame with a bar at 0.5–1 m through the depth model and the token pipeline, ON
   and OFF, and locate where the bar is lost. Then repair, preregister CAM-K2 v3 with the hit-token share as a
   preregistered check, and retrain.
+
+## 2026-11-08 — CAM-K2-E v1 preregistered; the depth probe locates the near-bar loss in v2's MinZ + no-return convention; three corrections to my earlier log reading
+
+- **Corrections to the previous entry** (from the Codex contract audit, confirmed by the Claude review):
+  - `hit_fov` is 240° token-sector inclusion, not camera visibility. My "96–98 % in camera view" was unsupported.
+  - `hit_dist` is the distance to the nearest bar centre, not clearance.
+  - The governor's contact clearance is the previous step's requested-corridor clearance. Comparing it with
+    `hit_dist` as an estimation error was invalid.
+- **Depth probe** (CPU, synthetic, by Codex; independent review by Claude Opus 5.5: PASS_WITH_LIMITS):
+  - With v2's depth model on, 26 of 50 near-bar scenes keep the bar as a token. Off, and with MinZ off, all 50 do.
+  - Valid surfaces at 0.5–1.5 m survive. Noise, holes and MaxZ are not the cause.
+  - So the cause is MinZ 0.4 m plus invalid → no return. A face-on bar vanishes when its centre is closer than
+    half-width + 0.5 m (about 0.70–0.89 m here), leaving the policy and, under `no_lidar`, the governor blind for
+    about the last 0.26 m.
+  - The review's F1: training crash fractions are similar (v2 0.71 against CAM-K1 0.73), so a crash effect is
+    NOT_TESTED.
+  - Records: `docs/evidence/camonly_2026-11-04/camk2e/`.
+- **User decisions:**
+  - ~23:25: "규칙 고쳐서 v3 재학습 (권장)".
+  - After the review, ~23:30: "v2 평가 먼저 (권장)" and "오케이 v2평가부터 먼저 돌리자", with GPU approval for
+    CAM-K2-E.
+  - The v3 code (blob → near rule) continues outside the tree in `~/motar_tmp/camk2v3_20261108/`. Its risk is that
+    real OAK-D invalid regions (sky, textureless walls) would read as near walls.
+- **CAM-K2-E v1:** `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`, `tools/camk2e_run.py`,
+  `tools/camk2e_analyse.py`, `eval_navrl_camk2e_arms.sh`, `tests/test_camk2e.py` (27 OK).
+  - The K2 pins come from `04f341c`.
+  - Reviews: r1 (with v2) AMEND_FIRST; r2 AMEND_FIRST. The rate gate would have refused a normal run (205-bar
+    identity cells take about 170 s). It now uses the ratio to CAM-K1-E's identity cells, plus text fixes. Both were
+    repaired, and the repairs were not re-reviewed.
+  - Controls: CONTROLS_OK.
+- **Round 3** (Claude Opus 5.5): PASS_WITH_LIMITS on the repaired rate gate. On the real CAM-K1-E files an identity
+  mean of 170 / 190 / 300 s projects 2.90 / 3.24 / 5.12 h, so it passes / passes / refuses; the cutoff is 205 s.
+  Leftover wording was fixed before the commit.
+- **PUBLIC_CPU:** 3,775 run, 0 failures, 2 errors (`test_boia_planner`'s 3 GB disk floor). `test_camk2e`: 27 OK.
+- **Next:** `~/motar_tmp/camk2e_20261108/run_camk2e.sh` (identity, then eval, then analysis; about 3 h, idle host).
