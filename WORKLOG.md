@@ -25623,3 +25623,38 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:**
   - CAM-K2, which continues each CAM-K1 seed on the T/W 2.25 vehicle model with the OAK-D depth model;
   - CAM-K2-E (to be preregistered), against CAM-K1 on this grid.
+
+## 2026-11-08 — S4F-1 v1: neither ground rendering (+13.75 pp, Holm p 0.069) nor an emissive target (+6.25 pp) reached significance; scene outcomes do not repeat across runs
+
+- **Ran** at `ab2eeb5` through `~/motar_tmp/s4f1_20261108/run_s4f1.sh`, 15:44–18:10 KST, on an idle host; faults 0 → 0.
+  - The approval check and the component smoke passed C1–C9: emissive 0.941, lit 0.118, rest 0.089 m.
+  - Four cell smokes were VALID, and attempt01 was COMPLETE with 160 of 160 VALID. Maximum lateness was 0.136 s.
+- **Capture**, n = 40 per cell:
+
+| Cell | Capture |
+| --- | --- |
+| lit / rendered | 55.0 % |
+| emissive / rendered | 60.0 % |
+| lit / unrendered | 67.5 % |
+| emissive / unrendered | 75.0 % |
+
+  - The best cell is still about 25 pp below Isaac/S3b's 100 %.
+- **Primary** (sign tests, Holm over two): ground +13.75 pp (raw p 0.035, Holm p 0.069); appearance +6.25 pp (0.44).
+  Neither reached. Both manipulations took effect (colour/target pixels 0.91 against 0.15; hover ground returns 63
+  against 0).
+- **Hypotheses:**
+  - Rejected: "S4's loss is mainly the rendered ground". Not shown: the effect did not reach significance, and the
+    unrendered cells stay far below Isaac.
+  - Rejected: "the shaded target's partial blanking explains S4's loss". Measured: +6.25 pp, p 0.44, although recall
+    rose from 0.52 to 0.85.
+- **Results review r1** (Claude Opus 5.5): **PASS_WITH_LIMITS**. It recomputed the numbers with its own code.
+  - **MAJOR-1:** per-scene outcomes do not repeat across runs (κ ≈ 0 against S4 attempt01), so per-scene tables
+    cannot be read scene by scene. The cause is NOT_TESTED.
+  - The other disclosures are in the evidence README.
+- **Records:** `docs/evidence/sitl_2026-11-05/s4f1/`:
+  - `reading_attempt01.json`, `attempt01.json`, `component_smoke_result.json`;
+  - `SHA256_MANIFEST.json`, covering 2,021 raw files;
+  - `RESULTS_REVIEW_r1.md`.
+- **Next (needs the user):** a boot-to-boot repeatability check of Gazebo-sensor episodes, before any further
+  per-scene reading; then the mount factor (S4F-2), or moving SITL to the camera-only policy.
+

@@ -918,10 +918,13 @@ family that is in the test's scope.
       identified.
     - Candidate, NOT_TESTED: the colour rule blanks only about 5 of 26 target pixels, so the rest may enter the
       obstacle scan.
-  - **S4F-1 v1 (preregistered 2026-11-08, design reviews r1 AMEND_FIRST and r2 PASS_WITH_LIMITS, repaired; NOT_RUN;
-    reported only):** S4's `ground` arm as a 2×2 of target appearance {lit, emissive} × ground {rendered, unrendered}
+  - **S4F-1 v1 (ran 2026-11-08, REPORTED, neither primary contrast reached after Holm; results review r1
+    PASS_WITH_LIMITS):** S4's `ground` arm as a 2×2 of target appearance {lit, emissive} × ground {rendered, unrendered}
     on S4's 40 scenes, in a Williams Latin-square order.
     - Primary: the main effects of appearance and of ground on capture, Holm over the two.
+    - Capture: lit/rendered 55 %, emissive/rendered 60 %, lit/unrendered 67.5 %, emissive/unrendered 75 % (n = 40 each).
+      Ground +13.75 pp (Holm p 0.069), appearance +6.25 pp (p 0.44).
+    - Scene outcomes do not repeat across runs (κ ≈ 0 against S4), so per-scene tables cannot be read scene by scene.
     - Found while designing it: S4's 0.10 m ground filter is measured from world z = 0, while the rendered floor's
       top is at 0.05 m, so its margin was 0.05 m.
     - `docs/evidence/sitl_2026-11-05/s4f1/`.

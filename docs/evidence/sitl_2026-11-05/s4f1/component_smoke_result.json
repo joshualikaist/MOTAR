@@ -1,0 +1,291 @@
+{
+ "script_sha256": "14925afb963c27e6487f4133bd8f5e7f911b91578ac8c5ce51b185fa96f15e40",
+ "runner_sha256": "4b079db92c53941a9290e27a2de619ddf918a78248bc2e62f7c7525ddf3ed9cc",
+ "worktree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+ "worktree_head": "ab2eeb5567b754885499a17dc3c4af146b4e5f3f",
+ "runner_tracked_and_clean": true,
+ "thresholds": {
+  "C1_emissive_pass_fraction_min": 0.8,
+  "C2_lit_pass_fraction_max": 0.5,
+  "C3_mask_px_range": [
+   20,
+   45
+  ],
+  "C3_centroid_offset_px_max": 1.5,
+  "C3_outside_mask_pass_max": 5,
+  "C4_unrendered_floor_returns_outside_bar_feet_max": 0,
+  "C5_rendered_lidar_floor_min": 40,
+  "C5_rendered_depth_floor_min": 1000,
+  "C6_bar_tol_m": 0.05,
+  "C7_rest_z_m": 0.09,
+  "C7_rest_tol_m": 0.01,
+  "C8_rest_diff_max_m": 0.002,
+  "C9_settled_dz_max_m": 0.0005
+ },
+ "started": 1794120264.7786376,
+ "display": ":1",
+ "plugin_sha256": "9b3109af0b737ad7a4975df21ba5231fdc35b5c4e4319dc0c95d9ff4a7806c92",
+ "rig": {
+  "lit_rendered": {
+   "world_sha256": "1eddb2e8d7a33da87654058879270ca0b75e3760af61c5d1ee4307fee8d87f58",
+   "times": {
+    "sim_now": 2.216,
+    "lidar_t": 2.176,
+    "rgb_t": 2.176,
+    "depth_t": 2.176,
+    "target_t": 0.21600000000000003,
+    "target_count": 1
+   },
+   "fresh": true,
+   "target": {
+    "mask_px": 34,
+    "mask_centroid_uv": [
+     101.08823529411765,
+     45.205882352941174
+    ],
+    "pass_in_mask": 4,
+    "pass_fraction": 0.11764705882352941,
+    "pass_centroid_uv": [
+     101.5,
+     43.0
+    ],
+    "pass_outside_dilated_mask": 0,
+    "reddish_px": 35,
+    "rgb_mask_median": [
+     0.3529411852359772,
+     0.0313725508749485,
+     0.019607843831181526
+    ]
+   },
+   "floor": {
+    "lidar_ground_removed": 68,
+    "depth_ground_removed": 6160,
+    "lidar_removed_outside_bar_feet": 68,
+    "depth_removed_outside_bar_feet": 6102,
+    "bar_foot_px": 36,
+    "bar_foot_px_dilated": 70,
+    "bar_foot_lidar_beams": 0
+   },
+   "bars": {
+    "lidar_col36_0deg_m": 2.800002336502075,
+    "lidar_col18_0deg_m": 1.8000017404556274,
+    "depth_centre_m": 2.7000956535339355
+   },
+   "lidar_row_minus10_min_m": 1.8277755975723267
+  },
+  "emissive_rendered": {
+   "world_sha256": "c5f04b4950e6c442df65061d2146d21559f8fda570874962560ca9700acb7f80",
+   "times": {
+    "sim_now": 2.236,
+    "lidar_t": 2.22,
+    "rgb_t": 2.22,
+    "depth_t": 2.22,
+    "target_t": 0.23600000000000002,
+    "target_count": 1
+   },
+   "fresh": true,
+   "target": {
+    "mask_px": 34,
+    "mask_centroid_uv": [
+     101.08823529411765,
+     45.205882352941174
+    ],
+    "pass_in_mask": 32,
+    "pass_fraction": 0.9411764705882353,
+    "pass_centroid_uv": [
+     101.125,
+     45.21875
+    ],
+    "pass_outside_dilated_mask": 0,
+    "reddish_px": 37,
+    "rgb_mask_median": [
+     0.8784313797950745,
+     0.0784313753247261,
+     0.04313725605607033
+    ]
+   },
+   "floor": {
+    "lidar_ground_removed": 68,
+    "depth_ground_removed": 6160,
+    "lidar_removed_outside_bar_feet": 68,
+    "depth_removed_outside_bar_feet": 6102,
+    "bar_foot_px": 36,
+    "bar_foot_px_dilated": 70,
+    "bar_foot_lidar_beams": 0
+   },
+   "bars": {
+    "lidar_col36_0deg_m": 2.800002336502075,
+    "lidar_col18_0deg_m": 1.8000017404556274,
+    "depth_centre_m": 2.7000956535339355
+   },
+   "lidar_row_minus10_min_m": 1.8277755975723267
+  },
+  "lit_unrendered": {
+   "world_sha256": "17cb90ace306864f372688e3eca90d50eafdc58ca0584a69622be2b69a528321",
+   "times": {
+    "sim_now": 2.2,
+    "lidar_t": 2.16,
+    "rgb_t": 2.16,
+    "depth_t": 2.16,
+    "target_t": 0.196,
+    "target_count": 1
+   },
+   "fresh": true,
+   "target": {
+    "mask_px": 34,
+    "mask_centroid_uv": [
+     101.08823529411765,
+     45.205882352941174
+    ],
+    "pass_in_mask": 4,
+    "pass_fraction": 0.11764705882352941,
+    "pass_centroid_uv": [
+     101.5,
+     43.0
+    ],
+    "pass_outside_dilated_mask": 0,
+    "reddish_px": 33,
+    "rgb_mask_median": [
+     0.3529411852359772,
+     0.0313725508749485,
+     0.019607843831181526
+    ]
+   },
+   "floor": {
+    "lidar_ground_removed": 0,
+    "depth_ground_removed": 36,
+    "lidar_removed_outside_bar_feet": 0,
+    "depth_removed_outside_bar_feet": 0,
+    "bar_foot_px": 36,
+    "bar_foot_px_dilated": 70,
+    "bar_foot_lidar_beams": 0
+   },
+   "bars": {
+    "lidar_col36_0deg_m": 2.800002336502075,
+    "lidar_col18_0deg_m": 1.8000017404556274,
+    "depth_centre_m": 2.7000956535339355
+   },
+   "lidar_row_minus10_min_m": 1.8277755975723267
+  },
+  "emissive_unrendered": {
+   "world_sha256": "2e13c1d68c6a61ad71cc7a47834bf6aed7a3279344e6d7a222cac61eb9061bd1",
+   "times": {
+    "sim_now": 2.2560000000000002,
+    "lidar_t": 2.208,
+    "rgb_t": 2.208,
+    "depth_t": 2.208,
+    "target_t": 0.256,
+    "target_count": 1
+   },
+   "fresh": true,
+   "target": {
+    "mask_px": 34,
+    "mask_centroid_uv": [
+     101.08823529411765,
+     45.205882352941174
+    ],
+    "pass_in_mask": 32,
+    "pass_fraction": 0.9411764705882353,
+    "pass_centroid_uv": [
+     101.125,
+     45.21875
+    ],
+    "pass_outside_dilated_mask": 0,
+    "reddish_px": 37,
+    "rgb_mask_median": [
+     0.8784313797950745,
+     0.0784313753247261,
+     0.04313725605607033
+    ]
+   },
+   "floor": {
+    "lidar_ground_removed": 0,
+    "depth_ground_removed": 36,
+    "lidar_removed_outside_bar_feet": 0,
+    "depth_removed_outside_bar_feet": 0,
+    "bar_foot_px": 36,
+    "bar_foot_px_dilated": 70,
+    "bar_foot_lidar_beams": 0
+   },
+   "bars": {
+    "lidar_col36_0deg_m": 2.800002336502075,
+    "lidar_col18_0deg_m": 1.8000017404556274,
+    "depth_centre_m": 2.7000956535339355
+   },
+   "lidar_row_minus10_min_m": 1.8277755975723267
+  }
+ },
+ "rest": {
+  "rendered": {
+   "world_sha256": "c60d09e5917ec4e54f9a9625f94fd415e22496aa63a3dd073da228950eeab880",
+   "first_pose": [
+    -4e-06,
+    -0.0,
+    0.089,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "pose_a": [
+    -4e-06,
+    -0.0,
+    0.089,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "pose_b": [
+    -4e-06,
+    -0.0,
+    0.089,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "z_m": 0.089,
+   "settled_dz_m": 0.0
+  },
+  "unrendered": {
+   "world_sha256": "aa87788506908ff7d54ab5ed8c9e6c59e505685ed90f7be84a6c51e3e45e024f",
+   "first_pose": [
+    -4e-06,
+    -0.0,
+    0.089,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "pose_a": [
+    -4e-06,
+    -0.0,
+    0.089,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "pose_b": [
+    -4e-06,
+    -0.0,
+    0.089,
+    0.0,
+    0.0,
+    0.0
+   ],
+   "z_m": 0.089,
+   "settled_dz_m": 0.0
+  }
+ },
+ "criteria": {
+  "C1": true,
+  "C2": true,
+  "C3": true,
+  "C4": true,
+  "C5": true,
+  "C6": true,
+  "C7": true,
+  "C8": true,
+  "C9": true
+ },
+ "verdict": "PASS",
+ "finished": 1794120300.2086146
+}
