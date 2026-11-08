@@ -25546,3 +25546,38 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   (`realveh/dev` from `814c28a`) while CAM-K1-E froze this tree. Files copied here byte for byte (SHA-256 in
   `~/motar_tmp/s4f1_20261108/IMPLEMENTATION.md`).
 - **Next:** in the next session window, `run_s4f1.sh` on an idle host (about 2.2–2.7 h).
+
+## 2026-11-08 — CAM-K2 v1 preregistered: CAM-K1 continued under a T/W 2.25 thrust cap, motor randomization and an OAK-D Pro depth model (NOT_RUN)
+
+- **Why:** D-2026-11-06-1 (real vehicle about 0.5 kg, small motors, OAK-D Pro, no LiDAR), and the user's 2026-11-08
+  instruction to do the real-vehicle simulation today.
+- **Decision (coordinating agent, within the user's 12:07 approval):** no robot-lineage bypass.
+  - The implementing agent found that the task refuses a CAM-K1 checkpoint on a different robot ("ROBOT LINEAGE
+    MISMATCH"). The first design wrapped that guard; it was removed.
+  - The 0.5 kg same-geometry placeholder (Option A: masses, inertia and attitude gains ×2) is dynamically equal to
+    navrl_quad with each motor capped at thrust-to-weight 2.25. That is 1.3795 N per motor. Hover fraction, maximum
+    acceleration (22.07 m/s²) and maximum roll and yaw acceleration were tested equal on the CPU motor and
+    allocation path.
+  - So CAM-K2 keeps navrl_quad's identity and applies the cap at run time.
+- **Unit:** `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md`; wrapper `tools/camk2_train.py`; launcher
+  `train_navrl_camk2.sh`; entry `tools/realveh_entry.py` and `realveh_python`.
+  - Modules `navrl_vehicle_rand.py` (cap, thrust ±15 %, motor imbalance ±5 %, τ 0.03–0.06 s, worst T/W 1.82 ≥ 1.8)
+    and `navrl_depth_model.py` (OAK-D Pro 800P with extended disparity and subpixel; f·B 66.19 px·m, MinZ 0.4 m,
+    MaxZ 20 m, z² noise, 2 % holes; invalid depth is no return, disclosed as optimistic).
+  - Option A's URDF and config are kept as documentation only.
+  - Tests: `test_realveh` 43, `test_camk2_train` 33. `test_navrl_sensor_ablation` gained the entry on its
+    import-guard allow-list, with positive controls (15). There are 139 across six files in one process, both orders.
+- **Runs:** seed s continues CAM-K1 seed s (SHA-pinned) for 1,000 epochs (28001..29000), after a 2-epoch smoke that
+  must read SMOKE_OK at the same HEAD. Nothing may be committed between the smoke and seed 2.
+- **Reviews** (Claude Opus 5.5, fresh context):
+  - r1 AMEND_FIRST (M-1: the start-of-episode altitude sag of weak envs, 0.23–0.43 m; m-1..m-7; L-1..L-10);
+  - r2 AMEND_FIRST (N-1: quiet startup swallowed the vehicle-randomization init line, so every real smoke would
+    have failed);
+  - r3 PASS_WITH_LIMITS.
+  - All repaired; copies in `docs/evidence/camonly_2026-11-04/camk2/REVIEW_design_r{1,2,3}.md`.
+- **Open for the user:** whether to unbundle the three treatments; the invalid-depth convention; the real frame, arm
+  length, thrust table and τ (all placeholders).
+- **PUBLIC_CPU** with S4F-1 and this unit in the tree (cores 6–7, one thread, faults 0 → 0): 3,705 run, 0 failures,
+  2 errors (`test_boia_planner`'s 3 GB free-disk floor; 2.2 GB free). Log:
+  `~/motar_tmp/commits_20261108/public_cpu_s4f1_camk2.log`.
+- **Next:** after S4F-1, `tools/camk2_train.py 1 --smoke`, then seeds 1 and 2.

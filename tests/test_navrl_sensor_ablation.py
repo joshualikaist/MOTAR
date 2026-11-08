@@ -558,10 +558,12 @@ class SensorAblationC0(unittest.TestCase):
         hits = []
         for base in ("aerial_gym", "motar_eval", "tools"):
             for path in (ROOT / base).rglob("*.py"):
-                # The opt-in entry points: camonly_entry.py (C-study evaluations) and camtrain_entry.py (CAM-K1
-                # training, D-2026-11-06-1), each selected only through its own wrapper (camonly_python,
-                # camtrain_python). No production module may import the ablation.
-                if path.name in ("navrl_sensor_ablation.py", "camonly_entry.py", "camtrain_entry.py"):
+                # The opt-in entry points: camonly_entry.py (C-study evaluations), camtrain_entry.py (CAM-K1
+                # training, D-2026-11-06-1) and realveh_entry.py (CAM-K2 training), each selected only through its own
+                # wrapper (camonly_python, camtrain_python, realveh_python). No production module may import the
+                # ablation.
+                if path.name in ("navrl_sensor_ablation.py", "camonly_entry.py", "camtrain_entry.py",
+                                 "realveh_entry.py"):
                     continue
                 if pattern.search(path.read_text(errors="ignore")):
                     hits.append(str(path.relative_to(ROOT)))
@@ -569,6 +571,12 @@ class SensorAblationC0(unittest.TestCase):
         # Positive control: the allowed importers are found by the same pattern.
         self.assertTrue(pattern.search((ROOT / "tools/camonly_entry.py").read_text()))
         self.assertTrue(pattern.search((ROOT / "tools/camtrain_entry.py").read_text()))
+        self.assertTrue(pattern.search((ROOT / "tools/realveh_entry.py").read_text()))
+        # Positive control: an importer that is not on the list is caught, in each import form.
+        for unlisted in ("from aerial_gym.task.navrl_task import navrl_sensor_ablation as ablation\n",
+                         "    import aerial_gym.task.navrl_task.navrl_sensor_ablation\n",
+                         "from aerial_gym.task.navrl_task.navrl_sensor_ablation import install\n"):
+            self.assertTrue(pattern.search("x = 1\n" + unlisted), unlisted)
 
 
 class CamonlyEntryPoint(unittest.TestCase):
