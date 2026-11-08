@@ -752,13 +752,20 @@ family that is in the test's scope.
     - Pooled crash: F66 53.9 %, K1s1 16.2 %, K1s2 17.1 %, A 4.5 %. R: −37.7 / −36.7 pp; P: +11.8 / +12.7 pp.
       Training-rollout rates are not comparable.
     - `docs/evidence/camonly_2026-11-04/camk1e/`.
-  - **CAM-K2 v1 (preregistered 2026-11-08, design reviews r1 AMEND_FIRST and r2, repaired; NOT_RUN):** each CAM-K1
+  - **CAM-K2 v1 (preregistered 2026-11-08; WITHDRAWN_BEFORE_RUN the same day, when the user's real-vehicle specs
+    arrived, D-2026-11-08-1):** each CAM-K1
     seed continued for 1,000 epochs on navrl_quad with three run-time treatments:
     - a per-motor thrust cap at thrust-to-weight 2.25, dynamically equal to the 0.5 kg same-geometry placeholder
       (Option A);
     - thrust ±15 %, motor imbalance ±5 % and motor τ 0.03–0.06 s randomized;
     - an OAK-D Pro stereo depth model: 800P with extended disparity, MinZ 0.4 m, z² noise, holes.
     - The robot lineage is unchanged. Training only. `docs/evidence/camonly_2026-11-04/camk2/`.
+  - **CAM-K2 v2 (preregistered 2026-11-08, design review r1 AMEND_FIRST, repaired; r2 see evidence; NOT_RUN):**
+    each CAM-K1 seed continued for 1,000 epochs on navrl_quad.
+    - Its per-motor limit is raised at run time to T/W 4.0 (INFERRED), for the 1.1 kg vehicle of D-2026-11-08-1.
+    - Randomized: thrust ±15 %, motor imbalance ±5 % and τ 0.02–0.04 s.
+    - The OAK-D Pro depth model is as in v1.
+    - Translational capacity matches; roll capacity is 1.1–2.6× the real vehicle's (INFERRED inertia).
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -773,11 +780,13 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md` (CAM-K1: camera-only continuation training, OAK-D Pro RGB FOV, FOV-keeping reward weights, two seeds)
   - → `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md` (CAM-K1-E: matched evaluation against camera-only F at 66° and F with LiDAR)
   - → `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md` (CAM-K2: T/W 2.25 thrust cap, motor randomization, OAK-D depth model, two seeds)
+  - → `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md` (CAM-K2 v2: the real 1.1 kg vehicle's T/W 4.0 by a raised limit; v1 withdrawn before running)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
   `docs/plans/prereg_camonly_c2trace_v1.md`, `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`,
-  `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`, `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md`
+  `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`, `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md`,
+  `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

@@ -158,7 +158,7 @@ CHILD = textwrap.dedent(r'''
             out["state_after_reset"] = mm.current_motor_thrust.tolist()
             thrust, yaw, ratio_err, factors, ref_over = [], [], 0.0, {}, 0
             cap = getattr(mm, "_veh_rand_cap", None)
-            for k, w in enumerate(wrench_sequence()):
+            for k, w in enumerate(wrench_sequence(scale=arg.get("wrench_scale", 1.0))):
                 if k == 15:
                     factors["before"] = getattr(mm, "_veh_rand_factor", torch.ones(N, 4)).clone().tolist()
                     out["state_before_partial_reset"] = mm.current_motor_thrust.tolist()
@@ -178,7 +178,20 @@ CHILD = textwrap.dedent(r'''
                         "tau_dec": mm.motor_time_constants_decreasing.tolist(), "rng": rng_hash(),
                         "max_thrust": float(mm.max_thrust[0, 0]), "ref_over_cap": ref_over,
                         "cap": None if cap is None else cap.tolist(),
-                        "record": getattr(robot, "_veh_rand_record", None)})
+                        "record": getattr(robot, "_veh_rand_record", None),
+                        "max_thrust_tensor": [float(v) for v in mm.max_thrust[0]],
+                        "own_max_kept": [float(v) for v in getattr(mm, "_veh_rand_own_max_thrust", mm.max_thrust)[0]],
+                        "raise_counters": VR.raise_counters(mm)})
+            if arg.get("saturate"):                           # every motor driven far above any limit
+                sat = torch.zeros(N, 6)
+                sat[:, 2] = 60.0
+                peak = []
+                for _ in range(100):
+                    forces, _t = robot.control_allocator.allocate_output(sat, "wrench")
+                    peak.append(float(forces[:, :, 2].max()))
+                out["sat_thrust"] = forces[:, :, 2].tolist()
+                out["sat_peak"] = max(peak)
+                out["raise_counters_sat"] = VR.raise_counters(mm)
             unready = object.__new__(MMm.MotorModel)
             try:
                 MMm.MotorModel.update_motor_thrusts(unready, torch.zeros(N, 4))
@@ -608,6 +621,7 @@ class TestVehicleRandSettings(unittest.TestCase):
                {"NAVRL_VEH_RAND_SEED": ""}, {"NAVRL_VEH_RAND_SEED": "-1"}, {"NAVRL_VEH_RAND_SEED": "1.5"},
                {"NAVRL_VEH_RAND_TW_NOMINAL": ""}, {"NAVRL_VEH_RAND_TW_NOMINAL": "0.5"},
                {"NAVRL_VEH_RAND_TW_NOMINAL": "11"}, {"NAVRL_VEH_RAND_TW_NOMINAL": "nan"},
+               {"NAVRL_VEH_RAND_TW_NOMINAL": "6.5"},
                {"NAVRL_VEH_RAND_TW_SCALE": ""}, {"NAVRL_VEH_RAND_TW_SCALE": "0.6"}, {"NAVRL_VEH_RAND_TW_SCALE": "-0.1"},
                {"NAVRL_VEH_RAND_TW_SCALE": "nan"}, {"NAVRL_VEH_RAND_TW_SCALE": "x"},
                {"NAVRL_VEH_RAND_MOTOR_IMBAL": "0.3"}, {"NAVRL_VEH_RAND_MOTOR_IMBAL": ""},
@@ -616,11 +630,11 @@ class TestVehicleRandSettings(unittest.TestCase):
         for change in bad:
             with self.assertRaises(ValueError, msg=change):
                 VR.settings_from_env(dict(VR_ON_ENV, **change))
-        self.assertEqual(len(bad), 21)
+        self.assertEqual(len(bad), 22)
         # positive controls at the bounds
         edge = VR.settings_from_env(dict(VR_ON_ENV, NAVRL_VEH_RAND_TW_SCALE="0.5", NAVRL_VEH_RAND_MOTOR_IMBAL="0.2",
                                          NAVRL_VEH_RAND_TAU_MIN="0.005", NAVRL_VEH_RAND_TAU_MAX="0.2",
-                                         NAVRL_VEH_RAND_SEED="0", NAVRL_VEH_RAND_TW_NOMINAL="10"))
+                                         NAVRL_VEH_RAND_SEED="0", NAVRL_VEH_RAND_TW_NOMINAL="6"))   # MAX_TW_NOMINAL
         self.assertEqual(edge["NAVRL_VEH_RAND_TW_SCALE"], 0.5)
 
 
@@ -737,11 +751,32 @@ class TestVehicleRandDynamics(unittest.TestCase):
         self.assertEqual(set(v for env in off["tau_inc"] for v in env), {off["tau_inc"][0][0]})   # control: nominal
 
     def test_refusals_at_run_time(self):
+        """As committed (v1): a TW_NOMINAL above the robot's own T/W refuses. CAM-K2 v2 (review r1 m-1): only
+        NAVRL_VEH_RAND_LIMIT_MODE=raise lets it raise the limit; raise below the own T/W, and above MAX_TW_NOMINAL,
+        refuse at init."""
         too_high = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=3.5)})
         self.assertIn("exceeds the robot's own thrust-to-weight", too_high["init_error"])
         just_below = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=3.26)})   # control
         self.assertNotIn("init_error", just_below)
         self.assertTrue(just_below["record"]["cap_applied"])
+        self.assertEqual(just_below["record"]["mode"], "lower")
+        lower_above = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=3.5,
+                                                         NAVRL_VEH_RAND_LIMIT_MODE="lower")})
+        self.assertIn("exceeds the robot's own thrust-to-weight", lower_above["init_error"])
+        above = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=3.5,
+                                                   NAVRL_VEH_RAND_LIMIT_MODE="raise")})              # control
+        self.assertNotIn("init_error", above)
+        self.assertEqual(above["record"]["mode"], "raise")
+        wrong_way = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=3.26,
+                                                       NAVRL_VEH_RAND_LIMIT_MODE="raise")})
+        self.assertIn("is below the robot's own thrust-to-weight", wrong_way["init_error"])
+        too_far = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=6.5,
+                                                     NAVRL_VEH_RAND_LIMIT_MODE="raise")})
+        self.assertIn("outside [1, 6]", too_far["init_error"])
+        self.assertEqual(VR.MAX_TW_NOMINAL, 6.0)
+        # review r1 m-4: "3.2620" is 6.9e-6 above 8 / (m g) = 3.261977434, outside the 1e-6 band: it is no identity
+        rounded = child("vehrand", {"settings": dict(VR_IDENTITY, NAVRL_VEH_RAND_TW_NOMINAL=3.2620)})
+        self.assertIn("exceeds the robot's own thrust-to-weight", rounded["init_error"])
         self.assertEqual(cached("vehrand", {"settings": VR_ON})["update_before_init"], "refused")
         self.assertTrue(cached("vehrand", {"settings": None})["update_before_init"].startswith("original:"))
 
@@ -759,6 +794,103 @@ class TestVehicleRandDynamics(unittest.TestCase):
         self.assertEqual(a["thrust"], b["thrust"])
         c = child("vehrand", {"settings": dict(VR_ON, NAVRL_VEH_RAND_SEED=4602)})
         self.assertNotEqual(a["thrust"], c["thrust"])
+
+
+VR_RAISE = dict(VR_IDENTITY, NAVRL_VEH_RAND_TW_NOMINAL=4.0, NAVRL_VEH_RAND_LIMIT_MODE="raise")   # v2's limit, no rand.
+VR_V2 = dict(VR_ON, NAVRL_VEH_RAND_TW_NOMINAL=4.0, NAVRL_VEH_RAND_TAU_MIN=0.02, NAVRL_VEH_RAND_TAU_MAX=0.04,
+             NAVRL_VEH_RAND_LIMIT_MODE="raise")
+LIMIT_V2 = 4.0 * 0.25 * 9.81 / 4                                           # 2.4525 N per motor (review r1 m-2)
+IDENTITY_PRINTED = "3.2619774"                                             # the docstring's printed 8 / (m g)
+
+
+class TestRaisedLimit(unittest.TestCase):
+    """CAM-K2 v2: TW_NOMINAL 4.0 above navrl_quad's own 3.262, with NAVRL_VEH_RAND_LIMIT_MODE=raise, raises the motor
+    model's run-time clamp to the limit."""
+
+    def test_raised_clamp_takes_effect_and_is_never_exceeded(self):
+        r = child("vehrand", {"settings": VR_RAISE, "saturate": True})
+        rec = r["record"]
+        self.assertEqual(rec["mode"], "raise")
+        self.assertAlmostEqual(rec["thrust_limit_per_motor_n"][0], LIMIT_V2, places=6)
+        self.assertEqual(rec["max_thrust_per_motor_n"], [2.0, 2.0])                # the robot's own, recorded
+        for v in r["max_thrust_tensor"]:
+            self.assertAlmostEqual(v, LIMIT_V2, places=6)                          # the run-time clamp
+        self.assertEqual(r["own_max_kept"], [2.0, 2.0, 2.0, 2.0])
+        flat = [v for row in r["sat_thrust"] for v in row]
+        self.assertGreater(min(flat), 2.0)                                         # above F's 2 N limit
+        for v in flat:
+            self.assertAlmostEqual(v, LIMIT_V2, places=4)                          # steady state at the limit
+        self.assertLessEqual(r["sat_peak"], LIMIT_V2 + 1e-6)                        # never above it (factor 1)
+        traj = [v for step in r["thrust"] for env in step for v in env]
+        self.assertLessEqual(max(traj), LIMIT_V2 + 1e-6)
+        for state in (r["state_after_reset"], r["state_after_partial_reset"]):     # resets draw in [0, limit]
+            vals = [v for row in state for v in row]
+            self.assertLessEqual(max(vals), LIMIT_V2 + 1e-6)
+            self.assertGreater(max(vals), 0.5 * LIMIT_V2)
+        # control: the same robot without the switch stays at F's 2 N
+        off = child("vehrand", {"settings": None, "saturate": True})
+        self.assertAlmostEqual(max(v for row in off["sat_thrust"] for v in row), 2.0, places=4)
+        self.assertLessEqual(off["sat_peak"], 2.0 + 1e-6)
+
+    def test_v2_ranges_scale_around_the_raised_limit(self):
+        r = child("vehrand", {"settings": VR_V2, "saturate": True})
+        self.assertEqual(r["record"]["mode"], "raise")
+        hi = 1.15 * 1.05
+        self.assertLessEqual(r["sat_peak"], LIMIT_V2 * hi + 1e-6)
+        self.assertGreater(r["sat_peak"], 2.0 * 1.05)
+        for e in range(6):
+            for tv in r["tau_inc"][e]:
+                self.assertGreaterEqual(tv, 0.02 - 1e-7)
+                self.assertLessEqual(tv, 0.04 + 1e-7)
+        self.assertAlmostEqual(VR.worst_case_thrust_to_weight(VR_V2), 4.0 * 0.85 * 0.95, places=12)
+
+    def test_raise_counters_and_live_read_back(self):
+        """Review r1 M-1: the counters see commands above 2 N and at the limit when the limit binds, none in an
+        unsaturated control, and exist only in raise mode; the read-back is the live tensor."""
+        r = child("vehrand", {"settings": VR_RAISE, "saturate": True})
+        sat = r["raise_counters_sat"]
+        self.assertGreater(sat["cmd_elements"], 0)
+        self.assertGreater(sat["cmd_at_limit"], 0)
+        self.assertGreaterEqual(sat["cmd_above_own_max"], sat["cmd_at_limit"])
+        self.assertLessEqual(sat["cmd_above_own_max"], sat["cmd_elements"])
+        self.assertGreater(sat["cmd_max_n"], LIMIT_V2)                             # the command, before the clamp
+        for v in sat["live_max_thrust_n"] + r["record"]["live_max_thrust_per_motor_n"]:
+            self.assertAlmostEqual(v, LIMIT_V2, places=6)
+        self.assertGreater(sat["cmd_elements"], r["raise_counters"]["cmd_elements"])   # it keeps counting
+        calm = child("vehrand", {"settings": VR_RAISE, "wrench_scale": 0.2})["raise_counters"]   # control
+        self.assertGreater(calm["cmd_elements"], 0)
+        self.assertEqual((calm["cmd_above_own_max"], calm["cmd_at_limit"]), (0, 0))
+        self.assertLess(calm["cmd_max_n"], 2.0)
+        for settings in (VR_CAP_ONLY, VR_IDENTITY, None):                          # lower, none, OFF: no counters
+            out = cached("vehrand", {"settings": settings})
+            self.assertIsNone(out["raise_counters"], settings)
+        self.assertEqual(cached("vehrand", {"settings": VR_CAP_ONLY})["record"]["live_max_thrust_per_motor_n"],
+                         [2.0, 2.0])                                              # lower: the own tensor, live
+
+    def test_printed_identity_constant_is_bitwise_off(self):
+        """Review r1 m-4: the docstring's printed 3.2619774 selects "none" and reproduces OFF bitwise."""
+        printed = VR.settings_from_env(dict(VR_ON_ENV, NAVRL_VEH_RAND_TW_NOMINAL=IDENTITY_PRINTED,
+                                            NAVRL_VEH_RAND_TW_SCALE="0", NAVRL_VEH_RAND_MOTOR_IMBAL="0",
+                                            NAVRL_VEH_RAND_TAU_MIN=repr(VR_IDENTITY["NAVRL_VEH_RAND_TAU_MIN"]),
+                                            NAVRL_VEH_RAND_TAU_MAX=repr(VR_IDENTITY["NAVRL_VEH_RAND_TAU_MAX"])))
+        off, ident = cached("vehrand", {"settings": None}), child("vehrand", {"settings": printed})
+        self.assertEqual(ident["record"]["mode"], "none")
+        self.assertEqual((ident["thrust"], ident["yaw"], ident["tau_inc"], ident["state_after_reset"], ident["rng"]),
+                         (off["thrust"], off["yaw"], off["tau_inc"], off["state_after_reset"], off["rng"]))
+        self.assertLess(abs(float(IDENTITY_PRINTED) - ident["record"]["own_thrust_to_weight"][0]),
+                        1e-6 * ident["record"]["own_thrust_to_weight"][0])
+
+    def test_thrust_to_weight_equals_a_1p1_kg_vehicle_at_tw_4p0(self):
+        """Arithmetic on the limit's definition (review r1 L-1): it shows the record uses the controller's mass."""
+        rec = child("vehrand", {"settings": VR_RAISE})["record"]
+        limit, m = rec["thrust_limit_per_motor_n"][0], rec["mass_kg"][0]
+        self.assertAlmostEqual(4 * limit / m, 4.0 * 9.81, places=4)                # max thrust acceleration 4.0 g
+        self.assertAlmostEqual(m * 9.81 / (4 * limit), 1 / 4.0, places=6)          # hover fraction 0.25
+        real_motor = 4.0 * 1.1 * 9.81 / 4                                          # 10.79 N per motor (INFERRED)
+        self.assertAlmostEqual(4 * limit / m, 4 * real_motor / 1.1, places=4)
+        self.assertAlmostEqual(m * 9.81 / (4 * limit), 1.1 * 9.81 / (4 * real_motor), places=6)   # float32 g
+        # control: navrl_quad's own limit is not that vehicle (T/W 3.26)
+        self.assertGreater(abs(4 * 2.0 / 0.25 - 4 * real_motor / 1.1), 7.0)              # 32.0 vs 39.24 m/s^2
 
 
 class TestOptionAEquivalence(unittest.TestCase):

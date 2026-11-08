@@ -424,3 +424,18 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   - "카메라 밖에 센서가 없으니까 FOV 리워드 값을 조금 더 많이 줘야 될거야. 실기 무게는 500g정도".
 - **Record:** plan draft `~/motar_tmp/camonly_plan_20261106/PLAN.md` (Claude Fable 5.1);
   [CAM-K1 evidence](evidence/camonly_2026-11-04/camk1/README.md).
+
+## D-2026-11-08-1 — The real vehicle: 1.1 kg, 5-inch props, T-Motor Velox 2550KV (replaces "about 0.5 kg")
+
+- **Decision (user, 2026-11-08 about 16:10 KST, relaying their senior).**
+  - "드론은 무게 1.1kg, 프로펠러 5x4.3x3 // 모터 velox 2550kV. 이정도로 코덱스 주면 어느정도는 맞출 수 있을거에요".
+  - The user added: "이에 맞춰서 데이터 다시 수집하면 될거같아".
+- **What it changes:**
+  - D-2026-11-06-1's "about 0.5 kg" is superseded. Its camera (OAK-D Pro) and no-LiDAR parts stand.
+  - CAM-K2 v1 (`62e2699`, T/W 2.25 cap for a 0.5 kg placeholder) is WITHDRAWN_BEFORE_RUN.
+  - CAM-K2 v2 (`docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`) models the real vehicle's thrust-to-weight on
+    navrl_quad at run time, by raising the per-motor limit to T/W 4.0. The robot lineage is unchanged.
+- **T/W 4.0 is INFERRED.** LIGPOWER's V2306 V2 2400KV with T5143S on 4S gives 1,084 g at 100 %, so
+  4 × 1.084 / 1.1 = 3.94. 2550KV adds RPM, and bench thrust overstates thrust in flight.
+- **Open, for the user:** the battery cell count (4S assumed), the wheelbase (about 225 mm assumed), whether 1.1 kg
+  includes the battery, and any thrust-stand data.

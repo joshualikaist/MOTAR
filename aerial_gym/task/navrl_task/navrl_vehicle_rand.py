@@ -6,18 +6,31 @@ value is required from the environment; there are no defaults here, so an incomp
 the run:
 
   NAVRL_VEH_RAND_SEED         int >= 0, seeds this module's own torch.Generator (the global RNG is never consumed)
-  NAVRL_VEH_RAND_TW_NOMINAL   nominal thrust-to-weight in [1, 10]. The per-motor cap is
-                              cap = TW_NOMINAL * m * |g| / n_motors, with m and g read at run time from the robot's
+  NAVRL_VEH_RAND_TW_NOMINAL   nominal thrust-to-weight in [1, MAX_TW_NOMINAL = 6]. The per-motor thrust limit becomes
+                              limit = TW_NOMINAL * m * |g| / n_motors, with m and g read at run time from the robot's
                               controller (`controller.mass`, `controller.gravity`: the PhysX total mass and the sim
-                              gravity the Lee controller itself uses), n_motors from the motor model. A value above
-                              the robot's own T/W (sum of max_thrust / (m |g|); navrl_quad 3.262) refuses; a value
-                              equal to it (relative 1e-6) applies no cap.
+                              gravity the Lee controller itself uses), n_motors from the motor model. Against the
+                              robot's own T/W (sum of max_thrust / (m |g|) from the robot's own tensors; navrl_quad
+                              3.2619774 for m = 0.25 kg and the float32 gravity 9.81):
+                                below it ("lower", CAM-K2 v1): the reference is capped at the limit, min(ref, limit);
+                                above it, only with NAVRL_VEH_RAND_LIMIT_MODE=raise ("raise", CAM-K2 v2, 2026-11-08):
+                                  the motor model's run-time max_thrust tensor, which clamps the reference
+                                  (motor_model.py update_motor_thrusts), is replaced by the limit after init, so
+                                  thrust up to the limit is delivered; the file and the config are not edited;
+                                  without it, refuses (as committed for v1);
+                                equal to it (relative 1e-6): no change ("none"). In raise mode "cap" in the record
+                                  and log field names (cap_applied, cap_per_motor_n) is the raised limit.
+  NAVRL_VEH_RAND_LIMIT_MODE   optional, "lower" or "raise" (CAM-K2 v2 review r1 m-1: the raise is opt-in). Unset or
+                              "lower" keeps the committed v1 behaviour: a TW_NOMINAL above the robot's own T/W
+                              refuses at init. Only "raise" lets a TW_NOMINAL above it raise the limit, and "raise"
+                              with a TW_NOMINAL below it refuses. The value is part of the settings (and the receipt).
   NAVRL_VEH_RAND_TW_SCALE     s_tw in [0, 0.5]: per-env delivered-thrust factor 1 + s_tw (2u - 1)
   NAVRL_VEH_RAND_MOTOR_IMBAL  s_m in [0, 0.2]: per-motor factor 1 + s_m (2v - 1) on top (motor-to-motor spread)
   NAVRL_VEH_RAND_TAU_MIN/_MAX motor time constant [s] in [0.005, 0.2], MIN <= MAX: one value per env, drawn uniformly,
                               written to both the increasing and decreasing constants of all motors.
 
-Delivered thrust of motor i in env e: MotorModel(min(ref, cap_e)) * (1 + s_tw(2u_e - 1)) * (1 + s_m(2v_ei - 1)); the
+Delivered thrust of motor i in env e: MotorModel(min(ref, limit_e)), clamped by the motor model at its (raised)
+max_thrust, * (1 + s_tw(2u_e - 1)) * (1 + s_m(2v_ei - 1)); the
 yaw torque cq * T follows it. Why the capped navrl_quad is equivalent to the 0.50 kg "Option A" placeholder, under the
 conditions listed in the CAM-K2 preregistration (x2 Lee attitude gains of a uniform-density x2 body, zero custom drag,
 no disturbance, no IMU, a kinematic target, mass-free PhysX damping, terminal contacts; the absolute 0.05 N contact
@@ -32,14 +45,26 @@ allocation path. The factors then scale delivered thrust around that nominal (ma
 while the controller keeps the nominal mass, as on the real vehicle.
 
 install() wraps, at run time and without editing the files (they are F's dynamics):
-  * BaseMultirotor.init_tensors: after the original, compute the cap and draw factors and tau for every env;
+  * BaseMultirotor.init_tensors: after the original, compute the limit, draw factors and tau for every env (the
+    construction-time motor state is rescaled from [min_thrust, max_thrust] to [min_thrust, limit]) and, in "raise",
+    replace the motor model's run-time max_thrust tensor by the limit;
   * BaseMultirotor.reset_idx: after the original (whose global-RNG draws are unchanged in number), redraw factors and
-    tau for exactly `env_ids`, and rescale the motor state the original drew in [min_thrust, max_thrust] to
-    [min_thrust, cap] (as the capped vehicle's own reset would draw it);
-  * MotorModel.update_motor_thrusts: return orig(min(ref, cap)) * factor, out of place.
-With TW_NOMINAL equal to the robot's own T/W, s_tw = s_m = 0 and TAU_MIN = TAU_MAX = the config's tau, the run is
-bitwise identical to OFF (no cap, factor 1.0 exactly, tau rewritten with the same float32 value). A thrust update
-before init_tensors refuses.
+    tau for exactly `env_ids`; in "lower", rescale the motor state the original drew in [min_thrust, max_thrust] to
+    [min_thrust, limit] (as the capped vehicle's own reset would draw it); in "raise" the original already draws in
+    [min_thrust, limit], because its max_thrust is the limit;
+  * MotorModel.update_motor_thrusts: return orig(min(ref, limit)) * factor, out of place.
+CAM-K2 v2 ("raise", TW_NOMINAL 4.0 on navrl_quad; review r1 m-2): the limit is 4.0 x 0.25 x 9.81 / 4 = 2.4525 N per
+motor, so the thrust-to-weight (maximum thrust acceleration 4.0 g, hover fraction 0.25) is that of a 1.1 kg vehicle at
+T/W 4.0; the rotational dynamics and the drag are navrl_quad's, not the real 5-inch frame's (CAM-K2 v2
+preregistration). In raise mode the update wrapper also counts, on the device and without a per-step sync, the motor
+commands (the reference passed to update_motor_thrusts, before any clamp) above the robot's own max_thrust and at the
+raised limit, their running maximum and the number of command elements (review r1 M-1); raise_counters() reads them,
+with a live read-back of the motor model's max_thrust tensor, only at the log points.
+With TW_NOMINAL equal to the robot's own T/W, 8 / (m |g|) from the robot's tensors (navrl_quad on the CPU stand-in,
+m = 0.25 kg and the float32 gravity 9.81: 3.261977434, printed 3.2619774; "3.2620" is 6.9e-6 away and does not
+select "none"), within relative 1e-6, s_tw = s_m = 0 and TAU_MIN = TAU_MAX = the config's tau, the run is bitwise
+identical to OFF (no cap, factor 1.0 exactly, tau rewritten with the same float32 value). A thrust update before
+init_tensors refuses, and so does a second initialize() on the same motor model (review r1 L-3).
 
 Telemetry: one JSON object per line, prefix LOG_PREFIX, written to the stream that was sys.stderr when install() ran
 (review r2 N-1). rl_games' quiet startup (quiet_rl_io.devnull_stdio) swaps sys.stderr for /dev/null while it builds
@@ -49,7 +74,10 @@ own T/W and the first draw's factor / tau range; "reset" for the first RESET_LOG
 RESET_LOG_EVERY-th, with the call count, the envs redrawn in that call and in total, the factor / tau range of that
 call and of the run so far, and the robot's motor-update call count; "update" at the first motor update and every
 UPDATE_LOG_EVERY-th, with that count (review r2 N-7). tools/camk2_train.py requires these lines after a run. They cost
-nothing on the GPU: the draws are made on the CPU and the counter is a Python int.
+nothing on the GPU: the draws are made on the CPU and the counter is a Python int. The "init" line and the record
+carry a live read-back of max_thrust in every mode. In raise mode only, the "reset" and "update" lines also carry
+raise_counters(): three small reductions per motor update stay on the device and are synchronised only at those log
+points (tools/camk2v2_train.py requires them).
 """
 import json
 import os
@@ -59,11 +87,15 @@ import sys
 # and Isaac Gym must be imported before torch.
 
 ENV = "NAVRL_VEH_RAND"
-LIMITS = {"NAVRL_VEH_RAND_TW_NOMINAL": (1.0, 10.0), "NAVRL_VEH_RAND_TW_SCALE": (0.0, 0.5),
+MAX_TW_NOMINAL = 6.0                       # CAM-K2 v2 (2026-11-08): the raise is bounded here
+LIMITS = {"NAVRL_VEH_RAND_TW_NOMINAL": (1.0, MAX_TW_NOMINAL), "NAVRL_VEH_RAND_TW_SCALE": (0.0, 0.5),
           "NAVRL_VEH_RAND_MOTOR_IMBAL": (0.0, 0.2), "NAVRL_VEH_RAND_TAU_MIN": (0.005, 0.2),
           "NAVRL_VEH_RAND_TAU_MAX": (0.005, 0.2)}
 REQUIRED = ("NAVRL_VEH_RAND_SEED",) + tuple(LIMITS)
 OWN_TW_RTOL = 1e-6
+LIMIT_RTOL = 1e-6                          # a command "at the limit" is >= limit x (1 - LIMIT_RTOL)
+LIMIT_MODE_KEY = "NAVRL_VEH_RAND_LIMIT_MODE"
+LIMIT_MODES = ("lower", "raise")
 LOG_PREFIX = "[veh-rand] "
 RESET_LOG_FIRST = 3
 RESET_LOG_EVERY = 1000
@@ -104,6 +136,11 @@ def settings_from_env(environ=None):
     if seed < 0:
         raise ValueError("NAVRL_VEH_RAND_SEED must be >= 0")
     out["NAVRL_VEH_RAND_SEED"] = seed
+    mode = env.get(LIMIT_MODE_KEY, "").strip()
+    if mode:                                   # optional; absent keeps the committed v1 settings unchanged
+        if mode not in LIMIT_MODES:
+            raise ValueError("%s must be one of %s, got %r" % (LIMIT_MODE_KEY, ", ".join(LIMIT_MODES), mode))
+        out[LIMIT_MODE_KEY] = mode
     return out
 
 
@@ -119,6 +156,8 @@ def initialize(robot, s, record_path=None):
     import torch
 
     mm = robot.control_allocator.motor_model
+    if getattr(mm, "_veh_rand_ready", False):  # review r1 L-3: after a raise, max_thrust is no longer the robot's own
+        raise RuntimeError("vehicle randomization: initialize called twice on one motor model")
     mass = robot.controller.mass.reshape(-1).to(torch.float64)
     g = robot.controller.gravity.reshape(int(robot.num_envs), -1).to(torch.float64).norm(dim=1)
     if mass.numel() != int(robot.num_envs) or not bool(torch.isfinite(mass).all()) or not bool((mass > 0).all()):
@@ -127,28 +166,52 @@ def initialize(robot, s, record_path=None):
     max_total = mm.max_thrust.to(torch.float64).sum(dim=1)
     own_tw = max_total / (mass * g)
     tw = float(s["NAVRL_VEH_RAND_TW_NOMINAL"])
-    if bool((tw > own_tw * (1.0 + OWN_TW_RTOL)).any()):
-        raise RuntimeError("NAVRL_VEH_RAND_TW_NOMINAL=%g exceeds the robot's own thrust-to-weight %s"
+    if not 1.0 <= tw <= MAX_TW_NOMINAL:
+        raise RuntimeError("NAVRL_VEH_RAND_TW_NOMINAL=%g outside [1, %g]" % (tw, MAX_TW_NOMINAL))
+    requested = s.get(LIMIT_MODE_KEY)          # None: as committed for v1 (lower or none; above refuses)
+    if bool((abs(tw - own_tw) <= own_tw * OWN_TW_RTOL).all()):
+        mode = "none"
+    elif bool((tw < own_tw).all()):
+        if requested == "raise":
+            raise RuntimeError("NAVRL_VEH_RAND_LIMIT_MODE=raise, but NAVRL_VEH_RAND_TW_NOMINAL=%g is below the robot's "
+                               "own thrust-to-weight %s" % (tw, own_tw.tolist()[:4]))
+        mode = "lower"
+    elif bool((tw > own_tw).all()):
+        if requested != "raise":
+            raise RuntimeError("NAVRL_VEH_RAND_TW_NOMINAL=%g exceeds the robot's own thrust-to-weight %s (a raise needs "
+                               "NAVRL_VEH_RAND_LIMIT_MODE=raise)" % (tw, own_tw.tolist()[:4]))
+        mode = "raise"
+    else:
+        raise RuntimeError("NAVRL_VEH_RAND_TW_NOMINAL=%g is neither above nor below every env's own T/W %s"
                            % (tw, own_tw.tolist()[:4]))
-    applied = not bool((tw >= own_tw * (1.0 - OWN_TW_RTOL)).all())
+    applied = mode != "none"
     cap64 = tw * mass * g / n
+    own_max = [float(mm.max_thrust.min()), float(mm.max_thrust.max())]
     if applied:
         mm._veh_rand_cap = cap64.to(dtype=mm.max_thrust.dtype, device=mm.max_thrust.device).view(-1, 1).expand(-1, n)
     else:
         mm._veh_rand_cap = None
     mm._veh_rand_ready = True
-    redraw(robot, torch.arange(int(robot.num_envs)), s)
-    record = {"tw_nominal": tw, "cap_applied": applied, "num_motors": n,
+    redraw(robot, torch.arange(int(robot.num_envs)), s)   # rescales the construction-time state to [min, limit]
+    if mode == "raise":                        # CAM-K2 v2: the motor model's own clamp is raised to the limit
+        mm._veh_rand_own_max_thrust = mm.max_thrust
+        mm.max_thrust = mm._veh_rand_cap.clone()
+        mm._veh_rand_limit_threshold = mm._veh_rand_cap * (1.0 - LIMIT_RTOL)
+        mm._veh_rand_limit_raised = True
+    live_max = [float(mm.max_thrust.min()), float(mm.max_thrust.max())]   # read back from the live tensor (M-1)
+    record = {"tw_nominal": tw, "cap_applied": applied, "mode": mode, "num_motors": n,
               "cap_per_motor_n": [float(cap64.min()), float(cap64.max())],
               "mass_kg": [float(mass.min()), float(mass.max())], "gravity_mps2": [float(g.min()), float(g.max())],
               "own_thrust_to_weight": [float(own_tw.min()), float(own_tw.max())],
-              "max_thrust_per_motor_n": [float(mm.max_thrust.min()), float(mm.max_thrust.max())],
+              "max_thrust_per_motor_n": own_max,
+              "thrust_limit_per_motor_n": [float(cap64.min()), float(cap64.max())] if applied else own_max,
+              "live_max_thrust_per_motor_n": live_max,
               "worst_case_thrust_to_weight": worst_case_thrust_to_weight(s), "settings": dict(s)}
     robot._veh_rand_record = record
     stats = getattr(robot, "_veh_rand_stats", {})
-    log("init", num_envs=int(robot.num_envs), cap_applied=applied, cap_per_motor_n=record["cap_per_motor_n"],
+    log("init", num_envs=int(robot.num_envs), cap_applied=applied, mode=mode, cap_per_motor_n=record["cap_per_motor_n"],
         mass_kg=record["mass_kg"], gravity_mps2=record["gravity_mps2"],
-        own_thrust_to_weight=record["own_thrust_to_weight"], tw_nominal=tw,
+        own_thrust_to_weight=record["own_thrust_to_weight"], tw_nominal=tw, live_max_thrust_n=live_max,
         factor_min=stats.get("factor_min"), factor_max=stats.get("factor_max"),
         tau_min=stats.get("tau_min"), tau_max=stats.get("tau_max"))
     robot._veh_rand_stats = {}                 # the reset counters start after the initial draw
@@ -172,8 +235,9 @@ def _factor(motor_model):
 
 
 def redraw(robot, env_ids, s):
-    """Draw new factors and tau for `env_ids` of `robot` (a BaseMultirotor) from the module's own generator, and
-    rescale those envs' motor state from [min, max_thrust] to [min, cap]."""
+    """Draw new factors and tau for `env_ids` of `robot` (a BaseMultirotor) from the module's own generator and, in
+    "lower" (and once at init before a raise), rescale those envs' motor state from [min, max_thrust] to [min, cap].
+    After a raise the original reset already draws in [min, limit], so no rescale."""
     import torch
 
     mm = robot.control_allocator.motor_model
@@ -202,7 +266,9 @@ def redraw(robot, env_ids, s):
     mm.motor_time_constants_increasing[dev_ids] = tau.to(device=device, dtype=mm.motor_time_constants_increasing.dtype)
     mm.motor_time_constants_decreasing[dev_ids] = tau.to(device=device, dtype=mm.motor_time_constants_decreasing.dtype)
     cap = getattr(mm, "_veh_rand_cap", None)
-    if cap is not None:
+    if cap is not None and not getattr(mm, "_veh_rand_limit_raised", False):
+        # lower, and the raise's initial draw: the original drew in [min, own max_thrust]; after a raise the original
+        # draws in [min, limit] itself.
         lo_t, hi_t = mm.min_thrust[dev_ids], mm.max_thrust[dev_ids]
         state = mm.current_motor_thrust[dev_ids]
         mm.current_motor_thrust[dev_ids] = lo_t + (state - lo_t) * (cap[dev_ids] - lo_t) / (hi_t - lo_t)
@@ -226,7 +292,8 @@ def _account(robot, n, factor, tau):
         log("reset", calls=st["calls"], envs=n, envs_total=st["envs_total"], factor_min_call=f_lo,
             factor_max_call=f_hi, factor_min=st["factor_min"], factor_max=st["factor_max"], tau_min=st["tau_min"],
             tau_max=st["tau_max"],
-            motor_updates=int(getattr(robot.control_allocator.motor_model, "_veh_rand_updates", 0)))
+            motor_updates=int(getattr(robot.control_allocator.motor_model, "_veh_rand_updates", 0)),
+            **(raise_counters(robot.control_allocator.motor_model) or {}))
 
 
 def install(s, multirotor_cls=None, motor_model_cls=None, record_path=None):
@@ -263,13 +330,16 @@ def install(s, multirotor_cls=None, motor_model_cls=None, record_path=None):
     def update_motor_thrusts(self, ref_thrust):
         if not getattr(self, "_veh_rand_ready", False):
             raise RuntimeError("vehicle randomization: motor update before initialize (init_tensors)")
+        if getattr(self, "_veh_rand_limit_raised", False):
+            _count_commands(self, ref_thrust)  # review r1 M-1: on the device, before any clamp
         cap = self._veh_rand_cap
         if cap is not None:
             ref_thrust = torch_minimum(ref_thrust, cap)
         out = orig_update(self, ref_thrust) * _factor(self)
         self._veh_rand_updates = getattr(self, "_veh_rand_updates", 0) + 1
         if self._veh_rand_updates == 1 or self._veh_rand_updates % UPDATE_LOG_EVERY == 0:
-            log("update", motor_updates=self._veh_rand_updates, cap_applied=cap is not None)
+            log("update", motor_updates=self._veh_rand_updates, cap_applied=cap is not None,
+                **(raise_counters(self) or {}))
         return out
 
     multirotor_cls.init_tensors = init_tensors
@@ -286,6 +356,39 @@ def install(s, multirotor_cls=None, motor_model_cls=None, record_path=None):
             "factor_bounds": [lo, hi],
             "thrust_to_weight_range": [lo * s["NAVRL_VEH_RAND_TW_NOMINAL"], hi * s["NAVRL_VEH_RAND_TW_NOMINAL"]],
             "record_file": record_path}
+
+
+def _count_commands(mm, ref):
+    """Raise mode: accumulate on ref's device (no .item(), so no per-step synchronisation) the number of command
+    elements, those above the robot's own max_thrust, those at the raised limit and the running maximum command."""
+    import torch
+
+    c = getattr(mm, "_veh_rand_counters", None)
+    if c is None:
+        c = mm._veh_rand_counters = {
+            "elements": 0, "above_own": torch.zeros((), dtype=torch.long, device=ref.device),
+            "at_limit": torch.zeros((), dtype=torch.long, device=ref.device),
+            "max_ref": torch.full((), float("-inf"), dtype=ref.dtype, device=ref.device)}
+    c["elements"] += int(ref.numel())
+    c["above_own"] += (ref > mm._veh_rand_own_max_thrust).sum()
+    c["at_limit"] += (ref >= mm._veh_rand_limit_threshold).sum()
+    c["max_ref"] = torch.maximum(c["max_ref"], ref.detach().max())
+
+
+def raise_counters(mm):
+    """None unless the limit was raised. Otherwise the command counters (cmd_elements, cmd_above_own_max, cmd_at_limit,
+    cmd_max_n; zeros and None before the first update) and live_max_thrust_n, [min, max] read back from the motor
+    model's live max_thrust tensor. Synchronises the device; called only at the log points."""
+    if not getattr(mm, "_veh_rand_limit_raised", False):
+        return None
+    live = [float(mm.max_thrust.min()), float(mm.max_thrust.max())]
+    c = getattr(mm, "_veh_rand_counters", None)
+    if c is None:
+        return {"cmd_elements": 0, "cmd_above_own_max": 0, "cmd_at_limit": 0, "cmd_max_n": None,
+                "live_max_thrust_n": live}
+    return {"cmd_elements": int(c["elements"]), "cmd_above_own_max": int(c["above_own"].item()),
+            "cmd_at_limit": int(c["at_limit"].item()), "cmd_max_n": float(c["max_ref"].item()),
+            "live_max_thrust_n": live}
 
 
 def torch_minimum(a, b):

@@ -25658,3 +25658,33 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next (needs the user):** a boot-to-boot repeatability check of Gazebo-sensor episodes, before any further
   per-scene reading; then the mount factor (S4F-2), or moving SITL to the camera-only policy.
 
+
+## 2026-11-08 — CAM-K2 v1 withdrawn before running (the real vehicle is 1.1 kg, T/W ≈ 4); CAM-K2 v2 preregistered
+
+- **User, about 16:10 KST, relaying their senior:** "드론은 무게 1.1kg, 프로펠러 5x4.3x3 // 모터 velox 2550kV" and "이에
+  맞춰서 데이터 다시 수집하면 될거같아". Recorded as D-2026-11-08-1.
+- **CAM-K2 v1 is WITHDRAWN_BEFORE_RUN.** Its T/W 2.25 cap for a 0.5 kg placeholder points the wrong way: the real
+  T/W is about 4.0, against navrl_quad's own 3.26.
+  - v1's files are unchanged and its tests pass.
+  - It cannot run: there is no approval, and `WITHDRAWN.md` markers occupy its single-use output folders.
+- **CAM-K2 v2:** `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `tools/camk2v2_train.py`,
+  `train_navrl_camk2v2.sh`, `tests/test_camk2v2_train.py`.
+  - Each CAM-K1 seed continues for 1,000 epochs on navrl_quad. The per-motor limit is raised at run time to T/W 4.0
+    (2.4525 N per motor, maximum acceleration 39.24 m/s²).
+    - T/W 4.0 is INFERRED: LIGPOWER's V2306 V2 2400KV with T5143S on 4S gives 1,084 g, so 4 × 1.084 / 1.1 = 3.94.
+    - The raise is opt-in (`NAVRL_VEH_RAND_LIMIT_MODE=raise`), with on-device counters and a live read-back of the
+      limit.
+  - Randomization: thrust ±15 %, imbalance ±5 %, τ 0.02–0.04 s. The OAK-D Pro depth model is as in v1.
+  - Roll capacity is 1.1–2.6× the real vehicle's estimate (INFERRED inertia).
+  - The robot lineage is unchanged.
+  - Fixed before the run: if fewer than 1 % of motor commands exceed 2 N, nothing is attributed to the T/W change.
+- **Reviews** (Claude Opus 5.5, fresh context):
+  - r1 AMEND_FIRST (M-1: the raised limit was never measured; m-1..m-5), all repaired;
+  - r2 PASS_WITH_LIMITS (r2-m1 handled by the 1 % rule).
+  - Copies: `docs/evidence/camonly_2026-11-04/camk2/REVIEW_v2_design_r{1,2}.md`.
+- **Tests:** `test_realveh` 48, `test_camk2_train` 33 (byte-unchanged), `test_camk2v2_train` 38,
+  `test_navrl_sensor_ablation` 15. PUBLIC_CPU: 3,748 run, 0 failures, 2 errors (`test_boia_planner`'s 3 GB disk
+  floor).
+- **Approval:** the user's 12:07 KST answer, which named "실기체 모델 학습", together with the 16:10 instruction above.
+- **Next:** `~/motar_tmp/camk2v2_20261108/run_camk2v2_chain.sh` (smoke, then seed 1, then seed 2; nothing committed in
+  this tree until it ends). Then CAM-K2-E: its files wait in `src/MOTAR-realveh` until the K2 pins can be filled.
