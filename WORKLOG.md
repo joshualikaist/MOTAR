@@ -25923,3 +25923,34 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Caution (review r1 LOW-9):** linked names share one inode, so an in-place write or chmod on one name changes all
   of them. Evidence is never written in place. A matching AGENTS.md pitfall line is proposed to the user, not made.
 - **Next:** the CAM-K2 v3 evaluation (user, 02:2x KST), once its preregistration is committed and reviewed.
+
+## 2026-11-10 — CAM-K2-E3 v1 preregistered: CAM-K2 v3 vs CAM-K2 v2 under the v2 treatments (gate D; R and T reported); design reviews r1 AMEND_FIRST and r2 PASS_WITH_LIMITS, repaired; NOT_RUN
+
+- **User (~02:2x KST):** "중복 잘 합쳐주고, 용량이 나오면 그때 v3 평가 시작해줘". After the cleanup (`abd9007`), 6.15 GB is free.
+- **Design:** `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md`.
+  - **Arms:** V3s (v3 with the rule) and V2Rs (v2 with the rule added at evaluation), 12 blocks each, 48 cells.
+  - **Reference:** CAM-K2-E's own v2 cells (V2s), reused under its committed manifest.
+  - **Identity stage:** 5 cells. `V2s1_identity` and `V2s2_identity` must equal CAM-K2-E's cells; the rule cell must
+    differ from them, and its repeat must equal it; then a v3 smoke cell.
+  - **Gate D** = V3 − V2: CAM-K2-E's gate-A rule, labels renamed to MATERIAL_/SMALL_REDUCTION. R = V2R − V2 and
+    T = V3 − V2R are reported, and D = R + T is arithmetic only.
+- **Code:** `tools/camk2v3e_run.py`, `tools/camk2v3e_analyse.py`, `tests/test_camk2v3e.py` (16 OK). It reuses CAM-K2-E's
+  launcher (SHA-pinned) and `camk2e_run.receipt_problems`, and adds the rule's receipt, snapshot and telemetry checks.
+- **Controls** (computed, CONTROLS_OK):
+  - CAM-K2-E's five;
+  - a null on CAM-K2-E's K2s1 − K2s2: NEGLIGIBLE, 0.00 pp, ±0.54 / ±0.78;
+  - claim-scale controls (review r1 M-1) on CAM-K2-E's treated cells: K1s − K2s reads WORSE (+3.80 / +4.74 pp), and
+    K2s − K1s reads SMALL_REDUCTION.
+- **Reviews** (Claude Opus 5.5):
+  - **r1 AMEND_FIRST.** Repaired:
+    - M-1: claim-scale controls;
+    - m-1: R/T wording;
+    - m-2: snapshot binding tests;
+    - m-3: the approval names the V2R cells;
+    - LOW: `V2s2_identity`.
+  - **r2 PASS_WITH_LIMITS.** Repaired m2-1: the controls' CAM-K2-E K1 cells are now bound to the manifest. LOW text
+    items fixed.
+- **PUBLIC_CPU** before the r2 repairs: 3,824 run, 0 failures, 0 errors. The final run is in
+  `~/motar_tmp/camk2v3e_20261110/public_cpu_precommit2.log`.
+- **Next:** `~/motar_tmp/camk2v3e_20261110/run_camk2v3e.sh` (identity, then eval, then analysis; about 2.5 h on an idle
+  host). The tree stays frozen until it ends.
