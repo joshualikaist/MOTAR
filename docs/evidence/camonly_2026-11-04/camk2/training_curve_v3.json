@@ -1,0 +1,318 @@
+{
+ "note": "training-rollout statistics printed by the runner, under exploration noise; not an evaluation",
+ "parser": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/camonly_2026-11-04/camk1/make_camk1_record.py",
+ "parser_sha256": "cabcfbeb34ef72b9b07e7c97989d41a0ea498cacb3ff739dabd2a43e7df34890",
+ "reference_camk1_last_window": {
+  "1": {
+   "blocks": 100,
+   "capture_pct": 26.29,
+   "crash_pct": 73.7,
+   "episodes": 6703,
+   "epochs": [
+    27901,
+    28000
+   ],
+   "mean_ep_length_mean": 60.87,
+   "mean_reward_mean": -15.723,
+   "timeout_pct": 0.01
+  },
+  "2": {
+   "blocks": 100,
+   "capture_pct": 25.55,
+   "crash_pct": 74.45,
+   "episodes": 6572,
+   "epochs": [
+    27901,
+    28000
+   ],
+   "mean_ep_length_mean": 62.33,
+   "mean_reward_mean": -15.514,
+   "timeout_pct": 0.0
+  }
+ },
+ "script_sha256": "f490b5691be8526f7c8fb6be0aa2d1093f1e83a0f8f9e4e26621b225832efd2d",
+ "seeds": {
+  "1": {
+   "blocks": 1000,
+   "first_epoch": 28001,
+   "last_epoch": 29000,
+   "launcher_log": "/home/fair/motar_tmp/camk2v3_20261108/train_s1/launcher.log",
+   "launcher_log_sha256": "3c31071e7e189d760116d7ac37b940d825812f9718f1269f2580b64bc1e9de92",
+   "train_report_sha256": "b4af1444fcc3a070be7dda545f636d9710c1ffbef88ab708966608b650f57a39",
+   "windows": [
+    {
+     "blocks": 100,
+     "capture_pct": 26.8,
+     "crash_pct": 73.13,
+     "episodes": 6413,
+     "epochs": [
+      28001,
+      28100
+     ],
+     "mean_ep_length_mean": 62.31,
+     "mean_reward_mean": -14.899,
+     "timeout_pct": 0.06
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.49,
+     "crash_pct": 73.48,
+     "episodes": 6701,
+     "epochs": [
+      28101,
+      28200
+     ],
+     "mean_ep_length_mean": 60.93,
+     "mean_reward_mean": -14.3,
+     "timeout_pct": 0.03
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.56,
+     "crash_pct": 74.43,
+     "episodes": 7063,
+     "epochs": [
+      28201,
+      28300
+     ],
+     "mean_ep_length_mean": 58.37,
+     "mean_reward_mean": -13.456,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 23.95,
+     "crash_pct": 76.05,
+     "episodes": 7435,
+     "epochs": [
+      28301,
+      28400
+     ],
+     "mean_ep_length_mean": 54.97,
+     "mean_reward_mean": -13.076,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 24.03,
+     "crash_pct": 75.97,
+     "episodes": 7246,
+     "epochs": [
+      28401,
+      28500
+     ],
+     "mean_ep_length_mean": 56.56,
+     "mean_reward_mean": -13.432,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.84,
+     "crash_pct": 74.16,
+     "episodes": 7064,
+     "epochs": [
+      28501,
+      28600
+     ],
+     "mean_ep_length_mean": 58.02,
+     "mean_reward_mean": -13.486,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.4,
+     "crash_pct": 74.6,
+     "episodes": 6937,
+     "epochs": [
+      28601,
+      28700
+     ],
+     "mean_ep_length_mean": 59.05,
+     "mean_reward_mean": -13.955,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.71,
+     "crash_pct": 73.29,
+     "episodes": 6967,
+     "epochs": [
+      28701,
+      28800
+     ],
+     "mean_ep_length_mean": 58.68,
+     "mean_reward_mean": -12.737,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.26,
+     "crash_pct": 73.74,
+     "episodes": 6928,
+     "epochs": [
+      28801,
+      28900
+     ],
+     "mean_ep_length_mean": 59.21,
+     "mean_reward_mean": -12.836,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.73,
+     "crash_pct": 73.27,
+     "episodes": 6566,
+     "epochs": [
+      28901,
+      29000
+     ],
+     "mean_ep_length_mean": 62.17,
+     "mean_reward_mean": -13.979,
+     "timeout_pct": 0.0
+    }
+   ]
+  },
+  "2": {
+   "blocks": 1000,
+   "first_epoch": 28001,
+   "last_epoch": 29000,
+   "launcher_log": "/home/fair/motar_tmp/camk2v3_20261108/train_s2/launcher.log",
+   "launcher_log_sha256": "dea24e895121e9cc22b3b22c4531e754a10b5b6d0dcd58b08dc692ade2f649ef",
+   "train_report_sha256": "42076b65646d0cb7c8b4b106e919c8fe1656a1c0998eb179c8bced7d0078751b",
+   "windows": [
+    {
+     "blocks": 100,
+     "capture_pct": 25.02,
+     "crash_pct": 74.98,
+     "episodes": 6544,
+     "epochs": [
+      28001,
+      28100
+     ],
+     "mean_ep_length_mean": 61.17,
+     "mean_reward_mean": -16.582,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.65,
+     "crash_pct": 74.35,
+     "episodes": 6718,
+     "epochs": [
+      28101,
+      28200
+     ],
+     "mean_ep_length_mean": 60.8,
+     "mean_reward_mean": -15.583,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.93,
+     "crash_pct": 73.05,
+     "episodes": 6435,
+     "epochs": [
+      28201,
+      28300
+     ],
+     "mean_ep_length_mean": 63.64,
+     "mean_reward_mean": -15.116,
+     "timeout_pct": 0.02
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 27.61,
+     "crash_pct": 72.37,
+     "episodes": 6530,
+     "epochs": [
+      28301,
+      28400
+     ],
+     "mean_ep_length_mean": 62.72,
+     "mean_reward_mean": -13.908,
+     "timeout_pct": 0.02
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 27.96,
+     "crash_pct": 72.04,
+     "episodes": 6423,
+     "epochs": [
+      28401,
+      28500
+     ],
+     "mean_ep_length_mean": 63.62,
+     "mean_reward_mean": -13.901,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 29.0,
+     "crash_pct": 71.0,
+     "episodes": 6401,
+     "epochs": [
+      28501,
+      28600
+     ],
+     "mean_ep_length_mean": 64.04,
+     "mean_reward_mean": -14.228,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 27.71,
+     "crash_pct": 72.29,
+     "episodes": 6515,
+     "epochs": [
+      28601,
+      28700
+     ],
+     "mean_ep_length_mean": 62.82,
+     "mean_reward_mean": -13.047,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 28.57,
+     "crash_pct": 71.43,
+     "episodes": 6269,
+     "epochs": [
+      28701,
+      28800
+     ],
+     "mean_ep_length_mean": 65.16,
+     "mean_reward_mean": -14.551,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 28.8,
+     "crash_pct": 71.18,
+     "episodes": 6190,
+     "epochs": [
+      28801,
+      28900
+     ],
+     "mean_ep_length_mean": 66.3,
+     "mean_reward_mean": -14.868,
+     "timeout_pct": 0.02
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 28.51,
+     "crash_pct": 71.49,
+     "episodes": 6524,
+     "epochs": [
+      28901,
+      29000
+     ],
+     "mean_ep_length_mean": 62.92,
+     "mean_reward_mean": -13.273,
+     "timeout_pct": 0.0
+    }
+   ]
+  }
+ },
+ "window_epochs": 100,
+ "written_by": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/camonly_2026-11-04/camk2/make_camk2v3_record.py"
+}

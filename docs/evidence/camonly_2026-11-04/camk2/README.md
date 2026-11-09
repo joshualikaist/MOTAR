@@ -57,3 +57,49 @@ approved by the user (2026-11-08 12:07 KST), **NOT_RUN**. Read the
   in `~/motar_tmp`; there were no tests, simulators or GPU jobs. The runner was not pinned.
 - **Next:** CAM-K2-E. Its files are in `~/motar_tmp/realveh_wip_20261108_1927/`; fill the K2 SHA pins from these
   reports.
+
+## CAM-K2 v3 training runs (2026-11-09)
+
+[Preregistration](../../../plans/prereg_camonly_k2_train_v3_2026-11-08.md) at `d85589d`. Design reviews:
+[`REVIEW_v3_design_r1.md`](REVIEW_v3_design_r1.md) (AMEND_FIRST, repaired) and
+[`REVIEW_v3_design_r2.md`](REVIEW_v3_design_r2.md) (PASS_WITH_LIMITS). The user approved the run on 2026-11-09 at
+about 12:13 KST. v3 is CAM-K2 v2 with the depth-validity rule `blob_near`: an invalid pixel in a 5 × 5 window that
+is at least half invalid becomes a surface at MinZ.
+
+**Records** (from [`make_camk2v3_record.py`](make_camk2v3_record.py)):
+- `train_report_v3_s1.json` and `train_report_v3_s2.json`;
+- `manifest_v3_s1.json` and `manifest_v3_s2.json`;
+- `training_curve_v3.json`.
+
+| Seed | Verdict | Wall time | Checkpoint SHA-256 | Commands above 2 N | Commands at the raised limit | Host faults |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | TRAINED | 4,765 s (12:51:13–14:10:38) | `888e8056…99fafc8e1`[^v3s1] | 6.19 % | 4.37 % | 0 → 0 |
+| 2 | TRAINED | 4,676 s (14:10:38–15:28:34) | `203deea4…f9492e4ea2`[^v3s2] | 5.42 % | 3.75 % | 0 → 0 |
+
+[^v3s1]: Full SHA-256 `888e8056b2a6768318e6d9fa4136c5ed01f68b7480954f7f339801b99fafc8e1`,
+    `last_gen_ppo_ep_29000_rew_-7.648726.pth`.
+[^v3s2]: Full SHA-256 `203deea459ef1d937239281c46f07d96e797839708337666de1ecdf9492e4ea2`,
+    `last_gen_ppo_ep_29000_rew_-4.657931.pth`.
+
+- **Smoke:** SMOKE_OK at 12:51:13, after 45 s.
+- **The rule acted.** Its summary line (50 calls × 128 frames) turned 1,982,532 / 1,883,036 pixels near. That is
+  2.15 / 2.04 % of all pixels and 69.2 / 68.0 % of invalid pixels. `sentinel_mismatch` was 0 in both seeds, and the
+  first frame had 0 near pixels.
+- **Preregistered diagnostic:** **DIAG_OK** for both seeds. The `hit_token` mean over the last 5 windows was
+  0.6958 / 0.6898. References: CAM-K2 v2 0.1668 / 0.1916; CAM-K1 v1 0.6768 / 0.7222.
+  - This is consistent with the rule restoring hit-bar tokens in the training population, to about CAM-K1's level.
+  - It is a training-rollout statistic, not an evaluation result, and it does not by itself establish a cause.
+- **Training rollouts** (capture %, first → last 100 epochs; under exploration noise, not an evaluation):
+
+  | | Seed 1 | Seed 2 |
+  | --- | --- | --- |
+  | v3 | 26.80 → 26.73 | 25.02 → 28.51 |
+  | v2 | 24.78 → 28.43 | 25.47 → 28.61 |
+
+  Crashes were bar contact in 99.9 % of cases over the last 10 windows, as in v2.
+- **Concurrency:** only reads and small writes to `~/motar_tmp` ran during training. There were no tests,
+  simulators or GPU jobs, and the tree stayed frozen.
+- **Disk:** 1.31 GB free at chain start, 0.82 GB at the end.
+- **Not shown:** that v3 crashes less than v2 under evaluation, which needs its own preregistered evaluation, or
+  anything about a real OAK-D. The phantom-surface risk from sky, textureless, shadow and specular invalid bands is
+  NOT_TESTED.

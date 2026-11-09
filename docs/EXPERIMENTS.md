@@ -773,8 +773,9 @@ family that is in the test's scope.
     - Gate A: crash, −5 pp. Gate N: nominal, +3 pp. Gate I: interaction. "Adaptation" only when A and I both hold.
     - Before launch, a CPU depth probe found that v2's MinZ + no-return convention erases near bars in about the last
       0.26 m. `docs/evidence/camonly_2026-11-04/camk2e/`.
-  - **CAM-K2 v3 (preregistered 2026-11-09; NOT_RUN):** v2 retrained with a depth-validity rule (dense invalid blob →
-    surface at MinZ), approved by the user 2026-11-09. Sim-to-real validity of the rule is NOT_TESTED.
+  - **CAM-K2 v3 (preregistered 2026-11-09 at `d85589d`; both seeds TRAINED):** v2 retrained with a depth-validity
+    rule (dense invalid blob → surface at MinZ). The training diagnostic read DIAG_OK (hit_token 0.70 / 0.69 vs v2's
+    0.17 / 0.19). Not evaluated. Sim-to-real validity of the rule is NOT_TESTED.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)

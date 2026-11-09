@@ -25852,3 +25852,24 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   and 15/15 once `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1` is set; my invocation had left them out.
 - **Next:** write the approval file at this commit, then run `~/motar_tmp/camk2v3_20261108/run_camk2v3_chain.sh`
   (smoke, then seed 1, then seed 2; about 2.8 h). The tree stays frozen until it ends.
+
+## 2026-11-09 — CAM-K2 v3 trained: seeds 1 and 2 TRAINED; diagnostic DIAG_OK (hit_token 0.6958 / 0.6898 vs v2 0.1668 / 0.1916)
+
+- **Chain:** `~/motar_tmp/camk2v3_20261108/run_camk2v3_chain.sh` at `d85589d`. Smoke SMOKE_OK 12:51; seed 1 TRAINED
+  12:51–14:10 (4,765 s); seed 2 TRAINED 14:10–15:28 (4,676 s). Host faults 0 → 0; tree frozen; free disk 1.31 → 0.82 GB.
+
+| Seed | Checkpoint SHA-256 | Commands above 2 N | Commands at the limit | Near pixels of invalid | hit_token (last 5) |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 1 | `888e8056…` | 6.19 % | 4.37 % | 69.2 % | 0.6958 |
+| 2 | `203deea4…` | 5.42 % | 3.75 % | 68.0 % | 0.6898 |
+
+- **Diagnostic:** DIAG_OK for both seeds. The references are CAM-K2 v2 0.1668 / 0.1916 and CAM-K1 v1 0.6768 / 0.7222.
+  This is consistent with the rule restoring hit-bar tokens in training rollouts; it is not an evaluation result.
+- **Training rollouts:** capture 26.80 → 26.73 and 25.02 → 28.51 %, against v2's 24.78 → 28.43 and 25.47 → 28.61
+  (under exploration noise). Bar contact caused 99.9 % of crashes.
+- **Records:** `docs/evidence/camonly_2026-11-04/camk2/` (`train_report_v3_s{1,2}.json`, `manifest_v3_s{1,2}.json`,
+  `training_curve_v3.json`, `make_camk2v3_record.py`, README section). Checkpoints are in the run folders
+  `ppo_261109_1251_*-s1` and `ppo_261109_1410_*-s2`, and copied to `~/motar_tmp/camk2v3_20261108/train_s{1,2}/checkpoint/`.
+- **Next:** a matched evaluation of v3 against v2 (a CAM-K2-E-style preregistration) is a user decision. It needs
+  about 3 h of GPU, and the disk is at 0.82 GB. Sim-to-real validity of the rule stays NOT_TESTED until real OAK-D
+  invalid bands have been recorded.
