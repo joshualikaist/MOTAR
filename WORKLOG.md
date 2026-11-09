@@ -25816,3 +25816,39 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** v3 (depth-validity rule) is a user decision. Its WIP is untracked in `~/motar_tmp/camk2v3_20261108/wip/`.
   The recommended first step is a real OAK-D Pro bench recording of its invalid-pixel pattern near bars and against
   sky or bare walls, once the vehicle is ready.
+
+## 2026-11-09 — CAM-K2 v3 preregistered (depth-validity rule, dense invalid blob → surface at MinZ); design reviews r1 AMEND_FIRST (repaired), r2 PASS_WITH_LIMITS; NOT_RUN
+
+- **User (12:13 KST):** "v3 재학습하면 무슨 문제가 있어? 재학습해". Before acting, the coordinator explained the problems:
+  - on a real OAK-D Pro, sky, textureless walls, occlusion shadows and specular patches also give dense invalid
+    pixels, which this rule turns into phantom surfaces at 0.4 m (sim-to-real NOT_TESTED);
+  - CAM-K2-E did not test whether the near-bar depth gap changes crashes;
+  - about 3 h of GPU;
+  - the disk floor.
+  The user approved deleting CAM-K2 v2's 38 intermediate checkpoints. The list, with SHA-256 values, is in
+  `~/motar_tmp/camk2v2_20261108/deleted_intermediate_ckpts_20261109.txt`; ep29000 and gen_ppo.pth are kept. The
+  66 MB scratch tree copy was also removed. Free space went from 0.93 to 1.32 GB.
+- **Files:**
+  - the WIP from `~/motar_tmp/camk2v3_20261108/wip/`, installed after verifying its SHA256SUMS:
+    - `navrl_depth_validity.py` (new, opt-in);
+    - the `tools/realveh_entry.py` extension (unchanged since `ceab4a0`);
+    - `tools/camk2v3_train.py`;
+    - `train_navrl_camk2v3.sh`;
+    - `tests/test_depth_validity.py` and `tests/test_camk2v3_train.py`;
+  - the preregistration `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`, updated with the approval, the CAM-K2-E
+    result and the review repairs.
+- **Review r1** (Opus 5.5): AMEND_FIRST.
+  - B-1: the suite-isolation path test was fixed.
+  - M-1: the summary line must show near > 0, with a negative test.
+  - M-2: the disk floor is 1.0 → 0.6 GB, derived in the prereg.
+  - Minors m-1 to m-5 were fixed.
+- **Review r2** (Opus 5.5, focused): PASS_WITH_LIMITS. Every repair was verified, and v2's real logs give a sub-MinZ
+  share of 0.037–0.038 on the summary line. N-1 (record the suite) was fixed.
+- **Tests:**
+  - focused: 17, 18, 48, 38 and 27 OK;
+  - PUBLIC_CPU (with `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1`): 3,810 run, 0 failures, 2 errors (`test_boia_planner` 3 GB
+    disk floor), faults 0 → 0.
+- **Hypothesis "the first PUBLIC_CPU's 3 SITL errors were caused by the new files" rejected.** Those tests pass 25/25
+  and 15/15 once `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1` is set; my invocation had left them out.
+- **Next:** write the approval file at this commit, then run `~/motar_tmp/camk2v3_20261108/run_camk2v3_chain.sh`
+  (smoke, then seed 1, then seed 2; about 2.8 h). The tree stays frozen until it ends.

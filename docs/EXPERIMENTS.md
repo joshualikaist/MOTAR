@@ -773,6 +773,8 @@ family that is in the test's scope.
     - Gate A: crash, −5 pp. Gate N: nominal, +3 pp. Gate I: interaction. "Adaptation" only when A and I both hold.
     - Before launch, a CPU depth probe found that v2's MinZ + no-return convention erases near bars in about the last
       0.26 m. `docs/evidence/camonly_2026-11-04/camk2e/`.
+  - **CAM-K2 v3 (preregistered 2026-11-09; NOT_RUN):** v2 retrained with a depth-validity rule (dense invalid blob →
+    surface at MinZ), approved by the user 2026-11-09. Sim-to-real validity of the rule is NOT_TESTED.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -789,12 +791,14 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md` (CAM-K2: T/W 2.25 thrust cap, motor randomization, OAK-D depth model, two seeds)
   - → `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md` (CAM-K2 v2: the real 1.1 kg vehicle's T/W 4.0 by a raised limit; v1 withdrawn before running)
   - → `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md` (CAM-K2-E: matched evaluation of CAM-K2 v2 against CAM-K1 under the treatments and nominally)
+  - → `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md` (CAM-K2 v3: v2 retrained with an invalid-depth validity rule)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
   `docs/plans/prereg_camonly_c2trace_v1.md`, `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`,
   `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`, `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md`,
-  `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`
+  `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`,
+  `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

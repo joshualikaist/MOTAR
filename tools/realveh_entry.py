@@ -7,6 +7,10 @@ Opt-in. Before runner.py builds the task it installs, in this fixed order:
      (T/W 2.25), and the per-env / per-motor thrust factors and motor time constants around it;
   2. the OAK-D Pro depth model, only if NAVRL_DEPTH_MODEL=oakd (navrl_depth_model.py), BEFORE the ablation, which
      binds observe's signature at install;
+  2b. CAM-K2 v3 only, if NAVRL_DEPTH_VALIDITY=blob_near (navrl_depth_validity.py; requires the depth model): the
+     invalid-depth validity rule, installed just BEFORE the depth model so that its wrapper is the inner one and runs
+     on the frame the depth model produced. Unset: the module is not loaded and nothing below changes (the receipt
+     has no depth_validity keys);
   3. the camera-only LiDAR ablation (NAVRL_SENSOR_ABLATION must be no_lidar) and the CAM-K1 camera FOV / reward
      overrides, through tools/camtrain_entry.py's `settings` and `apply_overrides`, used unchanged.
 The vehicle stays navrl_quad. Its robot identity (the checkpoint's cfg_robot_* fields), URDF, config and Lee gains
@@ -39,6 +43,9 @@ REQUIRED = ("NAVRL_REALVEH_RECEIPT",)
 RETIRED = ("NAVRL_REALVEH_ROBOT", "NAVRL_REALVEH_WARMSTART_FROM")
 VEH_RAND = ROOT / "aerial_gym/task/navrl_task/navrl_vehicle_rand.py"
 DEPTH = ROOT / "aerial_gym/task/navrl_task/navrl_depth_model.py"
+VALIDITY = ROOT / "aerial_gym/task/navrl_task/navrl_depth_validity.py"     # CAM-K2 v3; hashed only when on
+VALIDITY_RULE = "blob_near"
+VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
 HASHED = {"realveh_entry": pathlib.Path(__file__).resolve(), "realveh_python": TOOLS / "realveh_python",
           "camtrain_entry": TOOLS / "camtrain_entry.py",
@@ -137,6 +144,20 @@ def settings(environ=None):
         if stray:
             raise SystemExit("realveh: %s set while NAVRL_DEPTH_MODEL is off" % ", ".join(stray))
         out["depth_model"] = None
+    validity = env.get("NAVRL_DEPTH_VALIDITY", "").strip()
+    if validity:                                   # CAM-K2 v3; unset leaves `out` exactly as before
+        if validity != VALIDITY_RULE:
+            raise SystemExit("realveh: NAVRL_DEPTH_VALIDITY must be unset or %s, got %r" % (VALIDITY_RULE, validity))
+        if out["depth_model"] is None:
+            raise SystemExit("realveh: NAVRL_DEPTH_VALIDITY needs NAVRL_DEPTH_MODEL=%s" % DEPTH_MODEL)
+        try:
+            out["depth_validity"] = _load_private("realveh_depth_validity_settings", VALIDITY).settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+    else:
+        stray = sorted(k for k in VALIDITY_PARAMETERS if env.get(k, "").strip())
+        if stray:
+            raise SystemExit("realveh: %s set while NAVRL_DEPTH_VALIDITY is off" % ", ".join(stray))
     return out
 
 
@@ -186,6 +207,12 @@ def main():
 
         info["vehicle_rand"] = veh.install(s["vehicle_rand"], record_path=s["receipt"] + VEH_RAND_RECORD_SUFFIX)
         info["vehicle_rand_module"] = veh.__file__
+    if s.get("depth_validity") is not None:     # 2b: inner wrapper, so installed before the depth model
+        from aerial_gym.task.navrl_task import navrl_depth_validity as validity
+
+        info["depth_validity"] = validity.install(s["depth_validity"])
+        info["depth_validity_module"] = validity.__file__
+        info["depth_validity_sha256"] = sha256(VALIDITY)
     if s["depth_model"] is not None:
         from aerial_gym.task.navrl_task import navrl_depth_model as depth
 
