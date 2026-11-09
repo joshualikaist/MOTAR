@@ -25873,3 +25873,53 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** a matched evaluation of v3 against v2 (a CAM-K2-E-style preregistration) is a user decision. It needs
   about 3 h of GPU, and the disk is at 0.82 GB. Sim-to-real validity of the rule stays NOT_TESTED until real OAK-D
   invalid bands have been recorded.
+
+## 2026-11-10 — Disk cleanup: MOTAR-public-release-candidate removed, 730 duplicate evidence files hard-linked; free 0.81 → 6.15 GB; every path, SHA-256, mode and owner unchanged
+
+- **User (~01:50 KST):** "어어 두개 확실하게 정리해줘", covering both proposed items. Later: "중복 잘 합쳐주고, 용량이 나오면 그때 v3 평가
+  시작해줘".
+- **Procedure** (AGENTS.md, broad or destructive changes):
+  - plan with exact commands, in `~/motar_tmp/dedup_20261110/PLAN.md`;
+  - review r1 (Claude Opus 5.5): AMEND_FIRST;
+  - review r2: PASS_WITH_LIMITS;
+  - every finding repaired before the run.
+- **What r1 changed in the scope:**
+  - **Excluded:**
+    - both `rl_games/runs` folders. MAJOR-3: Frozen Policy F's checkpoint would have become a link to the MOTAR-camonly
+      copy. MAJOR-2: the dev08 record states its copies have separate inodes.
+    - `results/tload_v1`. MAJOR-1: its committed `verify_r1.py` treats shared inodes as a problem.
+    - PX4 `dataman` files. These are sparse; the 1.6 GB of apparent duplicates was really 4 KiB each on disk.
+  - **Saving estimate:** now counted from allocated blocks (6.47 → 4.62 GB).
+  - **Groups:** split by filesystem, mode, owner and group, so 0444 frozen copies link only to 0444 copies.
+- **Step 1, the release candidate:**
+  - `MOTAR-public-release-candidate` (695 MB, a clone of github.com/joshualikaist/MOTAR-public) was removed after
+    these checks:
+    - clean work tree;
+    - `git fetch`, then HEAD `408dff9` confirmed an ancestor of `origin/main` `3ebb45b`;
+    - no commit outside the remotes;
+    - no stash.
+  - Its one dangling commit, `dde2bf8`, is the first draft of origin's root `91385cb`, which adds only
+    `RELEASE_PROVENANCE.md`.
+  - The 47 ignored log files (696 KB) are archived in `release_candidate/ignored_files.tar.gz`.
+- **Step 2, deduplication:** `dedup.py execute` linked 730 paths in 343 groups. `verify` read **PASS**: 1,073 paths
+  re-hashed, all on their canonical inode, mode/owner/group/size unchanged, no stray tmp files.
+- **Free space:**
+  - 805,806,080 B before;
+  - 1,532,956,672 B after step 1;
+  - 6,154,907,648 B after step 2. Step 2's +4,621,951,000 B matches the 4,622,561,280 B estimate.
+- **Post-checks:**
+  - The committed SHA-256 manifests (c1c2 498, camk1e 322, camk2e 572, s4f1 2,021, tload 121, gain-randomization raw
+    303 files) have 0 mismatched and 0 missing.
+  - `tload_2026-11-05/verify_r1.py` reports `problems: []`.
+  - The dev08 destinations were untouched. Five dev08 source snapshots in
+    `results/navrl_v2_ep25000_stopcap_seed49_screen` are now links, so the inode values in the uncommitted
+    `~/motar_tmp/dev08_asset_availability_20261105/audit/availability.json` are historical; their SHA-256 is
+    unchanged.
+  - PUBLIC_CPU after the run: **PASS**, 3,810 run, 0 failures, 0 errors. The two `test_boia_planner` disk-floor errors
+    are gone.
+  - Host faults 0 → 0.
+- **Record:** `docs/cleanup/disk_dedup_2026-11-10.json`, with every linked path, its canonical copy, SHA-256 and mtime
+  before and after, plus the SHA-256 of the plan, script, log, reviews and archive in `~/motar_tmp/dedup_20261110/`.
+- **Caution (review r1 LOW-9):** linked names share one inode, so an in-place write or chmod on one name changes all
+  of them. Evidence is never written in place. A matching AGENTS.md pitfall line is proposed to the user, not made.
+- **Next:** the CAM-K2 v3 evaluation (user, 02:2x KST), once its preregistration is committed and reviewed.
