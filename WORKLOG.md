@@ -24658,6 +24658,7 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - PX4's velocity loop not yet matched to MOTAR's;
   - S3a NOT_EQUIVALENT;
   - the rangefinder is an addition to the training-spec vehicle.
+- **PUBLIC_CPU** (untracked S4R-1 files present): 3,900 run, 0 failures, 0 errors; host faults 0 → 0.
 - **Next:**
   - match PX4's velocity loop (sweep of `MPC_XY_VEL_P_ACC` running);
   - G9 attempt 3 after GR-1b;
@@ -25620,6 +25621,7 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - `identity_report.json`, `eval_run_report.json`, `analysis.json`;
   - `SHA256_MANIFEST.json`, covering 322 raw and run files in `~/motar_tmp/camk1e_20261108/`;
   - `RESULTS_REVIEW_r1.md`.
+- **PUBLIC_CPU** (untracked S4R-1 files present): 3,900 run, 0 failures, 0 errors; host faults 0 → 0.
 - **Next:**
   - CAM-K2, which continues each CAM-K1 seed on the T/W 2.25 vehicle model with the OAK-D depth model;
   - CAM-K2-E (to be preregistered), against CAM-K1 on this grid.
@@ -26005,3 +26007,46 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   Hence S4R-1, a bounded repeatability diagnostic.
 - **Records:** `docs/evidence/sitl_2026-11-05/data_utility/`.
 - **Next:** S5 v2 and S4R-1, each with an independent review, a commit at NOT_RUN, and then the user's run approval.
+
+## 2026-11-10 — S5 safety v2 preregistered (NOT_RUN; design reviews r1 AMEND_FIRST, repaired, and r2 PASS_WITH_LIMITS); S4R-1 left uncommitted after r2 AMEND_FIRST
+
+- **Origin:** Codex wrote S5 v2 (`tools/sitl_s5_safety.py`, tests, prereg) on 2026-11-10 between 09:30 and 09:45 KST
+  and stopped without a handoff. Claude Code continued it at the user's request.
+- **S5 v2 review r1** (Claude Opus 5.5): **AMEND_FIRST**. A repair agent (Claude Opus 5.5) fixed it; the repair note
+  is `docs/evidence/sitl_2026-11-05/s5_safety_v2/REPAIR_r1.md`.
+  - **B1:** PX4 SITL stops logging about 1 s after the first disarm, so KIL and FDS would always have read INVALID.
+    ULog position coverage now ends at the first disarmed heartbeat. Armed scenarios still need the full window.
+  - **M1:** live discrimination is stated as NOT_TESTED. Every must-FAIL control is in the fake-PX4 tests.
+  - **M2:** each scenario now needs its own cause, through the `failsafe_flags` field or a cause STATUSTEXT, so RCL
+    and DLL are told apart.
+  - **Minors:**
+    - the RSS cap is 8 GiB;
+    - the disk estimate is 40–80 MB per boot;
+    - launch refuses below 3 GiB free;
+    - launch refuses a non-idle host (RustDesk allowed);
+    - new negative tests;
+    - the "10 Hz local position" error is corrected.
+  - **Tests:** 38 → 47 OK.
+- **S5 v2 review r2:** **PASS_WITH_LIMITS**, with nothing required before the commit. Open items, recorded in prereg
+  §11:
+  - MINOR n1: a 1.0 s flag-gap limit against a 0.7 s cause window;
+  - the LOW items.
+- **S4R-1 v1** (Gazebo repeatability diagnostic, motar-783.11): **left uncommitted.**
+  - Its prereg was written by Claude Code from Codex's code and draft.
+  - **r1: AMEND_FIRST.** It found a BLOCKER: the arm label made analyze never report. It also found four MAJORs:
+    degenerate comparisons, a tree walk inside the control loop, RLIMIT_AS with no smoke, and a launch command the
+    tool would refuse. All were repaired (27 tests OK).
+  - **r2: AMEND_FIRST.** New MAJOR-1: an inf entry in LiDAR or depth makes `max_abs` infinite and empties the stage
+    summary. There are also MINORs 1–5:
+    - question 2 has no fixed main statistic;
+    - two missing position statistics;
+    - the step-0 stamp offset is not explained;
+    - `XAUTHORITY` is not checked;
+    - the smoke scene ends after about 45 steps.
+  - The user (2026-11-10) asked to defer any further repair to the next session. The files stay untracked in the
+    worktree: `tools/sitl_s4r1.py`, `tests/test_sitl_s4r1.py`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`. The
+    reviews and repair note are in `~/motar_tmp/sitl_next_20261110/s4r1_review_r{1,2}/`.
+- **PUBLIC_CPU** (untracked S4R-1 files present): 3,900 run, 0 failures, 0 errors; host faults 0 → 0.
+- **Next:**
+  - S5 v2 needs the user's scoped SITL approval, an idle host, a smoke run, then the attempt.
+  - S4R-1 needs its r2 findings repaired, then a focused re-review, then a commit.
