@@ -26120,3 +26120,45 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
     recorder limitation).
   - Each repair goes in a dated amendment, with a review and a new commit. That needs a new scoped approval because
     HEAD changes, and new smoke folders, since the smokes are single-use.
+
+## 2026-11-10 — S5 v2 amendment 1 and S4R-1 v1 amendment 1: repairs after the aborted smokes (reviews r1 AMEND_FIRST, repaired; r2 S5 PASS_WITH_LIMITS, S4R-1 PASS); NOT_RUN
+
+- **User (~15:45 KST):** "이어서 진행해주세요" after the aborted-smoke report.
+- **Correction to the previous entry:** "the outcome was capture" was the Isaac reference outcome (`isaac_outcome`). The
+  S4R-1 SITL smoke member itself crashed into a bar.
+- **S5 v2, the true first failure:** smoke01's `ep000/session.json` records
+  `RuntimeError: HARNESS_INVALID no telemetry within 90 s`. The bytearray TypeError came afterwards, in the `finally`
+  block, and replaced it.
+  - **Cause, reproduced offline:** pymavlink 2.4.50's `wait_heartbeat` leaves `target_component` at 0. The receive
+    filter then dropped every PX4 message, which comes from component 1.
+  - **Why the tests missed it:** every fake set `target_component` to 1.
+- **Repairs** (repair agents: Claude Opus 5.5; notes `REPAIR_amend1_r{1,2}.md` in both evidence folders):
+  - **S5:**
+    - The autopilot is pinned from the first HEARTBEAT from component 1 with autopilot PX4. All receive, ACK, param
+      and recording paths use it; sends are unchanged.
+    - A real-mavutil test reads real encoded bytes through `mavlink_connection`. A negative control shows the v2
+      filter drops all 5 messages. Mutations of the pin and of the filter fail 13 and 15 tests.
+    - The first failure is kept when a later recording error happens.
+  - **Both tools:**
+    - bytes-like values are serialized losslessly as hex, tested with real pymavlink BAD_DATA and UNKNOWN messages;
+    - values serialized as a tagged repr are counted and recorded as a warning;
+    - `--smoke` and `--launch` exit non-zero unless COMPLETE;
+    - new smoke folders (`smoke02`, `smoke02_contact_on_env0`) and new SCOPEs, so the old approvals are refused.
+  - **S4R-1 contact audit:**
+    - `contacts.log` lost nothing. It has 10,723 lines, all on the 4 ms grid, and 1,876 in the reading window. There
+      are 0 missing, duplicate or off-grid steps, but 3 messages arrived up to 2 steps late (`gz topic -e`
+      reordering).
+    - The old arrival-order audit misread this as "4 gaps / 6 missing steps / 3 non-increasing".
+    - New rule: 0 missing, duplicate or off-grid steps; late arrivals at most 2 steps late and at most 1 % of window
+      messages. The bound is set at the observed maximum, with no margin, and the amendment says it was chosen after
+      the smoke. The positive control and coverage are unchanged.
+- **Amendments:**
+  - `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md`;
+  - `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md`.
+  - The original preregs are unchanged.
+- **Reviews** (Claude Opus 5.5):
+  - **r1:** overall AMEND_FIRST. It found the BLOCKER above; S4R-1 alone read PASS_WITH_LIMITS.
+  - **r2:** S5 PASS_WITH_LIMITS (nothing after telemetry has run live), S4R-1 PASS, with no BLOCKER, MAJOR or MINOR.
+    LOW-1: the sender system is not checked against the pin. LOW-2: the BaseException-in-recording path is untested.
+- **Tests:** S5 47 → 62 OK; S4R-1 34 → 44 OK. PUBLIC_CPU 3,932 run, 0 failures, 0 errors; faults 0 → 0.
+- **Next:** a new scoped approval at this commit for S5 smoke02 + attempt01 and S4R-1 smoke02 + attempt01.

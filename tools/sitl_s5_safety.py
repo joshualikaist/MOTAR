@@ -23,8 +23,9 @@ Live discrimination is NOT_TESTED: every must-FAIL control is in the fake-PX4 CP
 
 Attempt scenarios (SCHEDULE): N0 null, OBL offboard setpoints stopped, GFH out past the horizontal fence, GFV up past the
 vertical fence, OVJ MANUAL_CONTROL stick pulse, OVR RC_CHANNELS_OVERRIDE stick pulse, RCL RC stopped, DLL GCS heartbeat
-stopped, KIL RC kill channel high, FDS GCS disarm (non-forced refused in the air, forced 21196 disarms). smoke01
-(SMOKE_SCHEDULE) runs the nulls N0, N0R (RC streamed) and N0J (joystick streamed), read only for harness validity.
+stopped, KIL RC kill channel high, FDS GCS disarm (non-forced refused in the air, forced 21196 disarms). The
+development smoke (SMOKE_SCHEDULE; smoke02 since amendment 1, smoke01 ABORTED) runs the nulls N0, N0R (RC streamed)
+and N0J (joystick streamed), read only for harness validity.
 
 PX4 v1.14.3 facts used (read in /home/fair/workspaces/px4_ws/PX4-Autopilot, tag v1.14.3; review r1 re-traced them):
   - parameter definitions: navigator/geofence_params.c:62,90,115,128,142; commander/commander_params.c:104,143,186,284,
@@ -50,6 +51,17 @@ Checked by reading in review r1: runtime COM_RC_IN_MODE/RC_MAP_* changes apply w
 calibration passes the arming check; a centred 1500 us throttle reads as zero. INFERRED until a run: that all of these
 behave as read when driven over MAVLink in this SITL build.
 
+Amendment 1 (AMENDMENT below, 2026-11-10, after smoke01 ABORTED): smoke01's scenario body failed first with
+"HARNESS_INVALID no telemetry within 90 s" because v2 read only messages from [target_system, target_component] and
+pymavlink 2.4.50 leaves target_component 0 (PX4 sends from component 1), so every PX4 message was dropped; the
+autopilot is now pinned from its HEARTBEAT (pin_autopilot/autopilot_of, rule at MAV_COMP_ID_AUTOPILOT1). The recorded
+reason, "TypeError: Object of type bytearray is not JSON serializable", came later from writing trace.json in the
+cleanup and hid the first failure: bytes, bytearray and memoryview are recorded as {"bytes_hex": ...} (pymavlink's
+BAD_DATA and UNKNOWN_<id> messages carry a bytearray `data` field), trace.json is written through trace_text(), values
+kept as a tagged repr are counted (recording_warnings), and a recording failure after an earlier failure keeps that
+first failure at the head of the reason (RecordingAfterError); --smoke and --launch exit non-zero unless COMPLETE (and,
+for --smoke, the attempt's smoke gate passes); the smoke folder is smoke02 and SCOPE says so.
+
   tools/sitl_s5_safety.py --check | --smoke | --launch | --analyze [ATTEMPT_DIR]
 Run only under the dated preregistration's exact CPU environment, idle-host and deadline limits.
 """
@@ -74,17 +86,19 @@ import sitl_s3b_formal as SF                                    # noqa: E402
 
 PROTOCOL = "s5-safety-v2"
 PREREG = "docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md"
-SCOPE = ("S5 safety v2: PX4 v1.14.3 SITL on navrl_quad (stand-in vehicle), fixed safety parameter set v1, scenarios "
-         "N0 OBL GFH GFV OVJ OVR RCL DLL KIL FDS once each in this order, one fresh-rootfs boot per scenario; "
-         "development smoke01 (nulls N0 N0R N0J, read for harness validity only) then attempt01; no retries; "
+AMENDMENT = "docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md"      # after smoke01 ABORTED
+SCOPE = ("S5 safety v2 amendment1: PX4 v1.14.3 SITL on navrl_quad (stand-in vehicle), fixed safety parameter set v1, "
+         "scenarios N0 OBL GFH GFV OVJ OVR RCL DLL KIL FDS once each in this order, one fresh-rootfs boot per scenario; "
+         "development smoke02 (nulls N0 N0R N0J, read for harness validity only) then attempt01; no retries; "
          "SITL only, no claim about real hardware")
 UNIT_DIR = pathlib.Path.home() / "motar_tmp" / "sitl_next_20261110" / "s5_safety_v2"
 ATTEMPT_DIR = UNIT_DIR / "attempt01"
-SMOKE_DIR = UNIT_DIR / "smoke01"
+SMOKE_DIR = UNIT_DIR / "smoke02"                     # amendment 1: smoke01 is spent (ABORTED)
 MODEL = "navrl_quad"
 AIRFRAME = SF.AIRFRAMES[MODEL]
 OWN_SOURCES = ("tools/sitl_s5_safety.py", "tests/test_sitl_s5_safety.py", "tools/sitl_s3b_formal.py",
-               "tools/sitl_s3b_closed_loop.py", "tools/sitl_owned_session.py", "tools/sitl_dev08_attempt.py", PREREG)
+               "tools/sitl_s3b_closed_loop.py", "tools/sitl_owned_session.py", "tools/sitl_dev08_attempt.py", PREREG,
+               AMENDMENT)
 
 # ------------------------------------------------------------------------------------------- the parameter set
 # (name, PX4 type, value, v1.14.3 definition, meaning). Conservative SITL stand-ins; every value is a user decision for
@@ -183,6 +197,20 @@ TIMING = {"tick_s": 0.02, "sp_period_s": 0.1, "hb_period_s": 1.0, "rc_period_s":
 MAV_FRAME_LOCAL_NED = 1
 MAV_TYPE_GCS = 6
 MAV_AUTOPILOT_INVALID = 8
+# Amendment 1 (smoke01's first failure): the autopilot whose messages the harness reads is pinned from a received
+# HEARTBEAT, not taken from pymavlink's target_component. pymavlink 2.4.50's wait_heartbeat() locks only the system id
+# (mavutil.post_message sets self.sysid); target_component is param_sysid[1], which stays 0, so v2's filter
+# src == [target_system, target_component] = [1, 0] dropped every PX4 message (component 1). Rule (autopilot_of): the
+# first HEARTBEAT from source component MAV_COMP_ID_AUTOPILOT1 (1) with autopilot MAV_AUTOPILOT_PX4 (12) and a vehicle
+# MAV_TYPE (not GCS 6, ONBOARD_CONTROLLER 18, GIMBAL 26, ADSB 27; pymavlink's probably_vehicle_heartbeat list) pins
+# (system, component); only that source is read. PX4 v1.14.3 sends MAV_AUTOPILOT_PX4 (streams/HEARTBEAT.hpp:134).
+# Sends keep v2's wire addressing (target_component as pymavlink holds it, 0 = MAV_COMP_ID_ALL, which every handler
+# used accepts: mavlink_receiver.cpp:382-383 COMMAND_LONG, :951 SET_POSITION_TARGET_LOCAL_NED,
+# mavlink_parameters.cpp:103 PARAM_SET, :176 PARAM_REQUEST_READ; as S3b/S3c sent).
+MAV_COMP_ID_AUTOPILOT1 = 1
+HEARTBEAT_WAIT_S = 120.0                             # v2's wait_heartbeat(timeout=120)
+MAV_AUTOPILOT_PX4 = 12
+NON_VEHICLE_MAV_TYPES = (6, 18, 26, 27)
 MAV_CMD_DO_SET_MODE = 176
 MAV_CMD_COMPONENT_ARM_DISARM = 400
 MAV_CMD_SET_MESSAGE_INTERVAL = 511
@@ -398,6 +426,7 @@ def host_snapshot():
 def init_logs(link):
     link.hb_log, link.statustext, link.acks, link.rc_echo, link.landed, link.man_echo = [], [], [], [], [], []
     link.other_component_hb = 0
+    link.autopilot = getattr(link, "autopilot", None)     # amendment 1: (system, component), set by pin_autopilot
     link.rx_packets, link.tx_calls = [], []
     link.last_rx = {}
     link.log_clock = time.monotonic
@@ -407,9 +436,54 @@ def sim_now(link):
     return link.pos[0] if getattr(link, "pos", None) is not None else None
 
 
+def autopilot_of(msg):
+    """Amendment 1: the (system, component) a HEARTBEAT pins as the autopilot, or None (rule at MAV_COMP_ID_AUTOPILOT1)."""
+    if msg is None or msg.get_type() != "HEARTBEAT":
+        return None
+    try:
+        if msg.get_srcComponent() != MAV_COMP_ID_AUTOPILOT1 or int(msg.autopilot) != MAV_AUTOPILOT_PX4 \
+                or int(msg.type) in NON_VEHICLE_MAV_TYPES:
+            return None
+    except (AttributeError, TypeError, ValueError):
+        return None
+    return (int(msg.get_srcSystem()), int(msg.get_srcComponent()))
+
+
+def pin_autopilot(link, timeout_s, now=time.monotonic):
+    """Amendment 1: wait (wall time) for the first HEARTBEAT that autopilot_of accepts and pin link.autopilot to it.
+    Replaces v2's bare wait_heartbeat(), whose pymavlink target_component stays 0. Heartbeats it does not accept are
+    counted in link.autopilot_pin["rejected"]; messages consumed here are not recorded (as with wait_heartbeat).
+    Returns the pinned (system, component) or None."""
+    end = now() + timeout_s
+    rejected = []
+    while True:
+        left = end - now()
+        if left <= 0:
+            break
+        msg = link.m.recv_match(type="HEARTBEAT", blocking=True, timeout=min(left, 1.0))
+        if msg is None:
+            continue
+        ap = autopilot_of(msg)
+        if ap is not None:
+            link.autopilot = ap
+            link.autopilot_pin = {"source": list(ap), "type": int(msg.type), "autopilot": int(msg.autopilot),
+                                  "rule": "first HEARTBEAT from component %d with autopilot %d and a vehicle MAV_TYPE"
+                                          % (MAV_COMP_ID_AUTOPILOT1, MAV_AUTOPILOT_PX4),
+                                  "rejected": rejected,
+                                  "pymavlink_target": [getattr(link.m, "target_system", None),
+                                                       getattr(link.m, "target_component", None)]}
+            return ap
+        rejected.append({"source": [msg.get_srcSystem(), msg.get_srcComponent()],
+                         "type": getattr(msg, "type", None), "autopilot": getattr(msg, "autopilot", None)})
+    link.autopilot_pin = {"source": None, "rejected": rejected}
+    return None
+
+
 def handle_message(link, msg):
     """LOCAL_POSITION_NED, HIL_STATE_QUATERNION, HEARTBEAT, ATTITUDE and PARAM_VALUE parse exactly as S3b's ParamLink (a
-    test compares the two); the rest and the logs are S5's, stamped with PX4 simulation time."""
+    test compares the two); the rest and the logs are S5's, stamped with PX4 simulation time. Every message is kept in
+    rx_packets; only the pinned autopilot's (amendment 1: link.autopilot, never pymavlink's target_component) update
+    the harness state. Before the pin nothing does (fail closed)."""
     k = msg.get_type()
     now = link.log_clock()
     src = [msg.get_srcSystem(), msg.get_srcComponent()]
@@ -420,8 +494,9 @@ def handle_message(link, msg):
                             "mono": now, "epoch": time.time(), "sim_t": sim_now(link), "pos_age_s": pos_age,
                             "native": native or "NOT_RECORDED", "payload": json_safe(payload),
                             "packet_hex": bytes(msg.get_msgbuf()).hex() if hasattr(msg, "get_msgbuf") else "NOT_RECORDED"})
-    if src != [link.m.target_system, link.m.target_component]:
-        if k == "HEARTBEAT" and src[0] == link.m.target_system:
+    ap = getattr(link, "autopilot", None)
+    if ap is None or src != list(ap):
+        if k == "HEARTBEAT" and ap is not None and src[0] == ap[0]:
             link.other_component_hb += 1
         return
     link.last_rx[k] = now
@@ -431,10 +506,9 @@ def handle_message(link, msg):
         q = msg.attitude_quaternion
         link.truth = (time.time(), msg.lat * 1e-7, msg.lon * 1e-7, msg.alt * 1e-3, q[0], q[1], q[2], q[3],
                       msg.vx * 1e-2, msg.vy * 1e-2, msg.vz * 1e-2)
-    elif k == "HEARTBEAT" and msg.get_srcSystem() == link.m.target_system:
+    elif k == "HEARTBEAT":                                             # the pinned autopilot only (filter above)
         link.hb = (msg.base_mode, msg.custom_mode)
-        if msg.get_srcComponent() == link.m.target_component:
-            link.hb_log.append((sim_now(link), time.time(), int(msg.base_mode), int(msg.custom_mode)))
+        link.hb_log.append((sim_now(link), time.time(), int(msg.base_mode), int(msg.custom_mode)))
     elif k == "ATTITUDE":
         link.att = (msg.time_boot_ms * 1e-3, msg.roll, msg.pitch, msg.yaw, msg.rollspeed, msg.pitchspeed,
                     msg.yawspeed)
@@ -449,7 +523,7 @@ def handle_message(link, msg):
         link.acks.append((sim_now(link), int(msg.command), int(msg.result)))
     elif k == "RC_CHANNELS":
         link.rc_echo.append((sim_now(link),) + tuple(int(getattr(msg, "chan%d_raw" % i)) for i in range(1, 9)))
-    elif k == "MANUAL_CONTROL" and msg.get_srcSystem() == link.m.target_system:
+    elif k == "MANUAL_CONTROL":
         link.man_echo.append((sim_now(link), int(msg.x), int(msg.y), int(msg.z), int(msg.r), int(msg.buttons)))
     elif k == "EXTENDED_SYS_STATE":
         link.landed.append((sim_now(link), int(msg.landed_state)))
@@ -741,9 +815,24 @@ def ulog_problems(logs, scen, res=None, trace=None):
     return problems
 
 
+BYTES_LIKE = (bytes, bytearray, memoryview)
+
+
+def _bytes_hex(value):
+    """Lossless: every bytes-like value (pymavlink's BAD_DATA/UNKNOWN_<id> `data` is a bytearray) as its hex string."""
+    return {"bytes_hex": (value.tobytes() if isinstance(value, memoryview) else bytes(value)).hex()}
+
+
+def _is_numpy(value):
+    return type(value).__module__ == "numpy" and hasattr(value, "tolist")
+
+
 def json_safe(value):
-    if isinstance(value, bytes):
-        return {"bytes_hex": value.hex()}
+    """Amendment 1: bytes, bytearray and memoryview -> {"bytes_hex": ...}; numpy scalars and arrays -> Python values."""
+    if isinstance(value, BYTES_LIKE):
+        return _bytes_hex(value)
+    if _is_numpy(value):
+        return json_safe(value.tolist())
     if isinstance(value, dict):
         return {str(k): json_safe(v) for k, v in value.items()}
     if isinstance(value, (tuple, list)):
@@ -753,6 +842,22 @@ def json_safe(value):
     return value
 
 
+def json_default(value):
+    """json.dumps default for trace.json (amendment 1): only values json cannot encode reach it. Bytes-like values are
+    hex (lossless), numpy values become Python values, anything else is kept as an explicitly tagged repr instead of
+    aborting the unit (smoke01's failure mode)."""
+    if isinstance(value, BYTES_LIKE):
+        return _bytes_hex(value)
+    if _is_numpy(value):
+        return value.tolist()
+    return {"unserializable_type": "%s.%s" % (type(value).__module__, type(value).__qualname__), "repr": repr(value)}
+
+
+def trace_text(trace):
+    """The exact trace.json text. NaN/inf floats stay as json writes them (unchanged from v2)."""
+    return json.dumps(trace, default=json_default) + "\n"
+
+
 def instrument_link(L, clock):
     L.log_clock = clock
     original_send, original_cmd = L.send, L.cmd
@@ -760,7 +865,8 @@ def instrument_link(L, clock):
     def record(kind, fn, args):
         rec = {"kind": kind, "name": getattr(fn, "__name__", str(fn)), "args": json_safe(args),
                "mono_entry": clock(), "epoch_entry": time.time(), "sim_t": sim_now(L),
-               "destination": [L.m.target_system, L.m.target_component]}
+               "destination": [L.m.target_system, L.m.target_component],
+               "autopilot": list(L.autopilot) if getattr(L, "autopilot", None) is not None else None}
         L.tx_calls.append(rec)
         try:
             return fn(*args)
@@ -806,11 +912,14 @@ def command_inventory(trace):
               5: "IN_PROGRESS", 6: "CANCELLED"}
     for i, r in enumerate(calls):
         command = r["args"][0]
+        # amendment 1: replies are matched to the pinned autopilot; "destination" is the wire address, whose
+        # component is pymavlink's 0 (MAV_COMP_ID_ALL), never a reply's source
+        source = r.get("autopilot") or r["destination"]
         end = next((n["mono_entry"] for n in calls[i+1:] if n["args"][0] == command), float("inf"))
         acks = [p for p in packets if p["type"] == "COMMAND_ACK" and p["mono"] >= r["mono_entry"]
                 and p["mono"] < end and p["payload"].get("command") == command
-                and p["source"] == r["destination"]]
-        reports = [p for p in packets if p["type"] == "HEARTBEAT" and p["source"] == r["destination"]
+                and p["source"] == source]
+        reports = [p for p in packets if p["type"] == "HEARTBEAT" and p["source"] == source
                    and p["mono"] >= r["mono_entry"]]
         first = reports[0] if reports else None
         out.append({"command": command, "args": r["args"][1:], "mono_entry": r["mono_entry"],
@@ -824,13 +933,19 @@ def command_inventory(trace):
     return out
 
 
+def autopilot_source(res):
+    """The pinned autopilot (amendment 1) as recorded; [1, 1] (v2's constant) for a record without one."""
+    pin = res.get("autopilot")
+    return list(pin["source"]) if isinstance(pin, dict) and pin.get("source") else [1, MAV_COMP_ID_AUTOPILOT1]
+
+
 def recording_contract(scen, res, trace):
     problems, inventory = [], {}
     lo, hi = res.get("t_pre_start"), res.get("t_observation_end")
     if lo is None or hi is None or hi <= lo:
         return {"problems": ["NO_OBSERVATION_BOUNDARY"], "inventory": {}}
     packets = [p for p in trace.get("rx_packets", [])[:res.get("observation_counts", {}).get("rx_packets")] if isinstance(p.get("sim_t"), (int, float))
-               and lo <= p["sim_t"] <= hi and p["source"] == [1, 1]]
+               and lo <= p["sim_t"] <= hi and p["source"] == autopilot_source(res)]
     # Requests are 50 Hz LPN/attitude/HIL, fixed 1 Hz heartbeat, 20 Hz RC/manual. Allow >2 periods of jitter.
     limits = {"LOCAL_POSITION_NED": .10, "ATTITUDE": .10, "HIL_STATE_QUATERNION": .10, "HEARTBEAT": 1.6}
     for name, limit in limits.items():
@@ -944,8 +1059,11 @@ def run_scenario(OS, V0, scen, ep_dir, link_factory=None, clock=time.monotonic, 
                                                              "sha256": SF.sha256_file(path)}
             instrument_link(L, clock)
             try:
-                if L.m.wait_heartbeat(timeout=120) is None:
-                    raise RuntimeError("no heartbeat")
+                pinned = pin_autopilot(L, HEARTBEAT_WAIT_S)                # amendment 1 (not wait_heartbeat)
+                res["autopilot"] = getattr(L, "autopilot_pin", None)
+                if pinned is None:
+                    raise RuntimeError("no autopilot heartbeat (component %d, MAV_AUTOPILOT_PX4) within %.0f s"
+                                       % (MAV_COMP_ID_AUTOPILOT1, HEARTBEAT_WAIT_S))
                 th = threading.Thread(target=L.rx, daemon=True)
                 th.start()
                 try:
@@ -965,25 +1083,69 @@ def run_scenario(OS, V0, scen, ep_dir, link_factory=None, clock=time.monotonic, 
         res["outcome"] = "HARNESS_INVALID" if "HARNESS_INVALID" in str(e) else "ERROR"
         res["error"] = "%s: %s" % (e.__class__.__name__, e)
     finally:
-        if L is not None:
-            L.stop = True
-            for key, attr in (("hb", "hb_log"), ("statustext", "statustext"), ("acks", "acks"),
-                              ("rc_echo", "rc_echo"), ("man_echo", "man_echo"), ("landed", "landed")):
-                trace[key] = [list(x) for x in getattr(L, attr, [])]
-            trace["rx_packets"], trace["tx_calls"] = L.rx_packets, L.tx_calls
-            res["other_component_heartbeats"] = getattr(L, "other_component_hb", None)
-        ep_dir = pathlib.Path(ep_dir)
-        if ep_dir.is_dir():
-            write_new(ep_dir / "trace.json", json.dumps(trace) + "\n")
-            res["trace_sha256"] = SF.sha256_file(ep_dir / "trace.json")
-            receipt = ep_dir / "session.json"
-            res["session_receipt_sha256"] = SF.sha256_file(receipt) if receipt.is_file() else None
-            res["ulogs"] = _ulogs(ep_dir)
-            res["recording"] = recording_contract(scen, res, trace)
-            res["recording"]["problems"] += ulog_problems(res["ulogs"], scen, res, trace)
-            res["dataman_removed_bytes"] = SF.remove_dataman(ep_dir)
+        inflight = sys.exc_info()[1]                  # a BaseException (SIGTERM, KeyboardInterrupt) still propagating
+        try:
+            _record_scenario(L, ep_dir, scen, res, trace)
+        except Exception as e2:                                          # noqa: BLE001 - re-raised below
+            # Amendment 1: smoke01's body failed first ("HARNESS_INVALID no telemetry within 90 s"); the recording's
+            # later TypeError replaced it as the unit's abort reason. The first failure now leads the reason.
+            second = "%s: %s" % (e2.__class__.__name__, e2)
+            res["recording_error"] = second
+            first = res.get("error") or (None if inflight is None else
+                                         "%s: %s" % (inflight.__class__.__name__, inflight))
+            if inflight is not None:
+                print("S5: recording failed during %s: %s" % (first, second), file=sys.stderr, flush=True)
+            elif first is not None:
+                raise RecordingAfterError(first, second) from e2
+            else:
+                raise
     res.update(assess(scen, res, trace))
     return res
+
+
+class RecordingAfterError(RuntimeError):
+    """Amendment 1: the recording failed after the scenario had already failed; the first failure leads the message, so
+    run_unit records it as the abort reason, and the recording failure follows."""
+
+    def __init__(self, first, second):
+        super().__init__("%s; then, while recording: %s" % (first, second))
+        self.first, self.second = first, second
+
+
+def unserializable_values(value):
+    """Amendment 1 (review MINOR-2): the values json_default kept as a tagged repr, counted in the written JSON."""
+    if isinstance(value, dict):
+        own = set(value) == {"unserializable_type", "repr"}
+        return [value["unserializable_type"]] if own else \
+            [t for v in value.values() if isinstance(v, (dict, list)) for t in unserializable_values(v)]
+    if isinstance(value, list):
+        return [t for v in value if isinstance(v, (dict, list)) for t in unserializable_values(v)]
+    return []
+
+
+def _record_scenario(L, ep_dir, scen, res, trace):
+    if L is not None:
+        L.stop = True
+        for key, attr in (("hb", "hb_log"), ("statustext", "statustext"), ("acks", "acks"),
+                          ("rc_echo", "rc_echo"), ("man_echo", "man_echo"), ("landed", "landed")):
+            trace[key] = [list(x) for x in getattr(L, attr, [])]
+        trace["rx_packets"], trace["tx_calls"] = L.rx_packets, L.tx_calls
+        res["other_component_heartbeats"] = getattr(L, "other_component_hb", None)
+    ep_dir = pathlib.Path(ep_dir)
+    if ep_dir.is_dir():
+        text = trace_text(trace)
+        write_new(ep_dir / "trace.json", text)
+        res["trace_sha256"] = SF.sha256_file(ep_dir / "trace.json")
+        tagged = unserializable_values(json.loads(text))
+        res["unserializable_values"] = {"count": len(tagged), "types": sorted(set(tagged))}
+        res["recording_warnings"] = ["UNSERIALIZABLE_VALUES %d (%s): kept as tagged repr in trace.json"
+                                     % (len(tagged), ", ".join(sorted(set(tagged))))] if tagged else []
+        receipt = ep_dir / "session.json"
+        res["session_receipt_sha256"] = SF.sha256_file(receipt) if receipt.is_file() else None
+        res["ulogs"] = _ulogs(ep_dir)
+        res["recording"] = recording_contract(scen, res, trace)
+        res["recording"]["problems"] += ulog_problems(res["ulogs"], scen, res, trace)
+        res["dataman_removed_bytes"] = SF.remove_dataman(ep_dir)
 
 
 def _fly(V0, L, session, scen, res, trace, clock, sleep, timing, table):
@@ -1541,8 +1703,9 @@ def launch_problems(AT, gs, approval_path, attempt_dir, sources, env_report=None
 
 
 def smoke_problems(smoke_dir, head, sources):
-    """attempt01 needs smoke01 COMPLETE at this HEAD and these source bytes, with N0, N0R and N0J all VALID and
-    nominal (the RC and joystick paths seen before any injection depends on them; review r1 M1)."""
+    """attempt01 needs the development smoke (smoke02 since amendment 1) COMPLETE at this HEAD and these source bytes,
+    with N0, N0R and N0J all VALID and nominal (the RC and joystick paths seen before any injection depends on them;
+    review r1 M1)."""
     f, e, a = (pathlib.Path(smoke_dir) / n for n in ("final.json", "episodes.jsonl", "attempt.json"))
     if not (f.is_file() and e.is_file() and a.is_file()):
         return ["no development smoke record in %s" % smoke_dir]
@@ -1600,7 +1763,8 @@ def launch(smoke=False):
         sched = smoke_schedule() if smoke else schedule()
         import sitl_owned_session as OS
         import sitl_s3b_closed_loop as V0
-        rec = {"protocol": PROTOCOL, "prereg": PREREG, "scope": SCOPE, "development_smoke": bool(smoke), "git": gs,
+        rec = {"protocol": PROTOCOL, "prereg": PREREG, "amendment": AMENDMENT, "scope": SCOPE,
+               "development_smoke": bool(smoke), "git": gs,
                "approval_sha256": SF.sha256_file(UNIT_DIR / "execution_approval.json"), "sources": src_sha,
                "parameter_set": [list(r) for r in all_params()], "vehicle_params": V0.PARAMS,
                "scenarios": [dict(s) for s in scenarios()], "timing": TIMING, "persist_s": PERSIST_S,
@@ -1627,9 +1791,25 @@ def launch(smoke=False):
         status, reason = "ABORTED", "%s: %s" % (e.__class__.__name__, e)
         if not isinstance(e, Exception):
             terminated = e
-    write_final(out_dir, AT, status, reason, done, sched, faults0)
+    final = write_final(out_dir, AT, status, reason, done, sched, faults0)
     if terminated is not None:
         raise terminated
+    gate = smoke_problems(out_dir, gs["head"], src_sha) if smoke and final.get("status") == "COMPLETE" else []
+    if gate:
+        print(json.dumps({"smoke_gate_problems": gate}), flush=True)
+    return exit_code(final, gate)
+
+
+EXIT_OK, EXIT_NOT_COMPLETE, EXIT_SMOKE_GATE = 0, 3, 4
+
+
+def exit_code(final, smoke_gate=()):
+    """Amendment 1: the process exit status an outer chain can gate on. 0 only for a COMPLETE run (and, for --smoke, a
+    smoke the attempt's gate accepts); 3 when not COMPLETE (ABORTED, ...); 4 for a COMPLETE smoke the gate refuses. A
+    refusal before anything exists is SystemExit("refused: ...") -> exit status 1."""
+    if (final or {}).get("status") != "COMPLETE":
+        return EXIT_NOT_COMPLETE
+    return EXIT_SMOKE_GATE if smoke_gate else EXIT_OK
 
 
 # ------------------------------------------------------------------------------------------- analysis
@@ -1654,8 +1834,9 @@ def integrity_problems(attempt, final, rows, attempt_dir=None, allow_smoke=False
         expected = smoke_schedule() if allow_smoke else schedule()
         if sched != expected:
             p.append("attempt schedule differs from registered schedule")
-        if attempt.get("protocol") != PROTOCOL or attempt.get("scope") != SCOPE or attempt.get("prereg") != PREREG:
-            p.append("attempt protocol/scope/prereg binding differs")
+        if attempt.get("protocol") != PROTOCOL or attempt.get("scope") != SCOPE or attempt.get("prereg") != PREREG \
+                or attempt.get("amendment") != AMENDMENT:
+            p.append("attempt protocol/scope/prereg/amendment binding differs")
         by_id = {s["id"]: s for s in attempt.get("scenarios", [])}
         for r in rows:
             if r.get("outcome") == "NOT_RUN":
@@ -1677,6 +1858,9 @@ def integrity_problems(attempt, final, rows, attempt_dir=None, allow_smoke=False
                 uf = pathlib.Path(u["path"])
                 if not uf.is_file() or uf.stat().st_size != u["bytes"] or SF.sha256_file(uf) != u["sha256"]:
                     p.append("ULog of scenario %s missing or changed" % r.get("scenario"))
+            if "unserializable_values" in r and \
+                    len(unserializable_values(trace)) != (r["unserializable_values"] or {}).get("count"):
+                p.append("unserializable-value count of scenario %s differs" % r.get("scenario"))
             recording = recording_contract(by_id[r["scenario"]], r, trace)
             recording["problems"] += ulog_problems(r.get("ulogs", []), by_id[r["scenario"]], r, trace)
             if recording != r.get("recording"):
@@ -1707,6 +1891,7 @@ def reading(final, rows, attempt, attempt_dir=None):
         label, why = "PASS_SITL", None
     return {"protocol": PROTOCOL, "reading": label, "reason": why, "scenarios": per, "integrity_problems": integ,
             "attempt_status": final.get("status"), "attempt_reason": final.get("reason"),
+            "recording_warnings": {r["scenario"]: r["recording_warnings"] for r in rows if r.get("recording_warnings")},
             "scope": "PX4 v1.14.3 SITL, navrl_quad stand-in; no claim about the real flight controller, RC or vehicle"}
 
 
@@ -1746,12 +1931,13 @@ def main(argv=None):
     if a.check:
         check()
     elif a.smoke:
-        launch(smoke=True)
+        return launch(smoke=True)
     elif a.launch:
-        launch()
+        return launch()
     else:
         analyze(a.analyze)
+    return EXIT_OK
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

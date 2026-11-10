@@ -5,20 +5,28 @@ The fake PX4 follows v1.14.3 where the review r1 found it mattered: HEARTBEAT at
 re-publishing unchanged RC only every 300 ms, kill switch edge-triggered after two identical frames, MANUAL_CONTROL
 echo of the selected source with the kill switch bits, STATUSTEXT at the events. Every negative (a broken fake PX4, a
 refused input, a violated criterion) is paired with the positive control that passes, and counts are asserted non-zero.
-PUBLIC_CPU-safe: the module is loaded by path; sys.path and the tools modules the loading adds are restored at once, no
-environment variable is set, and no attribute of a shared module is patched."""
+PUBLIC_CPU-safe: the module is loaded by path; sys.path and the tools modules the loading adds are restored at once, the
+two environment variables pymavlink's mavutil reads (MAVLINK20, MAVLINK_DIALECT) are set only while it is imported and
+then restored exactly, and no attribute of a shared module is patched.
+
+Amendment 1: every fake link carries pymavlink 2.4.50's real addressing, target_component 0 after a heartbeat; the
+fake-PX4 live path pins its autopilot through a real mavutil connection reading real MAVLink 2 bytes."""
 import contextlib
 import importlib.util
+import io
 import json
 import math
+import os
 import pathlib
 import shutil
+import signal
 import struct
 import sys
 import tempfile
 import time
 import types
 import unittest
+from unittest import mock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 TOOLS = ROOT / "tools"
@@ -55,6 +63,118 @@ INT_NAMES = {n for n, t, _, _, _ in S5.all_params() if t == "INT32"}
 SCEN = {s["id"]: s for s in S5.scenarios()}
 OFF = "OFFBOARD"
 KILL_OFF, KILL_ON = S5.SWITCH_OFF << S5.KILL_SHIFT, S5.SWITCH_ON << S5.KILL_SHIFT
+
+
+PYLINK = pathlib.Path("/home/fair/motar_tmp/sitl_plan_20261104/pylink")   # the path sitl_s3b_closed_loop appends
+
+
+def real_mavlink():
+    """Amendment 1: pymavlink's MAVLink 2 'all' dialect, the module the live link decodes with, and pymavlink's mavutil
+    ((None, None) when pymavlink is not installed). mavutil writes os.environ: MAVLINK20 is set during the import, so it
+    starts on the MAVLink 2 'all' dialect (the live link switches to it at PX4's first MAVLink 2 byte, mavutil.py:291-298)
+    and never writes the environment again; os.environ, sys.path and sys.modules are restored."""
+    saved, before, env = list(sys.path), set(sys.modules), dict(os.environ)
+    try:
+        if PYLINK.is_dir():
+            sys.path.append(str(PYLINK))
+        os.environ["MAVLINK20"], os.environ["MAVLINK_DIALECT"] = "1", "all"
+        from pymavlink.dialects.v20 import all as dialect
+        from pymavlink import mavutil
+        assert mavutil.mavlink is dialect and mavutil.mavlink.WIRE_PROTOCOL_VERSION == "2.0"
+        return dialect, mavutil
+    except ImportError:
+        return None, None
+    finally:
+        sys.path[:] = saved
+        for key in set(os.environ) - set(env):
+            del os.environ[key]
+        for key, value in env.items():
+            if os.environ.get(key) != value:
+                os.environ[key] = value
+        for name in set(sys.modules) - before:
+            if name == "pymavlink" or name.startswith("pymavlink."):
+                del sys.modules[name]
+
+
+MAV, MAVUTIL = real_mavlink()
+
+
+def px4_wire(autopilot=True, telemetry=True, others=True):
+    """Real MAVLink 2 bytes as the S5 link receives them: (others) a GCS heartbeat (system 255) and a camera-component
+    heartbeat of the vehicle (1, 100; pymavlink's probably_vehicle_heartbeat accepts it and locks sysid 1 on it), then
+    PX4's autopilot heartbeat (1, 1, quadrotor, MAV_AUTOPILOT_PX4) unless autopilot is False, then (telemetry) from
+    (1, 1) LOCAL_POSITION_NED, ATTITUDE, HIL_STATE_QUATERNION, COMMAND_ACK and a second heartbeat, and (others) one more
+    camera heartbeat. others=False is what smoke01's link received: PX4 alone."""
+    def packed(src, *msgs):
+        tx = MAV.MAVLink(None, srcSystem=src[0], srcComponent=src[1])
+        return b"".join(bytes(m.pack(tx)) for m in msgs)
+    hb = lambda t, a, mode=0: MAV.MAVLink_heartbeat_message(t, a, 0, mode, 3, 3)          # noqa: E731
+    wire = b""
+    if others:
+        wire += packed((255, 190), hb(MAV.MAV_TYPE_GCS, MAV.MAV_AUTOPILOT_INVALID))
+        wire += packed((1, 100), hb(MAV.MAV_TYPE_CAMERA, MAV.MAV_AUTOPILOT_PX4))
+    if autopilot:
+        wire += packed((1, 1), hb(MAV.MAV_TYPE_QUADROTOR, MAV.MAV_AUTOPILOT_PX4))
+    if telemetry:
+        wire += packed((1, 1), MAV.MAVLink_local_position_ned_message(12345, 1.0, 2.0, -1.0, 0.1, 0.2, 0.3),
+                       MAV.MAVLink_attitude_message(12340, 0.01, 0.02, 1.5, 0.0, 0.0, 0.1),
+                       MAV.MAVLink_hil_state_quaternion_message(0, [1.0, 0.0, 0.0, 0.0], 0, 0, 0, 470000000,
+                                                                80000000, 101000, 10, 20, -30, 0, 0, 0, 0, 0),
+                       MAV.MAVLink_command_ack_message(400, 1),
+                       hb(MAV.MAV_TYPE_QUADROTOR, MAV.MAV_AUTOPILOT_PX4, 6 << 16))
+        if others:
+            wire += packed((1, 100), hb(MAV.MAV_TYPE_CAMERA, MAV.MAV_AUTOPILOT_PX4))
+    return wire
+
+
+def wire_connection(directory, wire):
+    """A real pymavlink connection (mavutil.mavlink_connection -> mavlogfile, robust parsing, raw bytes without tlog
+    timestamps) over the bytes: the same mavfile.recv_msg/post_message path as the live UDP link."""
+    path = pathlib.Path(directory) / "px4_wire.raw"
+    path.write_bytes(wire)
+    return MAVUTIL.mavlink_connection(str(path), notimestamps=True)
+REAL_TYPES = ["HEARTBEAT", "STATUSTEXT", "PARAM_VALUE", "FILE_TRANSFER_PROTOCOL", "BAD_DATA", "UNKNOWN_54321"]
+
+
+def real_messages(src=(42, 7)):
+    """Real pymavlink message objects decoded from wire bytes by a robust-parsing MAVLink receiver, as recv_match
+    returns them: a heartbeat, a STATUSTEXT with a non-UTF-8 byte (char array), a PARAM_VALUE (char id), a uint8_t[251]
+    payload, a CRC-broken heartbeat (BAD_DATA, data is a bytearray) and an unknown message id (UNKNOWN_54321, data is a
+    bytearray). The default source is not the autopilot (1, 1), so the harness state is not touched."""
+    tx = MAV.MAVLink(None, srcSystem=src[0], srcComponent=src[1])
+    wire = b"".join(bytes(m.pack(tx)) for m in (
+        MAV.MAVLink_heartbeat_message(2, 12, 129, 6 << 16, 4, 3),
+        MAV.MAVLink_statustext_message(2, b"Failsafe \xff activated", 0, 0),
+        MAV.MAVLink_param_value_message(b"NAV_DLL_ACT", 1.5, 6, 100, 3),
+        MAV.MAVLink_file_transfer_protocol_message(0, 1, 1, list(range(251)))))
+    bad = bytearray(MAV.MAVLink_heartbeat_message(2, 12, 129, 0, 4, 3).pack(tx))
+    bad[-1] ^= 0xFF                                                      # broken CRC -> BAD_DATA
+    unknown = bytearray(MAV.MAVLink_heartbeat_message(2, 12, 129, 0, 4, 3).pack(tx))
+    unknown[7:10] = (54321).to_bytes(3, "little")                        # MAVLink 2 msgid -> UNKNOWN_54321
+    rx = MAV.MAVLink(None)
+    rx.robust_parsing = True
+    return rx.parse_buffer(wire + bytes(bad) + bytes(unknown))
+
+
+def unhex(value):
+    """Inverse of the recorder's {"bytes_hex": ...} tag (the tests' decoder)."""
+    if isinstance(value, dict):
+        if set(value) == {"bytes_hex"}:
+            return bytes.fromhex(value["bytes_hex"])
+        return {k: unhex(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [unhex(v) for v in value]
+    return value
+
+
+def plain(d):
+    return {k: bytes(v) if isinstance(v, (bytes, bytearray)) else v for k, v in d.items()}
+
+
+def count_hex(value):
+    if isinstance(value, dict):
+        return (set(value) == {"bytes_hex"}) + sum(count_hex(v) for v in value.values())
+    return sum(count_hex(v) for v in value) if isinstance(value, list) else 0
 
 
 def jitter(k):
@@ -157,6 +277,8 @@ class TestScenarios(unittest.TestCase):
 class Msg:
     def __init__(self, kind, src=(1, 1), **kw):
         self._kind, self._src = kind, src
+        if kind == "HEARTBEAT":                                           # PX4 v1.14.3: quadrotor, MAV_AUTOPILOT_PX4
+            kw = dict({"type": 2, "autopilot": 12}, **kw)
         self.__dict__.update(kw)
 
     def get_type(self):
@@ -181,8 +303,12 @@ def sample_messages():
             Msg("PARAM_VALUE", param_id="COM_OF_LOSS_T", param_value=0.5, param_type=9)]
 
 
-def stub():
-    return NS(stop=False, params={}, pos=None, truth=None, hb=None, att=None, m=NS(target_system=1, target_component=1))
+def stub(pin=True):
+    """A link as pymavlink 2.4.50 leaves it after a heartbeat (target_component 0); pinned to the autopilot by
+    autopilot_of from a PX4 heartbeat unless pin is False."""
+    L = NS(stop=False, params={}, pos=None, truth=None, hb=None, att=None, m=NS(target_system=1, target_component=0))
+    L.autopilot = S5.autopilot_of(Msg("HEARTBEAT", base_mode=0, custom_mode=0)) if pin else None
+    return L
 
 
 class TestHandleMessage(unittest.TestCase):
@@ -232,12 +358,197 @@ class TestHandleMessage(unittest.TestCase):
         self.assertEqual(me.landed, [(t, 2)])
 
 
+@unittest.skipUnless(MAV is not None, "pymavlink not installed")
+class TestRealMavlinkRecording(unittest.TestCase):
+    """Amendment 1: smoke01 ABORTED on "TypeError: Object of type bytearray is not JSON serializable". Real pymavlink
+    objects go through handle_message and instrument_link and the trace.json text (trace_text), and come back
+    byte for byte."""
+
+    def test_real_messages_round_trip_through_handle_message_and_trace_text(self):
+        msgs = real_messages()
+        self.assertEqual([m.get_type() for m in msgs], REAL_TYPES)
+        self.assertIsInstance(msgs[4].data, bytearray)
+        self.assertIsInstance(msgs[5].data, bytearray)
+        # negative control: the raw to_dict of BAD_DATA is what v2's recorder could not write
+        with self.assertRaisesRegex(TypeError, "bytearray"):
+            json.dumps({"payload": msgs[4].to_dict()})
+        me = stub()
+        S5.init_logs(me)
+        for m in msgs:
+            S5.handle_message(me, m)
+        self.assertEqual((me.pos, me.hb, me.params, me.statustext, me.other_component_hb), (None, None, {}, [], 0))
+        loaded = json.loads(S5.trace_text({"rx_packets": me.rx_packets}))["rx_packets"]
+        self.assertEqual([p["type"] for p in loaded], REAL_TYPES)
+        self.assertEqual(count_hex(loaded), 2)                          # BAD_DATA.data and UNKNOWN_54321.data
+        rx = MAV.MAVLink(None)
+        rx.robust_parsing = True
+        for p, m in zip(loaded, msgs):
+            self.assertEqual(bytes.fromhex(p["packet_hex"]), bytes(m.get_msgbuf()))
+            self.assertEqual(unhex(p["payload"]), plain(m.to_dict()))
+            self.assertEqual(p["source"], [m.get_srcSystem(), m.get_srcComponent()])
+            if not m.get_type().startswith(("BAD_DATA", "UNKNOWN")):    # the wire bytes decode to the same message
+                again = rx.parse_buffer(bytes.fromhex(p["packet_hex"]))
+                self.assertEqual([a.to_dict() for a in again], [m.to_dict()])
+        self.assertEqual(loaded[3]["payload"]["payload"], list(range(251)))
+        self.assertEqual(loaded[1]["payload"]["text"], msgs[1].to_dict()["text"])
+
+    def test_sends_with_bytes_like_arguments_are_recorded_losslessly(self):
+        sent = []
+        L = stub()
+        S5.init_logs(L)
+        L.send = lambda fn, *a: fn(*a)
+        L.cmd = lambda *a: sent.append(a)
+        S5.instrument_link(L, lambda: 5.0)
+        raw = bytearray(b"NAV_DLL_ACT\x00\xff")
+        L.send(lambda *a: sent.append(a), 1, 1, raw, memoryview(b"\x01\x02"), b"\x00", 1.5)
+        L.cmd(400, 1.0)
+        loaded = json.loads(S5.trace_text({"tx_calls": L.tx_calls}))["tx_calls"]
+        self.assertEqual(unhex(loaded[0]["args"]), [1, 1, bytes(raw), b"\x01\x02", b"\x00", 1.5])
+        self.assertEqual(count_hex(loaded), 3)
+        self.assertEqual(loaded[1]["args"], [400, 1.0])
+        self.assertEqual(len(sent), 2)
+
+    def test_json_safe_and_default_types(self):
+        np = __import__("numpy")
+        self.assertEqual(S5.json_safe({"b": bytearray(b"\x00\xff"), "m": memoryview(b"ab"), "x": b"",
+                                       "f": np.float32(0.5), "a": np.arange(3), "t": (1, b"\x01")}),
+                         {"b": {"bytes_hex": "00ff"}, "m": {"bytes_hex": "6162"}, "x": {"bytes_hex": ""}, "f": 0.5,
+                          "a": [0, 1, 2], "t": [1, {"bytes_hex": "01"}]})
+        text = S5.trace_text({"raw": bytearray(b"\x07"), "n": np.int64(3), "nan": float("nan"), "o": object()})
+        out = json.loads(text)
+        self.assertEqual((out["raw"], out["n"]), ({"bytes_hex": "07"}, 3))
+        self.assertTrue(math.isnan(out["nan"]))                         # unchanged from v2: json writes NaN
+        self.assertEqual(out["o"]["unserializable_type"], "builtins.object")
+        self.assertIn("object at", out["o"]["repr"])
+
+
+class TestAutopilotRule(unittest.TestCase):
+    """Amendment 1: which HEARTBEAT pins the autopilot (positive and negative cases, no pymavlink needed)."""
+
+    def test_autopilot_of(self):
+        hb = lambda src=(1, 1), **kw: Msg("HEARTBEAT", src=src, base_mode=0, custom_mode=0, **kw)   # noqa: E731
+        self.assertEqual(S5.autopilot_of(hb()), (1, 1))
+        self.assertEqual(S5.autopilot_of(hb((2, 1))), (2, 1))                 # the system comes from the heartbeat
+        for bad in (hb((1, 0)), hb((1, 100)), hb((1, 154)), hb(autopilot=8), hb(autopilot=3), hb(type=6),
+                    hb(type=18), hb(type=26), hb(type=27), Msg("ATTITUDE"), None):
+            self.assertIsNone(S5.autopilot_of(bad), getattr(bad, "__dict__", bad))
+
+    def test_unpinned_link_reads_nothing(self):
+        me = stub(pin=False)
+        S5.init_logs(me)
+        for m in sample_messages():
+            S5.handle_message(me, m)
+        self.assertEqual((me.pos, me.hb, me.att, me.params, me.hb_log, me.other_component_hb),
+                         (None, None, None, {}, [], 0))
+        self.assertEqual(len(me.rx_packets), 6)                          # still recorded raw
+
+
+@unittest.skipUnless(MAVUTIL is not None, "pymavlink not installed")
+class TestAutopilotPinRealMavutil(unittest.TestCase):
+    """Amendment 1, smoke01's first failure ("HARNESS_INVALID no telemetry within 90 s"): with a real pymavlink 2.4.50
+    connection, wait_heartbeat leaves target_component 0, so v2's filter [target_system, target_component] dropped
+    every PX4 message; pin_autopilot pins (1, 1) from the heartbeat and the same bytes are read."""
+
+    def setUp(self):
+        self.tmp, self.conns = tempfile.mkdtemp(), []
+
+    def tearDown(self):
+        for c in self.conns:
+            c.close()
+        shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def conn(self, wire):
+        self.conns.append(wire_connection(tempfile.mkdtemp(dir=self.tmp), wire))
+        return self.conns[-1]
+
+    def link(self, wire):
+        L = NS(stop=False, params={}, pos=None, truth=None, hb=None, att=None, m=self.conn(wire))
+        S5.init_logs(L)
+        return L
+
+    def drain(self, L):
+        types = []
+        while True:
+            msg = L.m.recv_match(blocking=False)
+            if msg is None:
+                return types
+            types.append(msg.get_type())
+            S5.handle_message(L, msg)
+
+    def test_negative_control_v2_component_zero_drops_every_px4_message(self):
+        L = self.link(px4_wire(others=False))                            # smoke01: PX4 alone on the link
+        hb = L.m.wait_heartbeat(timeout=2)                               # v2's call
+        self.assertEqual([hb.get_srcSystem(), hb.get_srcComponent()], [1, 1])
+        self.assertEqual((L.m.target_system, L.m.target_component), (1, 0))       # pymavlink 2.4.50
+        L.autopilot = (L.m.target_system, L.m.target_component)                    # v2's filter
+        types = self.drain(L)
+        self.assertEqual(types, ["LOCAL_POSITION_NED", "ATTITUDE", "HIL_STATE_QUATERNION", "COMMAND_ACK", "HEARTBEAT"])
+        self.assertEqual((L.pos, L.att, L.truth, L.hb, L.hb_log, L.acks), (None, None, None, None, [], []))
+        self.assertEqual(L.other_component_hb, 1)                        # PX4's own heartbeat counted as foreign
+        self.assertEqual(len(L.rx_packets), 5)                           # received, recorded, never read
+        # the same bytes with the amended pin: everything is read
+        L = self.link(px4_wire(others=False))
+        self.assertEqual(S5.pin_autopilot(L, 5.0), (1, 1))
+        self.drain(L)
+        self.assertEqual((L.pos[1:4], len(L.hb_log), len(L.acks), L.other_component_hb), ((1.0, 2.0, -1.0), 1, 1, 0))
+        # v2's wait_heartbeat also returns a heartbeat that is not the autopilot's when one comes first
+        L = self.link(px4_wire())
+        self.assertEqual(L.m.wait_heartbeat(timeout=2).get_srcComponent(), 190)
+
+    def test_pin_from_real_mavutil_accepts_px4_messages(self):
+        L = self.link(px4_wire())
+        S5.handle_message(L, Msg("LOCAL_POSITION_NED", time_boot_ms=1, x=0, y=0, z=0, vx=0, vy=0, vz=0))
+        self.assertIsNone(L.pos)                                         # before the pin nothing is read
+        self.assertEqual(S5.pin_autopilot(L, 5.0), (1, 1))
+        self.assertEqual(L.autopilot_pin["source"], [1, 1])
+        self.assertEqual(L.autopilot_pin["pymavlink_target"], [1, 0])    # what v2 filtered on
+        self.assertEqual([r["source"] for r in L.autopilot_pin["rejected"]], [[255, 190], [1, 100]])
+        self.assertEqual((L.autopilot_pin["type"], L.autopilot_pin["autopilot"]),
+                         (MAV.MAV_TYPE_QUADROTOR, MAV.MAV_AUTOPILOT_PX4))
+        types = self.drain(L)
+        self.assertEqual(types, ["LOCAL_POSITION_NED", "ATTITUDE", "HIL_STATE_QUATERNION", "COMMAND_ACK", "HEARTBEAT",
+                                 "HEARTBEAT"])
+        self.assertEqual(L.pos[:4], (12.345, 1.0, 2.0, -1.0))
+        self.assertEqual(L.att[0], 12.34)
+        self.assertEqual([round(v, 9) for v in L.truth[1:4]], [47.0, 8.0, 101.0])
+        self.assertEqual(L.hb, (0, 6 << 16))
+        self.assertEqual([h[2:] for h in L.hb_log], [(0, 6 << 16)])
+        self.assertEqual(L.acks, [(12.345, 400, 1)])
+        self.assertEqual(L.other_component_hb, 1)                        # the camera heartbeat after the pin
+        # the sends keep pymavlink's wire address (component 0 = MAV_COMP_ID_ALL), the replies match the autopilot
+        t = iter(range(1000))
+        L.send, L.cmd = (lambda fn, *a: fn(*a)), (lambda *a: None)
+        S5.instrument_link(L, lambda: float(next(t)))
+        L.cmd(400, 1.0)
+        rec = L.tx_calls[0]
+        self.assertEqual((rec["destination"], rec["autopilot"]), ([1, 0], [1, 1]))
+        L.rx_packets = []                                                # replies after the command only
+        L.m = self.conn(px4_wire())
+        S5.pin_autopilot(L, 5.0)
+        self.drain(L)
+        trace = json.loads(S5.trace_text({"tx_calls": L.tx_calls, "rx_packets": L.rx_packets}))
+        inv = S5.command_inventory(trace)
+        self.assertEqual((inv[0]["ack_state"], inv[0]["ack_results"]), ("RECEIVED", ["TEMPORARILY_REJECTED"]))
+        self.assertEqual(inv[0]["first_reported_actual"]["mode"], "OFFBOARD")
+        del trace["tx_calls"][0]["autopilot"]                            # negative control: v2's destination match
+        self.assertEqual(S5.command_inventory(trace)[0]["ack_state"], "NOT_RECORDED")
+
+    def test_no_autopilot_heartbeat_pins_nothing(self):
+        L = self.link(px4_wire(autopilot=False, telemetry=False))
+        t0 = time.monotonic()
+        self.assertIsNone(S5.pin_autopilot(L, 0.3))
+        self.assertLess(time.monotonic() - t0, 5.0)
+        self.assertIsNone(L.autopilot)
+        self.assertEqual([r["source"] for r in L.autopilot_pin["rejected"]], [[255, 190], [1, 100]])
+        self.assertEqual(self.drain(L), [])
+
+
 class TestStreams(unittest.TestCase):
     def test_rates_gaps_dither_and_stop(self):
         sent = []
         rec = lambda k: (lambda *a: sent.append((k, a)))                # noqa: E731
         L = NS(pos=(1.0,), send=lambda fn, *a: fn(*a),
-               m=NS(target_system=1, target_component=1,
+               m=NS(target_system=1, target_component=0,
                     mav=NS(set_position_target_local_ned_send=rec("sp"), heartbeat_send=rec("hb"),
                            rc_channels_override_send=rec("rc"), manual_control_send=rec("joy"))))
         S = S5.Streams(L, S5.TIMING)
@@ -561,6 +872,39 @@ DEFAULTS = {"COM_OF_LOSS_T": 1.0, "COM_OBL_RC_ACT": 0, "COM_RC_LOSS_T": 0.5, "CO
             "COM_FAIL_ACT_T": 5.0}
 
 
+class RealWire:
+    """Amendment 1: FakePX4Link's connection. recv_match, target_system and target_component are a real pymavlink
+    mavutil connection reading px4_wire()'s real MAVLink 2 bytes, so run_scenario's pin_autopilot derives the autopilot
+    exactly as on the live UDP link (pymavlink's target stays (1, 0)); the sends go to the fake PX4 model. Without
+    pymavlink: a fake with the same addressing (target_component 0)."""
+
+    def __init__(self, mav, close):
+        self.mav, self._close = mav, close
+        self.dir = tempfile.mkdtemp()
+        if MAVUTIL is not None:
+            self.conn = wire_connection(self.dir, px4_wire(telemetry=False))
+        else:
+            hb = [Msg("HEARTBEAT", base_mode=0, custom_mode=0)]
+            self.conn = NS(target_system=1, target_component=0, close=lambda: None,
+                           recv_match=lambda **kw: hb.pop(0) if hb else None)
+
+    @property
+    def target_system(self):
+        return self.conn.target_system
+
+    @property
+    def target_component(self):
+        return self.conn.target_component
+
+    def recv_match(self, **kw):
+        return self.conn.recv_match(**kw)
+
+    def close(self):
+        self.conn.close()
+        shutil.rmtree(self.dir, ignore_errors=True)
+        self._close()
+
+
 class FakePX4Link:
     """The harness's link with a small PX4 v1.14.3 model behind it, stepped by the fake clock. `faults` breaks one
     mechanism (a negative control) or one harness path (rc_not_selected: rc_update never accepts the MAVLink RC)."""
@@ -569,10 +913,10 @@ class FakePX4Link:
         self.clock, self.faults = clock, set(faults)
         clock.link = self
         S5.init_logs(self)
-        self.m = NS(wait_heartbeat=lambda timeout: True, target_system=1, target_component=1, close=self._close,
-                    mav=NS(param_set_send=self._pset, param_request_read_send=lambda *a: None,
-                           set_position_target_local_ned_send=self._sp, heartbeat_send=self._hb,
-                           rc_channels_override_send=self._rc, manual_control_send=self._joy))
+        mav = NS(param_set_send=self._pset, param_request_read_send=lambda *a: None,
+                 set_position_target_local_ned_send=self._sp, heartbeat_send=self._hb,
+                 rc_channels_override_send=self._rc, manual_control_send=self._joy)
+        self.m = RealWire(mav, self._close)
         self.stop = self.closed = False
         self.pos = self.att = self.truth = self.hb = None
         self.params, self.store = {}, dict(DEFAULTS)
@@ -818,8 +1162,9 @@ class FakePX4Link:
         self._move(t, dt)
         sim = t - self.t0 + 1.0
         R = 6371000.0
-        S5.handle_message(self, Msg("LOCAL_POSITION_NED", time_boot_ms=int(round(sim * 1000)), x=self.x, y=self.y,
-                                    z=self.z, vx=0.0, vy=0.0, vz=0.0))
+        if "no_telemetry" not in self.faults:                           # amendment 1: smoke01's body failure
+            S5.handle_message(self, Msg("LOCAL_POSITION_NED", time_boot_ms=int(round(sim * 1000)), x=self.x,
+                                        y=self.y, z=self.z, vx=0.0, vy=0.0, vz=0.0))
         self.hist.append((round(sim, 6), self.armed, self._flags(t)))
         S5.handle_message(self, Msg("ATTITUDE", time_boot_ms=int(round(sim * 1000)), roll=0.0, pitch=0.0,
                                     yaw=math.pi / 2, rollspeed=0.0, pitchspeed=0.0, yawspeed=0.0))
@@ -1057,17 +1402,25 @@ class TestLivePath(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
-    def run_one(self, sid, faults=(), ulog_end="sdlog1"):
+    def run_one(self, sid, faults=(), ulog_end="sdlog1", inject=(), raises=None):
         clock = FakeClock()
         links = []
 
         def factory():
             links.append(FakePX4Link(clock, faults))
+            for m in inject:                                             # amendment 1: real pymavlink objects
+                S5.handle_message(links[0], m)
             return links[0]
         ep = self.tmp / ("ep%03d" % self.n)
         self.n += 1
         fake_os = NS(**vars(FakeOS))
         fake_os.OwnedSession = lambda d, **kw: FakeSession(d, links=links, ulog_end=ulog_end, **kw)
+        if raises is not None:
+            with self.assertRaises(raises) as ctx:
+                S5.run_scenario(fake_os, self.V0, SCEN[sid], ep, link_factory=factory, clock=clock,
+                                sleep=clock.sleep, timing=FAST)
+            self.assertTrue(links and links[0].closed and links[0].stop)
+            return ctx.exception, ep
         res = S5.run_scenario(fake_os, self.V0, SCEN[sid], ep, link_factory=factory, clock=clock, sleep=clock.sleep,
                               timing=FAST)
         self.assertTrue(links and links[0].closed and links[0].stop)
@@ -1093,6 +1446,102 @@ class TestLivePath(unittest.TestCase):
             elif SCEN[sid].get("cause_text") or sid == "FDS":
                 self.assertIsNone(res["criteria"]["cause"]["other_raised"], sid)
             self.assertGreater(len(S5.ulog_flag_rows(res["ulogs"])), 10, sid)
+
+    @unittest.skipUnless(MAV is not None, "pymavlink not installed")
+    def test_live_path_records_real_bad_data_and_unknown_messages(self):  # amendment 1
+        msgs = real_messages()
+        res, ep = self.run_one("N0", inject=msgs)
+        self.assertEqual((res["outcome"], res["valid"], res["passed"]), ("COMPLETED", True, True),
+                         (res.get("error"), res.get("invalid_reason")))
+        self.assertEqual(res["trace_sha256"], SF.sha256_file(ep / "trace.json"))
+        trace = json.loads((ep / "trace.json").read_text())
+        foreign = [p for p in trace["rx_packets"] if p["type"] in REAL_TYPES and p["source"] != [1, 1]]
+        self.assertEqual([p["type"] for p in foreign], REAL_TYPES)
+        for p, m in zip(foreign, msgs):
+            self.assertEqual(bytes.fromhex(p["packet_hex"]), bytes(m.get_msgbuf()))
+            self.assertEqual(unhex(p["payload"]), plain(m.to_dict()))
+        # the ledger recomputation from the written trace agrees (no "differs" problem); only the short schedule is
+        # reported, which the positive control of test_ledger_row_recomputes_and_tampering_voids also shows
+        row = json.loads(json.dumps(dict({"scenario": "N0"}, **res, index=0), default=str))
+        attempt = {"schedule": [{"scenario": "N0"}], "scenarios": json.loads(json.dumps(list(S5.scenarios()))),
+                   "protocol": S5.PROTOCOL, "scope": S5.SCOPE, "prereg": S5.PREREG, "amendment": S5.AMENDMENT,
+                   "kernel_faults_before": 0, "git": {"head": "h"}}
+        final = {"status": "COMPLETE", "kernel_faults_after": 0, "git_after": {"head": "h", "dirty": ""}}
+        problems = S5.integrity_problems(attempt, final, [row], self.tmp)
+        self.assertEqual(problems, ["attempt schedule differs from registered schedule"])
+
+    def test_live_path_pins_the_autopilot_through_real_mavutil(self):    # amendment 1, smoke01's first failure
+        res, ep = self.run_one("N0")
+        self.assertEqual((res["outcome"], res["valid"], res["passed"]), ("COMPLETED", True, True))
+        pin = res["autopilot"]
+        self.assertEqual(pin["source"], [1, 1])
+        if MAVUTIL is not None:                                          # the target pymavlink itself derived
+            self.assertEqual(pin["pymavlink_target"], [1, 0])
+            self.assertEqual([r["source"] for r in pin["rejected"]], [[255, 190], [1, 100]])
+        trace = json.loads((ep / "trace.json").read_text())
+        self.assertTrue(trace["tx_calls"])
+        self.assertTrue(all(r["destination"] == [1, 0] and r["autopilot"] == [1, 1] for r in trace["tx_calls"]))
+        self.assertGreater(len(trace["hb"]), 5)
+        self.assertEqual((res["unserializable_values"], res["recording_warnings"]), ({"count": 0, "types": []}, []))
+
+    def test_body_failure_stays_the_reason_when_recording_fails(self):   # amendment 1, smoke01's masking
+        class Unprintable:
+            def __repr__(self):
+                raise ValueError("repr failed")
+        # positive control: smoke01's body failure alone is recorded as HARNESS_INVALID with its trace
+        res, ep = self.run_one("N0", ("no_telemetry",))
+        self.assertEqual((res["outcome"], res["error"]), ("HARNESS_INVALID",
+                                                          "RuntimeError: HARNESS_INVALID no telemetry within 5 s"))
+        self.assertFalse(res["valid"])
+        self.assertTrue((ep / "trace.json").is_file())
+        self.assertNotIn("recording_error", res)
+        # the body fails, then the recording fails: the first failure leads, the second follows
+        bad = Msg("BAD_REPR", src=(42, 7), field=Unprintable())
+        exc, ep = self.run_one("N0", ("no_telemetry",), inject=[bad], raises=S5.RecordingAfterError)
+        self.assertEqual(exc.first, "RuntimeError: HARNESS_INVALID no telemetry within 5 s")
+        self.assertEqual(exc.second, "ValueError: repr failed")
+        self.assertTrue(str(exc).startswith("RuntimeError: HARNESS_INVALID no telemetry within 5 s; then, while "
+                                            "recording: ValueError"), str(exc))
+        self.assertIsInstance(exc.__cause__, ValueError)
+        # through run_unit the unit's abort reason carries the first failure ahead of the recording failure
+        with tempfile.TemporaryDirectory() as t:
+            S5.run_unit.terminated = None
+            status, reason, done = S5.run_unit(S5.smoke_schedule()[:1], lambda i, item: (_ for _ in ()).throw(exc),
+                                               FakeAT(), pathlib.Path(t) / "l.jsonl", busy_wait_s=0, host=HOST)
+        self.assertEqual((status, done), ("ABORTED", 0))
+        self.assertLess(reason.index("HARNESS_INVALID no telemetry"), reason.index("ValueError"))
+        # negative control: a recording failure with no earlier failure is raised as itself
+        exc, _ = self.run_one("N0", inject=[bad], raises=ValueError)
+        self.assertEqual(str(exc), "repr failed")
+
+    def test_unserializable_values_are_counted_and_warned(self):          # amendment 1, review MINOR-2
+        class Opaque:
+            def __repr__(self):
+                return "<Opaque>"
+        res, ep = self.run_one("N0", inject=[Msg("ODD", src=(42, 7), a=Opaque(), b={1, 2})])
+        self.assertEqual((res["valid"], res["passed"]), (True, True))     # a warning, not a validity problem
+        self.assertEqual(res["unserializable_values"]["count"], 2)
+        self.assertEqual(res["unserializable_values"]["types"][0], "builtins.set")
+        self.assertTrue(res["unserializable_values"]["types"][1].endswith(".Opaque"))
+        self.assertEqual(len(res["recording_warnings"]), 1)
+        self.assertIn("UNSERIALIZABLE_VALUES 2", res["recording_warnings"][0])
+        trace = json.loads((ep / "trace.json").read_text())
+        self.assertEqual(len(S5.unserializable_values(trace)), 2)
+        clean, _ = self.run_one("N0")                                    # positive control: zero, no warning
+        self.assertEqual((clean["unserializable_values"]["count"], clean["recording_warnings"]), (0, []))
+        # the ledger recomputation checks the count against the written trace
+        row = json.loads(json.dumps(dict({"scenario": "N0"}, **res, index=self.n - 2), default=str))
+        attempt = {"schedule": [{"scenario": "N0"}], "scenarios": json.loads(json.dumps(list(S5.scenarios()))),
+                   "protocol": S5.PROTOCOL, "scope": S5.SCOPE, "prereg": S5.PREREG, "amendment": S5.AMENDMENT,
+                   "kernel_faults_before": 0, "git": {"head": "h"}}
+        final = {"status": "COMPLETE", "kernel_faults_after": 0, "git_after": {"head": "h", "dirty": ""}}
+        base = S5.integrity_problems(attempt, final, [row], self.tmp)
+        self.assertNotIn("unserializable-value count of scenario N0 differs", base)
+        row["unserializable_values"]["count"] = 0
+        self.assertIn("unserializable-value count of scenario N0 differs",
+                      S5.integrity_problems(attempt, final, [row], self.tmp))
+        reading = S5.reading(final, [row], attempt)
+        self.assertEqual(list(reading["recording_warnings"]), ["N0"])
 
     def test_ulog_closing_after_the_first_disarm_is_covered(self):        # v2 review r1 B1
         for sid in ("KIL", "FDS", "RCL"):
@@ -1177,7 +1626,8 @@ class TestLivePath(unittest.TestCase):
         # v2 review r1 m4/m6: one stale (wall-clock) position-stamp age inside the window is INVALID
         lo, hi = res["t_pre_start"], res["t_observation_end"]
         stale = json.loads(json.dumps(tr))
-        i = next(k for k, p in enumerate(stale["rx_packets"]) if p["type"] == "ATTITUDE" and lo < p["sim_t"] < hi)
+        i = next(k for k, p in enumerate(stale["rx_packets"]) if p["type"] == "ATTITUDE" and p["sim_t"] is not None
+                 and lo < p["sim_t"] < hi)              # amendment 1: packets before the first position have no sim_t
         stale["rx_packets"][i]["pos_age_s"] = 0.15
         self.assertEqual(S5.recording_contract(SCEN["N0"], res, stale)["problems"], ["RX_POSITION_STAMP_STALE ATTITUDE"])
         ok_age = json.loads(json.dumps(tr))
@@ -1391,6 +1841,21 @@ class TestLaunchRefusals(unittest.TestCase):
             self.assertIn(word, S5.SCOPE)
         self.assertIn(S5.PREREG, S5.OWN_SOURCES)
 
+    def test_amendment1_binds_scope_smoke02_and_refuses_the_v2_approval(self):
+        """Amendment 1: SCOPE is quoted verbatim in the amendment and differs from v2's SCOPE (also quoted there) only by
+        'amendment1' and smoke02; the v2 approval (smoke01's scope) is refused; the spent smoke01 is never the gate."""
+        text = (ROOT / S5.AMENDMENT).read_text()
+        v2 = S5.SCOPE.replace("S5 safety v2 amendment1:", "S5 safety v2:").replace("smoke02", "smoke01")
+        self.assertNotEqual(v2, S5.SCOPE)
+        self.assertIn(S5.SCOPE, text)
+        self.assertIn(v2, text)
+        self.assertIn(S5.AMENDMENT, S5.OWN_SOURCES)
+        self.assertEqual((S5.SMOKE_DIR.name, S5.ATTEMPT_DIR.name), ("smoke02", "attempt01"))
+        self.write(scope=v2, commit=self.HEAD)
+        self.assertTrue(any("scope" in x for x in self.problems()))
+        self.write(scope=S5.SCOPE, commit=self.HEAD)
+        self.assertEqual(self.problems(), [])
+
     def test_smoke_gate(self):
         d = self.tmp / "smoke01"
         d.mkdir()
@@ -1404,9 +1869,9 @@ class TestLaunchRefusals(unittest.TestCase):
             shutil.copytree(ep, d / ("ep%03d" % i))
             rows.append(dict(res, index=i))
 
-        def write(rows, status="COMPLETE", head=self.HEAD):
+        def write(rows, status="COMPLETE", head=self.HEAD, amendment=S5.AMENDMENT):
             (d / "attempt.json").write_text(json.dumps({"git": {"head": head}, "sources": src,
-                "protocol": S5.PROTOCOL, "scope": S5.SCOPE, "prereg": S5.PREREG,
+                "protocol": S5.PROTOCOL, "scope": S5.SCOPE, "prereg": S5.PREREG, "amendment": amendment,
                 "schedule": S5.smoke_schedule(), "scenarios": list(S5.scenarios()), "kernel_faults_before": 0}))
             (d / "final.json").write_text(json.dumps({"status": status, "kernel_faults_after": 0,
                 "git_after": {"head": head, "dirty": ""}}))
@@ -1422,6 +1887,63 @@ class TestLaunchRefusals(unittest.TestCase):
         write(rows, status="ABORTED")
         self.assertTrue(S5.smoke_problems(d, self.HEAD, src))
         self.assertTrue(S5.smoke_problems(self.tmp / "missing", self.HEAD, src))
+        write(rows, amendment=None)                                      # amendment 1: a v2-bound smoke is refused
+        self.assertTrue(any("amendment" in x for x in S5.smoke_problems(d, self.HEAD, src)))
+        write(rows)
+        self.assertEqual(S5.smoke_problems(d, self.HEAD, src), [])
+
+
+class TestExitStatus(unittest.TestCase):
+    """Amendment 1: smoke01 ABORTED and exited 0, so the outer chain went on. --smoke and --launch now exit 0 only for a
+    COMPLETE run (and a smoke the attempt's gate accepts); a refusal stays SystemExit("refused: ...") -> status 1."""
+
+    def test_exit_code_rule(self):
+        self.assertEqual(S5.exit_code({"status": "COMPLETE"}), 0)
+        for final in ({"status": "ABORTED"}, {"status": "STOPPED_AFTER_A"}, {}, None):
+            self.assertEqual(S5.exit_code(final), 3, final)
+        self.assertEqual(S5.exit_code({"status": "COMPLETE"}, ["smoke gate problem"]), 4)
+        self.assertEqual(S5.exit_code({"status": "ABORTED"}, ["smoke gate problem"]), 3)
+
+    def run_main(self, argv, status, gate=(), refuse=()):
+        """S5.main through the real launch(): its refusals, run_unit and the smoke gate are replaced; final.json is
+        written by the real write_final."""
+        at = NS(git_state=lambda root: {"head": "h" * 40, "branch": "b", "dirty": ""}, kernel_faults=lambda: 0,
+                idle_check=lambda: (True, {"cores": "idle"}), process_environment=lambda: {"fake": True},
+                environment_problems=lambda env: [])
+        saved = signal.getsignal(signal.SIGTERM)
+        with tempfile.TemporaryDirectory() as t:
+            t = pathlib.Path(t)
+            (t / "execution_approval.json").write_text("{}")
+            patches = [mock.patch.object(S5, "UNIT_DIR", t), mock.patch.object(S5, "SMOKE_DIR", t / "smoke02"),
+                       mock.patch.object(S5, "ATTEMPT_DIR", t / "attempt01"),
+                       mock.patch.object(S5, "launch_problems", lambda *a, **k: list(refuse)),
+                       mock.patch.object(S5, "smoke_problems", lambda *a, **k: list(gate)),
+                       mock.patch.object(S5, "run_unit", lambda *a, **k: (status, "reason", 0)),
+                       mock.patch.object(S5, "host_snapshot", lambda: {}),
+                       mock.patch.dict(sys.modules, {"sitl_dev08_attempt": at, "sitl_owned_session": NS(),
+                                                     "sitl_s3b_closed_loop": NS(PARAMS={})})]
+            try:
+                with contextlib.ExitStack() as stack, contextlib.redirect_stdout(io.StringIO()):
+                    for p in patches:
+                        stack.enter_context(p)
+                    rc = S5.main(argv)
+                out = t / ("smoke02" if argv == ["--smoke"] else "attempt01")
+                final = json.loads((out / "final.json").read_text())
+                return rc, final["status"] if final["status"] != "ABORTED" or status == "ABORTED" else final["reason"]
+            finally:
+                signal.signal(signal.SIGTERM, saved)
+
+    def test_smoke_and_launch_exit_status(self):
+        self.assertEqual(self.run_main(["--smoke"], "ABORTED"), (3, "ABORTED"))        # smoke01's case
+        self.assertEqual(self.run_main(["--smoke"], "COMPLETE", gate=["N0R INVALID"]), (4, "COMPLETE"))
+        self.assertEqual(self.run_main(["--smoke"], "COMPLETE"), (0, "COMPLETE"))     # positive control
+        self.assertEqual(self.run_main(["--launch"], "ABORTED"), (3, "ABORTED"))
+        self.assertEqual(self.run_main(["--launch"], "COMPLETE"), (0, "COMPLETE"))
+        for kw in (dict(refuse=["no approval file"]), dict(gate=["no development smoke record"])):
+            with self.assertRaises(SystemExit) as cm:                    # --launch: the smoke gate refuses first
+                self.run_main(["--launch"], "COMPLETE", **kw)
+            self.assertTrue(str(cm.exception.code).startswith("refused:"))  # a str code exits with status 1
+        self.assertIn("sys.exit(main())", (TOOLS / "sitl_s5_safety.py").read_text())
 
 
 class TestReading(unittest.TestCase):
@@ -1448,7 +1970,8 @@ class TestReading(unittest.TestCase):
         with tempfile.TemporaryDirectory() as t:
             d = pathlib.Path(t)
             (d / "attempt.json").write_text(json.dumps({"protocol": S5.PROTOCOL, "scope": S5.SCOPE, "prereg": S5.PREREG,
-                     "schedule": S5.schedule(), "kernel_faults_before": 0, "git": {"head": "h"}}))
+                     "amendment": S5.AMENDMENT, "schedule": S5.schedule(), "kernel_faults_before": 0,
+                     "git": {"head": "h"}}))
             (d / "final.json").write_text(json.dumps({"status": "ABORTED", "kernel_faults_after": 0,
                                                       "git_after": {"head": "h", "dirty": ""}}))
             (d / "episodes.jsonl").write_text("")

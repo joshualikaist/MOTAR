@@ -11,6 +11,13 @@ mismatch count, incomparable only for a shape mismatch or missing data (MAJOR-1)
 within range (MINOR-1); estimated-position summaries (MINOR-2); reference-free frame ages and sim_now increments,
 stamp microseconds and target counts reported apart (MINOR-3); DISPLAY with a readable XAUTHORITY and a reachable X
 display (MINOR-4); 4 GiB launch floor, aligned SCOPE, all native files required (LOW).
+Amendment 1 (AMENDMENT, 2026-11-10, after smoke01_contact_on_env0 ABORTED): bytes-like values (pymavlink BAD_DATA and
+UNKNOWN_<id> carry a bytearray) are recorded losslessly as hex; the contact-log continuity rule counts real missing,
+duplicate and off-grid simulator steps on the sorted arrivals and tolerates subscriber arrival reordering of at most
+CONTACT_LATE_MAX_STEPS steps for at most CONTACT_LATE_MAX_FRACTION of the window's messages (counts kept descriptive);
+--smoke and --launch exit non-zero unless COMPLETE (and, for --smoke, the attempt's smoke gate passes); new smoke
+folder smoke02_contact_on_env0; values kept as a tagged repr are counted (unserializable_values) and a nonzero count is
+a recorded warning (recording_warnings).
 
   tools/sitl_s4r1.py --schedule | --smoke | --launch | --analyze [DIR] | --compare A B
 """
@@ -41,9 +48,10 @@ import sitl_agq_geometry_diag as AGQ
 ROOT = SF.ROOT
 PROTOCOL = 's4r1-v1'
 PREREG = 'docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md'
+AMENDMENT = 'docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md'      # after smoke01_contact_on_env0 ABORTED
 UNIT_DIR = pathlib.Path.home() / 'motar_tmp/s4r1_20261110'
 ATTEMPT_DIR = UNIT_DIR / 'attempt01'
-SMOKE_DIR = UNIT_DIR / 'smoke01_contact_on_env0'
+SMOKE_DIR = UNIT_DIR / 'smoke02_contact_on_env0'           # amendment 1: smoke01_contact_on_env0 is spent (ABORTED)
 PYTHON = '/home/fair/miniconda3/envs/aerialgym/bin/python'
 SCRIPT = 'tools/sitl_s4r1.py'
 DISPLAY = ':1'
@@ -58,18 +66,26 @@ KILL_AFTER_S = 60
 RSS_CAP_BYTES = 8 << 30          # owned-session RSS watchdog (all owned processes + this runner); no RLIMIT_AS
 RESOURCE_CHECK_EVERY_S = 1.0     # in-flight: statvfs only, at most once per second; tree walks only at boot boundaries
 CONTACT_FRESH_S = AGQ.CONTROL_FRESH_S
-SCOPE = ('S4R-1 v1: one fixed instrumentation smoke smoke01_contact_on_env0 (env0, contact subscriber ON, '
+# Amendment 1 contact-log continuity (set after smoke01, which measured 0 missing steps, 3 late arrivals of 1,876 window
+# messages, at most 2 steps late): the late bound equals the pre-existing contact-interval join width and is set at the
+# observed maximum (no margin). A late message can still open a new interval in AGQ's descriptive bar_events.
+CONTACT_LATE_MAX_STEPS = AGQ.INTERVAL_JOIN_NS // AGQ.STEP_NS      # 2 physics steps (8 ms simulator time)
+CONTACT_LATE_MAX_FRACTION = 0.01
+CONTACT_SCOPE_CLAUSE = ('contact log: no missing, duplicate or off-grid simulator step in the reading window, '
+                        'arrivals at most 2 steps late and at most 1% late; ')
+SCOPE_V1_SMOKE, SCOPE_SMOKE = 'smoke01_contact_on_env0', 'smoke02_contact_on_env0'
+SCOPE = ('S4R-1 v1 amendment1: one fixed instrumentation smoke smoke02_contact_on_env0 (env0, contact subscriber ON, '
          'not a result, 600s outer, a short boot) then attempt01: 12 fresh Gazebo/PX4 boots, G8 r2 first two eligible '
          '70-bar scenes env0/env1, 3 repeats per scene with world-contact subscriber OFF/ON, fixed alternating order; '
          'S4F1 lit_rendered ground arm, Frozen Policy F, navrl_quad_s4, body-fixed 87deg '
          'RGB/depth/gpu_ray, pinned historical bridge, explicit new Gazebo seed4501; '
          'MAVLink recv_match arrivals and sends recorded (wait_heartbeat NOT_RECORDED), all delivered raw frames and '
-         'actor observations recorded; '
+         'actor observations recorded; ' + CONTACT_SCOPE_CLAUSE +
          'no retries, stop on first operational/recording invalid member, 180s per boot, 1800s outer; '
          'owned-session RSS cap 8GiB, no RLIMIT_AS; DISPLAY :1 with a readable inherited XAUTHORITY; '
          '3GiB maximum output, 4GiB launch free and 1GiB minimum free disk; '
          'descriptive only: first recorded divergence per stage and within/between-condition spread, no gate')
-OWN_SOURCES = ('tools/sitl_s4r1.py', 'tests/test_sitl_s4r1.py', PREREG) + F1.OWN_SOURCES + (
+OWN_SOURCES = ('tools/sitl_s4r1.py', 'tests/test_sitl_s4r1.py', PREREG, AMENDMENT) + F1.OWN_SOURCES + (
     'tools/sitl_agq_geometry_diag.py',)
 OFF_CONTACT = {'status': 'NOT_RECORDED', 'reason': 'subscriber OFF'}
 
@@ -85,9 +101,14 @@ def private_module(name, path):
     return m
 
 
+JSON_SCALARS = (str, int, float, bool, type(None))
+
+
 def jsonable(v):
-    if isinstance(v, bytes):
-        return {'bytes_hex': v.hex()}
+    """Amendment 1: bytes, bytearray and memoryview -> {'bytes_hex': ...} (lossless); a type json cannot encode is kept
+    as an explicitly tagged repr instead of failing the whole recording."""
+    if isinstance(v, (bytes, bytearray, memoryview)):
+        return {'bytes_hex': (v.tobytes() if isinstance(v, memoryview) else bytes(v)).hex()}
     if isinstance(v, float) and not math.isfinite(v):
         return {'nonfinite': str(v)}
     if isinstance(v, np.ndarray):
@@ -100,7 +121,24 @@ def jsonable(v):
         return [jsonable(x) for x in v]
     if isinstance(v, pathlib.PurePath):
         return str(v)
-    return v
+    if isinstance(v, JSON_SCALARS):
+        return v
+    return {'unserializable_type': '%s.%s' % (type(v).__module__, type(v).__qualname__), 'repr': repr(v)}
+
+
+UNSERIALIZABLE_KEYS = frozenset(('unserializable_type', 'repr'))
+
+
+def tagged_types(v):
+    """Amendment 1 (review r1 MINOR-2): the type names of every value jsonable kept as a tagged repr, in an already
+    jsonable value (counted, so that a silent loss is visible as a recorded warning)."""
+    if isinstance(v, dict):
+        if set(v) == UNSERIALIZABLE_KEYS:
+            return [v['unserializable_type']]
+        return [t for x in v.values() if isinstance(x, (dict, list)) for t in tagged_types(x)]
+    if isinstance(v, list):
+        return [t for x in v if isinstance(x, (dict, list)) for t in tagged_types(x)]
+    return []
 
 
 def array(v):
@@ -213,6 +251,7 @@ class Tap:
         self.logger_stop = None
         self.plan = None
         self.ulog_data = None
+        self.unserializable = []                 # amendment 1: tagged_types of every recorder file written
         self.contact_enabled = False
         self.out_dir = ATTEMPT_DIR
         self.next_resource_check = 0.0
@@ -343,6 +382,94 @@ def contact_control(tap, pos):
     if ok and (now is None or abs(float(detail['last_t']) - now) > CONTACT_FRESH_S):
         ok, detail['problem'] = False, 'control window not current'
     return dict(detail, ok=bool(ok))
+
+
+def arrival_continuity(times_ns, start_sim_s=None, final_sim_s=None, step_ns=AGQ.STEP_NS, tol_ns=AGQ.STEP_TOL_NS,
+                       late_max_steps=CONTACT_LATE_MAX_STEPS, late_max_fraction=CONTACT_LATE_MAX_FRACTION):
+    """Amendment 1: contact-log continuity over AGQ's reading window [start - COVER_BEFORE_S, final + COVER_AFTER_S].
+    Loss is judged on the sorted distinct simulator times (a missing physics step is missing whatever the arrival
+    order); duplicates and off-grid times are counted apart; arrival order is measured as late arrivals (a time below
+    the largest time already received) and their lateness in steps. Returns (summary, problems)."""
+    lo = None if start_sim_s is None else round((start_sim_s - AGQ.COVER_BEFORE_S) * 1e9)
+    hi = None if final_sim_s is None else round((final_sim_s + AGQ.COVER_AFTER_S) * 1e9)
+
+    def inside(t):
+        return (lo is None or t >= lo) and (hi is None or t <= hi)
+    out = {'rule': 'S4R-1 amendment 1', 'window_ns': [lo, hi], 'step_ns': step_ns, 'late_max_steps': late_max_steps,
+           'late_max_fraction': late_max_fraction, 'messages': len(times_ns), 'messages_in_window': 0,
+           'distinct_in_window': 0, 'missing_steps_in_window': 0, 'gaps_in_window': 0, 'duplicates_in_window': 0,
+           'off_grid_in_window': 0, 'late_arrivals': 0, 'late_arrivals_in_window': 0, 'max_late_steps_in_window': 0,
+           'late_samples': [], 'gap_samples': []}
+    running = None
+    for t in times_ns:
+        if inside(t):
+            out['messages_in_window'] += 1
+        if running is not None and t < running:
+            late = (running - t) / step_ns
+            out['late_arrivals'] += 1
+            if inside(t):
+                out['late_arrivals_in_window'] += 1
+                out['max_late_steps_in_window'] = max(out['max_late_steps_in_window'], late)
+                if len(out['late_samples']) < 10:
+                    out['late_samples'].append([t * 1e-9, running * 1e-9])
+        running = t if running is None else max(running, t)
+    counts = collections.Counter(times_ns)
+    distinct = sorted(counts)
+    out['distinct_in_window'] = sum(1 for t in distinct if inside(t))
+    out['duplicates_in_window'] = sum(c - 1 for t, c in counts.items() if c > 1 and inside(t))
+    for a, b in zip(distinct, distinct[1:]):
+        if not ((lo is None or b >= lo) and (hi is None or a <= hi)):
+            continue
+        n = int(round((b - a) / step_ns))
+        if n < 1 or abs((b - a) - n * step_ns) > tol_ns:
+            out['off_grid_in_window'] += 1
+        elif n > 1:
+            out['gaps_in_window'] += 1
+            out['missing_steps_in_window'] += n - 1
+            if len(out['gap_samples']) < 10:
+                out['gap_samples'].append([a * 1e-9, b * 1e-9])
+    problems = []
+    if out['missing_steps_in_window']:
+        problems.append('RECORDER_LOSS: %d missing simulator steps in the reading window (%d gaps in the sorted '
+                        'arrivals)' % (out['missing_steps_in_window'], out['gaps_in_window']))
+    if out['duplicates_in_window']:
+        problems.append('RECORDER_DUPLICATE: %d repeated simulator times in the reading window'
+                        % out['duplicates_in_window'])
+    if out['off_grid_in_window']:
+        problems.append('RECORDER_GRID: %d simulator-time intervals off the %d ns step in the reading window'
+                        % (out['off_grid_in_window'], step_ns))
+    if out['max_late_steps_in_window'] * step_ns > late_max_steps * step_ns + tol_ns:
+        problems.append('RECORDER_ORDER: an arrival %.3g steps late in the reading window (tolerance %d)'
+                        % (out['max_late_steps_in_window'], late_max_steps))
+    if out['late_arrivals_in_window'] > late_max_fraction * out['messages_in_window']:
+        problems.append('RECORDER_ORDER: %d late arrivals of %d messages in the reading window (tolerance %g)'
+                        % (out['late_arrivals_in_window'], out['messages_in_window'], late_max_fraction))
+    return out, problems
+
+
+def _agq_continuity_problem(x):
+    """AGQ's arrival-order continuity messages, which count a reordered arrival as both a gap and an order fault."""
+    return x.startswith('RECORDER_ORDER:') or (
+        x.startswith('RECORDER_LOSS:') and 'simulator-time gaps in the reading window' in x)
+
+
+def audit_contacts(api, path, start_sim_s, final_sim_s):
+    """AGQ's full-log audit (coverage, floor and bar events, message counts unchanged), with its arrival-order continuity
+    problems replaced by arrival_continuity (amendment 1). The replaced AGQ messages stay in the summary."""
+    summary, issues = api.contact_audit(path, start_sim_s=start_sim_s, final_sim_s=final_sim_s)
+    times = []
+    if pathlib.Path(path).is_file():
+        for line in AGQ._lines(path)[0]:
+            if not line.strip():
+                continue
+            try:
+                times.append(AGQ.contacts_message(line)['t_ns'])
+            except AGQ.ParseError:
+                continue                                                 # AGQ counts these as other_lines
+    continuity, own = arrival_continuity(times, start_sim_s, final_sim_s)
+    replaced = [x for x in issues if _agq_continuity_problem(x)]
+    summary = dict(summary, continuity_amendment1=continuity, agq_continuity_problems_replaced=replaced)
+    return summary, [x for x in issues if not _agq_continuity_problem(x)] + own
 
 
 def link_factory(tap, base=SF.ParamLink):
@@ -487,12 +614,15 @@ def session_module(OS, tap, contact, out_dir=ATTEMPT_DIR):
 
 
 def write_json(path, value, budget=None):
-    data = (json.dumps(jsonable(value), allow_nan=False, indent=1) + '\n').encode()
+    """Returns tagged_types of what it wrote (amendment 1)."""
+    value = jsonable(value)
+    data = (json.dumps(value, allow_nan=False, indent=1) + '\n').encode()
     if budget is not None:
         budget.write_bytes(path, data)
     else:
         with pathlib.Path(path).open('xb') as f:
             f.write(data)
+    return tagged_types(value)
 
 
 def dump_tap(tap, ep_dir, budget):
@@ -515,11 +645,13 @@ def dump_tap(tap, ep_dir, budget):
         budget.savez(d / filename, raw)
         steps.append(dict({k: v for k, v in s.items() if k != 'state' and not isinstance(v, np.ndarray)},
                           file=filename, signatures={k: array_signature(v) for k, v in raw.items()}))
-    event_text = ''.join(json.dumps(jsonable(e), allow_nan=False) + '\n' for e in list(tap.events))
+    events = [jsonable(e) for e in list(tap.events)]
+    tagged = tagged_types(events)
+    event_text = ''.join(json.dumps(e, allow_nan=False) + '\n' for e in events)
     budget.write_bytes(d / 'events.jsonl.gz', gzip.compress(event_text.encode(), compresslevel=1, mtime=0))
-    write_json(d / 'packets.json', packets, budget)
-    write_json(d / 'steps.json', steps, budget)
-    write_json(d / 'summary.json', {
+    tagged += write_json(d / 'packets.json', packets, budget)
+    tagged += write_json(d / 'steps.json', steps, budget)
+    tagged += write_json(d / 'summary.json', {
         'protocol': PROTOCOL, 'counts': dict(tap.counts),
         'control_start_mono': tap.control_start, 'control_end_mono': tap.control_end,
         'contact_control': tap.contact_control, 'logger_stop': tap.logger_stop,
@@ -531,6 +663,7 @@ def dump_tap(tap, ep_dir, budget):
         'mavlink_not_recorded': 'messages consumed inside pymavlink wait_heartbeat are not logged'}, budget)
     manifest = {str(p.relative_to(ep_dir)): {'bytes': p.stat().st_size, 'sha256': SF.sha256_file(p)}
                 for p in sorted(d.iterdir()) if p.is_file()}
+    tap.unserializable = list(getattr(tap, 'unserializable', [])) + tagged
     return {'files': manifest, 'packets': len(packets), 'steps': len(steps)}
 
 
@@ -791,9 +924,8 @@ def finish_episode(tap, result, ep_dir, contact, out_dir, spec):
             steps_file = ep_dir / 'steps.npy'
             old_steps = np.load(steps_file) if steps_file.is_file() else np.zeros((0, 27))
             if len(old_steps):
-                contact_audit, issues = tap.contact_api.contact_audit(
-                    ep_dir / 'logs/contacts.log', start_sim_s=float(old_steps[0, 1]),
-                    final_sim_s=float(old_steps[-1, 1]))
+                contact_audit, issues = audit_contacts(
+                    tap.contact_api, ep_dir / 'logs/contacts.log', float(old_steps[0, 1]), float(old_steps[-1, 1]))
                 problems.extend('CONTACT_AUDIT: ' + x for x in issues)
             else:
                 problems.append('CONTACT_AUDIT: no control steps')
@@ -805,8 +937,9 @@ def finish_episode(tap, result, ep_dir, contact, out_dir, spec):
         ep_dir.mkdir(parents=True, exist_ok=True)
         budget = Budget(out_dir)                                         # post-flight boot boundary: one walk
         result['repeatability'] = dump_tap(tap, ep_dir, budget)
-        write_json(ep_dir / 'repeatability/timeline.json', canonical_timeline(tap, ep_dir), budget)
-        write_json(ep_dir / 'repeatability/contacts.json', contact_audit if contact else tap.contact_control, budget)
+        tap.unserializable = list(getattr(tap, 'unserializable', [])) + write_json(
+            ep_dir / 'repeatability/timeline.json', canonical_timeline(tap, ep_dir), budget) + write_json(
+            ep_dir / 'repeatability/contacts.json', contact_audit if contact else tap.contact_control, budget)
         files = {str(x.relative_to(ep_dir)): {'bytes': x.stat().st_size, 'sha256': SF.sha256_file(x)}
                  for x in sorted((ep_dir / 'repeatability').iterdir()) if x.is_file()}
         native = NATIVE_BOUND + (('logs/contacts.log',) if contact else ())
@@ -819,6 +952,12 @@ def finish_episode(tap, result, ep_dir, contact, out_dir, spec):
         result['repeatability']['files'] = files
     except Exception as exc:                                             # noqa: BLE001 - recorded
         problems.append('RECORDING_WRITE: %s' % exc)
+    # amendment 1 (review r1 MINOR-2): values kept as a tagged repr (recorder files and the ULog extraction) are
+    # counted; a nonzero count is a recorded warning, not a validity problem
+    tagged = list(getattr(tap, 'unserializable', [])) + tagged_types(getattr(tap, 'ulog_data', None) or {})
+    result['unserializable_values'] = {'count': len(tagged), 'types': sorted(set(tagged))}
+    result['recording_warnings'] = (['UNSERIALIZABLE_VALUES %d (%s): kept as tagged repr'
+                                     % (len(tagged), ', '.join(sorted(set(tagged))))] if tagged else [])
     if problems:
         result['physical_outcome_before_recording_check'] = result.get('outcome')
         result['outcome'] = 'HARNESS_INVALID'
@@ -1030,7 +1169,7 @@ def launch(smoke=False):
             return result
         return one
     S3C.launch_unit(SCOPE, UNIT_DIR, out_dir, sources, smoke_schedule if smoke else schedule,
-                    {'protocol': PROTOCOL, 'prereg': PREREG, 'gazebo_seed': GAZEBO_SEED,
+                    {'protocol': PROTOCOL, 'prereg': PREREG, 'amendment': AMENDMENT, 'gazebo_seed': GAZEBO_SEED,
                      'instrumentation_smoke': bool(smoke), 'launch_command': launch_command(
                          '--smoke' if smoke else '--launch'),
                      'bounds': {'max_output_bytes': MAX_OUTPUT_BYTES, 'min_free_bytes': MIN_FREE_BYTES,
@@ -1039,6 +1178,25 @@ def launch(smoke=False):
                                 'outer_wall_s': SMOKE_OUTER_WALL_S if smoke else OUTER_WALL_S},
                      'world_models': F1.world_model_files()}, make_one, extra_problems=extra, invalid_abort=0,
                     smoke_dir=None if smoke else SMOKE_DIR, smoke=smoke)
+    return finished_exit_code(out_dir, smoke)
+
+
+EXIT_OK, EXIT_NOT_COMPLETE, EXIT_SMOKE_GATE = 0, 3, 4
+
+
+def finished_exit_code(out_dir, smoke):
+    """Amendment 1: the exit status an outer chain can gate on, from the run's final.json. 0 only for COMPLETE (and, for
+    --smoke, a smoke that instrumentation_smoke_problems accepts); 3 when not COMPLETE or no final record; 4 for a
+    COMPLETE smoke the gate refuses. A refusal before anything exists is SystemExit('refused: ...') -> exit status 1."""
+    final = pathlib.Path(out_dir) / 'final.json'
+    status = json.loads(final.read_text()).get('status') if final.is_file() else None
+    if status != 'COMPLETE':
+        return EXIT_NOT_COMPLETE
+    gate = instrumentation_smoke_problems(out_dir) if smoke else []
+    if gate:
+        print(json.dumps({'smoke_gate_problems': gate}), flush=True)
+        return EXIT_SMOKE_GATE
+    return EXIT_OK
 
 
 # ------------------------------------------------------------------------------------------------ analysis
@@ -1416,6 +1574,7 @@ def analyze(attempt_dir=ATTEMPT_DIR, write=True):
                                            'equal': sum(x['kind'] == kind and x['outcome_equal'] for x in comparisons)}
                                     for kind in ('within_off', 'within_on', 'between_conditions')},
               'output_bytes': output_size(d), 'source_frame_counter': 'NOT_RECORDED',
+              'recording_warnings': {r['index']: r['recording_warnings'] for r in rows if r.get('recording_warnings')},
               'limits': ['n3/scene/condition cannot establish equivalence or a causal subscriber effect',
                          'first recorded divergence is not necessarily a causal initiator',
                          'tied stages are not ordered; a k=0 tie is uninformative about order',
@@ -1431,7 +1590,7 @@ def analyze(attempt_dir=ATTEMPT_DIR, write=True):
     return report
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--launch', action='store_true')
     ap.add_argument('--smoke', action='store_true')
@@ -1439,13 +1598,13 @@ def main():
     ap.add_argument('--analyze', nargs='?', const=str(ATTEMPT_DIR))
     ap.add_argument('--compare', nargs=2)
     ap.add_argument('--extract-ulog', nargs=2, metavar=('INPUT', 'OUTPUT'))
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     if args.extract_ulog:
         extract_ulog(*args.extract_ulog)
     elif args.launch:
-        launch()
+        return launch()
     elif args.smoke:
-        launch(smoke=True)
+        return launch(smoke=True)
     elif args.analyze:
         print(json.dumps(analyze(args.analyze), indent=1))
     elif args.compare:
@@ -1454,7 +1613,8 @@ def main():
         print(json.dumps({'scope': SCOPE, 'schedule': schedule(), 'smoke': smoke_schedule(),
                           'launch_command': launch_command(), 'smoke_command': launch_command('--smoke'),
                           'measurement': 'NOT_RUN'}, indent=1))
+    return EXIT_OK
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

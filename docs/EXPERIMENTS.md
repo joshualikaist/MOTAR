@@ -1004,6 +1004,9 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md` (S4F-1 v1: 2×2 target appearance × ground on S4's ground arm, reported)
   - → `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md` (S5 safety v2: ten failsafe scenarios, phase-bounded data contract; NOT_RUN)
   - → `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md` (S4R-1: Gazebo sensor repeatability diagnostic; NOT_RUN)
+  - → `docs/evidence/sitl_2026-11-05/s5_safety_v2/` and `docs/evidence/sitl_2026-11-05/s4r1/` smoke01 records (2026-11-10: both development smokes ABORTED on harness defects; attempts refused)
+  - → `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md` (S5 v2 amendment 1: autopilot pinned from the PX4 heartbeat, bytes as hex, exit codes, smoke02)
+  - → `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md` (S4R-1 amendment 1: bytes as hex, contact late-arrival rule, exit codes, smoke02)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -1020,7 +1023,7 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`,
-  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`
+  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`, `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md`
 
 ## Not yet in the repository
 

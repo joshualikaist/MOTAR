@@ -27,6 +27,86 @@ finally:
     sys.path[:] = _saved_path
 
 STREAMS = ('LOCAL_POSITION_NED', 'ATTITUDE', 'HIL_STATE_QUATERNION')
+PYLINK = pathlib.Path('/home/fair/motar_tmp/sitl_plan_20261104/pylink')    # the path sitl_s3b_closed_loop appends
+SMOKE01_CONTACTS = pathlib.Path('/home/fair/motar_tmp/s4r1_20261110/smoke01_contact_on_env0/ep000')
+
+
+def real_mavlink():
+    """Amendment 1: pymavlink's MAVLink 2 'all' dialect, the module the live link decodes with (None when pymavlink is
+    not installed). Imported directly, because mavutil writes os.environ; sys.path and sys.modules are restored."""
+    saved, before = list(sys.path), set(sys.modules)
+    try:
+        if PYLINK.is_dir():
+            sys.path.append(str(PYLINK))
+        from pymavlink.dialects.v20 import all as dialect
+        return dialect
+    except ImportError:
+        return None
+    finally:
+        sys.path[:] = saved
+        for name in set(sys.modules) - before:
+            if name == 'pymavlink' or name.startswith('pymavlink.'):
+                del sys.modules[name]
+
+
+MAV = real_mavlink()
+REAL_TYPES = ['HEARTBEAT', 'STATUSTEXT', 'PARAM_VALUE', 'FILE_TRANSFER_PROTOCOL', 'BAD_DATA', 'UNKNOWN_54321']
+
+
+def real_messages():
+    """Real pymavlink objects decoded from wire bytes by a robust-parsing receiver, as recv_match returns them; BAD_DATA
+    (broken CRC) and UNKNOWN_54321 (unknown msgid) carry a bytearray `data` field (smoke01's TypeError)."""
+    tx = MAV.MAVLink(None, srcSystem=1, srcComponent=1)
+    wire = b''.join(bytes(m.pack(tx)) for m in (
+        MAV.MAVLink_heartbeat_message(2, 12, 129, 6 << 16, 4, 3),
+        MAV.MAVLink_statustext_message(2, b'Failsafe \xff activated', 0, 0),
+        MAV.MAVLink_param_value_message(b'NAV_DLL_ACT', 1.5, 6, 100, 3),
+        MAV.MAVLink_file_transfer_protocol_message(0, 1, 1, list(range(251)))))
+    bad = bytearray(MAV.MAVLink_heartbeat_message(2, 12, 129, 0, 4, 3).pack(tx))
+    bad[-1] ^= 0xFF
+    unknown = bytearray(MAV.MAVLink_heartbeat_message(2, 12, 129, 0, 4, 3).pack(tx))
+    unknown[7:10] = (54321).to_bytes(3, 'little')
+    rx = MAV.MAVLink(None)
+    rx.robust_parsing = True
+    return rx.parse_buffer(wire + bytes(bad) + bytes(unknown))
+
+
+def unhex(value):
+    """Inverse of the recorder's {'bytes_hex': ...} tag (the tests' decoder)."""
+    if isinstance(value, dict):
+        if set(value) == {'bytes_hex'}:
+            return bytes.fromhex(value['bytes_hex'])
+        return {k: unhex(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [unhex(v) for v in value]
+    return value
+
+
+def plain(d):
+    return {k: bytes(v) if isinstance(v, (bytes, bytearray)) else v for k, v in d.items()}
+
+
+STEP = 4_000_000
+
+
+def contact_lines(times_ns, floor=False):
+    pair = (' contact { collision1: "navrl_quad_s4::base_link::base_link_inertia_collision" '
+            'collision2: "asphalt_plane::link::collision" position { x: 0 y: 0 z: 0.05 } depth: 0.001 }')
+    return ''.join('time { sec: %d nsec: %d }%s\n' % (t // 10 ** 9, t % 10 ** 9, pair if floor else '')
+                   for t in times_ns)
+
+
+def grid(t0_s, t1_s):
+    return list(range(int(round(t0_s * 1e9)), int(round(t1_s * 1e9)) + 1, STEP))
+
+
+def smoke01_reorder(times, at_s):
+    """smoke01's measured arrival pattern at index of at_s: a, a+3, a+2, a+1, a+4, a+5, a+7, a+6, a+8 (steps)."""
+    i = times.index(int(round(at_s * 1e9)))
+    block = times[i:i + 9]
+    out = list(times)
+    out[i:i + 9] = [block[k] for k in (0, 3, 2, 1, 4, 5, 7, 6, 8)]
+    return out
 
 
 def ulog_record(typ, payload):
@@ -91,7 +171,7 @@ def spec_for(env):
 
 
 def build_member(ep, out_dir, item, spec, n=3, shift=0.0, base=100.0, obs_delta=None, logger_rc=0, seed=4501,
-                 edit=None, extract_ok=True, audit=None):
+                 edit=None, extract_ok=True, audit=None, mav=(), sends=(), contact_log=None):
     """One synthetic boot through the real recorder pieces, R.checked_gzip (stubbed pyulog subprocess) and
     R.finish_episode; F1's result has arm = cell."""
     ep = pathlib.Path(ep)
@@ -101,6 +181,14 @@ def build_member(ep, out_dir, item, spec, n=3, shift=0.0, base=100.0, obs_delta=
     tap.out_dir = out_dir
     tap.counts.update({k: 2 for k in STREAMS})
     tap.raw_link = types.SimpleNamespace(pos=(10.0, 0., 0., -1., 0., 0., 0.), att=(10.0, 0, 0, 0), truth=None, hb=None)
+    if mav or sends:                                                   # amendment 1: real pymavlink objects
+        queue = list(mav)
+        conn = R.ConnProxy(types.SimpleNamespace(recv_match=lambda *a, **kw: queue.pop(0) if queue else None,
+                                                 mav=types.SimpleNamespace(param_set_send=lambda *a: None)), tap)
+        while conn.recv_match(blocking=False) is not None:
+            pass
+        for args in sends:
+            conn.mav.param_set_send(*args)
     client = R.client_factory(tap, FrameSource(base, edit=edit))()
     client.frames()                                                    # hover read, before the control phase
     for k in range(n):
@@ -120,10 +208,11 @@ def build_member(ep, out_dir, item, spec, n=3, shift=0.0, base=100.0, obs_delta=
     tap.logger_stop = {'returncode': logger_rc}
     if contact:
         tap.contact_control = {'ok': True, 'last_t': 10.0}
-        tap.contact_api = types.SimpleNamespace(
-            contact_audit=audit or (lambda *a, **kw: ({'messages': 5, 'bar_events': []}, [])))
+        if contact_log is None:
+            tap.contact_api = types.SimpleNamespace(
+                contact_audit=audit or (lambda *a, **kw: ({'messages': 5, 'bar_events': []}, [])))
         (ep / 'logs').mkdir()
-        (ep / 'logs/contacts.log').write_text('time {sec: 10}\n')
+        (ep / 'logs/contacts.log').write_text('time {sec: 10}\n' if contact_log is None else contact_log)
     legacy = np.zeros((n, 27))
     legacy[:, 0] = np.arange(n)
     legacy[:, 1] = 10.0 + 0.1 * np.arange(n)
@@ -920,11 +1009,263 @@ class TestS4R1(unittest.TestCase):
 
     def test_prereg_quotes_scope_and_names_xauthority(self):
         text = (R.ROOT / R.PREREG).read_text()
-        self.assertIn(R.SCOPE, text)                                     # review r2 LOW: SCOPE identical
+        amendment = (R.ROOT / R.AMENDMENT).read_text()
+        # amendment 1: the code's SCOPE is quoted verbatim in the amendment; v1's SCOPE (quoted in the immutable
+        # prereg) differs from it only by 'amendment1', the smoke folder and the contact-continuity clause
+        v1 = (R.SCOPE.replace('S4R-1 v1 amendment1:', 'S4R-1 v1:').replace(R.SCOPE_SMOKE, R.SCOPE_V1_SMOKE)
+              .replace(R.CONTACT_SCOPE_CLAUSE, ''))
+        self.assertNotEqual(v1, R.SCOPE)
+        self.assertIn(v1, text)                                          # review r2 LOW: SCOPE identical (v1)
+        self.assertIn(R.SCOPE, amendment)
+        self.assertIn(v1, amendment)
+        self.assertNotIn(R.SCOPE, text)
+        self.assertIn(R.AMENDMENT, R.OWN_SOURCES)
+        self.assertEqual((R.SMOKE_DIR.name, R.ATTEMPT_DIR.name), ('smoke02_contact_on_env0', 'attempt01'))
         self.assertIn('XAUTHORITY', text)
         self.assertIn('4GiB launch free', R.SCOPE)
         self.assertEqual(R.LAUNCH_FREE_BYTES, 4 << 30)
         self.assertIn('wait_heartbeat NOT_RECORDED', R.SCOPE)
+
+    def test_v1_approval_is_refused_under_amendment1(self):              # amendment 1, review r1 L1
+        v1 = (R.SCOPE.replace('S4R-1 v1 amendment1:', 'S4R-1 v1:').replace(R.SCOPE_SMOKE, R.SCOPE_V1_SMOKE)
+              .replace(R.CONTACT_SCOPE_CLAUSE, ''))
+        head = 'f' * 40
+        keys = {k: 'x' for k in R.SF.APPROVAL_KEYS}
+        old = dict(keys, scope=v1, commit='ede0a14f85c5b6ca49be235fae10e9325fee28be')
+        problems = R.SF.approval_problems(old, head, scope=R.SCOPE)
+        self.assertIn("approval scope differs from the code's SCOPE", problems)
+        self.assertTrue(any('is not HEAD' in x for x in problems))
+        self.assertEqual(R.SF.approval_problems(dict(keys, scope=R.SCOPE, commit=head), head, scope=R.SCOPE), [])
+        recorded = R.UNIT_DIR / 'execution_approval.json'                # the real v1 approval, read-only
+        if recorded.is_file():
+            approval = json.loads(recorded.read_text())
+            self.assertEqual(approval.get('scope'), v1)
+            self.assertIn("approval scope differs from the code's SCOPE",
+                          R.SF.approval_problems(approval, head, scope=R.SCOPE))
+
+    # ------------------------------------------------------------------ amendment 1 (smoke01_contact_on_env0 ABORTED)
+    @unittest.skipUnless(MAV is not None, 'pymavlink not installed')
+    def test_real_pymavlink_messages_recorded_losslessly_through_finish_episode(self):
+        msgs = real_messages()
+        self.assertEqual([m.get_type() for m in msgs], REAL_TYPES)
+        with self.assertRaisesRegex(TypeError, 'bytearray'):             # negative control: smoke01's failure
+            json.dumps({'fields': msgs[4].to_dict()})
+        raw = bytearray(b'NAV_DLL_ACT\x00\xff')
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            res = build_member(d / 'ep', d, {'contact': False}, spec_for(0), mav=msgs,
+                               sends=[(1, 1, raw, 1.5, 6), (1, 1, memoryview(b'\x01\x02'), 0.0, 9)])
+            self.assertEqual(res['recording_problems'], [])
+            self.assertIn('repeatability/events.jsonl.gz', res['repeatability']['files'])
+            with gzip.open(d / 'ep/repeatability/events.jsonl.gz', 'rt') as f:
+                events = [json.loads(x) for x in f]
+            self.assertEqual(R.member_problems(d / 'ep', dict(res, index=0)), [])
+        recv = [e for e in events if e['kind'] == 'mav_recv']
+        self.assertEqual([e['type'] for e in recv], REAL_TYPES)
+        for e, m in zip(recv, msgs):
+            self.assertEqual(unhex(e['fields']), plain(m.to_dict()))
+            self.assertEqual(e['source'], [m.get_srcSystem(), m.get_srcComponent()])
+        self.assertEqual(sum(isinstance(v, dict) and set(v) == {'bytes_hex'} for e in recv
+                             for v in e['fields'].values()), 2)
+        self.assertEqual(recv[3]['fields']['payload'], list(range(251)))
+        sends = [e for e in events if e['kind'] == 'mav_send']
+        self.assertEqual([unhex(e['args']) for e in sends], [[1, 1, bytes(raw), 1.5, 6], [1, 1, b'\x01\x02', 0.0, 9]])
+
+    def test_jsonable_bytes_like_and_tagged_fallback(self):
+        self.assertEqual(R.jsonable({'a': bytearray(b'\x00\xff'), 'b': memoryview(b'ab'), 'c': b'', 'n': None}),
+                         {'a': {'bytes_hex': '00ff'}, 'b': {'bytes_hex': '6162'}, 'c': {'bytes_hex': ''}, 'n': None})
+        tagged = R.jsonable(object())
+        self.assertEqual(tagged['unserializable_type'], 'builtins.object')
+        json.dumps(R.jsonable({'x': [object(), 1, 'y', True, np.float32(0.5)]}), allow_nan=False)
+
+    def test_unserializable_values_counted_and_warned_through_finish_episode(self):   # amendment 1, r1 MINOR-2
+        class Odd:
+            def __init__(self, fields):
+                self.fields = fields
+
+            def get_type(self):
+                return 'ODD'
+
+            def get_srcSystem(self):
+                return 42
+
+            def get_srcComponent(self):
+                return 7
+
+            def get_seq(self):
+                return 0
+
+            def to_dict(self):
+                return dict(self.fields)
+
+        class Opaque:
+            def __repr__(self):
+                return '<Opaque>'
+        self.assertEqual(R.tagged_types(R.jsonable({'a': [1, {'b': {2, 3}}], 'c': Opaque(), 'd': b'\x00'})),
+                         ['builtins.set', R.jsonable(Opaque())['unserializable_type']])
+        self.assertEqual(R.tagged_types(R.jsonable({'a': [1.5, 'x', None, {'bytes_hex': '00'}]})), [])
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            res = build_member(d / 'ep', d, {'contact': False}, spec_for(0),
+                               mav=[Odd({'s': {1, 2}, 'o': Opaque(), 'n': 1})])
+            self.assertEqual(res['unserializable_values']['count'], 2)
+            self.assertEqual(res['unserializable_values']['types'][0], 'builtins.set')
+            self.assertEqual(len(res['recording_warnings']), 1)
+            self.assertIn('UNSERIALIZABLE_VALUES 2', res['recording_warnings'][0])
+            self.assertEqual(res['recording_problems'], [])               # a warning, not a validity problem
+            with gzip.open(d / 'ep/repeatability/events.jsonl.gz', 'rt') as f:
+                events = [json.loads(x) for x in f]
+            self.assertEqual(len(R.tagged_types(events)), 2)              # the count matches the written file
+            clean = build_member(d / 'ep2', d, {'contact': False}, spec_for(0), mav=[Odd({'n': 1})])
+            self.assertEqual((clean['unserializable_values'], clean['recording_warnings']),
+                             ({'count': 0, 'types': []}, []))           # positive control: zero, no warning
+
+    def test_arrival_continuity_positive_and_negative_controls(self):
+        start, final = 10.0, 10.2                                        # window [9.0, 10.7] s
+        clean = grid(8.0, 11.0)
+        s, p = R.arrival_continuity(clean, start, final)
+        self.assertEqual(p, [])
+        self.assertEqual((s['messages_in_window'], s['missing_steps_in_window'], s['late_arrivals_in_window']),
+                         (426, 0, 0))
+        smoke = smoke01_reorder(clean, 9.5)                              # smoke01's measured pattern
+        s, p = R.arrival_continuity(smoke, start, final)
+        self.assertEqual(p, [])
+        self.assertEqual((s['late_arrivals_in_window'], s['max_late_steps_in_window'], s['missing_steps_in_window'],
+                          s['duplicates_in_window'], s['off_grid_in_window']), (3, 2.0, 0, 0, 0))
+
+        def problems(times):
+            return R.arrival_continuity(times, start, final)[1]
+        missing = [t for t in clean if t != int(9.5e9)]
+        self.assertEqual(problems(missing), ['RECORDER_LOSS: 1 missing simulator steps in the reading window '
+                                             '(1 gaps in the sorted arrivals)'])
+        self.assertEqual(problems(smoke01_reorder(missing, 9.6)), problems(missing))   # loss is not hidden by order
+        self.assertEqual(problems([t for t in clean if t != int(8.5e9)]), [])  # outside the window: descriptive
+        dup = clean[:300] + [clean[299]] + clean[300:]                   # index 250 is 9.0 s, the window start
+        self.assertTrue(any(x.startswith('RECORDER_DUPLICATE: 1') for x in problems(dup)))
+        off = [t + (2_000_000 if t == int(9.5e9) else 0) for t in clean]
+        self.assertTrue(any(x.startswith('RECORDER_GRID') for x in problems(off)))
+        i = clean.index(int(9.5e9))
+        late3 = clean[:i] + clean[i + 1:i + 4] + [clean[i]] + clean[i + 4:]   # one arrival 3 steps late
+        self.assertTrue(any(x.startswith('RECORDER_ORDER: an arrival 3 steps late') for x in problems(late3)), problems(late3))
+        late2 = clean[:i] + clean[i + 1:i + 3] + [clean[i]] + clean[i + 3:]   # 2 steps late: at the tolerance
+        self.assertEqual(problems(late2), [])
+
+        def swaps(times, k):                                             # k adjacent swaps inside the window
+            out, j = list(times), clean.index(int(9.1e9))
+            for _ in range(k):
+                out[j], out[j + 1] = out[j + 1], out[j]
+                j += 3
+            return out
+        self.assertEqual(problems(swaps(clean, 4)), [])                  # 4 of 426 <= 1 %
+        self.assertTrue(any('late arrivals of 426' in x for x in problems(swaps(clean, 5))))   # 5 > 4.26
+
+    def test_audit_contacts_replaces_only_agq_continuity_and_keeps_coverage(self):
+        tap = R.Tap()
+        with tempfile.TemporaryDirectory() as d:
+            log = pathlib.Path(d) / 'contacts.log'
+            log.write_text(contact_lines(smoke01_reorder(grid(8.0, 11.0), 9.5)))
+            s, p = R.audit_contacts(tap.contact_api, log, 10.0, 10.2)
+            self.assertEqual(p, [])
+            # the synthetic smoke01 pattern gives AGQ's exact smoke01 messages, now replaced and kept descriptive
+            self.assertEqual(s['agq_continuity_problems_replaced'], [
+                'RECORDER_LOSS: 4 simulator-time gaps in the reading window (4 gaps, 6 missing steps in the log)',
+                'RECORDER_ORDER: 3 non-increasing simulator times in the reading window'])
+            self.assertEqual(s['continuity_amendment1']['late_arrivals_in_window'], 3)
+            self.assertEqual((s['gaps'], s['missing_steps'], s['non_increasing']), (4, 6, 3))
+            log.write_text(contact_lines([t for t in grid(8.0, 11.0) if t != int(9.5e9)]))
+            s, p = R.audit_contacts(tap.contact_api, log, 10.0, 10.2)
+            self.assertEqual(p, ['RECORDER_LOSS: 1 missing simulator steps in the reading window (1 gaps in the sorted '
+                                 'arrivals)'])
+            log.write_text(contact_lines(grid(8.0, 10.5)))                      # ends before final + 0.5 s
+            s, p = R.audit_contacts(tap.contact_api, log, 10.0, 10.2)
+            self.assertEqual(len(p), 1)
+            self.assertTrue(p[0].startswith('RECORDER_COVERAGE: last message'))
+            log.write_text('')
+            self.assertEqual(R.audit_contacts(tap.contact_api, log, 10.0, 10.2)[1],
+                             ['RECORDER_LOSS: no contact messages'])
+            s, p = R.audit_contacts(tap.contact_api, pathlib.Path(d) / 'absent.log', 10.0, 10.2)
+            self.assertEqual(p, ['RECORDER_LOSS: contact log missing'])
+
+    def test_finish_episode_contact_audit_amended_positive_and_loss(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            ok = build_member(d / 'ok', d, {'contact': True}, spec_for(0),
+                              contact_log=contact_lines(smoke01_reorder(grid(8.0, 11.0), 9.5), floor=True))
+            self.assertEqual(ok['recording_problems'], [])
+            contacts = json.loads((d / 'ok/repeatability/contacts.json').read_text())
+            self.assertEqual(contacts['continuity_amendment1']['max_late_steps_in_window'], 2.0)
+            self.assertEqual(contacts['floor']['messages'], 751)
+            lost = build_member(d / 'lost', d, {'contact': True}, spec_for(0),
+                                contact_log=contact_lines([t for t in grid(8.0, 11.0) if t != int(10.1e9)]))
+            self.assertIn('CONTACT_AUDIT: RECORDER_LOSS: 1 missing simulator steps in the reading window (1 gaps in '
+                          'the sorted arrivals)', lost['recording_problems'])
+            self.assertEqual(lost['outcome'], 'HARNESS_INVALID')
+
+    @unittest.skipUnless((SMOKE01_CONTACTS / 'logs/contacts.log').is_file(), 'smoke01 raw contact log not on this host')
+    def test_smoke01_contact_log_reads_as_reordered_not_lost(self):
+        """The measured diagnosis (read-only on the spent smoke): AGQ's rule reports 4 gaps (6 missing steps) and 3
+        non-increasing times; the sorted arrivals have 0 missing, duplicate or off-grid steps, and 3 of 1876 window
+        messages arrive at most 2 steps late."""
+        steps = np.load(SMOKE01_CONTACTS / 'steps.npy')
+        s, p = R.audit_contacts(R.Tap().contact_api, SMOKE01_CONTACTS / 'logs/contacts.log',
+                                float(steps[0, 1]), float(steps[-1, 1]))
+        self.assertEqual(s['agq_continuity_problems_replaced'], [
+            'RECORDER_LOSS: 4 simulator-time gaps in the reading window (4 gaps, 6 missing steps in the log)',
+            'RECORDER_ORDER: 3 non-increasing simulator times in the reading window'])
+        c = s['continuity_amendment1']
+        self.assertEqual((c['messages'], c['messages_in_window'], c['distinct_in_window'], c['missing_steps_in_window'],
+                          c['duplicates_in_window'], c['off_grid_in_window'], c['late_arrivals_in_window'],
+                          c['max_late_steps_in_window']), (10723, 1876, 1876, 0, 0, 0, 3, 2.0))
+        self.assertEqual(p, [])
+
+    def test_exit_status_from_final_record(self):
+        with mock.patch.object(R.F1, 'scene_envs', return_value=[0, 1]):
+            item = dict(R.smoke_schedule()[0])
+        with tempfile.TemporaryDirectory() as root:
+            root = pathlib.Path(root)
+
+            def smoke(name, status, **kw):
+                d = root / name
+                d.mkdir()
+                res = build_member(d / 'ep000', d, item, spec_for(0), **kw)
+                ok, why = R.SF.episode_valid(res)
+                (d / 'episodes.jsonl').write_text(json.dumps(dict(item, index=0, valid=ok, invalid_reason=why,
+                                                                  **res)) + '\n')
+                if status is not None:
+                    (d / 'final.json').write_text(json.dumps({'status': status}))
+                return d
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(R.finished_exit_code(smoke('good', 'COMPLETE'), True), 0)      # positive control
+                self.assertEqual(R.finished_exit_code(smoke('aborted', 'ABORTED'), True), 3)    # smoke01's case
+                self.assertEqual(R.finished_exit_code(smoke('nofinal', None), True), 3)
+                self.assertEqual(R.finished_exit_code(smoke('gate', 'COMPLETE', logger_rc=1), True), 4)
+                self.assertEqual(R.finished_exit_code(root / 'gate', False), 0)                # attempt: status only
+                self.assertEqual(R.finished_exit_code(root / 'aborted', False), 3)
+
+    def test_main_returns_launch_exit_status(self):
+        def fake_unit(scope, unit_dir, out_dir, *a, **kw):
+            out_dir.mkdir(parents=True)
+            (out_dir / 'final.json').write_text(json.dumps({'status': status}))
+        stubs = dict(runtime_problems=[], resource_problems=[], instrumentation_smoke_problems=[])
+        with tempfile.TemporaryDirectory() as t, contextlib.ExitStack() as stack:
+            t = pathlib.Path(t)
+            for name, value in stubs.items():
+                stack.enter_context(mock.patch.object(R, name, return_value=value))
+            for name in ('plugin_pin_problems', 'world_model_problems', 'component_smoke_problems'):
+                stack.enter_context(mock.patch.object(R.F1, name, return_value=[]))
+            stack.enter_context(mock.patch.object(R.F1, 'world_model_files', return_value={}))
+            stack.enter_context(mock.patch.object(R.F1.S4, 's4_extra_problems', return_value=[]))
+            stack.enter_context(mock.patch.object(R, 'disk_free', return_value=1 << 40))
+            stack.enter_context(mock.patch.object(R, 'SMOKE_DIR', t / 'smoke02_contact_on_env0'))
+            stack.enter_context(mock.patch.object(R, 'ATTEMPT_DIR', t / 'attempt01'))
+            stack.enter_context(mock.patch.object(R.S3C, 'launch_unit', side_effect=fake_unit))
+            stack.enter_context(mock.patch.dict(sys.modules, {'sitl_dev08_attempt': types.SimpleNamespace(SOURCES=())}))
+            stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
+            status = 'ABORTED'
+            self.assertEqual(R.main(['--smoke']), 3)
+            status = 'COMPLETE'
+            self.assertEqual(R.main(['--launch']), 0)
+        self.assertIn('sys.exit(main())', (R.ROOT / R.SCRIPT).read_text())
 
     def test_long_boot_600_steps_save_extract_and_disk_accounting(self):
         """Review r2 MINOR-5: the 600-step path (first live in attempt01) on CPU: persistence of 601 packets and
