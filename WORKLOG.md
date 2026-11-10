@@ -24658,7 +24658,6 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - PX4's velocity loop not yet matched to MOTAR's;
   - S3a NOT_EQUIVALENT;
   - the rangefinder is an addition to the training-spec vehicle.
-- **PUBLIC_CPU** (untracked S4R-1 files present): 3,900 run, 0 failures, 0 errors; host faults 0 → 0.
 - **Next:**
   - match PX4's velocity loop (sweep of `MPC_XY_VEL_P_ACC` running);
   - G9 attempt 3 after GR-1b;
@@ -25621,7 +25620,6 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - `identity_report.json`, `eval_run_report.json`, `analysis.json`;
   - `SHA256_MANIFEST.json`, covering 322 raw and run files in `~/motar_tmp/camk1e_20261108/`;
   - `RESULTS_REVIEW_r1.md`.
-- **PUBLIC_CPU** (untracked S4R-1 files present): 3,900 run, 0 failures, 0 errors; host faults 0 → 0.
 - **Next:**
   - CAM-K2, which continues each CAM-K1 seed on the T/W 2.25 vehicle model with the OAK-D depth model;
   - CAM-K2-E (to be preregistered), against CAM-K1 on this grid.
