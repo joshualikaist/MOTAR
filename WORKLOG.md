@@ -26340,3 +26340,73 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   already passed PUBLIC_CPU 3,935/0 failures/0 errors before execution; these new records change no implementation,
   test or preregistration, so the full suite was not repeated. Independent numeric/contact controls and raw integrity
   passed as above. This local commit contains only the new result records, experiment index and this WORKLOG entry.
+
+## 2026-11-11 — S5 amendment2 attempt01 COMPLETE, PASS_SITL (independent review PASS_WITH_LIMITS); stand-in scope only
+
+- **Authorization/sequence:** same explicit final-HEAD user approval ("어어 하나씩 진행하자") as the preceding S4R-1
+  record. Source `d6e83126f8671e64f3ff490a82b29205c83e4df6`, branch `camonly/dev`, clean and frozen throughout both
+  sequential live units. S4R-1 execution, analysis and results review finished before S5 began; no timing/compute jobs
+  overlapped S5. This separate result commit follows S4R-1 record commit `3cd72a126bc98ffcff29263fa04f8f3fbe938ddc`.
+- **Execution** (UTC 2026-11-10; KST record date 2026-11-11):
+
+  | New run | UTC start–finish | Scheduled / recorded | Valid / passed | Kernel counter |
+  | --- | --- | --- | --- | --- |
+  | smoke03 | 14:59:13–15:02:12 | 3 / 3 | 3 / 3 | 0 → 0 |
+  | attempt01 | 15:03:02–15:11:45 | 10 / 10 | 10 / 10 | 0 → 0 |
+
+  The smoke N0/N0R/N0J all passed the source-bound gate. Attempt order was exactly N0, OBL, GFH, GFV, OVJ, OVR,
+  RCL, DLL, KIL, FDS, one fresh rootfs per scenario, no retries/replacements. Both invocations start with a v10 decoder,
+  switch to v20 at the first real v2 frame, and retain identical mavutil/v10/v20 source digests between all13 boots.
+  Previous smoke01/02 remain ABORTED; their original negative evidence and all preregistrations are unchanged.
+- **Fixed reading:** PASS_SITL, no integrity problems or recording warnings. This is the configured PX4v1.14.3,
+  navrl_quad stand-in safety-behavior item only, not completion of all S5 or qualification of real FC/receiver/wiring,
+  the proposed1.1kg vehicle, OAK-D/camera, a learned policy, or flight. Live known-bad discrimination is NOT_TESTED;
+  offline mutation controls do not substitute for it. One occurrence per scenario establishes no failure probability.
+
+  | Scenario | Observed response | Reach after injection | Required cause/evidence |
+  | --- | --- | --- | --- |
+  | N0 | nominal OFFBOARD | null window | live flags false |
+  | OBL | AUTO_LOITER | 0.584 s | offboard-loss flag |
+  | GFH | AUTO_LOITER | 7.600 s | geofence flag; EKF trigger17.081046 m |
+  | GFV | AUTO_LOITER | 3.600 s | geofence flag; EKF trigger2.518473 m |
+  | OVJ | POSCTL | 0.600 s | override text, centered and pulse echoes |
+  | OVR | POSCTL | 0.600 s | override text, centered and pulse echoes |
+  | RCL | AUTO_LAND via AUTO_LOITER | 6.544 s | manual-control-loss flag |
+  | DLL | AUTO_LAND via AUTO_LOITER | 11.600 s | GCS-loss flag |
+  | KIL | disarmed | 5.544 s | kill text/echoes |
+  | FDS | disarmed after force21196 | 0.600 s after forced command | non-forced ACK1 then forced ACK0 |
+
+  Times are the preregistered simulation-time heartbeat observations (about1s resolution), not exact internal event
+  times or real-FC action latency. Actual physical contact and motor-stop remain NOT_RECORDED; KIL drop is a kinematic
+  proxy. Cleanup landing/disarm was excluded from frozen outcome windows. All13 original ULogs reparsed completely,
+  without dropout/malformed tail; required topic/flag/phase coverage passed, including SDLOG_MODE1 disarm endings.
+- **Independent review:** `docs/evidence/sitl_2026-11-05/s5_safety_v2/REVIEW_attempt01_r1.md`, fresh-context Codex
+  (exact deployment identifier not exposed; not Opus), PASS_WITH_LIMITS, actual PASS_SITL, no required source/protocol
+  repair or rerun.310 audit checks passed, including13 accepted positives plus18 offline mutations, ULog truncation,
+  missing telemetry, wrong cause/ACK checks, first-invalid/binding stops, native timing and selected real-wire decodes.
+  Every package hash/source/runtime digest matched. No production source or measured raw was edited for a pass.
+- **Preserved exception L1:** attempt01/N0 gzserver returned **-6 (SIGABRT)**, and its log contains
+  `boost::wrapexcept<boost::thread_resource_error>` / `boost thread: trying joining itself: Resource deadlock avoided`.
+  Measurement ended sim49.736s, cleanup landing ended57.336s, logger-stop returned0; owned SIGINT was recorded at
+  session+58.807s. The Gazebo log has no timestamp: exact abort instant is NOT_RECORDED, and SIGINT causation is not
+  proved. Observation/landing telemetry and logger flush are complete, with no watchdog/body/ownership cleanup error
+  or leaked/unreaped process. Frozen OwnedSession/reading rules do not demand every shutdown exit be0, so the review
+  retains PASS_SITL and reports this shutdown limitation. Kernel regex counter0 is not a claim that every process
+  exited0. Any shutdown-robustness investigation is separate work; never erase this exception or silently relabel it.
+- **Records:** existing S5 evidence folder gains `smoke03_*`, `attempt01_*`, exact reading, independent review and
+  `EXECUTION_amend2.json`; manifests bind39 smoke files/92,274,649B and124 attempt files/258,449,061B. Raw remains in
+  `~/motar_tmp/sitl_next_20261110/s5_safety_v2/`; driver logs and audit artifacts under
+  `~/motar_tmp/sitl_amend2_20261110/` are path/SHA-bound. No raw/checkpoint deletion, no source/test/prereg changes,
+  push or main merge. Full PUBLIC_CPU at execution source passed3,935/0failures/0errors before the runs; record-only
+  changes require record integrity/index checks rather than another full implementation suite.
+- **Next:** the two authorized live units are complete. Further S4R-1 initial-state/hover isolation or S5 shutdown/
+  real-vehicle qualification needs its own scoped design/approval; no new run is authorized by these completed scopes.
+- **Record checks/closeout:** all copied raw summaries, exact reading and audit report match their packaged bytes;
+  experiment-index tests9/9 PASS after staging and staged whitespace check PASS. Only new records/index/WORKLOG
+  enter this commit. S4R-1 diagnostic Bead motar-783.11 closed with bounded descriptive acceptance; broad S5 readiness
+  motar-783.6 remains in progress because real-vehicle readiness is unqualified. New user-decision follow-ups:
+  motar-783.12 (initial-state/hover isolation design) and motar-783.13 (Gazebo shutdown SIGABRT diagnosis).
+  No live jobs remain. Close shared session73e47719 with durable summary
+  `~/motar_tmp/sitl_amend2_20261110/session_closeout.json` via tools/agent_session.py close; the account-neutral latest
+  handoff captures the final record commit and clean state. Next owner reads that handoff before selecting a separately
+  scoped follow-up; no execution/push/main-merge approval carries beyond the two completed units.

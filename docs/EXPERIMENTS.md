@@ -963,10 +963,11 @@ family that is in the test's scope.
     - Not recorded: raw frames, actor observations, the send/receive timeline and contacts.
     - Recommendation: a bounded repeatability diagnostic, S4R-1.
     - `docs/evidence/sitl_2026-11-05/data_utility/`, with `ADDENDUM_r1a.md`.
-  - **S5 safety v2 (2026-11-10; smoke01/02 ABORTED; no attempt result):** smoke02 N0 passed; N0R was INVALID
-    BINDING_CHANGED because mavutil switched dialect versions. Amendment 2 binds both decoder sources and prepares
-    smoke03; independent review PASS_WITH_LIMITS, NOT_RUN, new final-HEAD approval pending. Ten failsafe scenarios retain their criteria;
-    live discrimination is NOT_TESTED. `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`.
+  - **S5 safety v2 amendment2 (2026-11-10 UTC; attempt01 COMPLETE/PASS_SITL, results review PASS_WITH_LIMITS):**
+    smoke03 nulls3/3 and all ten fixed scenarios valid/passed; stable v10/v20 source binding. Stand-in PX4v1.14.3 /
+    navrl_quad only; live discrimination NOT_TESTED, no hardware/flight qualification. N0 gzserver shutdown returncode
+    -6 and untimestamped boost exception are preserved as a limitation. Original smoke01/02 stay ABORTED.
+    `docs/evidence/sitl_2026-11-05/s5_safety_v2/attempt01_reading.json`.
   - **S4R-1 v1 amendment2 (2026-11-10 UTC; attempt02 COMPLETE/REPORTED_DESCRIPTIVE, results review PASS_WITH_LIMITS):**
     smoke03 and all twelve fresh boots valid under unchanged 0.15 s bound (maximum 0.128 s). All same-scene pairs
     already differ at all seven stages at k=0; stage order/causal initiator cannot be identified. The two scenes have
@@ -1009,6 +1010,7 @@ family that is in the test's scope.
   - → `docs/evidence/sitl_2026-11-05/s5_safety_v2/` and `docs/evidence/sitl_2026-11-05/s4r1/` smoke01 records (2026-11-10: both development smokes ABORTED on harness defects; attempts refused)
   - → `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md` (S5 v2 amendment 1: autopilot pinned from the PX4 heartbeat, bytes as hex, exit codes, smoke02)
   - → `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md` (after smoke02 ABORTED at N0R: bind both MAVLink decoder sources, new smoke03; NOT_RUN)
+  - → `docs/evidence/sitl_2026-11-05/s5_safety_v2/attempt01_reading.json` (amendment2 at d6e8312: smoke3/3 and attempt10/10, PASS_SITL; independent review PASS_WITH_LIMITS, shutdown exception retained)
   - → `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md` (S4R-1 amendment 1: bytes as hex, contact late-arrival rule, exit codes, smoke02)
   - → `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md` (after attempt01 INCOMPLETE_INVALID: same 0.15 s bound, fresh smoke03 and attempt02; NOT_RUN)
   - → `docs/evidence/sitl_2026-11-05/s4r1/attempt02_reading.json` (amendment2 at d6e8312: 12 valid boots, REPORTED_DESCRIPTIVE; independent results review PASS_WITH_LIMITS)

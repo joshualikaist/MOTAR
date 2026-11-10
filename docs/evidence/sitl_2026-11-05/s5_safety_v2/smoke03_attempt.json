@@ -1,0 +1,639 @@
+{
+ "protocol": "s5-safety-v2",
+ "prereg": "docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md",
+ "amendment": "docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md",
+ "scope": "S5 safety v2 amendment2: PX4 v1.14.3 SITL on navrl_quad (stand-in vehicle), fixed safety parameter set v1, scenarios N0 OBL GFH GFV OVJ OVR RCL DLL KIL FDS once each in this order, one fresh-rootfs boot per scenario; development smoke03 (nulls N0 N0R N0J, read for harness validity only) then attempt01; no retries; SITL only, no claim about real hardware",
+ "development_smoke": true,
+ "git": {
+  "head": "d6e83126f8671e64f3ff490a82b29205c83e4df6",
+  "branch": "camonly/dev",
+  "dirty": ""
+ },
+ "approval_sha256": "f6720752975e878f32f3ad1f46a221de8c0dc48c9fbda9eeee118efa928cf30a",
+ "sources": {
+  "docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md": "e4fc53de9812b4ec31f8b0826bb488e6e146e8d8bc7849808ebcc92f99e806d8",
+  "docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md": "2dd4da711aeff1c3302474c2f26c65e914c4d3405f30e8890be4dd0acae66077",
+  "docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md": "9b51afee14aba722a6e5db46490159a9fd57d8e2b54711a20cbaffefa17a5a83",
+  "tests/test_sitl_s5_safety.py": "cb34835854ded433191f3b2fc128f0cde1b649705d179ca948ef20ad052bef9f",
+  "tools/sitl_dev08_attempt.py": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999",
+  "tools/sitl_owned_session.py": "e4fbdd2180de14a9aa9a944f699bc633d6ea81ebc9a2cbe941df47c493165c84",
+  "tools/sitl_s3b_closed_loop.py": "d170b0271f73822280d8c92af68ab2bb56e350bbdf598702c353d8b79f0284b4",
+  "tools/sitl_s3b_formal.py": "288078e3df93e6041eabfd634c2a45bc3747b8eaa2daaf35d08275f104e53534",
+  "tools/sitl_s5_safety.py": "5c3a457824d7d9243940de15a649d20fc8c1c398111965195e31b1cceb52811c"
+ },
+ "parameter_set": [
+  [
+   "GF_ACTION",
+   "INT32",
+   2,
+   "navigator/geofence_params.c:62",
+   "Hold mode on a fence breach"
+  ],
+  [
+   "GF_MAX_HOR_DIST",
+   "REAL32",
+   17.0,
+   "navigator/geofence_params.c:115",
+   "17 m from home: 3 m inside the 20 m half width of MOTAR's 40 x 40 m arena when home is its centre"
+  ],
+  [
+   "GF_MAX_VER_DIST",
+   "REAL32",
+   2.5,
+   "navigator/geofence_params.c:128",
+   "2.5 m above home: 0.5 m under MOTAR's 3 m arena height; MOTAR flies at 1.0 m"
+  ],
+  [
+   "GF_SOURCE",
+   "INT32",
+   0,
+   "navigator/geofence_params.c:90",
+   "estimator global position (GPOS)"
+  ],
+  [
+   "GF_PREDICT",
+   "INT32",
+   0,
+   "navigator/geofence_params.c:142",
+   "off (PX4 marks it experimental)"
+  ],
+  [
+   "COM_OF_LOSS_T",
+   "REAL32",
+   0.5,
+   "commander/commander_params.c:313",
+   "0.5 s = 5 missed 10 Hz policy steps"
+  ],
+  [
+   "COM_OBL_RC_ACT",
+   "INT32",
+   5,
+   "commander/commander_params.c:342",
+   "Hold mode on offboard loss"
+  ],
+  [
+   "COM_RC_OVERRIDE",
+   "INT32",
+   3,
+   "commander/commander_params.c:610",
+   "stick override in auto and offboard modes"
+  ],
+  [
+   "COM_RC_STICK_OV",
+   "REAL32",
+   30.0,
+   "commander/commander_params.c:625",
+   "30 % (PX4 default)"
+  ],
+  [
+   "COM_RC_IN_MODE",
+   "INT32",
+   2,
+   "commander/commander_params.c:186",
+   "RC and joystick with fallback: SITL needs both paths; the real vehicle should use 0 (RC only)"
+  ],
+  [
+   "NAV_RCL_ACT",
+   "INT32",
+   3,
+   "commander/commander_params.c:806",
+   "Land mode on RC loss"
+  ],
+  [
+   "COM_RCL_EXCEPT",
+   "INT32",
+   0,
+   "commander/commander_params.c:820",
+   "no exception: RC loss also acts in offboard"
+  ],
+  [
+   "NAV_DLL_ACT",
+   "INT32",
+   3,
+   "commander/commander_params.c:787",
+   "Land mode on GCS link loss (also: arming needs a GCS link)"
+  ],
+  [
+   "COM_KILL_DISARM",
+   "REAL32",
+   5.0,
+   "commander/commander_params.c:926",
+   "disarm 5 s after the kill switch (PX4 default); the motors stop at once (lockdown)"
+  ],
+  [
+   "RC_MAP_KILL_SW",
+   "INT32",
+   7,
+   "rc_update/params.c:1442",
+   "kill switch on RC channel 7 (SITL emulation)"
+  ],
+  [
+   "COM_RC_LOSS_T",
+   "REAL32",
+   0.5,
+   "commander/commander_params.c:143",
+   "PX4 default"
+  ],
+  [
+   "COM_DL_LOSS_T",
+   "INT32",
+   5,
+   "commander/commander_params.c:104",
+   "5 s, PX4's minimum (default 10)"
+  ],
+  [
+   "COM_FAIL_ACT_T",
+   "REAL32",
+   5.0,
+   "commander/commander_params.c:284",
+   "PX4 default hold before Hold/RTL/Land"
+  ],
+  [
+   "RC_KILLSWITCH_TH",
+   "REAL32",
+   0.75,
+   "rc_update/params.c:1966",
+   "PX4 default"
+  ],
+  [
+   "RC_MAP_ROLL",
+   "INT32",
+   1,
+   "rc_update/params.c:1168",
+   "SITL RC emulation"
+  ],
+  [
+   "RC_MAP_PITCH",
+   "INT32",
+   2,
+   "rc_update/params.c:1200",
+   "SITL RC emulation"
+  ],
+  [
+   "RC_MAP_THROTTLE",
+   "INT32",
+   3,
+   "rc_update/params.c:1267",
+   "SITL RC emulation"
+  ],
+  [
+   "RC_MAP_YAW",
+   "INT32",
+   4,
+   "rc_update/params.c:1299",
+   "SITL RC emulation"
+  ]
+ ],
+ "vehicle_params": {
+  "MC_ROLLRATE_P": 0.013,
+  "MC_ROLLRATE_I": 0.017,
+  "MC_ROLLRATE_D": 0.00026,
+  "MC_PITCHRATE_P": 0.013,
+  "MC_PITCHRATE_I": 0.017,
+  "MC_PITCHRATE_D": 0.00026,
+  "MPC_XY_VEL_P_ACC": 2.5,
+  "MPC_XY_VEL_I_ACC": 0.1,
+  "MPC_XY_VEL_D_ACC": 0.0,
+  "THR_MDL_FAC": 1.0
+ },
+ "scenarios": [
+  {
+   "inject": "none",
+   "expect": "UNCHANGED",
+   "window_s": 15.0,
+   "id": "N0",
+   "what": "null: offboard hover, nothing injected",
+   "streams": [
+    "sp",
+    "hb"
+   ]
+  },
+  {
+   "inject": "none",
+   "expect": "UNCHANGED",
+   "window_s": 15.0,
+   "id": "N0R",
+   "what": "null with RC streamed (smoke only)",
+   "streams": [
+    "sp",
+    "hb",
+    "rc"
+   ],
+   "path": "rc",
+   "needs_rc_echo": true,
+   "smoke_only": true
+  },
+  {
+   "inject": "none",
+   "expect": "UNCHANGED",
+   "window_s": 15.0,
+   "id": "N0J",
+   "what": "null with the joystick streamed (smoke only)",
+   "streams": [
+    "sp",
+    "hb",
+    "joy"
+   ],
+   "path": "joy",
+   "smoke_only": true
+  },
+  {
+   "id": "OBL",
+   "what": "offboard setpoints stopped",
+   "streams": [
+    "sp",
+    "hb"
+   ],
+   "inject": "stop_setpoints",
+   "expect": "AUTO_LOITER",
+   "allowed": [
+    "AUTO_LOITER"
+   ],
+   "earliest_s": 0.2,
+   "deadline_s": 3.5,
+   "cause_flag": "offboard_control_signal_lost"
+  },
+  {
+   "id": "GFH",
+   "what": "flying outward at 2.5 m/s past the 17 m horizontal fence",
+   "streams": [
+    "sp",
+    "hb"
+   ],
+   "inject": "fly_out",
+   "expect": "AUTO_LOITER",
+   "allowed": [],
+   "earliest_s": 0.0,
+   "deadline_s": 10.8,
+   "min_trigger_xy_m": 16.5,
+   "max_truth_xy_m": 20.0,
+   "event_text": [
+    "Maximum distance from home reached"
+   ],
+   "cause_flag": "primary_geofence_breached"
+  },
+  {
+   "id": "GFV",
+   "what": "climbing at 0.5 m/s past the 2.5 m vertical fence",
+   "streams": [
+    "sp",
+    "hb"
+   ],
+   "inject": "climb",
+   "expect": "AUTO_LOITER",
+   "allowed": [],
+   "earliest_s": 0.0,
+   "deadline_s": 7.0,
+   "min_trigger_alt_m": 2.2,
+   "max_truth_alt_m": 3.0,
+   "event_text": [
+    "Maximum altitude above home reached"
+   ],
+   "cause_flag": "primary_geofence_breached"
+  },
+  {
+   "id": "OVJ",
+   "what": "MANUAL_CONTROL pitch pulse (joystick override)",
+   "streams": [
+    "sp",
+    "hb",
+    "joy"
+   ],
+   "inject": "joystick_pulse",
+   "expect": "POSCTL",
+   "allowed": [],
+   "earliest_s": 0.0,
+   "deadline_s": 3.0,
+   "path": "joy",
+   "event_text": [
+    "Pilot took over using sticks"
+   ],
+   "cause_text": [
+    "Pilot took over using sticks"
+   ]
+  },
+  {
+   "id": "OVR",
+   "what": "RC_CHANNELS_OVERRIDE pitch pulse (RC stick override)",
+   "streams": [
+    "sp",
+    "hb",
+    "rc"
+   ],
+   "inject": "rc_stick_pulse",
+   "expect": "POSCTL",
+   "allowed": [],
+   "earliest_s": 0.0,
+   "deadline_s": 3.0,
+   "needs_rc_echo": true,
+   "path": "rc",
+   "event_text": [
+    "Pilot took over using sticks"
+   ],
+   "cause_text": [
+    "Pilot took over using sticks"
+   ]
+  },
+  {
+   "id": "RCL",
+   "what": "RC_CHANNELS_OVERRIDE stopped (RC loss)",
+   "streams": [
+    "sp",
+    "hb",
+    "rc"
+   ],
+   "inject": "stop_rc",
+   "expect": "AUTO_LAND",
+   "allowed": [
+    "AUTO_LOITER"
+   ],
+   "earliest_s": 0.2,
+   "deadline_s": 8.5,
+   "needs_rc_echo": true,
+   "path": "rc",
+   "event_text": [
+    "Failsafe activated"
+   ],
+   "cause_flag": "manual_control_signal_lost"
+  },
+  {
+   "id": "DLL",
+   "what": "GCS heartbeat stopped (data-link loss)",
+   "streams": [
+    "sp",
+    "hb"
+   ],
+   "inject": "stop_gcs_heartbeat",
+   "expect": "AUTO_LAND",
+   "allowed": [
+    "AUTO_LOITER"
+   ],
+   "earliest_s": 4.5,
+   "deadline_s": 16.75,
+   "event_text": [
+    "Connection to ground station lost",
+    "Failsafe activated"
+   ],
+   "cause_flag": "gcs_connection_lost"
+  },
+  {
+   "id": "KIL",
+   "what": "RC_CHANNELS_OVERRIDE kill channel 7 high",
+   "streams": [
+    "sp",
+    "hb",
+    "rc"
+   ],
+   "inject": "kill_switch",
+   "kill_channel": 7,
+   "expect": "DISARMED",
+   "allowed": null,
+   "earliest_s": 0.0,
+   "deadline_s": 7.0,
+   "lockdown_within_s": 1.5,
+   "lockdown_drop_m": 0.3,
+   "needs_rc_echo": true,
+   "path": "rc",
+   "needs_kill_on": true,
+   "event_text": [
+    "Kill-switch engaged"
+   ],
+   "cause_text": [
+    "Kill-switch engaged"
+   ]
+  },
+  {
+   "id": "FDS",
+   "what": "GCS disarm in the air: non-forced (must be refused), then forced 21196",
+   "streams": [
+    "sp",
+    "hb"
+   ],
+   "inject": "gcs_disarm",
+   "expect": "FDS",
+   "reject_window_s": 3.0,
+   "deadline_s": 2.0
+  }
+ ],
+ "timing": {
+  "tick_s": 0.02,
+  "sp_period_s": 0.1,
+  "hb_period_s": 1.0,
+  "rc_period_s": 0.05,
+  "joy_period_s": 0.05,
+  "boot_wait_s": 90.0,
+  "settle_s": 10.0,
+  "param_gap_s": 0.05,
+  "pre_offboard_s": 2.0,
+  "pre_arm_s": 1.0,
+  "takeoff_s": 10.0,
+  "pre_s": 5.0,
+  "post_hold_s": 3.5,
+  "stick_pulse_s": 0.3,
+  "fds_reject_s": 3.0,
+  "null_window_s": 15.0,
+  "land_s": 20.0,
+  "post_extra_wall_s": 5.0,
+  "stall_wall_s": 2.0,
+  "check_every_s": 0.1
+ },
+ "persist_s": 2.5,
+ "data_contract": {
+  "rx_gap_s": {
+   "LOCAL_POSITION_NED": 0.1,
+   "HIL_STATE_QUATERNION": 0.1,
+   "ATTITUDE": 0.1,
+   "HEARTBEAT": 1.6,
+   "RC_CHANNELS": 0.2,
+   "MANUAL_CONTROL": 0.25
+  },
+  "sample_age_s": 0.1,
+  "sample_age_clock": "wall (monotonic receive time)",
+  "tx_gap_s": {
+   "sp": 0.25,
+   "hb": 1.6,
+   "rc": 0.2,
+   "joy": 0.25
+  },
+  "ulog_position_gap_s": 0.25,
+  "ulog_position_boundary_tolerance_s": 0.2,
+  "ulog_coverage_end": "min(observation end, first disarmed autopilot heartbeat)",
+  "ulog_flags_gap_s": 1.0,
+  "cause_flags": [
+   "offboard_control_signal_lost",
+   "manual_control_signal_lost",
+   "gcs_connection_lost",
+   "primary_geofence_breached"
+  ],
+  "cause_lag_s": 0.7,
+  "min_free_bytes": 3221225472,
+  "gpu_allowed_apps": [
+   "/usr/share/rustdesk/rustdesk"
+  ],
+  "contacts": "NOT_RECORDED"
+ },
+ "environment": {
+  "CUDA_VISIBLE_DEVICES": "",
+  "PYTHONNOUSERSITE": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1",
+  "affinity": [
+   6,
+   7,
+   12,
+   13
+  ],
+  "nice": 10
+ },
+ "environment_keys": [
+  "APPLICATION_INSIGHTS_NO_STATSBEAT",
+  "BUN_INSTALL",
+  "CHROME_DESKTOP",
+  "CLAUDE_AGENT_SDK_VERSION",
+  "CODEX_APPLY_PATCH_PRESERVE_LINE_ENDINGS",
+  "CODEX_CI",
+  "CODEX_INTERNAL_ORIGINATOR_OVERRIDE",
+  "CODEX_PERMISSION_PROFILE",
+  "CODEX_SESSION_ID",
+  "CODEX_THREAD_ID",
+  "CODEX_TOOL_CALL_ID",
+  "CODEX_VERSION",
+  "COLORTERM",
+  "CONDA_EXE",
+  "CONDA_PYTHON_EXE",
+  "CONDA_SHLVL",
+  "COPILOT_CLI_ENABLED_FEATURE_FLAGS",
+  "COPILOT_OTEL_FILE_EXPORTER_PATH",
+  "CUDA_VISIBLE_DEVICES",
+  "DBUS_SESSION_BUS_ADDRESS",
+  "DEBUG",
+  "DESKTOP_SESSION",
+  "DISPLAY",
+  "ELECTRON_NO_ATTACH_CONSOLE",
+  "ELECTRON_RUN_AS_NODE",
+  "FC_FONTATIONS",
+  "GDK_BACKEND",
+  "GDMSESSION",
+  "GH_PAGER",
+  "GIO_LAUNCHED_DESKTOP_FILE",
+  "GIO_LAUNCHED_DESKTOP_FILE_PID",
+  "GIT_PAGER",
+  "GJS_DEBUG_OUTPUT",
+  "GJS_DEBUG_TOPICS",
+  "GNOME_DESKTOP_SESSION_ID",
+  "GNOME_SHELL_SESSION_MODE",
+  "GPG_AGENT_INFO",
+  "GTK_MODULES",
+  "HOME",
+  "IM_CONFIG_PHASE",
+  "INVOCATION_ID",
+  "JOURNAL_STREAM",
+  "LANG",
+  "LC_ADDRESS",
+  "LC_ALL",
+  "LC_CTYPE",
+  "LC_IDENTIFICATION",
+  "LC_MEASUREMENT",
+  "LC_MONETARY",
+  "LC_NAME",
+  "LC_NUMERIC",
+  "LC_PAPER",
+  "LC_TELEPHONE",
+  "LC_TIME",
+  "LESSCLOSE",
+  "LESSOPEN",
+  "LOGNAME",
+  "LS_COLORS",
+  "MANAGERPID",
+  "MKL_NUM_THREADS",
+  "MXC_BIN_DIR",
+  "NO_COLOR",
+  "NoDefaultCurrentDirectoryInExePath",
+  "OLDPWD",
+  "OMP_NUM_THREADS",
+  "PAGER",
+  "PATH",
+  "PWD",
+  "PYTHONNOUSERSITE",
+  "PYTHONPATH",
+  "QT_ACCESSIBILITY",
+  "QT_IM_MODULE",
+  "RUST_LOG",
+  "SESSION_MANAGER",
+  "SHELL",
+  "SHLVL",
+  "SSH_AGENT_PID",
+  "SSH_AUTH_SOCK",
+  "TERM",
+  "TERMINATOR_DBUS_NAME",
+  "TERMINATOR_DBUS_PATH",
+  "TERMINATOR_UUID",
+  "USER",
+  "USERNAME",
+  "VSCODE_CLI",
+  "VSCODE_CODE_CACHE_PATH",
+  "VSCODE_CRASH_REPORTER_PROCESS_TYPE",
+  "VSCODE_CWD",
+  "VSCODE_ESM_ENTRYPOINT",
+  "VSCODE_HANDLES_UNCAUGHT_ERRORS",
+  "VSCODE_IPC_HOOK",
+  "VSCODE_NLS_CONFIG",
+  "VSCODE_NODE_COMPILE_CACHE_ROOT",
+  "VSCODE_PID",
+  "VTE_VERSION",
+  "WINDOWPATH",
+  "XAUTHORITY",
+  "XDG_CONFIG_DIRS",
+  "XDG_CURRENT_DESKTOP",
+  "XDG_DATA_DIRS",
+  "XDG_MENU_PREFIX",
+  "XDG_RUNTIME_DIR",
+  "XDG_SESSION_CLASS",
+  "XDG_SESSION_DESKTOP",
+  "XDG_SESSION_TYPE",
+  "XMODIFIERS",
+  "_",
+  "_CONDA_EXE",
+  "_CONDA_ROOT"
+ ],
+ "idle": {
+  "core_idle": {
+   "6": 0.9899,
+   "7": 1.0,
+   "12": 0.9608,
+   "13": 1.0
+  },
+  "min_idle": 0.9,
+  "samples": [
+   {
+    "6": 0.9899,
+    "7": 1.0,
+    "12": 0.9608,
+    "13": 1.0
+   }
+  ]
+ },
+ "host": {
+  "loadavg": [
+   0.25,
+   0.38,
+   0.5
+  ],
+  "gpu_compute_apps": [
+   "1882855, /usr/share/rustdesk/rustdesk, 190 MiB"
+  ]
+ },
+ "schedule": [
+  {
+   "scenario": "N0"
+  },
+  {
+   "scenario": "N0R"
+  },
+  {
+   "scenario": "N0J"
+  }
+ ],
+ "kernel_faults_before": 0,
+ "started": 1794322753.3524191
+}

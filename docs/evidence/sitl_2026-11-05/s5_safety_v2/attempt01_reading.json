@@ -1,0 +1,229 @@
+{
+ "attempt_reason": null,
+ "attempt_status": "COMPLETE",
+ "integrity_problems": [],
+ "protocol": "s5-safety-v2",
+ "reading": "PASS_SITL",
+ "reason": null,
+ "recording_warnings": {},
+ "scenarios": {
+  "DLL": {
+   "criteria": {
+    "cause": {
+     "evidence": "failsafe_flags",
+     "first_raised": [
+      "gcs_connection_lost"
+     ],
+     "flag": "gcs_connection_lost",
+     "rise_after_inject_s": 6.372
+    },
+    "departure_after_inject_s": 6.600000000000001,
+    "departure_mode": "AUTO_LOITER",
+    "event_after_ref_s": 7.503999999999998,
+    "event_source": "heartbeat",
+    "pre_observations": 5,
+    "reached_after_inject_s": 11.600000000000001
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "FDS": {
+   "criteria": {
+    "acks": [
+     [
+      34.912,
+      400,
+      1
+     ],
+     [
+      37.912,
+      400,
+      0
+     ]
+    ],
+    "cause": {
+     "evidence": "command_ack",
+     "other_raised": null
+    },
+    "departure_after_inject_s": 0.6000000000000014,
+    "departure_mode": "DISARMED",
+    "event_after_ref_s": 0.6000000000000014,
+    "event_source": "heartbeat",
+    "pre_observations": 5,
+    "reached_after_inject_s": 0.6000000000000014,
+    "reject_window_observations": 3
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "GFH": {
+   "criteria": {
+    "cause": {
+     "evidence": "failsafe_flags",
+     "first_raised": [
+      "primary_geofence_breached"
+     ],
+     "flag": "primary_geofence_breached",
+     "rise_after_inject_s": 7.572000000000003
+    },
+    "departure_after_inject_s": 7.600000000000001,
+    "departure_mode": "AUTO_LOITER",
+    "event_after_ref_s": 7.504000000000005,
+    "event_source": "statustext",
+    "max_truth_xy_m": 19.43865836999143,
+    "pre_observations": 5,
+    "reached_after_inject_s": 7.600000000000001,
+    "trigger_xy_m": 17.08104627939626
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "GFV": {
+   "criteria": {
+    "cause": {
+     "evidence": "failsafe_flags",
+     "first_raised": [
+      "primary_geofence_breached"
+     ],
+     "flag": "primary_geofence_breached",
+     "rise_after_inject_s": 3.564
+    },
+    "departure_after_inject_s": 3.6000000000000014,
+    "departure_mode": "AUTO_LOITER",
+    "event_after_ref_s": 3.5360000000000014,
+    "event_source": "statustext",
+    "max_truth_alt_m": 2.8729999999999905,
+    "pre_observations": 5,
+    "reached_after_inject_s": 3.6000000000000014,
+    "trigger_alt_m": 2.518473193049431
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "KIL": {
+   "criteria": {
+    "cause": {
+     "evidence": "statustext",
+     "other_raised": null,
+     "text_after_inject_s": 0.0799999999999983
+    },
+    "departure_after_inject_s": 5.543999999999997,
+    "departure_mode": "DISARMED",
+    "event_after_ref_s": 0.0799999999999983,
+    "event_source": "statustext",
+    "lockdown_drop_m": 1.004000000000019,
+    "manual_echo_pre": 83,
+    "pre_observations": 5,
+    "reached_after_inject_s": 5.543999999999997
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "N0": {
+   "criteria": {
+    "pre_observations": 5,
+    "window_observations": 15
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "OBL": {
+   "criteria": {
+    "cause": {
+     "evidence": "failsafe_flags",
+     "first_raised": [
+      "offboard_control_signal_lost"
+     ],
+     "flag": "offboard_control_signal_lost",
+     "rise_after_inject_s": 0.5359999999999943
+    },
+    "departure_after_inject_s": 0.5839999999999961,
+    "departure_mode": "AUTO_LOITER",
+    "event_after_ref_s": 0.6000000000000014,
+    "event_source": "heartbeat",
+    "pre_observations": 5,
+    "reached_after_inject_s": 0.5839999999999961
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "OVJ": {
+   "criteria": {
+    "cause": {
+     "evidence": "statustext",
+     "other_raised": null,
+     "text_after_inject_s": 0.03999999999999915
+    },
+    "departure_after_inject_s": 0.6000000000000014,
+    "departure_mode": "POSCTL",
+    "event_after_ref_s": 0.03999999999999915,
+    "event_source": "statustext",
+    "manual_echo_pre": 83,
+    "pre_observations": 5,
+    "reached_after_inject_s": 0.6000000000000014
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "OVR": {
+   "criteria": {
+    "cause": {
+     "evidence": "statustext",
+     "other_raised": null,
+     "text_after_inject_s": 0.03999999999999915
+    },
+    "departure_after_inject_s": 0.6000000000000014,
+    "departure_mode": "POSCTL",
+    "event_after_ref_s": 0.03999999999999915,
+    "event_source": "statustext",
+    "manual_echo_pre": 83,
+    "pre_observations": 5,
+    "reached_after_inject_s": 0.6000000000000014
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  },
+  "RCL": {
+   "criteria": {
+    "cause": {
+     "evidence": "failsafe_flags",
+     "first_raised": [
+      "manual_control_signal_lost"
+     ],
+     "flag": "manual_control_signal_lost",
+     "rise_after_inject_s": 0.627999999999993
+    },
+    "departure_after_inject_s": 1.543999999999997,
+    "departure_mode": "AUTO_LOITER",
+    "event_after_ref_s": 0.6639999999999944,
+    "event_source": "statustext",
+    "manual_echo_pre": 83,
+    "pre_observations": 5,
+    "reached_after_inject_s": 6.543999999999997
+   },
+   "fail_reason": null,
+   "invalid_reason": null,
+   "passed": true,
+   "valid": true
+  }
+ },
+ "scope": "PX4 v1.14.3 SITL, navrl_quad stand-in; no claim about the real flight controller, RC or vehicle"
+}
