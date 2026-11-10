@@ -18,6 +18,8 @@ CONTACT_LATE_MAX_STEPS steps for at most CONTACT_LATE_MAX_FRACTION of the window
 --smoke and --launch exit non-zero unless COMPLETE (and, for --smoke, the attempt's smoke gate passes); new smoke
 folder smoke02_contact_on_env0; values kept as a tagged repr are counted (unserializable_values) and a nonzero count is
 a recorded warning (recording_warnings).
+Amendment 2: a new smoke03_contact_on_env0 and full attempt02 after attempt01 stopped on LATE 0.168s. The 0.15s
+validity bound and first-invalid stop rule remain in force; prior attempt01 stays INCOMPLETE_INVALID.
 
   tools/sitl_s4r1.py --schedule | --smoke | --launch | --analyze [DIR] | --compare A B
 """
@@ -48,10 +50,11 @@ import sitl_agq_geometry_diag as AGQ
 ROOT = SF.ROOT
 PROTOCOL = 's4r1-v1'
 PREREG = 'docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md'
-AMENDMENT = 'docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md'      # after smoke01_contact_on_env0 ABORTED
+AMENDMENT1 = 'docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md'
+AMENDMENT = 'docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md'
 UNIT_DIR = pathlib.Path.home() / 'motar_tmp/s4r1_20261110'
-ATTEMPT_DIR = UNIT_DIR / 'attempt01'
-SMOKE_DIR = UNIT_DIR / 'smoke02_contact_on_env0'           # amendment 1: smoke01_contact_on_env0 is spent (ABORTED)
+ATTEMPT_DIR = UNIT_DIR / 'attempt02'
+SMOKE_DIR = UNIT_DIR / 'smoke03_contact_on_env0'
 PYTHON = '/home/fair/miniconda3/envs/aerialgym/bin/python'
 SCRIPT = 'tools/sitl_s4r1.py'
 DISPLAY = ':1'
@@ -73,9 +76,9 @@ CONTACT_LATE_MAX_STEPS = AGQ.INTERVAL_JOIN_NS // AGQ.STEP_NS      # 2 physics st
 CONTACT_LATE_MAX_FRACTION = 0.01
 CONTACT_SCOPE_CLAUSE = ('contact log: no missing, duplicate or off-grid simulator step in the reading window, '
                         'arrivals at most 2 steps late and at most 1% late; ')
-SCOPE_V1_SMOKE, SCOPE_SMOKE = 'smoke01_contact_on_env0', 'smoke02_contact_on_env0'
-SCOPE = ('S4R-1 v1 amendment1: one fixed instrumentation smoke smoke02_contact_on_env0 (env0, contact subscriber ON, '
-         'not a result, 600s outer, a short boot) then attempt01: 12 fresh Gazebo/PX4 boots, G8 r2 first two eligible '
+SCOPE_V1_SMOKE, SCOPE_SMOKE = 'smoke01_contact_on_env0', 'smoke03_contact_on_env0'
+SCOPE = ('S4R-1 v1 amendment2: one fixed instrumentation smoke smoke03_contact_on_env0 (env0, contact subscriber ON, '
+         'not a result, 600s outer, a short boot) then attempt02: 12 fresh Gazebo/PX4 boots, G8 r2 first two eligible '
          '70-bar scenes env0/env1, 3 repeats per scene with world-contact subscriber OFF/ON, fixed alternating order; '
          'S4F1 lit_rendered ground arm, Frozen Policy F, navrl_quad_s4, body-fixed 87deg '
          'RGB/depth/gpu_ray, pinned historical bridge, explicit new Gazebo seed4501; '
@@ -85,7 +88,7 @@ SCOPE = ('S4R-1 v1 amendment1: one fixed instrumentation smoke smoke02_contact_o
          'owned-session RSS cap 8GiB, no RLIMIT_AS; DISPLAY :1 with a readable inherited XAUTHORITY; '
          '3GiB maximum output, 4GiB launch free and 1GiB minimum free disk; '
          'descriptive only: first recorded divergence per stage and within/between-condition spread, no gate')
-OWN_SOURCES = ('tools/sitl_s4r1.py', 'tests/test_sitl_s4r1.py', PREREG, AMENDMENT) + F1.OWN_SOURCES + (
+OWN_SOURCES = ('tools/sitl_s4r1.py', 'tests/test_sitl_s4r1.py', PREREG, AMENDMENT1, AMENDMENT) + F1.OWN_SOURCES + (
     'tools/sitl_agq_geometry_diag.py',)
 OFF_CONTACT = {'status': 'NOT_RECORDED', 'reason': 'subscriber OFF'}
 
@@ -1112,7 +1115,7 @@ def member_problems(ep_dir, row):
 
 
 def instrumentation_smoke_problems(smoke_dir=SMOKE_DIR):
-    """attempt01 refuses unless the fixed smoke (env0, contact ON) is the expected item and passes recording,
+    """attempt02 refuses unless the fixed smoke (env0, contact ON) is the expected item and passes recording,
     contact, ULog, seed and logger-stop checks (S3C.smoke_problems adds COMPLETE, VALID, HEAD and source bytes)."""
     smoke_dir = pathlib.Path(smoke_dir)
     led = smoke_dir / 'episodes.jsonl'

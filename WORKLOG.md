@@ -26253,3 +26253,35 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   preparation is a separate pending local unit. No push/main merge; original preregs, research raw and checkpoints
   unchanged by this unit (no exhaustive raw rehash claimed). Next: new scoped final-HEAD user approval, then the fixed
   smoke03; only COMPLETE and valid smoke permits attempt01. Do not reuse the old approval.
+
+## 2026-11-10 — S4R-1 v1 amendment 2: fresh attempt02, unchanged 0.15 s bound; NOT_RUN
+
+- **Authorization/context:** same user continuation request and root clock as the preceding S5 entry; claimed
+  `motar-783.11`. Review/source base `fe7daed`; this separate unit follows local S5 commit
+  `a55505254aa9719134e8bd6f99fece93d9059b3a` on `camonly/dev`.
+- **Protocol:** `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md` prepares new single-use
+  `~/motar_tmp/s4r1_20261110/smoke03_contact_on_env0/`, then a complete new twelve-boot `attempt02/` from index 0.
+  Both amendments remain source-bound. Prior approvals are refused. No continuation or replacement boot is allowed.
+  Original attempt01 remains ABORTED/INCOMPLETE_INVALID; its eight boots support no per-scene or repeatability reading.
+- **Unchanged:** 0.15 s LATE bound and first-invalid abort, scene/order/seed/policy/checkpoint/sensors/bridge, contact
+  tolerance and positive control, recording and analysis, 4 GiB launch floor/1 GiB minimum free/3 GiB output cap,
+  8 GiB RSS, no RLIMIT_AS in live execution, 180 s per boot and 600/1800 s outer timeouts. Host stall remains an
+  unverified explanation of the historical delay. Cursor removal is not evidence of that cause or a guarantee of validity.
+- **Review:** `docs/evidence/sitl_2026-11-05/s4r1/REVIEW_amend2_r1.md`, independent fresh-context Codex reviewer
+  (exact deployment identifier not exposed; not Opus), PASS_WITH_LIMITS. MINOR-1 repaired and re-reviewed: removed a test
+  assertion that the mutable real approval file must still carry an old scope. Synthetic v1/amendment1 rejection and
+  current-scope acceptance controls remain. Two modified scope tests independently PASS; no required source repair open.
+- **CPU verification:** focused 44 tests passed before the MINOR-1 test repair; both changed tests independently passed
+  afterwards. Final PUBLIC_CPU covered these exact repaired source/test bytes: 3,935 run, 0 failures, 0 errors,
+  10 skipped, 5 GPU-required exclusions, 769.634 s. No operational source edits followed that run. Source/review/log
+  SHA bindings: `docs/evidence/sitl_2026-11-05/s4r1/AMENDMENT2_VALIDATION.json`; common full logs and first-run
+  infrastructure failures are recorded in the preceding entry. Kernel faults stayed 0 → 0.
+- **Disk/preflight:** after the explicitly approved Cursor full-profile deletion, measured free space 7,157,903,360 B
+  (about 6.7 GiB), above the 4 GiB launch floor; verify again before any launch. No research evidence deletion occurred.
+- **Next:** new scoped approval at the final committed HEAD for smoke03_contact_on_env0 → attempt02, on an idle host.
+  No live PX4/Gazebo/GPU execution under this amendment, no push or main merge. Historical preregs/raw/checkpoints
+  unchanged; no exhaustive raw rehash claimed. Both broad Beads issues remain in progress until their live criteria exist.
+- **Final records check:** experiment index updated with the historical incomplete verdict and new amendment's status,
+  literal membership and lineage; 9/9 index tests passed after staging this unit. Final approval/preflight continuation
+  checkpoint: `~/motar_tmp/sitl_amend2_20261110/preapproval_checkpoint.json` (written after both local commits).
+  The existing session clock remains active while waiting for approval; the next turn must retain its deadline.

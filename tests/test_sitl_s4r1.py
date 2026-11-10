@@ -1010,24 +1010,27 @@ class TestS4R1(unittest.TestCase):
     def test_prereg_quotes_scope_and_names_xauthority(self):
         text = (R.ROOT / R.PREREG).read_text()
         amendment = (R.ROOT / R.AMENDMENT).read_text()
-        # amendment 1: the code's SCOPE is quoted verbatim in the amendment; v1's SCOPE (quoted in the immutable
-        # prereg) differs from it only by 'amendment1', the smoke folder and the contact-continuity clause
-        v1 = (R.SCOPE.replace('S4R-1 v1 amendment1:', 'S4R-1 v1:').replace(R.SCOPE_SMOKE, R.SCOPE_V1_SMOKE)
+        v1 = (R.SCOPE.replace('S4R-1 v1 amendment2:', 'S4R-1 v1:').replace(R.SCOPE_SMOKE, R.SCOPE_V1_SMOKE)
+              .replace('then attempt02:', 'then attempt01:')
               .replace(R.CONTACT_SCOPE_CLAUSE, ''))
         self.assertNotEqual(v1, R.SCOPE)
         self.assertIn(v1, text)                                          # review r2 LOW: SCOPE identical (v1)
         self.assertIn(R.SCOPE, amendment)
-        self.assertIn(v1, amendment)
+        amend1 = (R.SCOPE.replace('amendment2:', 'amendment1:').replace('smoke03_', 'smoke02_')
+                  .replace('then attempt02:', 'then attempt01:'))
+        self.assertIn(amend1, (R.ROOT / R.AMENDMENT1).read_text())
         self.assertNotIn(R.SCOPE, text)
         self.assertIn(R.AMENDMENT, R.OWN_SOURCES)
-        self.assertEqual((R.SMOKE_DIR.name, R.ATTEMPT_DIR.name), ('smoke02_contact_on_env0', 'attempt01'))
+        self.assertIn(R.AMENDMENT1, R.OWN_SOURCES)
+        self.assertEqual((R.SMOKE_DIR.name, R.ATTEMPT_DIR.name), ('smoke03_contact_on_env0', 'attempt02'))
         self.assertIn('XAUTHORITY', text)
         self.assertIn('4GiB launch free', R.SCOPE)
         self.assertEqual(R.LAUNCH_FREE_BYTES, 4 << 30)
         self.assertIn('wait_heartbeat NOT_RECORDED', R.SCOPE)
 
-    def test_v1_approval_is_refused_under_amendment1(self):              # amendment 1, review r1 L1
-        v1 = (R.SCOPE.replace('S4R-1 v1 amendment1:', 'S4R-1 v1:').replace(R.SCOPE_SMOKE, R.SCOPE_V1_SMOKE)
+    def test_previous_approvals_are_refused_under_amendment2(self):
+        v1 = (R.SCOPE.replace('S4R-1 v1 amendment2:', 'S4R-1 v1:').replace(R.SCOPE_SMOKE, R.SCOPE_V1_SMOKE)
+              .replace('then attempt02:', 'then attempt01:')
               .replace(R.CONTACT_SCOPE_CLAUSE, ''))
         head = 'f' * 40
         keys = {k: 'x' for k in R.SF.APPROVAL_KEYS}
@@ -1036,12 +1039,10 @@ class TestS4R1(unittest.TestCase):
         self.assertIn("approval scope differs from the code's SCOPE", problems)
         self.assertTrue(any('is not HEAD' in x for x in problems))
         self.assertEqual(R.SF.approval_problems(dict(keys, scope=R.SCOPE, commit=head), head, scope=R.SCOPE), [])
-        recorded = R.UNIT_DIR / 'execution_approval.json'                # the real v1 approval, read-only
-        if recorded.is_file():
-            approval = json.loads(recorded.read_text())
-            self.assertEqual(approval.get('scope'), v1)
-            self.assertIn("approval scope differs from the code's SCOPE",
-                          R.SF.approval_problems(approval, head, scope=R.SCOPE))
+        amend1 = (R.SCOPE.replace('amendment2:', 'amendment1:').replace('smoke03_', 'smoke02_')
+                  .replace('then attempt02:', 'then attempt01:'))
+        self.assertIn("approval scope differs from the code's SCOPE",
+                      R.SF.approval_problems(dict(keys, scope=amend1, commit=head), head, scope=R.SCOPE))
 
     # ------------------------------------------------------------------ amendment 1 (smoke01_contact_on_env0 ABORTED)
     @unittest.skipUnless(MAV is not None, 'pymavlink not installed')

@@ -967,10 +967,10 @@ family that is in the test's scope.
     BINDING_CHANGED because mavutil switched dialect versions. Amendment 2 binds both decoder sources and prepares
     smoke03; independent review PASS_WITH_LIMITS, NOT_RUN, new final-HEAD approval pending. Ten failsafe scenarios retain their criteria;
     live discrimination is NOT_TESTED. `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`.
-  - **S4R-1 v1 (preregistered 2026-11-10; design reviews r1 and r2 AMEND_FIRST, repaired, and r3 PASS_WITH_LIMITS;
-    NOT_RUN):** a Gazebo sensor repeatability diagnostic on S4F-1's `lit_rendered` stack. Two scenes, three repeats
-    each, with the contact subscriber OFF and ON: 12 boots after a smoke. It reports the first recorded divergence by
-    stage, and is descriptive only. `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`.
+  - **S4R-1 v1 (2026-11-10; smoke02 COMPLETE, attempt01 ABORTED/INCOMPLETE_INVALID):** stopped at boot 8/12 for
+    LATE 0.168 s > 0.15 s; no repeatability result. Amendment 2 prepares a fresh smoke03 and full attempt02 at the same
+    0.15 s bound, independent review PASS_WITH_LIMITS; NOT_RUN, new final-HEAD approval pending. The twelve-boot
+    diagnostic remains descriptive only. `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md`.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -1009,6 +1009,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md` (S5 v2 amendment 1: autopilot pinned from the PX4 heartbeat, bytes as hex, exit codes, smoke02)
   - → `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md` (after smoke02 ABORTED at N0R: bind both MAVLink decoder sources, new smoke03; NOT_RUN)
   - → `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md` (S4R-1 amendment 1: bytes as hex, contact late-arrival rule, exit codes, smoke02)
+  - → `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md` (after attempt01 INCOMPLETE_INVALID: same 0.15 s bound, fresh smoke03 and attempt02; NOT_RUN)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -1026,7 +1027,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`,
   `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`, `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md`,
-  `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`
+  `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`,
+  `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md`
 
 ## Not yet in the repository
 
