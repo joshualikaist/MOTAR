@@ -1,0 +1,317 @@
+{
+  "unit": "s4r1",
+  "source_head": "d6e83126f8671e64f3ff490a82b29205c83e4df6",
+  "recorded_at_utc": "2026-11-10T15:21:15.552920+00:00",
+  "authorization": {
+    "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/authorization.json",
+    "bytes": 3557,
+    "sha256": "dd4002f6dfa9e92256928fc85ef4f1fa3ff446c7da0be2c1fb8f99c5f238410e"
+  },
+  "scoped_approval": {
+    "path": "/home/fair/motar_tmp/s4r1_20261110/execution_approval.json",
+    "bytes": 1624,
+    "sha256": "c1adb07476093412111f97b180d477f3d302bbe8ffff61e96b51831165748d1e"
+  },
+  "review": {
+    "verdict": "PASS_WITH_LIMITS",
+    "report": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/REVIEW.md",
+      "bytes": 9254,
+      "sha256": "ace3701520aa5dc9ee423a93216bd0de80c42b43b95f11f48976345850439323"
+    },
+    "audit_artifacts": [
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/REVIEW.md",
+        "bytes": 9254,
+        "sha256": "ace3701520aa5dc9ee423a93216bd0de80c42b43b95f11f48976345850439323"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/control_clean.log",
+        "bytes": 14089680,
+        "sha256": "6ccd8ae88d80f810567632af11979ab593754ae798db855704365af54d916f98"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/control_duplicate.log",
+        "bytes": 14089712,
+        "sha256": "9d8794af23b1c89cb0f4b1365f4dc06cda585b893ee1d6c7c4b23937b963783b"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/control_missing.log",
+        "bytes": 14089648,
+        "sha256": "bbecdb5449cc22af328520166aa29992e245537ab6f145babb99befef553c374"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/control_probe.py",
+        "bytes": 1862,
+        "sha256": "58d994e152776d41c62821acff0518744259247404161ebe2c52cfd49e351af5"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/control_probes.json",
+        "bytes": 4856,
+        "sha256": "b9b3d9f63d3621a77e7f426e133f42415d2159cae3ad8b44efc532382c2bf44c"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/extra_probe.py",
+        "bytes": 2122,
+        "sha256": "b344f6b68ddcdd49ada4474a184bbcf0177c3f98874791359a3e073446ed247d"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/extra_probes.json",
+        "bytes": 13591,
+        "sha256": "2a612ad33d10e9fc410b644910283c30da63f52f052f085915ebb012e8780064"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/final_probe.py",
+        "bytes": 1211,
+        "sha256": "aa09c7c491c464495f5b4ae882ae2ca2dfab75f49b78fb4c9902a3785f227627"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/final_probes.json",
+        "bytes": 450,
+        "sha256": "29166c1a6e6aef0691624d546f6f211c2fcf0e1a83123019bcb84c9f1f4997ff"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/probe.py",
+        "bytes": 9357,
+        "sha256": "61bb67c0e5b431966797be21fd289bdd71b6319160f8074539a14e186c4cc360"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/probes.json",
+        "bytes": 44206,
+        "sha256": "59d6f16d2004fd1c958a89a7d2cef550021224fa4d7f58937f7650093be40b94"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_results_review_r1/structure_probe.py",
+        "bytes": 781,
+        "sha256": "7b656ecdf5006d24dc25122bd6a9294b1a663d3768cbaf7c5c2f36dcefb41089"
+      }
+    ]
+  },
+  "runs": {
+    "smoke03_contact_on_env0": {
+      "raw_root": "/home/fair/motar_tmp/s4r1_20261110/smoke03_contact_on_env0",
+      "status": "COMPLETE",
+      "count": 1,
+      "valid": 1,
+      "started_utc": "2026-11-10T14:35:30.043464+00:00",
+      "finished_utc": "2026-11-10T14:36:27.269576+00:00",
+      "elapsed_wall_s": 57.22611212730408,
+      "kernel_faults_before": 0,
+      "kernel_faults_after": 0,
+      "raw_manifest": {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/records_s4r1/smoke03_contact_on_env0_SHA256_MANIFEST.json",
+        "bytes": 30344,
+        "sha256": "eb3bd7db169786f04fd1352d41761c2aee797298d84f019514cd64afcb13e246"
+      },
+      "late_min_s": 0.0799999999999983,
+      "late_max_s": 0.0799999999999983,
+      "steps": [
+        91
+      ],
+      "outcomes": [
+        {
+          "index": 0,
+          "env": 0,
+          "repeat": 0,
+          "contact": true,
+          "outcome": "capture"
+        }
+      ]
+    },
+    "attempt02": {
+      "raw_root": "/home/fair/motar_tmp/s4r1_20261110/attempt02",
+      "status": "COMPLETE",
+      "count": 12,
+      "valid": 12,
+      "started_utc": "2026-11-10T14:36:53.039470+00:00",
+      "finished_utc": "2026-11-10T14:49:09.294252+00:00",
+      "elapsed_wall_s": 736.254781961441,
+      "kernel_faults_before": 0,
+      "kernel_faults_after": 0,
+      "raw_manifest": {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/records_s4r1/attempt02_SHA256_MANIFEST.json",
+        "bytes": 612778,
+        "sha256": "92c4214ee583cd49c8a33c5518041b621e864b2f836be1399e5db339ac66bc82"
+      },
+      "late_min_s": 0.06400000000000006,
+      "late_max_s": 0.1280000000000001,
+      "steps": [
+        89,
+        59,
+        26,
+        118,
+        110,
+        47,
+        121,
+        535,
+        97,
+        149,
+        45,
+        578
+      ],
+      "outcomes": [
+        {
+          "index": 0,
+          "env": 0,
+          "repeat": 0,
+          "contact": false,
+          "outcome": "crash"
+        },
+        {
+          "index": 1,
+          "env": 0,
+          "repeat": 0,
+          "contact": true,
+          "outcome": "crash"
+        },
+        {
+          "index": 2,
+          "env": 1,
+          "repeat": 0,
+          "contact": true,
+          "outcome": "crash"
+        },
+        {
+          "index": 3,
+          "env": 1,
+          "repeat": 0,
+          "contact": false,
+          "outcome": "crash"
+        },
+        {
+          "index": 4,
+          "env": 0,
+          "repeat": 1,
+          "contact": true,
+          "outcome": "crash"
+        },
+        {
+          "index": 5,
+          "env": 0,
+          "repeat": 1,
+          "contact": false,
+          "outcome": "capture"
+        },
+        {
+          "index": 6,
+          "env": 1,
+          "repeat": 1,
+          "contact": false,
+          "outcome": "crash"
+        },
+        {
+          "index": 7,
+          "env": 1,
+          "repeat": 1,
+          "contact": true,
+          "outcome": "crash"
+        },
+        {
+          "index": 8,
+          "env": 0,
+          "repeat": 2,
+          "contact": false,
+          "outcome": "crash"
+        },
+        {
+          "index": 9,
+          "env": 0,
+          "repeat": 2,
+          "contact": true,
+          "outcome": "crash"
+        },
+        {
+          "index": 10,
+          "env": 1,
+          "repeat": 2,
+          "contact": true,
+          "outcome": "crash"
+        },
+        {
+          "index": 11,
+          "env": 1,
+          "repeat": 2,
+          "contact": false,
+          "outcome": "crash"
+        }
+      ],
+      "reading": {
+        "label": "REPORTED_DESCRIPTIVE",
+        "file": {
+          "path": "/home/fair/motar_tmp/s4r1_20261110/attempt02/reading.json",
+          "bytes": 303389,
+          "sha256": "5f8d4a6e67a414d6feda51b98f85f3fa20a4874b87922fa9b69a8478db0a6cb0"
+        },
+        "integrity_problems": []
+      },
+      "outcome_agreement": {
+        "within_off": {
+          "pairs": 6,
+          "equal": 4
+        },
+        "within_on": {
+          "pairs": 6,
+          "equal": 6
+        },
+        "between_conditions": {
+          "pairs": 18,
+          "equal": 15
+        }
+      }
+    }
+  },
+  "reporting_cautions": [
+    "Descriptive only; no equivalence or causal subscriber effect",
+    "All seven stages already differ at k0 for every same-scene pair; ALL_TIED does not order causal initiators",
+    "target_t=-1 sentinel can dominate stamp differences; do not call those physical sensor delays",
+    "Actual attempt maximum578 steps; no new600-step live coverage"
+  ],
+  "new_live_attempts_authorized": false,
+  "remote_push": "NO",
+  "main_merge": "NO",
+  "historical_evidence": "Original failed/invalid records and all preregistrations preserved",
+  "driver_artifacts": [
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/s4r1_smoke03.log",
+      "bytes": 2350,
+      "sha256": "dde09dbf837a2ef3ae66b3a0814d9f52b97226ae79f6c59c9c111d3beb9e0d2c"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/s4r1_attempt02.log",
+      "bytes": 4642,
+      "sha256": "8d6fe91ae1995726c90304e364056b63cc36264a5210b6d49886ed3b0be4ec5c"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/s4r1_analyze02.log",
+      "bytes": 303389,
+      "sha256": "5f8d4a6e67a414d6feda51b98f85f3fa20a4874b87922fa9b69a8478db0a6cb0"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/package_s4r1.log",
+      "bytes": 443,
+      "sha256": "0bfc6c450d966be1434894a51781c3cbf28713f7e8d83a7c97e3c316c10a8cc6"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/package_records.py",
+      "bytes": 2218,
+      "sha256": "90773addba5500dfd0a7a4d5d99d51fba19fb2f4cbf8d4ebbe5e9d10f0d7142e"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/make_execution_record.py",
+      "bytes": 4345,
+      "sha256": "abe9d770e549fb895e218f85335bb05fd8dfd0e2b5dc21ef03343fe984106fcb"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/index_s4r1_results.log",
+      "bytes": 107,
+      "sha256": "17ebadffe4cf9abfccb50d42aac10cdc1b68bfbbd6c2205a9f882f0aaf65e3f1"
+    }
+  ],
+  "record_checks": {
+    "experiment_index_tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "code_tests_prereg_unchanged": true,
+    "public_cpu_source_validation": "d6e8312 source:3935 tests,0failures,0errors before live execution; not repeated for record-only changes"
+  }
+}

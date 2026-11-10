@@ -967,10 +967,11 @@ family that is in the test's scope.
     BINDING_CHANGED because mavutil switched dialect versions. Amendment 2 binds both decoder sources and prepares
     smoke03; independent review PASS_WITH_LIMITS, NOT_RUN, new final-HEAD approval pending. Ten failsafe scenarios retain their criteria;
     live discrimination is NOT_TESTED. `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`.
-  - **S4R-1 v1 (2026-11-10; smoke02 COMPLETE, attempt01 ABORTED/INCOMPLETE_INVALID):** stopped at boot 8/12 for
-    LATE 0.168 s > 0.15 s; no repeatability result. Amendment 2 prepares a fresh smoke03 and full attempt02 at the same
-    0.15 s bound, independent review PASS_WITH_LIMITS; NOT_RUN, new final-HEAD approval pending. The twelve-boot
-    diagnostic remains descriptive only. `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md`.
+  - **S4R-1 v1 amendment2 (2026-11-10 UTC; attempt02 COMPLETE/REPORTED_DESCRIPTIVE, results review PASS_WITH_LIMITS):**
+    smoke03 and all twelve fresh boots valid under unchanged 0.15 s bound (maximum 0.128 s). All same-scene pairs
+    already differ at all seven stages at k=0; stage order/causal initiator cannot be identified. The two scenes have
+    9/9 and 8/9 between pairs inside their pooled within ranges; no equivalence or causal subscriber conclusion.
+    Original attempt01 remains ABORTED/INCOMPLETE_INVALID. `docs/evidence/sitl_2026-11-05/s4r1/attempt02_reading.json`.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -1010,6 +1011,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md` (after smoke02 ABORTED at N0R: bind both MAVLink decoder sources, new smoke03; NOT_RUN)
   - → `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md` (S4R-1 amendment 1: bytes as hex, contact late-arrival rule, exit codes, smoke02)
   - → `docs/plans/prereg_sitl_s4r1_v1_amendment2_2026-11-10.md` (after attempt01 INCOMPLETE_INVALID: same 0.15 s bound, fresh smoke03 and attempt02; NOT_RUN)
+  - → `docs/evidence/sitl_2026-11-05/s4r1/attempt02_reading.json` (amendment2 at d6e8312: 12 valid boots, REPORTED_DESCRIPTIVE; independent results review PASS_WITH_LIMITS)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,

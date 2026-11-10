@@ -26285,3 +26285,58 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   literal membership and lineage; 9/9 index tests passed after staging this unit. Final approval/preflight continuation
   checkpoint: `~/motar_tmp/sitl_amend2_20261110/preapproval_checkpoint.json` (written after both local commits).
   The existing session clock remains active while waiting for approval; the next turn must retain its deadline.
+
+## 2026-11-11 — S4R-1 amendment2 attempt02 COMPLETE, REPORTED_DESCRIPTIVE (review PASS_WITH_LIMITS); initial differences remain
+
+- **User/scope:** "어어 하나씩 진행하자" approved the explicitly named final-HEAD S4R-1 smoke03 → attempt02 and S5
+  smoke03 → attempt01 units, one at a time. Execution source `d6e83126f8671e64f3ff490a82b29205c83e4df6`, branch
+  `camonly/dev`, clean and frozen throughout both live units. This record commit follows execution; no operational
+  code, test, parameter, threshold, checkpoint or immutable preregistration was changed. Previous attempt01 remains
+  ABORTED/INCOMPLETE_INVALID with its original eight rows, with no replacement or continuation.
+- **Execution** (UTC 2026-11-10; completion record date KST 2026-11-11):
+
+  | New run | UTC start–finish | Fixed members | Valid | Max control delay | Kernel counter |
+  | --- | --- | --- | --- | --- | --- |
+  | smoke03_contact_on_env0 | 14:35:30–14:36:27 | 1/1 | 1/1 | 0.080 s | 0 → 0 |
+  | attempt02 | 14:36:53–14:49:09 | 12/12 | 12/12 | 0.128 s | 0 → 0 |
+
+  The 0.15 s bound and first-invalid stop rule stayed fixed. Attempt boot wall times were 46.04–103.49 s; the whole
+  attempt took 736.25 s including boundary work, within 180 s/boot and 1,800 s outer. Recorded steps ranged 26–578;
+  no new boot reached 600 steps. Source/frame production counters and per-packet setpoint acceptance remain
+  NOT_RECORDED. Root kept S5 stopped until S4R-1 analysis and independent review had ended.
+- **Fixed reading:** `REPORTED_DESCRIPTIVE`, 0 integrity problems, 30 same-scene comparisons, no recording warnings.
+  Every pair in both scenes differs at all seven stages already at k=0 (all ties); the hover payloads already differ.
+  The first above-tolerance steps are also k=0. These records do not order the stages or identify a causal initiator.
+
+  | Scene | Pooled within-condition primary range | Between pairs inside / below / above | Outcome agreement OFF / ON / between |
+  | --- | --- | --- | --- |
+  | env0 | 1.463906–5.898559 m | 9/9 / 0 / 0 | 1/3 / 3/3 / 6/9 |
+  | env1 | 1.991966–21.814642 m | 8/9 / 1 / 0 | 3/3 / 3/3 / 9/9 |
+
+  Primary is the preregistered maximum same-index truth-position distance over each pair's **common** steps. env0 had
+  one capture (OFF repeat1, ep005) and five crashes; env1 six crashes. Matching terminal labels do not imply matching
+  trajectories. Later fixed-step comparisons have smaller changing denominators; unavailable ranges remain
+  NOT_AVAILABLE (no k599 comparison). These n=3 dependent-pair ranges establish neither equivalence nor a causal
+  contact-subscriber effect, and do not qualify historical-recorder noninterference, OAK-D, camera-only, the proposed
+  vehicle, S5 or flight. The seed's control of sensor-plugin noise stays NOT_TESTED.
+- **Reporting cautions:** target_t=-1/count0 is an initialization sentinel. For ep000/ep001 the large stamp maximum
+  includes this sentinel boundary; do not describe the 37,084,000 µs difference as a physical 37 s sensor delay.
+  The original reading bytes and generic coverage-limit text are preserved; actual live coverage here ends at
+  578 steps, separate from the synthetic CPU600-step control.
+- **Independent review:** `docs/evidence/sitl_2026-11-05/s4r1/REVIEW_attempt02_r1.md`, fresh-context Codex (exact
+  deployment identifier not exposed; not Opus), PASS_WITH_LIMITS, no required repair. It independently verified all
+  raw package hashes, ULogs/framing/topic coverage, contacts and floor-positive controls, runtime/source/F bindings,
+  all 30 primary/fixed-step and step0-stage values and three complete selected pair comparisons. Audit-only clean,
+  one-step-missing and one-step-duplicate logs accept the genuine case and reject both damaged controls. No raw edit.
+- **Records/raw:** new `smoke03_contact_on_env0_*`, `attempt02_*`, review and `EXECUTION_amend2.json` in the existing
+  S4R-1 evidence folder. Full manifests bind 208 smoke files / 30,788,544 B and 4,222 attempt files / 385,522,019 B
+  (the latter includes reading.json). Raw stays in `~/motar_tmp/s4r1_20261110/`; source/approval, execution logs and
+  audit artifacts are bound in `EXECUTION_amend2.json` under `~/motar_tmp/sitl_amend2_20261110/`. No raw deletion,
+  push or main merge. Frozen Policy F and original negative evidence remain unchanged.
+- **Next decision:** a separately scoped follow-up design should isolate initial-state/hover variation before any
+  causal sensor/subscriber comparison. No new attempt or protocol change is authorized by the completed run.
+- **Record checks/local commit:** all copied raw summaries, reading and audit report match their packaged bytes;
+  `tests/test_experiment_index.py` 9/9 PASS after staging, and staged whitespace check PASS. The source at d6e8312
+  already passed PUBLIC_CPU 3,935/0 failures/0 errors before execution; these new records change no implementation,
+  test or preregistration, so the full suite was not repeated. Independent numeric/contact controls and raw integrity
+  passed as above. This local commit contains only the new result records, experiment index and this WORKLOG entry.
