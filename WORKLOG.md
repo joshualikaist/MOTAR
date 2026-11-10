@@ -25977,3 +25977,31 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Records:** `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md`, byte-copied `analysis_v3e.json`, `identity_report_v3e.json`, `eval_run_report_v3e.json`, and `SHA256_MANIFEST_v3e.json` (490 files, 404,581,600 bytes). No existing execution source, preregistration, raw or checkpoint was changed.
 - **Validation so far:** E3 focused tests 16 OK (1.810 s), experiment index 9 OK, public docs PASS, current host faults 0. Original final precommit PUBLIC_CPU: 3,826 run, 0 failures, 0 errors; not rerun for records-only changes.
 - **Next:** real-sensor invalid-depth qualification remains open as `motar-783.8`; inspect available OAK-D bench inputs and fix a collection/analysis protocol before making sensor-transfer claims. This review authorizes no further GPU run. WORKLOG, family index and only the new E3 evidence records are locally committed; no push or main merge.
+
+## 2026-11-10 — Existing-data utility audit r1 recorded (CPU, descriptive): integrity and coverage hold; the missing synchronized streams motivate S4R-1; independent review r1 PASS_WITH_LIMITS
+
+- **User (Codex session, ~09:29 KST):** defer OAK-D; audit existing data quality and utility first, then plan and
+  advance S5 and Gazebo repeatability.
+- **Codex** wrote the audit (protocol fixed first, `audit_data.py` + `enrich_metrics.py`) in
+  `~/motar_tmp/sitl_next_20261110/data_audit_r1/`. A second Codex worker recomputed it independently (5,346 inputs,
+  0 failures). The Codex session ended at 09:45 KST without a handoff.
+- **Claude Code** (user ~09:55: "앞서서 코덱스가 친 명령을 보면서 ... 동일하게 진행해줄 수 있어?") finished the step.
+  - **Review r1** (Claude Opus 5.5): **PASS_WITH_LIMITS**, no BLOCKER or MAJOR finding. Every overlapping number
+    agrees across the author, the second worker and the reviewer's own raw recount.
+  - **What the numbers show:**
+    - all four historical manifests match: CAM-K1-E 322, CAM-K2-E 572, CAM-K2-E3 490 and S4F1 2,021 files, with
+      0 missing or mismatched;
+    - every CAM primary cell has 2,048 quota rows;
+    - all 462 scheduled SITL episodes, their step files and ULogs are present;
+    - S4 and S4F1 scene outcomes agree in 17 / 39 scenes, κ −0.0035.
+  - **The minors were repaired as a record addendum** (`ADDENDUM_r1a.md`). The audit report, `README.md`, stays a
+    byte copy:
+    - `sources_addendum_r1a.json` gives the source path, key and SHA-256 for each README number not in the metrics;
+    - the sentinels in the SITL traces are disclosed: `target_t` −1 at k = 0 in 55 / 60 S4 and 144 / 160 F1
+      episodes, and +inf clearance in 2 F1 rows;
+    - the scripts and protocol are copied in, and the 1 MB `ORIGINAL_MANIFEST.json` is declared external.
+- **Reading:** recollecting outcomes is not justified, because outcome integrity holds. The data lack synchronized
+  frames, observations, send/receive timing and contacts, and they cannot explain why scene outcomes do not repeat.
+  Hence S4R-1, a bounded repeatability diagnostic.
+- **Records:** `docs/evidence/sitl_2026-11-05/data_utility/`.
+- **Next:** S5 v2 and S4R-1, each with an independent review, a commit at NOT_RUN, and then the user's run approval.

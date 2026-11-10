@@ -957,6 +957,12 @@ family that is in the test's scope.
     - Found while designing it: S4's 0.10 m ground filter is measured from world z = 0, while the rendered floor's
       top is at 0.05 m, so its margin was 0.05 m.
     - `docs/evidence/sitl_2026-11-05/s4f1/`.
+  - **Existing-data utility audit r1 (2026-11-10, CPU, descriptive; independent review r1 PASS_WITH_LIMITS):**
+    - All four historical manifests match, CAM quota rows are complete, and the SITL ledgers, steps and 462 ULogs have
+      their intended coverage.
+    - Not recorded: raw frames, actor observations, the send/receive timeline and contacts.
+    - Recommendation: a bounded repeatability diagnostic, S4R-1.
+    - `docs/evidence/sitl_2026-11-05/data_utility/`, with `ADDENDUM_r1a.md`.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

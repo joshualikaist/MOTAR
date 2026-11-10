@@ -1,0 +1,97 @@
+{
+ "addendum": "r1a, after independent review r1 MINOR-1 (2026-11-10): README numbers that were not in audit_r1.json, extracted with source path, key and SHA-256",
+ "values": [
+  {
+   "readme": "S4/F1 sensors 20 Hz, 160x90, horizontal FOV 1.51843645 rad",
+   "source": "/home/fair/workspaces/px4_ws/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/models/navrl_quad_s4/navrl_quad_s4.sdf",
+   "sha256": "d8bab5189b4f7fc733134e4cf81d81f53ae77c50c92cb6c0ce20d6b992d42038",
+   "key": "sdf //sensor (update_rate, horizontal_fov, image/width, image/height)",
+   "value": [
+    {
+     "name": "motar_lidar",
+     "type": "gpu_ray",
+     "update_rate": "20",
+     "horizontal_fov": null,
+     "width": null,
+     "height": null
+    },
+    {
+     "name": "motar_rgb",
+     "type": "camera",
+     "update_rate": "20",
+     "horizontal_fov": "1.51843645",
+     "width": "160",
+     "height": "90"
+    },
+    {
+     "name": "motar_depth",
+     "type": "depth",
+     "update_rate": "20",
+     "horizontal_fov": "1.51843645",
+     "width": "160",
+     "height": "90"
+    }
+   ]
+  },
+  {
+   "readme": "physics 250 Hz",
+   "source": "/home/fair/motar_tmp/s4f1_20261108/attempt01/ep000/world/motar_s4.world",
+   "sha256": "bcd0c35cc597d10e1426a26e76f19e6d69313b1f4c255890cf256694f3975f38",
+   "key": "//physics real_time_update_rate, max_step_size",
+   "value": {
+    "real_time_update_rate": "250",
+    "max_step_size": "0.004"
+   }
+  },
+  {
+   "readme": "CAM camera 66 x 54 deg, translation [0.1, 0, 0.03] m, max range 20 m",
+   "source": "/home/fair/motar_tmp/camk2v3e_20261110/raw/eval_01/V3s1/E2_obstacle_aware__70bars__seed4501/kroc2027_summary.json",
+   "sha256": "8ed91349368cf0c8a95088a6de5fcb40460e1c4fb608558e83f511a4ba1bce8d",
+   "key": "camera",
+   "value": {
+    "hfov_deg": 66.0,
+    "vfov_deg": 54.0,
+    "translation_m": [
+     0.1,
+     0.0,
+     0.03
+    ],
+    "max_range_m": 20.0
+   }
+  },
+  {
+   "readme": "rl_dt_s 0.1",
+   "source": "/home/fair/motar_tmp/camk2v3e_20261110/raw/eval_01/V3s1/E2_obstacle_aware__70bars__seed4501/kroc2027_episodes.jsonl",
+   "sha256": "9338f130aefb4892ed08c048d47744c06b81cd5fa54011abef54815130d20b02",
+   "key": "first row rl_dt_s",
+   "value": 0.1
+  },
+  {
+   "readme": "depth MinZ 0.4 m",
+   "source": "/home/fair/motar_tmp/camk2v3e_20261110/raw/eval_01/V3s1/E2_obstacle_aware__70bars__seed4501/realveh_receipt.json",
+   "sha256": "9d3eee6b487e17e9e7dcca471cbd58d3614b084476a983ac39686e183a0f239e",
+   "key": "settings.depth_model.NAVRL_DEPTH_MINZ_M",
+   "value": 0.4
+  },
+  {
+   "readme": "E3 review 3,726 comparison leaves",
+   "source": "docs/evidence/camonly_2026-11-04/camk2e/review_summary_v3e_r1.json",
+   "sha256": "d7e0ba64c529b959cf80010fc3c537d44b44ed1cb37098b289158072b77b9afb",
+   "key": "/checks/assertions_and_comparison_leaves",
+   "value": 3726
+  },
+  {
+   "readme": "old 894 files = CAM-K1-E 322 + CAM-K2-E 572 manifest entries",
+   "source": [
+    "docs/evidence/camonly_2026-11-04/camk1e/SHA256_MANIFEST.json",
+    "docs/evidence/camonly_2026-11-04/camk2e/SHA256_MANIFEST.json"
+   ],
+   "key": "count",
+   "value": [
+    322,
+    572,
+    894
+   ]
+  }
+ ]
+}
