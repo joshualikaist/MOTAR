@@ -25954,3 +25954,26 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `~/motar_tmp/camk2v3e_20261110/public_cpu_precommit2.log`.
 - **Next:** `~/motar_tmp/camk2v3e_20261110/run_camk2v3e.sh` (identity, then eval, then analysis; about 2.5 h on an idle
   host). The tree stays frozen until it ends.
+
+## 2026-11-10 — CAM-K2-E3 completed: gate D NO_DETECTED_CHANGE (−1.50 / −1.15 pp, below the 2 pp floor); independent results review PASS
+
+- **User (this session):** asked whether analysis had finished and requested independent results review. The chain had already ended at 05:19:21 KST; no GPU evaluation was started or repeated in this review session.
+- **Execution:** `aaca40e`, `~/motar_tmp/camk2v3e_20261110/run_camk2v3e.sh`. Five identity cells IDENTITY_PASS, 02:54:46–03:10:27 KST; 48 eval cells COMPLETE, 03:10:27–05:19:18; CPU analysis exited zero at 05:19:21. Host faults 0 → 0, same boot.
+- **Primary:** per-environment quota rows (2,048 per cell), 12 density/seed blocks per arm; intervals are density-stratified bootstrap and t (8 df).
+
+| Contrast | Crash change (pp) | Bootstrap 95% | t 95% | Fixed label |
+| --- | ---: | --- | --- | --- |
+| D_s1 | -1.5015 | [-2.0264, -0.9766] | [-2.2557, -0.7472] | NO_DETECTED_CHANGE |
+| D_s2 | -1.1475 | [-1.7619, -0.5493] | [-2.0333, -0.2616] | NO_DETECTED_CHANGE |
+| R_s1 | -1.8188 | [-2.2746, -1.4160] | [-2.4446, -1.1931] | NO_DETECTED_CHANGE |
+| R_s2 | -2.6408 | [-3.0233, -2.2502] | [-3.2024, -2.0791] | SMALL_REDUCTION |
+| T_s1 | +0.3174 | [-0.1994, +0.8138] | [-0.4442, +1.0789] | NEGLIGIBLE |
+| T_s2 | +1.4933 | [+0.7365, +2.2420] | [+0.4033, +2.5833] | NO_DETECTED_CHANGE |
+
+- **Rates:** V2 s1/s2 14.8397 / 14.8397% crash; V3 13.3382 / 13.6922%; V2R (v2 + rule at evaluation) 13.0208 / 12.1989%. Timeout 0 throughout. All ten controls and all execution-analysis bindings pass.
+- **Interpretation:** D intervals exclude zero, but both means miss the preregistered 2 pp reduction floor; the gate label remains NO_DETECTED_CHANGE. R and T each read SEEDS_DISAGREE across seeds. D = R + T is arithmetic only; T mixes retraining with input mismatch and training-run variation. A positive added benefit from v3 retraining over V2R is not established.
+- **Hypothesis that DIAG_OK during training establishes registered evaluation recovery is not supported:** the evaluation misses the fixed reduction threshold. This does not invalidate the CPU near-depth gap observation or qualify the rule for a real OAK-D Pro.
+- **Independent results review r1:** PASS, fresh-context Codex worker `/root/e3_result_review` (`gpt-6.1-sol`). Independent stdlib quota-ledger reconstruction agrees on all primary rates/intervals/labels, all ten controls and descriptive summaries; 3,726 comparison leaves pass, all 894 old-manifest and 490 new-manifest files match, four checkpoint pins match, review faults 0 → 0. No blocking/high/medium finding. One low documentation finding (resource limits in the example command) repaired. The initial audit-only omission of extensionless `tools/realveh_python` and its one false failure are preserved with the corrected PASS; no execution record changed. Review report, compact recomputation and audit manifest are `RESULTS_REVIEW_v3e_r1.md`, `review_summary_v3e_r1.json`, `REVIEW_MANIFEST_v3e_r1.json` in the same evidence folder.
+- **Records:** `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md`, byte-copied `analysis_v3e.json`, `identity_report_v3e.json`, `eval_run_report_v3e.json`, and `SHA256_MANIFEST_v3e.json` (490 files, 404,581,600 bytes). No existing execution source, preregistration, raw or checkpoint was changed.
+- **Validation so far:** E3 focused tests 16 OK (1.810 s), experiment index 9 OK, public docs PASS, current host faults 0. Original final precommit PUBLIC_CPU: 3,826 run, 0 failures, 0 errors; not rerun for records-only changes.
+- **Next:** real-sensor invalid-depth qualification remains open as `motar-783.8`; inspect available OAK-D bench inputs and fix a collection/analysis protocol before making sensor-transfer claims. This review authorizes no further GPU run. WORKLOG, family index and only the new E3 evidence records are locally committed; no push or main merge.

@@ -775,9 +775,12 @@ family that is in the test's scope.
       0.26 m. `docs/evidence/camonly_2026-11-04/camk2e/`.
   - **CAM-K2 v3 (preregistered 2026-11-09 at `d85589d`; both seeds TRAINED):** v2 retrained with a depth-validity
     rule (dense invalid blob → surface at MinZ). The training diagnostic read DIAG_OK (hit_token 0.70 / 0.69 vs v2's
-    0.17 / 0.19). Not evaluated. Sim-to-real validity of the rule is NOT_TESTED.
-  - **CAM-K2-E3 v1 (preregistered 2026-11-10; NOT_RUN):** v3 with the rule and v2 with the rule added at evaluation,
-    against CAM-K2-E's v2 cells under the v2 treatments. Gate D: crash, −5 pp; R and T reported.
+    0.17 / 0.19). CAM-K2-E3 evaluated it; gate D NO_DETECTED_CHANGE (results review r1 PASS).
+    Sim-to-real validity of the rule is NOT_TESTED.
+  - **CAM-K2-E3 v1 (ran 2026-11-10 at `aaca40e`; identity IDENTITY_PASS, 48 cells COMPLETE; results review r1 PASS):** v3 with the rule and v2 with the rule added at evaluation, against CAM-K2-E's
+    v2 cells under the v2 treatments. Gate D NO_DETECTED_CHANGE: −1.50 / −1.15 pp, below the 2 pp floor despite
+    intervals excluding zero. R and T SEEDS_DISAGREE.
+    `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -796,6 +799,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md` (CAM-K2-E: matched evaluation of CAM-K2 v2 against CAM-K1 under the treatments and nominally)
   - → `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md` (CAM-K2 v3: v2 retrained with an invalid-depth validity rule)
   - → `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md` (CAM-K2-E3: matched evaluation of CAM-K2 v3 against CAM-K2 v2)
+  - → `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md` (E3 result record and independent review)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,

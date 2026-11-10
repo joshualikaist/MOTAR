@@ -1,0 +1,54 @@
+{
+  "manifest_files_checked": 490,
+  "raw_execution_mismatches": [],
+  "source_mismatches": [],
+  "current_host_fault_count": 0,
+  "focused_test_exit": 0,
+  "focused_tests": {
+    "tests": 16,
+    "result": "PASS",
+    "wall_s": 1.81
+  },
+  "focused_seconds": 1.81,
+  "full_suite": "NOT_RERUN: records-only change; original final precommit PUBLIC_CPU3826tests0failures0errors preserved and bound in execution manifest.",
+  "public_docs": "PASS",
+  "experiment_index": {
+    "tests": 9,
+    "result": "PASS"
+  },
+  "validation_artifacts": {
+    "/home/fair/motar_tmp/camk2v3e_20261110/recording_20261110/focused_tests.log": {
+      "sha256": "9f6dd110edb75dd41af88fcc987d850445f7f6ff990c48b91f628984100d8883",
+      "bytes": 115
+    },
+    "/home/fair/motar_tmp/camk2v3e_20261110/recording_20261110/experiment_index.log": {
+      "sha256": "a7f1bad17fa54e20b896e23e2d854c2527148b952c60d27df7f5a11e47f253bf",
+      "bytes": 107
+    },
+    "/home/fair/motar_tmp/camk2v3e_20261110/recording_20261110/public_docs.log": {
+      "sha256": "8b5294939309438b23ffd90c2f16e0d8edc918269d236244a0e346928b91b2d3",
+      "bytes": 138
+    },
+    "/home/fair/motar_tmp/camk2v3e_20261110/recording_20261110/integrity.json": {
+      "sha256": "eec9f01e5787edee4e80a7198ccf0e619d0f9bee3f4b4932eff67d7577346378",
+      "bytes": 361
+    },
+    "/home/fair/motar_tmp/camk2v3e_20261110/recording_20261110/baseline.json": {
+      "sha256": "c4b456918e83e0ece186514ef82ce55b7d2ae7f1f599d219e2513254a3ffb135",
+      "bytes": 700
+    },
+    "/home/fair/motar_tmp/camk2v3e_20261110/recording_20261110/make_record.py": {
+      "sha256": "45beaef1ef921198e89aca0f015720a75977ee594eb483727b225150f1acb013",
+      "bytes": 7809
+    }
+  },
+  "inherited_precommit_full_cpu": {
+    "tests": 3826,
+    "failures": 0,
+    "errors": 0,
+    "log": "/home/fair/motar_tmp/camk2v3e_20261110/public_cpu_precommit2.log",
+    "sha256": "d97dd796b88efb63950cb340dfd64683ee6b373adb0216cbfa0c061dbc4ad2d2"
+  },
+  "status": "PASS_FOR_RECORDS_ONLY_SCOPE",
+  "review": "PASS: independent review r1 in separate evidence record"
+}
