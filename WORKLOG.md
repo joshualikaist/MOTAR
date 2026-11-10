@@ -26082,3 +26082,41 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **PUBLIC_CPU:** 3,907 run, 0 failures, 0 errors; host faults 0 → 0.
 - **Next:** the user's scoped GPU-rendering approval for the S4R-1 smoke and attempt01, and separately for the S5 v2
   SITL run. Both need an idle host, and the two must not run together.
+
+## 2026-11-10 — S5 v2 and S4R-1 v1 development smokes both ABORTED on harness defects; both main attempts refused (fail-closed); no result
+
+- **User (~15:31 KST):** "둘다 실행" approved the S5 v2 SITL run and the S4R-1 GPU-rendering run, one at a time, on an idle
+  host.
+- **Approvals at `ede0a14`:**
+  - `~/motar_tmp/sitl_next_20261110/s5_safety_v2/execution_approval.json`;
+  - `~/motar_tmp/s4r1_20261110/execution_approval.json`.
+- **Chain:** `~/motar_tmp/sitl_runs_20261110/run_s5_s4r1.sh` (SHA-256 `abb6ade7…`), `chain.log` (`44014161…`).
+  15:31:35–15:34:12, host faults 0 → 0, free disk 6 GB.
+- **S5 v2 smoke01: ABORTED.** `TypeError: Object of type bytearray is not JSON serializable` stopped it before any
+  scenario was recorded (0 of 3).
+  - `--launch` refused: "no development smoke record". `--analyze` had nothing to read.
+  - My chain gated on the exit code, and the smoke tool exits 0 even when it aborts, so the chain went on. The
+    refusals held anyway.
+- **S4R-1 smoke01_contact_on_env0: ABORTED.** The one member read HARNESS_INVALID after 48.6 s; the outcome was
+  capture, with LATE at most 0.084 s. Reasons:
+  - `RECORDING_WRITE`: the same bytearray JSON error;
+  - `CONTACT_AUDIT: RECORDER_LOSS`: 4 simulator-time gaps, 6 missing steps in the contact log;
+  - `CONTACT_AUDIT: RECORDER_ORDER`: 3 non-increasing simulator times.
+
+  `--launch` refused because the instrumentation smoke was invalid.
+- **Hypothesis "the harness is ready for live data" rejected:** measured above. Raw MAVLink payload bytes (bytearray)
+  are recorded but not serializable. That code path was not exercised with real pymavlink objects in the CPU tests.
+  In S4R-1 the contact subscriber's log also has gaps and reorderings under rendering.
+- **Records:**
+  - `docs/evidence/sitl_2026-11-05/s5_safety_v2/smoke01_{final,attempt}.json` and `smoke01_SHA256_MANIFEST.json`
+    (13 files, raw in `~/motar_tmp/sitl_next_20261110/s5_safety_v2/smoke01/`);
+  - `docs/evidence/sitl_2026-11-05/s4r1/smoke01_contact_on_env0_{final,attempt}.json` and
+    `smoke01_contact_on_env0_SHA256_MANIFEST.json` (142 files, raw in `~/motar_tmp/s4r1_20261110/`).
+  - The aborted records stay as recorded. A rerun writes to a new folder.
+- **Next (user decision):**
+  - Both need a code repair: serialize bytes as hex in both tools, with a test that uses real pymavlink message
+    objects.
+  - S4R-1 also needs a decision on contact-log gaps and ordering (tolerate within a stated bound, or treat as a
+    recorder limitation).
+  - Each repair goes in a dated amendment, with a review and a new commit. That needs a new scoped approval because
+    HEAD changes, and new smoke folders, since the smokes are single-use.
