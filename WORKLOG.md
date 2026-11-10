@@ -26162,3 +26162,53 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
     LOW-1: the sender system is not checked against the pin. LOW-2: the BaseException-in-recording path is untested.
 - **Tests:** S5 47 → 62 OK; S4R-1 34 → 44 OK. PUBLIC_CPU 3,932 run, 0 failures, 0 errors; faults 0 → 0.
 - **Next:** a new scoped approval at this commit for S5 smoke02 + attempt01 and S4R-1 smoke02 + attempt01.
+
+## 2026-11-10 — Amendment-1 run: S4R-1 smoke02 COMPLETE but attempt01 ABORTED at boot 8/12 (LATE 0.168 s, INCOMPLETE_INVALID); S5 smoke02 N0 PASS (telemetry now works) but N0R INVALID BINDING_CHANGED (ABORTED); no result
+
+- **User (~22:05 KST):** "다시 진행해" → re-run approvals at `023998f` (old approvals kept as
+  `execution_approval_ede0a14_used_smoke01.json`).
+- **Chain:** `~/motar_tmp/sitl_runs_20261110/run_s5_s4r1_amend1.sh`, `chain_amend1.log`, 22:11:46–22:23:22, host faults
+  0 → 0.
+  - The order was changed to S4R-1 first for disk: 4.26 GiB free, against S4R-1's 4 GiB and S5's 3 GiB launch floors.
+  - The two units were made independent of each other.
+- **S4R-1:**
+  - **smoke02_contact_on_env0: COMPLETE and VALID** (crash, LATE 0.136 s, 67.4 s). This passed the gate.
+  - **attempt01: ABORTED at boot index 7** (env 1, repeat 1, contact ON, valid false, **LATE 0.168 s** > 0.15 s), with
+    a wall time of 107.7 s against 48.7–63.5 s for the other boots. The preregistered stop rule held: stop on the
+    first invalid member, no retry.
+  - `--analyze`: **INCOMPLETE_INVALID** (attempt ABORTED, fixed-12 incomplete, invalid member 7). No reading.
+  - Outcomes of the 8 recorded boots are listed for the record only. They are not a result, and per-scene readings are
+    not allowed. Each entry is index, arm, env/repeat: outcome:
+
+    | Index | Arm | Env/repeat | Outcome |
+    | --- | --- | --- | --- |
+    | 0 | off | 0/0 | capture |
+    | 1 | on | 0/0 | crash |
+    | 2 | on | 1/0 | crash |
+    | 3 | off | 1/0 | crash |
+    | 4 | on | 0/1 | crash |
+    | 5 | off | 0/1 | capture |
+    | 6 | off | 1/1 | crash |
+    | 7 | on | 1/1 | capture (LATE, invalid) |
+
+  - Output: 263 MB.
+- **S5 v2, smoke02:**
+  - **N0: VALID and PASSED.** This was the first live S5 scenario with telemetry, so the amendment-1 autopilot pin
+    works.
+  - **N0R: INVALID `BINDING_CHANGED`** → ABORTED, and the attempt did not start.
+  - **Diagnosis (from the two runtime bindings):** the bound pymavlink dialect file changed from `dialects/v10/...`
+    (1,595,398 B) in ep000 to `dialects/v20/...` (2,600,960 B) in ep001. mavutil switches to the MAVLink 2 dialect
+    after PX4's first v2 frame and keeps it in the process, so the second scenario's binding differs from the first.
+    This is a harness binding defect, not a runtime change. Per-episode world and log paths also differ; check whether
+    `binding_core` excludes them.
+- **Records:** in `docs/evidence/sitl_2026-11-05/`:
+  - `s5_safety_v2/smoke02_*` (27 files);
+  - `s4r1/smoke02_contact_on_env0_*` (460 files);
+  - `s4r1/attempt01_*` (2,918 files, with `attempt01_reading.json`).
+
+  These are summaries, `episodes.jsonl` and SHA-256 manifests. The raw data stay in `~/motar_tmp`.
+- **Next (user decision):**
+  - S5: bind both dialect files, or bind at a fixed point, then amendment 2, review and a new smoke folder.
+  - S4R-1: a LATE invalidation is a preregistered stop. A new attempt (attempt02) needs an amendment and a decision.
+    Options are to keep the 0.15 s bound and rerun on a quieter host (boot 7's 107.7 s wall time suggests a host
+    stall), or to treat LATE boots differently. Either way it needs review and a new approval.
