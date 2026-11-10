@@ -963,9 +963,10 @@ family that is in the test's scope.
     - Not recorded: raw frames, actor observations, the send/receive timeline and contacts.
     - Recommendation: a bounded repeatability diagnostic, S4R-1.
     - `docs/evidence/sitl_2026-11-05/data_utility/`, with `ADDENDUM_r1a.md`.
-  - **S5 safety v2 (preregistered 2026-11-10; design reviews r1 AMEND_FIRST, repaired, and r2 PASS_WITH_LIMITS;
-    NOT_RUN):** ten PX4 v1.14.3 failsafe scenarios over MAVLink with a phase-bounded data contract and per-scenario
-    cause flags. Live discrimination is NOT_TESTED. `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`.
+  - **S5 safety v2 (2026-11-10; smoke01/02 ABORTED; no attempt result):** smoke02 N0 passed; N0R was INVALID
+    BINDING_CHANGED because mavutil switched dialect versions. Amendment 2 binds both decoder sources and prepares
+    smoke03; independent review PASS_WITH_LIMITS, NOT_RUN, new final-HEAD approval pending. Ten failsafe scenarios retain their criteria;
+    live discrimination is NOT_TESTED. `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`.
   - **S4R-1 v1 (preregistered 2026-11-10; design reviews r1 and r2 AMEND_FIRST, repaired, and r3 PASS_WITH_LIMITS;
     NOT_RUN):** a Gazebo sensor repeatability diagnostic on S4F-1's `lit_rendered` stack. Two scenes, three repeats
     each, with the contact subscriber OFF and ON: 12 boots after a smoke. It reports the first recorded divergence by
@@ -1006,6 +1007,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md` (S4R-1: Gazebo sensor repeatability diagnostic; NOT_RUN)
   - → `docs/evidence/sitl_2026-11-05/s5_safety_v2/` and `docs/evidence/sitl_2026-11-05/s4r1/` smoke01 records (2026-11-10: both development smokes ABORTED on harness defects; attempts refused)
   - → `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md` (S5 v2 amendment 1: autopilot pinned from the PX4 heartbeat, bytes as hex, exit codes, smoke02)
+  - → `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md` (after smoke02 ABORTED at N0R: bind both MAVLink decoder sources, new smoke03; NOT_RUN)
   - → `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md` (S4R-1 amendment 1: bytes as hex, contact late-arrival rule, exit codes, smoke02)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
@@ -1023,7 +1025,8 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`,
-  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`, `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md`
+  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`, `docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_amendment1_2026-11-10.md`,
+  `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`
 
 ## Not yet in the repository
 

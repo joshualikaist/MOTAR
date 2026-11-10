@@ -24,7 +24,7 @@ Live discrimination is NOT_TESTED: every must-FAIL control is in the fake-PX4 CP
 Attempt scenarios (SCHEDULE): N0 null, OBL offboard setpoints stopped, GFH out past the horizontal fence, GFV up past the
 vertical fence, OVJ MANUAL_CONTROL stick pulse, OVR RC_CHANNELS_OVERRIDE stick pulse, RCL RC stopped, DLL GCS heartbeat
 stopped, KIL RC kill channel high, FDS GCS disarm (non-forced refused in the air, forced 21196 disarms). The
-development smoke (SMOKE_SCHEDULE; smoke02 since amendment 1, smoke01 ABORTED) runs the nulls N0, N0R (RC streamed)
+development smoke (SMOKE_SCHEDULE; smoke03 since amendment 2, smoke01/02 ABORTED) runs the nulls N0, N0R (RC streamed)
 and N0J (joystick streamed), read only for harness validity.
 
 PX4 v1.14.3 facts used (read in /home/fair/workspaces/px4_ws/PX4-Autopilot, tag v1.14.3; review r1 re-traced them):
@@ -60,7 +60,9 @@ cleanup and hid the first failure: bytes, bytearray and memoryview are recorded 
 BAD_DATA and UNKNOWN_<id> messages carry a bytearray `data` field), trace.json is written through trace_text(), values
 kept as a tagged repr are counted (recording_warnings), and a recording failure after an earlier failure keeps that
 first failure at the head of the reason (RecordingAfterError); --smoke and --launch exit non-zero unless COMPLETE (and,
-for --smoke, the attempt's smoke gate passes); the smoke folder is smoke02 and SCOPE says so.
+for --smoke, the attempt's smoke gate passes).
+Amendment 2 binds mavutil and both installed v10/v20 dialect files, independent of the decoder selected at connection
+time. smoke02 stopped at N0R because mavutil had switched from v10 to v20 during N0; smoke03 is a new single-use gate.
 
   tools/sitl_s5_safety.py --check | --smoke | --launch | --analyze [ATTEMPT_DIR]
 Run only under the dated preregistration's exact CPU environment, idle-host and deadline limits.
@@ -86,19 +88,20 @@ import sitl_s3b_formal as SF                                    # noqa: E402
 
 PROTOCOL = "s5-safety-v2"
 PREREG = "docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md"
-AMENDMENT = "docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md"      # after smoke01 ABORTED
-SCOPE = ("S5 safety v2 amendment1: PX4 v1.14.3 SITL on navrl_quad (stand-in vehicle), fixed safety parameter set v1, "
+AMENDMENT1 = "docs/plans/prereg_sitl_s5_safety_v2_amendment1_2026-11-10.md"
+AMENDMENT = "docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md"
+SCOPE = ("S5 safety v2 amendment2: PX4 v1.14.3 SITL on navrl_quad (stand-in vehicle), fixed safety parameter set v1, "
          "scenarios N0 OBL GFH GFV OVJ OVR RCL DLL KIL FDS once each in this order, one fresh-rootfs boot per scenario; "
-         "development smoke02 (nulls N0 N0R N0J, read for harness validity only) then attempt01; no retries; "
+         "development smoke03 (nulls N0 N0R N0J, read for harness validity only) then attempt01; no retries; "
          "SITL only, no claim about real hardware")
 UNIT_DIR = pathlib.Path.home() / "motar_tmp" / "sitl_next_20261110" / "s5_safety_v2"
 ATTEMPT_DIR = UNIT_DIR / "attempt01"
-SMOKE_DIR = UNIT_DIR / "smoke02"                     # amendment 1: smoke01 is spent (ABORTED)
+SMOKE_DIR = UNIT_DIR / "smoke03"                     # smoke01/02 are spent (ABORTED)
 MODEL = "navrl_quad"
 AIRFRAME = SF.AIRFRAMES[MODEL]
 OWN_SOURCES = ("tools/sitl_s5_safety.py", "tests/test_sitl_s5_safety.py", "tools/sitl_s3b_formal.py",
                "tools/sitl_s3b_closed_loop.py", "tools/sitl_owned_session.py", "tools/sitl_dev08_attempt.py", PREREG,
-               AMENDMENT)
+               AMENDMENT1, AMENDMENT)
 
 # ------------------------------------------------------------------------------------------- the parameter set
 # (name, PX4 type, value, v1.14.3 definition, meaning). Conservative SITL stand-ins; every value is a user decision for
@@ -1023,6 +1026,27 @@ def stop_owned_logger(session, plan, expected_binary=PX4_BINARY):
     return out
 
 
+def pymavlink_files(link):
+    """Bind both decoder sources without importing a dialect or changing mavutil's protocol state.
+
+    mavutil switches its global decoder at the first v2 frame and retains it across connections. Both installed
+    sources belong to the runtime dependency set before and after that switch. Missing sources fail closed.
+    Test doubles without mavutil have no pymavlink dependency to bind.
+    """
+    mu = getattr(link, "mu", None)
+    if mu is None:
+        return {}
+    dialect = mu.current_dialect
+    if not isinstance(dialect, str) or not dialect.isidentifier():
+        raise RuntimeError("PYMAVLINK_DIALECT_INVALID: %r" % dialect)
+    mavutil_path = pathlib.Path(mu.__file__).resolve()
+    paths = [("pymavlink_mavutil", mavutil_path)] + [
+        ("pymavlink_dialect_" + version, mavutil_path.parent / "dialects" / version / (dialect + ".py"))
+        for version in ("v10", "v20")]
+    return {key: {"path": str(path), "bytes": path.stat().st_size, "sha256": SF.sha256_file(path)}
+            for key, path in paths}
+
+
 def run_scenario(OS, V0, scen, ep_dir, link_factory=None, clock=time.monotonic, sleep=time.sleep, timing=None,
                  table=None):
     timing = dict(TIMING, **(timing or {}))
@@ -1051,15 +1075,12 @@ def run_scenario(OS, V0, scen, ep_dir, link_factory=None, clock=time.monotonic, 
             OS.launch_px4_gazebo(session, plan)
             session.sleep(3)
             L = link_factory()
-            for key, module in (("pymavlink_mavutil", getattr(L, "mu", None)),
-                                ("pymavlink_dialect", sys.modules.get(type(L.m.mav).__module__))):
-                path = pathlib.Path(getattr(module, "__file__", ""))
-                if path.is_file():
-                    res["runtime_binding"]["files"][key] = {"path": str(path), "bytes": path.stat().st_size,
-                                                             "sha256": SF.sha256_file(path)}
-            instrument_link(L, clock)
             try:
+                res["runtime_binding"]["files"].update(pymavlink_files(L))
+                res["mavlink_decoder_at_connect"] = type(L.m.mav).__module__
+                instrument_link(L, clock)
                 pinned = pin_autopilot(L, HEARTBEAT_WAIT_S)                # amendment 1 (not wait_heartbeat)
+                res["mavlink_decoder_after_pin"] = type(L.m.mav).__module__
                 res["autopilot"] = getattr(L, "autopilot_pin", None)
                 if pinned is None:
                     raise RuntimeError("no autopilot heartbeat (component %d, MAV_AUTOPILOT_PX4) within %.0f s"
@@ -1703,7 +1724,7 @@ def launch_problems(AT, gs, approval_path, attempt_dir, sources, env_report=None
 
 
 def smoke_problems(smoke_dir, head, sources):
-    """attempt01 needs the development smoke (smoke02 since amendment 1) COMPLETE at this HEAD and these source bytes,
+    """attempt01 needs the development smoke (smoke03 since amendment 2) COMPLETE at this HEAD and these source bytes,
     with N0, N0R and N0J all VALID and nominal (the RC and joystick paths seen before any injection depends on them;
     review r1 M1)."""
     f, e, a = (pathlib.Path(smoke_dir) / n for n in ("final.json", "episodes.jsonl", "attempt.json"))

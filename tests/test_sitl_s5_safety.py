@@ -21,6 +21,7 @@ import pathlib
 import shutil
 import signal
 import struct
+import subprocess
 import sys
 import tempfile
 import time
@@ -911,6 +912,8 @@ class FakePX4Link:
 
     def __init__(self, clock, faults=()):
         self.clock, self.faults = clock, set(faults)
+        if MAVUTIL is not None:
+            self.mu = MAVUTIL
         clock.link = self
         S5.init_logs(self)
         mav = NS(param_set_send=self._pset, param_request_read_send=lambda *a: None,
@@ -1722,6 +1725,95 @@ BAD_REC = {"outcome": "ERROR", "valid": False, "invalid_reason": "ERROR", "passe
 HOST = lambda: {"loadavg": [0.1, 0.1, 0.1], "gpu_compute_apps": []}           # noqa: E731
 
 
+class TestPymavlinkBinding(unittest.TestCase):
+    @unittest.skipUnless(MAVUTIL is not None, "pymavlink not installed")
+    def test_two_real_connections_across_automatic_v1_v2_switch(self):
+        """A fresh interpreter starts in v1, receives v2, then opens a second real mavutil connection.
+        The old active-decoder binding changes; the fixed source set does not. Child globals cannot leak to PUBLIC_CPU.
+        """
+        code = '''
+import json, pathlib, sys, types
+sys.path.insert(0, sys.argv[1])
+sys.path.append(sys.argv[2])
+import sitl_s5_safety as s5
+from pymavlink import mavutil as mu
+assert mu.mavlink.WIRE_PROTOCOL_VERSION == "1.0"
+records = []
+for i in range(2):
+    c = mu.mavlink_connection(sys.argv[3], notimestamps=True)
+    try:
+        link = types.SimpleNamespace(mu=mu, m=c)
+        before = type(c.mav).__module__
+        fixed = s5.pymavlink_files(link)
+        old_path = pathlib.Path(sys.modules[before].__file__)
+        old = {"pymavlink_dialect": {"sha256": s5.SF.sha256_file(old_path)}}
+        msg = c.recv_match(type="HEARTBEAT", blocking=False)
+        assert msg is not None and msg.get_srcComponent() == 1
+        assert c.WIRE_PROTOCOL_VERSION == "2.0"
+        assert fixed == s5.pymavlink_files(link)
+        records.append({"fixed": fixed, "old": old, "before": before, "after": type(c.mav).__module__})
+    finally:
+        c.close()
+assert records[0]["before"].startswith("pymavlink.dialects.v10.")
+assert records[1]["before"].startswith("pymavlink.dialects.v20.")
+print(json.dumps(records))
+'''
+        env = dict(os.environ, MAVLINK_DIALECT="all", PYTHONDONTWRITEBYTECODE="1")
+        env.pop("MAVLINK20", None)
+        with tempfile.TemporaryDirectory() as d:
+            wire = pathlib.Path(d) / "wire.raw"
+            wire.write_bytes(px4_wire(others=False))
+            p = subprocess.run([sys.executable, "-B", "-c", code, str(TOOLS), str(PYLINK), str(wire)],
+                               env=env, capture_output=True, text=True, timeout=60)
+        self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
+        rows = json.loads(p.stdout.strip().splitlines()[-1])
+        self.assertEqual(len(rows), 2)
+        fixed = [SF.binding_core({"files": r["fixed"]}) for r in rows]
+        old = [SF.binding_core({"files": r["old"]}) for r in rows]
+        self.assertEqual(len(fixed[0]), 3)
+        self.assertEqual(fixed[0], fixed[1])
+        self.assertNotEqual(old[0], old[1])
+        rules = TestUnitRules()
+        good = [dict(OK_REC, runtime_binding={"files": r["fixed"]}) for r in rows]
+        self.assertEqual(rules.go(good, n=2), ("COMPLETE", None, 2))
+        bad = [dict(OK_REC, runtime_binding={"files": r["old"]}) for r in rows]
+        self.assertEqual(rules.go(bad, n=2)[0], "ABORTED")
+        self.assertEqual(rules.rows[-1]["invalid_reason"], "BINDING_CHANGED")
+
+    def test_both_dialect_file_changes_still_abort_and_missing_source_refused(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = pathlib.Path(d)
+            mu = NS(__file__=str(root / "mavutil.py"), current_dialect="all")
+            (root / "mavutil.py").write_text("mavutil source")
+            paths = [root / "dialects" / v / "all.py" for v in ("v10", "v20")]
+            for path in paths:
+                path.parent.mkdir(parents=True)
+                path.write_text("original " + str(path))
+            link = NS(mu=mu)
+            baseline = S5.pymavlink_files(link)
+            rules = TestUnitRules()
+            good = dict(OK_REC, runtime_binding={"files": baseline})
+            self.assertEqual(rules.go([good, good], n=2)[0], "COMPLETE")
+            for path in paths + [root / "mavutil.py"]:
+                original = path.read_text()
+                path.write_text(original + " changed")
+                changed = dict(OK_REC, runtime_binding={"files": S5.pymavlink_files(link)})
+                self.assertEqual(rules.go([good, changed], n=2)[0], "ABORTED")
+                self.assertEqual(rules.rows[-1]["invalid_reason"], "BINDING_CHANGED")
+                path.write_text(original)
+            paths[-1].unlink()
+            self.assertRaises(FileNotFoundError, S5.pymavlink_files, link)
+
+    def test_binding_core_ignores_episode_world_paths_but_compares_source_bytes(self):
+        a = {"files": {"world": {"sha256": "scene-a"}, "pymavlink_dialect_v10": {"path": "/ep0/a", "sha256": "x"}},
+             "log_dir": "/ep0/logs"}
+        b = {"files": {"world": {"sha256": "scene-b"}, "pymavlink_dialect_v10": {"path": "/ep1/a", "sha256": "x"}},
+             "log_dir": "/ep1/logs"}
+        self.assertEqual(SF.binding_core(a), SF.binding_core(b))
+        b["files"]["pymavlink_dialect_v10"]["sha256"] = "y"
+        self.assertNotEqual(SF.binding_core(a), SF.binding_core(b))
+
+
 class TestUnitRules(unittest.TestCase):
     def go(self, recs, at=None, n=5, host=HOST):
         it = iter(recs)
@@ -1841,18 +1933,19 @@ class TestLaunchRefusals(unittest.TestCase):
             self.assertIn(word, S5.SCOPE)
         self.assertIn(S5.PREREG, S5.OWN_SOURCES)
 
-    def test_amendment1_binds_scope_smoke02_and_refuses_the_v2_approval(self):
-        """Amendment 1: SCOPE is quoted verbatim in the amendment and differs from v2's SCOPE (also quoted there) only by
-        'amendment1' and smoke02; the v2 approval (smoke01's scope) is refused; the spent smoke01 is never the gate."""
+    def test_amendment2_binds_scope_smoke03_and_refuses_previous_approvals(self):
         text = (ROOT / S5.AMENDMENT).read_text()
-        v2 = S5.SCOPE.replace("S5 safety v2 amendment1:", "S5 safety v2:").replace("smoke02", "smoke01")
-        self.assertNotEqual(v2, S5.SCOPE)
+        amend1 = S5.SCOPE.replace("amendment2:", "amendment1:").replace("smoke03", "smoke02")
+        v2 = S5.SCOPE.replace("S5 safety v2 amendment2:", "S5 safety v2:").replace("smoke03", "smoke01")
         self.assertIn(S5.SCOPE, text)
-        self.assertIn(v2, text)
+        self.assertIn(amend1, (ROOT / S5.AMENDMENT1).read_text())
+        self.assertIn(v2, (ROOT / S5.AMENDMENT1).read_text())
+        self.assertIn(S5.AMENDMENT1, S5.OWN_SOURCES)
         self.assertIn(S5.AMENDMENT, S5.OWN_SOURCES)
-        self.assertEqual((S5.SMOKE_DIR.name, S5.ATTEMPT_DIR.name), ("smoke02", "attempt01"))
-        self.write(scope=v2, commit=self.HEAD)
-        self.assertTrue(any("scope" in x for x in self.problems()))
+        self.assertEqual((S5.SMOKE_DIR.name, S5.ATTEMPT_DIR.name), ("smoke03", "attempt01"))
+        for old in (v2, amend1):
+            self.write(scope=old, commit=self.HEAD)
+            self.assertTrue(any("scope" in x for x in self.problems()))
         self.write(scope=S5.SCOPE, commit=self.HEAD)
         self.assertEqual(self.problems(), [])
 

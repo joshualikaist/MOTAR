@@ -26212,3 +26212,44 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   - S4R-1: a LATE invalidation is a preregistered stop. A new attempt (attempt02) needs an amendment and a decision.
     Options are to keep the 0.15 s bound and rerun on a quieter host (boot 7's 107.7 s wall time suggests a host
     stall), or to treat LATE boots differently. Either way it needs review and a new approval.
+
+## 2026-11-10 — S5 v2 amendment 2: stable MAVLink source binding, fresh smoke03 prepared; NOT_RUN
+
+- **User:** "cursor지워주고 시작해" after the `fe7daed` handoff; later explicitly selected "설정·대화까지 전부 삭제"
+  for Cursor. Root verified `camonly/dev` at `fe7daed4a521bde2ded617f66cdcfd7934d50f72`, clean before this unit, and
+  claimed `motar-783.6`. Previous session was closed; new shared session `73e47719` starts 13:27 UTC, wraps 17:27 UTC,
+  finishes by 18:17 UTC (five-hour fallback, provider quota deadline unknown).
+- **Repair:** `tools/sitl_s5_safety.py:pymavlink_files` binds mavutil and both installed v10/v20 current-dialect source
+  files. It does not switch the wire protocol or change mavutil's environment. The selected decoder is descriptive
+  metadata, outside the digest comparison. Missing source files fail closed, and a binding error still closes the link.
+  `binding_core` already excluded per-episode world/path/log differences and is unchanged.
+- **Protocol:** new immutable amendment `docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md`; new SCOPE and
+  `smoke03`, followed only if valid by the never-created `attempt01`. Both amendments are bound sources. No change to
+  safety parameters, acceptance rules, scenarios, first-invalid stop, CPU/resource bounds, or live-discrimination limits.
+  Prior approvals are refused; old smoke01/02 stay ABORTED. No PX4/Gazebo/GPU experiment ran under this amendment.
+- **Focused CPU:** 65 tests, 0 failures/errors (11.415 s). A fresh subprocess opens two real mavutil connections:
+  first starts v10 and automatically switches to v20, second starts v20. The old binding reproduces BINDING_CHANGED;
+  the new binding completes both records. Byte changes to mavutil or either dialect in temporary source fixtures
+  still abort, with unchanged-source positive controls; installed dependencies were not modified. An initial historical-SCOPE fixture lookup pointed at the original preregistration instead
+  of amendment 1; corrected before the passing run, without changing the original records.
+- **Independent review:** `docs/evidence/sitl_2026-11-05/s5_safety_v2/REVIEW_amend2_r1.md`, Codex fresh-context reviewer
+  (exact deployment/model identifier not exposed; not an Opus review), PASS_WITH_LIMITS, no required repair. Three
+  binding tests independently PASS, no skips. Live smoke03 and safety discrimination remain NOT_TESTED.
+- **Cursor/disk preparation:** application uninstall observed (`cursor` absent from PATH, `/usr/share/cursor` absent;
+  dpkg residual status `deinstall ok config-files`, no conffiles). Under the user's explicit full-data deletion request,
+  independently reviewed script removed exactly `~/.cursor` and `~/.config/Cursor`, including settings and conversations.
+  Before/after free space: 3,867,082,752 → 7,157,903,360 B; delta 3,290,820,608 B. This is a filesystem delta, not an
+  exact inventory sum. Research raw/checkpoints were not deletion targets. Records, atomic-write validation and review:
+  `~/motar_tmp/sitl_amend2_20261110/cursor_cleanup/`; final before/after JSON are durable and never overwritten.
+- **Validation/next:** full PUBLIC_CPU and final source/index verification are recorded below before commit. Then
+  obtain a new final-HEAD scoped approval for smoke03 → attempt01; no push or main merge is authorized.
+- **Final validation:** PUBLIC_CPU rerun 3,935 tests, 0 failures, 0 errors, 10 skipped and 5 GPU-required exclusions,
+  769.634 s; kernel faults 0 → 0. First full run is retained separately (3,935, 2 failures, 2 errors): two BOIA replay
+  tests hit the 3 GB disk floor before Cursor removal, and two index tests ran before the new S5 amendment was staged.
+  After cleanup and staging, index 9/9 passed, then the full rerun passed without further source edits. Logs and source,
+  review and cleanup SHA bindings: `docs/evidence/sitl_2026-11-05/s5_safety_v2/AMENDMENT2_VALIDATION.json`, raw logs
+  `~/motar_tmp/sitl_amend2_20261110/{s5_focused,public_cpu,public_cpu_r2,index_s5}.log`.
+- **Local commit scope:** S5 tool/test, new amendment/review/validation, experiment index and this entry. S4R-1 amendment2
+  preparation is a separate pending local unit. No push/main merge; original preregs, research raw and checkpoints
+  unchanged by this unit (no exhaustive raw rehash claimed). Next: new scoped final-HEAD user approval, then the fixed
+  smoke03; only COMPLETE and valid smoke permits attempt01. Do not reuse the old approval.
