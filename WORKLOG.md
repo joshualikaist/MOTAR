@@ -26048,3 +26048,37 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:**
   - S5 v2 needs the user's scoped SITL approval, an idle host, a smoke run, then the attempt.
   - S4R-1 needs its r2 findings repaired, then a focused re-review, then a commit.
+
+## 2026-11-10 — S4R-1 v1 preregistered (Gazebo sensor repeatability diagnostic; design reviews r1 and r2 AMEND_FIRST, repaired; r3 PASS_WITH_LIMITS; NOT_RUN)
+
+- **User (~14:55 KST):** "이제 이거 이어서 하자. 코덱스한테 전달 못하고 너가 해야될거 같아". This resumed
+  `handoff_window6_20261110`.
+- **Unit:**
+  - Code by Codex (`tools/sitl_s4r1.py`, `tests/test_sitl_s4r1.py`), prereg `prereg_sitl_s4r1_v1_2026-11-10.md`.
+  - Design: S4F-1 `lit_rendered` / ground stack and Frozen Policy F. env 0 and env 1 at 70 bars, three repeats with
+    the world-contact subscriber OFF and ON: 12 fresh boots, after one contact-ON smoke on env 0.
+  - Gazebo seed 4501 is explicit. Per-boot limit 180 s, outer limit 1,800 s; per-session RSS watchdog of 8 GiB (no
+    RLIMIT_AS).
+  - Reading: the first recorded divergence by stage. It is descriptive only.
+- **Reviews** (all Claude Opus 5.5; repairs by a Claude Opus 5.5 agent):
+  - **r1 AMEND_FIRST:**
+    - BLOCKER: arm labels made analyze never report;
+    - MAJORs: degenerate comparisons, a tree walk inside the control loop, RLIMIT_AS with no smoke, and a launch
+      command the tool would refuse.
+  - **r2 AMEND_FIRST:**
+    - MAJOR-1: an inf entry in LiDAR or depth made `max_abs` infinite and emptied the stage summary;
+    - MINOR-1 to MINOR-5: the question-2 statistic, missing position statistics, the step-0 stamp offset, an
+      `XAUTHORITY` preflight, and the 600-step path first running in attempt01.
+  - **r3 PASS_WITH_LIMITS:** no code fix is required. Open LOWs are wording items, and the secondary statistic is
+    expected to read [0, 0].
+  - Review and repair files: `docs/evidence/sitl_2026-11-05/s4r1/`.
+- **Tests:** focused 14 → 27 → 34 OK.
+- **Disk:** 6.30 GB free. The worst case is about 3.37 GB after the smoke and attempt01. Re-check `df` before each
+  launch.
+- **User question before the commit** (~15:40): "라이다 우리 못쓰잖아. 카메라만 쓰는거아니야?". The answer was that
+  S4R-1 qualifies the simulator on the only SITL-ready stack (F with simulated LiDAR) and makes no claim about the
+  camera-only vehicle; a camera-only SITL bridge (motar-783.4) does not exist yet. The user chose "그대로 커밋 (권장)",
+  and the note was added to the prereg's status.
+- **PUBLIC_CPU:** 3,907 run, 0 failures, 0 errors; host faults 0 → 0.
+- **Next:** the user's scoped GPU-rendering approval for the S4R-1 smoke and attempt01, and separately for the S5 v2
+  SITL run. Both need an idle host, and the two must not run together.

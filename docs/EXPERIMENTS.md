@@ -966,6 +966,10 @@ family that is in the test's scope.
   - **S5 safety v2 (preregistered 2026-11-10; design reviews r1 AMEND_FIRST, repaired, and r2 PASS_WITH_LIMITS;
     NOT_RUN):** ten PX4 v1.14.3 failsafe scenarios over MAVLink with a phase-bounded data contract and per-scenario
     cause flags. Live discrimination is NOT_TESTED. `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`.
+  - **S4R-1 v1 (preregistered 2026-11-10; design reviews r1 and r2 AMEND_FIRST, repaired, and r3 PASS_WITH_LIMITS;
+    NOT_RUN):** a Gazebo sensor repeatability diagnostic on S4F-1's `lit_rendered` stack. Two scenes, three repeats
+    each, with the contact subscriber OFF and ON: 12 boots after a smoke. It reports the first recorded divergence by
+    stage, and is descriptive only. `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`.
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)
@@ -999,6 +1003,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md` (before either ran: PX4 dataman removed after each episode for disk; RustDesk allowed in S4's GPU check)
   - → `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md` (S4F-1 v1: 2×2 target appearance × ground on S4's ground arm, reported)
   - → `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md` (S5 safety v2: ten failsafe scenarios, phase-bounded data contract; NOT_RUN)
+  - → `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md` (S4R-1: Gazebo sensor repeatability diagnostic; NOT_RUN)
 - **Compare with:** `camera-only`, `gain-randomization`
 - **Members:** `docs/plans/sitl_validation_plan_v1.md`, `docs/evidence/sitl_2026-11-05/`,
   `docs/plans/prereg_sitl_reference_g8g9_v1.md`, `docs/plans/prereg_sitl_reference_g8g9_v1_amendment1_2026-11-05.md`,
@@ -1015,7 +1020,7 @@ family that is in the test's scope.
   `docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_v1_2026-11-06.md`,
   `docs/plans/prereg_sitl_s4_v1_2026-11-06.md`, `docs/plans/prereg_sitl_s3c_s4_amendment1_2026-11-07.md`,
-  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`
+  `docs/plans/prereg_sitl_s4f1_v1_2026-11-08.md`, `docs/plans/prereg_sitl_s5_safety_v2_2026-11-10.md`, `docs/plans/prereg_sitl_s4r1_v1_2026-11-10.md`
 
 ## Not yet in the repository
 
