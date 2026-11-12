@@ -288,55 +288,55 @@ Files, Tests, Working Tree, Remote Push YES/NO, Main Merge YES/NO, and Raw/Check
 If a commit cannot be made, explain why and list every remaining uncommitted path. Link GitHub
 commits/branches only after a successful push.
 
-## Session deadline and handoff
+## Session usage and handoff
 
-Standing user instruction (2026-11-05): **every agent** (Codex, Claude Code, Cursor and delegated workers) must
-close out before a five-hour session ends so another account can resume from disk. This applies without a
-separate reminder. A client restart, compaction or reconnect does not create a new five-hour allowance.
+User clarification (2026-11-11): closeout is based on **observed account usage**, not elapsed wall-clock time.
+This supersedes the former five-hour wall-clock fallback for every agent (Codex, Claude Code, Cursor and workers).
+Do not infer a quota reset or a new allowance from a reconnect, compaction, new task, login or time since start.
 
 - **At session start:** read the latest WORKLOG/Beads and `~/motar_tmp/agent_sessions/latest_handoff.json` if present.
-  Check its project/worktree before using it; records are continuation evidence, not new execution approval.
-  Record the root session clock with `python3 tools/agent_session.py start --agent <agent>`; if a real quota/user
-  deadline is visible, supply `--deadline <ISO8601-with-timezone>`. Use `--started-at` for a known earlier start.
-  The earlier of that deadline and five hours from the known start wins. Unknown quota timing stays explicitly
-  unknown; do not invent a fresh allowance from a long-lived chat's creation time or a reconnect.
-- **Default closeout schedule:** start +4h (or deadline −60min) enters WRAP_UP: no new research/implementation unit,
-  training/evaluation, expensive review, or major edit. Finish the in-flight authorized unit only if validation,
-  records and a local commit fit. By deadline −10min, finish the handoff and stop session work; retain this slack
-  for an early quota cutoff. When a reliable remaining-usage signal indicates imminent exhaustion, close out
-  earlier. The wall clock does not guarantee the provider will permit five hours of use.
-- **Check time:** `python3 tools/agent_session.py status` at every turn/work-unit boundary, before a long tool call,
-  and at least every ten minutes while active. Before a new unit use
-  `python3 tools/agent_session.py check --minutes <measured-work> --verification-minutes <review-test-record-time>`.
-  A successful clock check grants no GPU, gate, commit, push or merge approval. Budget from measured durations
-  including review/tests/recording, not GPU time alone. Workers inherit the root deadline, never reset it. Pass the root worktree/clock/deadline when delegating;
-  workers check that root clock with `--worktree <root-worktree>` and never close it on the parent's behalf.
-- **Switching worktrees is not a new session:** keep checking the original root worktree's clock with
-  `--worktree <original-root-worktree>`; record every changed worktree/branch/HEAD in the handoff lists. The
-  helper's automatic Git snapshot is of the clock's root worktree only.
-- **Make handoff durable throughout:** record a checkpoint after each completed unit, and before a long run, in
-  WORKLOG and Beads when the tree is editable. During a GPU/guarded-run freeze, write only outside repositories
-  (for example `~/motar_tmp/agent_sessions`), and give the next owner the path. Do not depend on chat memory,
-  provider account history, `.codex`/`.claude` caches, or files under `/tmp` alone. Never store credentials.
-- **Before stopping:** commit verified authorized changes locally, with named files and Git Traceability; do not
-  auto-push/merge, automatically revert work, delete evidence, or mark unfinished work complete. Inventory owned
-  processes with PID/owner, command, log/output, limits, state, existing continue authorization and safe next action.
-  Preserve approved ongoing jobs with an explicit process handoff; do not kill another agent's jobs or a training
-  run merely to make a clean-looking ending. Preserve source freeze and report incomplete paths/tests honestly.
-- **Account-neutral closeout:** write a JSON summary outside the repository, with `completed`, `remaining`,
-  `running_processes`, `pending_approvals`, `validation` (lists) and exactly one concrete `next_action` (string:
-  file/command plus required gate). Run `python3 tools/agent_session.py close --handoff <summary.json>`; it captures
-  worktree/branch/base/HEAD/dirty paths and publishes an immutable session handoff plus the shared latest pointer.
-  Reflect this in WORKLOG/Beads when editable. No tracked HANDOFF.md or second task tracker is created.
-- **Next account:** read that handoff, WORKLOG and Beads; verify branch/HEAD/process state and pending approvals,
-  then resume the single recorded action. `start` reuses an existing clock. `--new-window` is used only after the
-  previous session closed and a genuinely new account/window is established; otherwise retain the earlier deadline.
-  An explicit user change to the schedule overrides it. A closed session is not permission to reopen a frozen gate.
+  Verify its worktree and pending authorization. Start/reuse `python3 tools/agent_session.py start --agent <agent>`.
+  After a completed handoff, `start --new-session` creates an activity successor while retaining the last usage
+  observation. Only an explicitly confirmed new quota window permits `--new-window` to clear that observation.
+  Historical handoffs remain immutable. Legacy clock fields are retained as historical metadata, not a current limit.
+- **Measure honestly:** use provider-visible or user-reported usage, with its source and observation timestamp:
+  `python3 tools/agent_session.py usage --remaining-percent <observed-percent> --source <source>`.
+  The helper has no account-quota API. Without a signal, report `USAGE_UNKNOWN`; do not estimate remaining quota
+  from elapsed wall time, a five-hour countdown, token/context capacity or assumed provider limits. A recorded
+  observation is a snapshot, never a claim of live remaining usage. A stale snapshot is not a fresh measurement.
+- **Closeout margin:** preserve the previous margin as usage fractions: at **20% or less observed quota remaining**,
+  enter WRAP_UP; at **3⅓% or less**, hand off and stop. These are policy thresholds (the old 1/5 and 10/300 margins),
+  not measured quota or an assertion about provider window size. An observed closeout/exhaustion warning may trigger
+  earlier. Do not start a new long unit, training/evaluation, expensive review or major edit during WRAP_UP.
+  Complete only in-flight authorized work that fits with validation and records. Unknown usage does not itself stop
+  authorized work; keep progress durable and do not claim a budget check PASS.
+- **Check usage:** run `python3 tools/agent_session.py status` at turn/unit boundaries and before long calls. Update
+  the observation when an actual signal is available. `check --usage-percent <main-work-cost> --verification-percent
+  <closeout-cost>` compares attributed last-observed usage with known cost estimates. Main work must finish before
+  the 20% closeout reserve; the total including verification, review and records must leave the final 1/30.
+  Without the observation or a main-work estimate, the verdict is UNKNOWN.
+  Legacy `--minutes` estimates apply only to a separately explicit current user wall-clock deadline (`--deadline`);
+  durations never become quota estimates. Budget checks grant no run, gate, commit, push or hardware authorization.
+  An explicit current user stop time still applies; there is no automatic five-hour deadline.
+- **Shared continuation:** workers and changed worktrees inherit the root session's usage observation and limits.
+  Use `--worktree <original-root-worktree>`; switching worktrees never resets quota. Record every affected
+  worktree/branch/HEAD in the handoff; the helper's automatic Git snapshot covers the root worktree only.
+- **Make handoff durable throughout:** checkpoint completed units and before long runs in WORKLOG and Beads when
+  editable. During a GPU/guarded-run freeze, write only outside repositories and name the continuation path. Do not
+  depend on chat history, provider login, caches or files under `/tmp` alone. Never store credentials.
+- **Before stopping:** preserve source freeze and unfinished work honestly. Commit verified authorized changes only
+  when allowed, with named files and Git Traceability; never auto-push, merge, revert, delete evidence or mark
+  unfinished work complete. Inventory owned jobs with PID/owner, command, log/output, caps, state, authorization and
+  safe next action. Do not kill another agent's job or an approved training run to make the ending look clean.
+- **Account-neutral closeout:** write an external JSON with `completed`, `remaining`, `running_processes`,
+  `pending_approvals`, `validation` (lists), and exactly one concrete `next_action` (file/command and required gate).
+  Run `python3 tools/agent_session.py close --handoff <summary.json>`. It captures Git state and observed usage,
+  publishes an immutable session handoff and updates the latest pointer. Reflect it in WORKLOG/Beads when editable;
+  no tracked HANDOFF.md or second task tracker. The next account reads these records before the single resume action.
 
-The helper saves clocks outside Git trees, serializes per-worktree updates and shares records across provider
-accounts. It does **not** wake an idle model or close an application by itself. The agent performs the time checks
-and wrap-up while working; no guaranteed background timer or hidden quota access is claimed. Follow the project
-session-handoff skill under these rules, including the source-freeze, evidence-preservation and authorization rules.
+The helper stores continuation outside Git trees and serializes updates. It does not inspect hidden quota,
+schedule alarms, wake an idle model, stop processes or close applications. Follow the project session-handoff skill
+under these rules, including source freeze, evidence preservation and authorization boundaries.
 
 ## Plans for broad or destructive changes
 

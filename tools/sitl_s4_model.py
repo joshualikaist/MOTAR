@@ -11,6 +11,7 @@ or propellers; physics is unchanged. The airframe 10092 is 10090's file with onl
 
   tools/sitl_s4_model.py --write    # writes into the PX4 tree (outside every repository); prints SHA-256s
 """
+import argparse
 import hashlib
 import math
 import pathlib
@@ -62,10 +63,16 @@ SENSORS = """      <sensor name='motar_lidar' type='gpu_ray'>
 VISUAL = re.compile(r"<visual\b.*?</visual>", re.S)
 
 
-def model_sdf(src_text):
+def model_sdf(src_text, *, sensor_mode='rgbd_lidar'):
     """navrl_quad's SDF with the three sensors on base_link and every <visual> removed: Gazebo's cameras and gpu_ray
     render visuals, so the body mesh and propeller discs would otherwise be seen by the vehicle's own sensors
     (S3c/S4 review r1 BLOCKER). Collisions, inertias, joints and plugins are unchanged."""
+    if sensor_mode not in ('rgbd', 'rgbd_lidar'):
+        raise ValueError('sensor_mode must be rgbd or rgbd_lidar')
+    model = MODEL if sensor_mode == 'rgbd_lidar' else 'navrl_quad_rgbd'
+    sensors = SENSORS
+    if sensor_mode == 'rgbd':
+        sensors = re.sub(r"\s*<sensor name='motar_lidar'.*?</sensor>", '', sensors, count=1, flags=re.S)
     if src_text.count("<model name='%s'>" % SRC_MODEL) != 1:
         raise ValueError("source SDF: expected one <model name='%s'>" % SRC_MODEL)
     n_vis = len(VISUAL.findall(src_text))
@@ -78,16 +85,20 @@ def model_sdf(src_text):
     if start < 0 or src_text.count("<link name='base_link'>") != 1:
         raise ValueError("source SDF: expected one base_link")
     end = src_text.find("</link>", start)
-    out = src_text[:end] + SENSORS + "    " + src_text[end:]
-    return out.replace("<model name='%s'>" % SRC_MODEL, "<model name='%s'>" % MODEL, 1)
+    out = src_text[:end] + sensors + "    " + src_text[end:]
+    return out.replace("<model name='%s'>" % SRC_MODEL, "<model name='%s'>" % model, 1)
 
 
-def airframe(src_text):
+def airframe(src_text, *, sensor_mode='rgbd_lidar'):
+    if sensor_mode not in ('rgbd', 'rgbd_lidar'):
+        raise ValueError('sensor_mode must be rgbd or rgbd_lidar')
     lines = src_text.splitlines(keepends=True)
     out = []
     for ln in lines:
         if ln.startswith("# @name "):
-            ln = "# @name navrl_quad with MOTAR S4 Gazebo sensors (same airframe as 10090)\n"
+            ln = ("# @name navrl_quad with MOTAR S4 Gazebo sensors (same airframe as 10090)\n"
+                  if sensor_mode == 'rgbd_lidar' else
+                  "# @name navrl_quad with MOTAR RGB-D only sensors (same airframe as 10090)\n")
         out.append(ln)
     return "".join(out)
 
@@ -96,28 +107,35 @@ def sha(p):
     return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
 
 
-def write():
-    d = MODELS / MODEL
+def write(*, sensor_mode='rgbd_lidar'):
+    if sensor_mode not in ('rgbd', 'rgbd_lidar'):
+        raise ValueError('sensor_mode must be rgbd or rgbd_lidar')
+    model = MODEL if sensor_mode == 'rgbd_lidar' else 'navrl_quad_rgbd'
+    af = AIRFRAME if sensor_mode == 'rgbd_lidar' else '10093_gazebo-classic_navrl_quad_rgbd'
+    d = MODELS / model
     d.mkdir(exist_ok=True)
-    (d / (MODEL + ".sdf")).write_text(model_sdf((MODELS / SRC_MODEL / (SRC_MODEL + ".sdf")).read_text()))
-    cfg = (MODELS / SRC_MODEL / "model.config").read_text().replace(SRC_MODEL + ".sdf", MODEL + ".sdf")
-    cfg = cfg.replace("<name>%s</name>" % SRC_MODEL, "<name>%s</name>" % MODEL)
+    (d / (model + ".sdf")).write_text(model_sdf((MODELS / SRC_MODEL / (SRC_MODEL + ".sdf")).read_text(),
+                                              sensor_mode=sensor_mode))
+    cfg = (MODELS / SRC_MODEL / "model.config").read_text().replace(SRC_MODEL + ".sdf", model + ".sdf")
+    cfg = cfg.replace("<name>%s</name>" % SRC_MODEL, "<name>%s</name>" % model)
     (d / "model.config").write_text(cfg)
-    (AIRFRAMES / AIRFRAME).write_text(airframe((AIRFRAMES / SRC_AIRFRAME).read_text()))
+    (AIRFRAMES / af).write_text(airframe((AIRFRAMES / SRC_AIRFRAME).read_text(), sensor_mode=sensor_mode))
     cm = AIRFRAMES / "CMakeLists.txt"
     t = cm.read_text()
-    if "\t%s\n" % AIRFRAME not in t:
-        t = t.replace("\t%s\n" % SRC_AIRFRAME, "\t%s\n\t%s\n" % (SRC_AIRFRAME, AIRFRAME), 1)
+    if "\t%s\n" % af not in t:
+        t = t.replace("\t%s\n" % SRC_AIRFRAME, "\t%s\n\t%s\n" % (SRC_AIRFRAME, af), 1)
         cm.write_text(t)
     tg = PX4 / "src/modules/simulation/simulator_mavlink/sitl_targets_gazebo-classic.cmake"
     t = tg.read_text()
-    if "\t\t%s\n" % MODEL not in t:
-        tg.write_text(t.replace("\t\t%s\n" % SRC_MODEL, "\t\t%s\n\t\t%s\n" % (SRC_MODEL, MODEL), 1))
-    for p in (d / (MODEL + ".sdf"), d / "model.config", AIRFRAMES / AIRFRAME):
+    if "\t\t%s\n" % model not in t:
+        tg.write_text(t.replace("\t\t%s\n" % SRC_MODEL, "\t\t%s\n\t\t%s\n" % (SRC_MODEL, model), 1))
+    for p in (d / (model + ".sdf"), d / "model.config", AIRFRAMES / af):
         print(sha(p), p)
 
 
 if __name__ == "__main__":
-    if sys.argv[1:] != ["--write"]:
-        raise SystemExit(__doc__)
-    write()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--write', required=True, action='store_true')
+    parser.add_argument('--sensor-mode', choices=('rgbd_lidar', 'rgbd'), default='rgbd_lidar')
+    args = parser.parse_args()
+    write(sensor_mode=args.sensor_mode)

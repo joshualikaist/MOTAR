@@ -218,6 +218,76 @@ CHILD = textwrap.dedent(r'''
         except RuntimeError:
             out["minz_zero"] = "refused"
 
+    elif mode == "external":
+        # A measured invalid mask needs no perception/depth-model object and never infers invalid from a far value.
+        depth = torch.full((2, 9, 11), 20.0)
+        depth[:, 0, 10] = 2.75
+        invalid = torch.zeros_like(depth, dtype=torch.bool)
+        invalid[:, :, 3:8] = True
+        invalid[:, 0, 0] = True                            # isolated invalid stays at the caller's far encoding
+        cosine = torch.linspace(0.6, 1.0, 99).reshape(9, 11)
+        original = [x.clone() for x in (depth, invalid, cosine)]
+        before = rng_hash()
+        ruled, near = DV.apply_mask(depth, invalid, cosine, min_z_m=0.4, window=5, density=0.5)
+        out["near_count"] = int(near.sum())
+        out["invalid_count"] = int(invalid.sum())
+        out["valid_far_unchanged"] = bool((ruled[~invalid] == depth[~invalid]).all())
+        out["near_value"] = bool(torch.equal(ruled[near], (0.4 / cosine).expand_as(depth)[near]))
+        out["rest_unchanged"] = bool(torch.equal(ruled[~near], depth[~near]))
+        out["isolated_not_near"] = not bool(near[:, 0, 0].any())
+        out["inputs_unchanged"] = all(torch.equal(a, b) for a, b in zip((depth, invalid, cosine), original))
+        out["new_depth"] = ruled.data_ptr() != depth.data_ptr()
+        out["rng_unchanged"] = rng_hash() == before
+        out["dtype_device"] = ruled.dtype == depth.dtype and ruled.device == depth.device and near.dtype == torch.bool
+        clear, clear_near = DV.apply_mask(depth, torch.zeros_like(invalid), cosine,
+                                         min_z_m=0.4, window=3, density=1.0)
+        out["clear_equal"] = bool(torch.equal(clear, depth)) and not bool(clear_near.any())
+        # Public measured-mask API agrees bit for bit with the established simulation wrapper.
+        _, source = frame(bar_m=0.3, target=True)
+        p, modelled, sim_ruled = direct(source, dms())
+        measured, measured_near = DV.apply_mask(modelled, p._depth_model_invalid, p._depth_model_cos,
+                                               min_z_m=0.4, window=5, density=0.5)
+        out["simulation_equal"] = bool(torch.equal(measured, sim_ruled))
+        out["simulation_mask_equal"] = bool(torch.equal(measured_near, p._depth_validity_near))
+
+        valid = dict(depth=depth, invalid=invalid, cosine=cosine, min_z_m=0.4, window=5, density=0.5)
+        bad = {
+            "depth_not_tensor": {"depth": depth.tolist()},
+            "depth_integer": {"depth": depth.to(torch.int64)},
+            "depth_shape": {"depth": depth[0]},
+            "depth_empty": {"depth": depth[:0], "invalid": invalid[:0]},
+            "depth_nan": {"depth": torch.full_like(depth, float("nan"))},
+            "depth_negative": {"depth": -depth},
+            "invalid_not_bool": {"invalid": invalid.float()},
+            "invalid_shape": {"invalid": invalid[:1]},
+            "cosine_shape": {"cosine": cosine[None]},
+            "cosine_integer": {"cosine": torch.ones_like(cosine, dtype=torch.int64)},
+            "cosine_nan": {"cosine": torch.full_like(cosine, float("nan"))},
+            "cosine_zero": {"cosine": torch.zeros_like(cosine)},
+            "cosine_above_one": {"cosine": cosine + 1.0},
+            "device_mismatch": {"invalid": torch.empty(invalid.shape, dtype=torch.bool, device="meta")},
+            "minz_zero": {"min_z_m": 0.0},
+            "minz_nan": {"min_z_m": float("nan")},
+            "minz_bool": {"min_z_m": True},
+            "window_even": {"window": 4},
+            "window_small": {"window": 1},
+            "window_large": {"window": 33},
+            "window_float": {"window": 5.0},
+            "window_bool": {"window": True},
+            "density_zero": {"density": 0.0},
+            "density_high": {"density": 1.1},
+            "density_nan": {"density": float("nan")},
+            "density_bool": {"density": True},
+            "surface_overflow": {"depth": depth.half(), "cosine": torch.full_like(cosine, 1e-9)},
+        }
+        out["refused"] = {}
+        for name, change in bad.items():
+            try:
+                DV.apply_mask(**dict(valid, **change))
+                out["refused"][name] = False
+            except ValueError:
+                out["refused"][name] = True
+
     elif mode == "wrapped":
         rgb, depth = frame(bar_m=0.3)
         rgb0, depth0 = frame()
@@ -409,6 +479,33 @@ class TestRule(unittest.TestCase):
         self.assertGreater(r["blob_near_pixels"], 0)                                 # control: the fresh call works
 
 
+class TestMeasuredMask(unittest.TestCase):
+    def test_explicit_mask_preserves_valid_and_isolated_pixels(self):
+        r = cached("external")
+        self.assertGreater(r["near_count"], 0)
+        self.assertGreater(r["invalid_count"], r["near_count"])
+        for key in ("valid_far_unchanged", "near_value", "rest_unchanged", "isolated_not_near", "clear_equal"):
+            self.assertTrue(r[key], key)
+
+    def test_no_state_noise_or_input_mutation(self):
+        r = cached("external")
+        for key in ("inputs_unchanged", "new_depth", "rng_unchanged", "dtype_device"):
+            self.assertTrue(r[key], key)
+
+    def test_simulation_output_and_mask_remain_exact(self):
+        r = cached("external")
+        self.assertTrue(r["simulation_equal"])
+        self.assertTrue(r["simulation_mask_equal"])
+        self.assertGreater(r["near_count"], 0)
+
+    def test_malformed_masks_geometry_and_settings_are_rejected(self):
+        r = cached("external")
+        self.assertEqual(len(r["refused"]), 27)
+        for case, refused in r["refused"].items():
+            self.assertTrue(refused, case)
+        self.assertTrue(r["clear_equal"])  # positive control: strict validation accepts a valid unchanged frame
+
+
 class TestWrapped(unittest.TestCase):
     def test_install_order(self):
         r = cached("wrapped")
@@ -520,8 +617,10 @@ class TestEntry(unittest.TestCase):
                     hits.append(str(path.relative_to(ROOT)))
         return sorted(hits)
 
-    def test_only_the_entry_imports_the_rule(self):
-        self.assertEqual(self._importers("navrl_depth_validity"), ["tools/realveh_entry.py"])
+    def test_rule_import_is_limited_to_explicit_entries(self):
+        importers = set(self._importers("navrl_depth_validity"))
+        self.assertIn("tools/realveh_entry.py", importers)
+        self.assertTrue(importers <= {"tools/realveh_entry.py", "tools/camera_policy_runtime.py"}, importers)
         self.assertEqual(self._importers("navrl_depth_model"), ["tools/realveh_entry.py"])   # rule does not import it
 
 

@@ -1236,7 +1236,7 @@ class TestShim(unittest.TestCase):
 
 
 class TestIsolation(unittest.TestCase):
-    """No production module imports the opt-in modules (statement or importlib form); only the entry does."""
+    """Opt-in modules remain confined to their explicit study or CPU-inference entries."""
 
     @staticmethod
     def _importers(name):
@@ -1256,11 +1256,46 @@ class TestIsolation(unittest.TestCase):
         self.assertEqual(self._importers("navrl_vehicle_rand"), ["tools/realveh_entry.py"])
         self.assertEqual(self._importers("navrl_depth_model"), ["tools/realveh_entry.py"])
 
-    def test_ablation_importers_are_the_three_entries(self):
+    def test_ablation_importers_are_the_four_explicit_entries(self):
         hits = self._importers("navrl_sensor_ablation")
         self.assertIn("tools/realveh_entry.py", hits)                               # positive control: pattern sees it
+        self.assertIn("tools/camera_policy_runtime.py", hits)                       # explicit CPU path is discovered
         self.assertLessEqual(set(hits), {"tools/realveh_entry.py", "tools/camonly_entry.py",
-                                         "tools/camtrain_entry.py"}, hits)
+                                         "tools/camtrain_entry.py", "tools/camera_policy_runtime.py"}, hits)
+
+    def test_camera_runtime_import_is_inert_and_refuses_prior_production_import(self):
+        code = textwrap.dedent('''
+            import importlib.util, json, os, sys, types
+            before = dict(os.environ)
+            spec = importlib.util.spec_from_file_location('isolated_camera_runtime', sys.argv[1])
+            runtime = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(runtime)
+            forbidden = [name for name in sys.modules if name == 'aerial_gym' or name.startswith('aerial_gym.')
+                         or name in ('torch', 'isaacgym', 'warp')]
+            result = {'imports': forbidden, 'environment_unchanged': before == dict(os.environ)}
+            # Supplying a prior production package must refuse before importing torch or installing wrappers.
+            contract = types.ModuleType('camera_policy_contract')
+            contract.validate_contract = lambda value: []
+            sys.modules['camera_policy_contract'] = contract
+            sys.modules['aerial_gym'] = types.ModuleType('aerial_gym')
+            try:
+                runtime.CameraPolicyRuntime({'runtime_env': {}})
+                result['prior_import_refused'] = False
+            except RuntimeError as exc:
+                result['prior_import_refused'] = 'fresh process' in str(exc)
+            result['torch_after_refusal'] = 'torch' in sys.modules
+            print(json.dumps(result))
+        ''')
+        env = dict(os.environ, PYTHONNOUSERSITE="1", CUDA_VISIBLE_DEVICES="",
+                   OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1")
+        done = subprocess.run([sys.executable, "-B", "-c", code, str(ROOT / "tools/camera_policy_runtime.py")],
+                              capture_output=True, text=True, env=env, timeout=30)
+        self.assertEqual(done.returncode, 0, done.stderr[-2000:])
+        result = json.loads(done.stdout.strip().splitlines()[-1])
+        self.assertEqual(result["imports"], [])
+        self.assertTrue(result["environment_unchanged"])
+        self.assertTrue(result["prior_import_refused"])
+        self.assertFalse(result["torch_after_refusal"])
 
     def test_option_a_files_are_documentation_only(self):
         """No production file registers or imports the Option A vehicle; only its own config names its URDF."""

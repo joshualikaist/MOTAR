@@ -973,6 +973,10 @@ family that is in the test's scope.
     already differ at all seven stages at k=0; stage order/causal initiator cannot be identified. The two scenes have
     9/9 and 8/9 between pairs inside their pooled within ranges; no equivalence or causal subscriber conclusion.
     Original attempt01 remains ABORTED/INCOMPLETE_INVALID. `docs/evidence/sitl_2026-11-05/s4r1/attempt02_reading.json`.
+  - **Camera-only runtime preparation (2026-11-11, CPU source only):** explicit RGB-D startup/model without LiDAR,
+    pinned trained CAM-K2-v3 CPU policy, measured-depth validity, estimator-only control and optional OAK input.
+    Independent review PASS_WITH_LIMITS; no simulator/hardware/flight qualification, S3a-R remains HOLD.
+    [Runtime record](evidence/sitl_2026-11-05/camera_runtime/README.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

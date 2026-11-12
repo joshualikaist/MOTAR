@@ -6,8 +6,9 @@ Why: navrl_depth_model.py encodes every invalid pixel (z < MinZ, z > MaxZ, rando
 hit is missing from the obstacle tokens. This rule turns a dense blob of invalid pixels into a surface at MinZ (the
 nearest distance the stereo sensor could have reported), while isolated invalid pixels stay no return.
 
-Default OFF: nothing imports this module unless NAVRL_DEPTH_VALIDITY=blob_near, and then only tools/realveh_entry.py
-does, and only together with NAVRL_DEPTH_MODEL=oakd. Every parameter is required (no defaults here):
+The simulation wrapper defaults OFF: tools/realveh_entry.py installs it only with NAVRL_DEPTH_VALIDITY=blob_near
+and NAVRL_DEPTH_MODEL=oakd. External sensor adapters may call apply_mask directly with their measured invalid mask;
+this pure API neither installs a wrapper nor reapplies the simulation depth model. Every parameter is explicit:
 
   NAVRL_DEPTH_VALIDITY_WINDOW   odd int in [3, 31]: side of the square box filter [px] (e.g. 5)
   NAVRL_DEPTH_VALIDITY_DENSITY  float in (0, 1]: an invalid pixel whose local invalid density is >= this becomes near
@@ -38,6 +39,7 @@ HEARTBEAT_EVERY calls.
 import functools
 import inspect
 import json
+import math
 import os
 import sys
 
@@ -93,10 +95,55 @@ def dense_mask(invalid, window, density):
     return invalid & dense.squeeze(1)
 
 
-def apply(perception, depth, s):
-    """The validity-ruled frame (a new tensor; `depth` is not modified)."""
+def _apply_mask(depth, invalid, cosine, min_z_m, window, density):
+    """Shared numerical kernel; callers own validation and same-frame mask provenance."""
     import torch
 
+    near = dense_mask(invalid, window, density)
+    surface = (min_z_m / cosine).to(depth.dtype).expand_as(depth)
+    return torch.where(near, surface, depth), near
+
+
+def apply_mask(depth, invalid, cosine, *, min_z_m, window, density):
+    """Apply blob_near to an explicit measured mask; return (new ray-range depth, near mask).
+
+    depth and invalid are [N, H, W], cosine is [H, W], and all tensors share a device. Depth must already be finite
+    nonnegative ray range in metres, with isolated invalid pixels encoded as the caller's no-return range. The mask
+    must come from that same delivered frame, before replacing invalid sensor values. No sentinel inference, noise,
+    random draw, perception state, wrapper installation or input mutation occurs here. This function checks shapes
+    and values; the sensor adapter remains responsible for timestamp alignment and calibrated pixel rays.
+    """
+    import torch
+
+    if not isinstance(depth, torch.Tensor) or not depth.is_floating_point() or depth.ndim != 3 \
+            or any(n <= 0 for n in depth.shape):
+        raise ValueError("depth must be a nonempty floating tensor [N, H, W]")
+    if not isinstance(invalid, torch.Tensor) or invalid.dtype != torch.bool or invalid.shape != depth.shape:
+        raise ValueError("invalid must be a bool tensor with the same [N, H, W] shape as depth")
+    if not isinstance(cosine, torch.Tensor) or not cosine.is_floating_point() \
+            or cosine.shape != depth.shape[-2:]:
+        raise ValueError("cosine must be a floating tensor [H, W] matching depth")
+    if invalid.device != depth.device or cosine.device != depth.device:
+        raise ValueError("depth, invalid and cosine must share a device")
+    if not bool(torch.isfinite(depth).all()) or bool((depth < 0).any()):
+        raise ValueError("depth ray ranges must be finite and nonnegative")
+    if not bool(torch.isfinite(cosine).all()) or bool(((cosine <= 0) | (cosine > 1)).any()):
+        raise ValueError("cosine must be finite and in (0, 1]")
+    if isinstance(min_z_m, bool) or not isinstance(min_z_m, (int, float)) \
+            or not math.isfinite(min_z_m) or min_z_m <= 0:
+        raise ValueError("min_z_m must be finite and positive")
+    if type(window) is not int or not WINDOW_RANGE[0] <= window <= WINDOW_RANGE[1] or window % 2 != 1:
+        raise ValueError("window must be an odd integer in [%d, %d]" % WINDOW_RANGE)
+    if isinstance(density, bool) or not isinstance(density, (int, float)) or not 0 < density <= 1:
+        raise ValueError("density must be in (0, 1]")
+    surface = (float(min_z_m) / cosine).to(depth.dtype)
+    if not bool(torch.isfinite(surface).all()) or bool((surface <= 0).any()):
+        raise ValueError("min_z_m / cosine must be finite and positive in depth's dtype")
+    return _apply_mask(depth, invalid, cosine, float(min_z_m), window, float(density))
+
+
+def apply(perception, depth, s):
+    """The validity-ruled frame (a new tensor; `depth` is not modified)."""
     dm = getattr(type(perception), "_depth_model_settings", None)
     if dm is None:
         raise RuntimeError("the validity rule needs navrl_depth_model installed (outside this wrapper)")
@@ -117,9 +164,10 @@ def apply(perception, depth, s):
     minz = float(dm["NAVRL_DEPTH_MINZ_M"])
     if minz <= 0.0:
         raise RuntimeError("the validity rule needs NAVRL_DEPTH_MINZ_M > 0 (got %g)" % minz)
-    near = dense_mask(invalid, int(s["NAVRL_DEPTH_VALIDITY_WINDOW"]), float(s["NAVRL_DEPTH_VALIDITY_DENSITY"]))
-    surface = (minz / cos).to(depth.dtype).expand_as(depth)
-    out = torch.where(near, surface, depth)
+    # Keep the simulation's established guards and device execution; external-only value checks in apply_mask
+    # would add new device synchronizations to every training frame.
+    out, near = _apply_mask(depth, invalid, cos, minz, int(s["NAVRL_DEPTH_VALIDITY_WINDOW"]),
+                            float(s["NAVRL_DEPTH_VALIDITY_DENSITY"]))
     perception._depth_validity_near = near
     _telemetry(perception, depth, invalid, near)
     return out

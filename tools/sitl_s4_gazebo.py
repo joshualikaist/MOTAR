@@ -142,21 +142,26 @@ class S4Client:
 
 
 def wait_initial_target(client, send_target, *, timeout_s=2.0, poll_s=0.01,
-                        maintain_hold=lambda: None, clock=time.monotonic, sleep=time.sleep):
-    """First apply + strictly later RGB/depth/LiDAR; no capture-bound ID in v1.
+                        maintain_hold=lambda: None, clock=time.monotonic, sleep=time.sleep,
+                        sensor_mode='rgbd_lidar'):
+    """First apply + strictly later required sensors; no capture-bound ID in v1.
 
     Requires exclusive ownership of a fresh bridge. No policy/tracker call occurs
     during polling. Receipt ACK is not application ACK. This only repairs startup.
     """
     if not math.isfinite(timeout_s) or timeout_s <= 0 or not 0 < poll_s <= 0.025:
         raise ValueError("positive finite timeout and poll <= 0.025 s required")
+    if sensor_mode not in ('rgbd', 'rgbd_lidar'):
+        raise ValueError('sensor_mode must be rgbd or rgbd_lidar')
+    stamps = ('rgb_t', 'depth_t') + (('lidar_t',) if sensor_mode == 'rgbd_lidar' else ())
+    payloads = ('rgb', 'depth') + (('ranges',) if sensor_mode == 'rgbd_lidar' else ())
     started = clock()
     deadline = started + timeout_s
 
     def header(frame):
         try:
             count = frame['target_count']
-            ts = {k: float(frame[k]) for k in ('sim_now', 'target_t', 'rgb_t', 'depth_t', 'lidar_t')}
+            ts = {k: float(frame[k]) for k in ('sim_now', 'target_t') + stamps}
             if type(count) is not int or count < 0 or not all(math.isfinite(v) for v in ts.values()):
                 raise ValueError()
             return count, ts
@@ -176,7 +181,7 @@ def wait_initial_target(client, send_target, *, timeout_s=2.0, poll_s=0.01,
             polls += 1
             count, ts = header(frame)
             if count > 1 or count < previous_count or any(
-                    ts[k] < previous_ts[k] for k in ('sim_now', 'rgb_t', 'depth_t', 'lidar_t')):
+                    ts[k] < previous_ts[k] for k in ('sim_now',) + stamps):
                 raise ReadinessError('HARNESS_INVALID target count/simulation regression')
             previous_count, previous_ts = count, ts
             if count == 0 and ts['target_t'] != -1:
@@ -187,9 +192,10 @@ def wait_initial_target(client, send_target, *, timeout_s=2.0, poll_s=0.01,
                 applied = ts['target_t']
                 # Apply may precede the server's receipt reply under thread scheduling.
                 fresh = (ts['sim_now'] >= max(receipt, applied)
-                         and all(applied < ts[k] <= ts['sim_now'] for k in ('rgb_t', 'depth_t', 'lidar_t')))
-                if fresh and all(getattr(frame.get(k), 'size', 0) > 0 for k in ('rgb', 'depth', 'ranges')):
+                         and all(applied < ts[k] <= ts['sim_now'] for k in stamps))
+                if fresh and all(getattr(frame.get(k), 'size', 0) > 0 for k in payloads):
                     report = {'scope': 'initial apply and strictly later nonempty sensor buffers',
+                              'sensor_mode': sensor_mode, 'required_payloads': list(payloads),
                               'receipt_sim_s': receipt, 'applied_sim_s': applied, 'target_count': count,
                               'polls': polls, 'preflight_packets': polls + 1, 'wall_s': clock() - started,
                               'timeout_s': timeout_s, 'io_service_quantum_s': 0.025,
@@ -243,15 +249,20 @@ def to_gazebo_xy(p_world_xy, p0, yaw0, spawn, rot):
     return gx + spawn[0], gy + spawn[1]
 
 
-def world_text_s4(s3b_world_text):
+def world_text_s4(s3b_world_text, *, sensor_mode='rgbd_lidar', model='navrl_quad_s4'):
     """The S3b world plus the target and the plugin."""
     target = ("<model name='%s'><pose>0 0 -10 0 0 0</pose><link name='l'><gravity>0</gravity><kinematic>1</kinematic>"
               "<visual name='v'><geometry><sphere><radius>%.3f</radius></sphere></geometry><material>"
               "<ambient>%.3f %.3f %.3f 1</ambient><diffuse>%.3f %.3f %.3f 1</diffuse><specular>0 0 0 1</specular>"
               "</material></visual></link></model>" % ((TARGET_MODEL, TARGET_RADIUS) + TARGET_RGB + TARGET_RGB))
-    plugin = ("<plugin name='motar_s4' filename='libmotar_s4_bridge.so'><port>%d</port><target>%s</target>"
-              "<lidar>%smotar_lidar</lidar><rgb>%smotar_rgb</rgb><depth>%smotar_depth</depth></plugin>"
-              % (PORT, TARGET_MODEL, SENSOR_SCOPE, SENSOR_SCOPE, SENSOR_SCOPE))
+    if sensor_mode not in ('rgbd', 'rgbd_lidar') or model not in ('navrl_quad_s4', 'navrl_quad_rgbd'):
+        raise ValueError('unknown S4 sensor mode/model')
+    scope = 'default::%s::base_link::' % model
+    lidar = '<lidar>%smotar_lidar</lidar>' % scope if sensor_mode == 'rgbd_lidar' else ''
+    library = 'libmotar_rgbd_bridge.so' if sensor_mode == 'rgbd' else 'libmotar_s4_bridge.so'
+    plugin = ("<plugin name='motar_s4' filename='%s'><port>%d</port><target>%s</target>"
+              "%s<rgb>%smotar_rgb</rgb><depth>%smotar_depth</depth></plugin>"
+              % (library, PORT, TARGET_MODEL, lidar, scope, scope))
     if s3b_world_text.count("</world>") != 1:
         raise ValueError("expected one </world>")
     return s3b_world_text.replace("</world>", target + "\n" + plugin + "\n</world>", 1)
