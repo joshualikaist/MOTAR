@@ -293,3 +293,12 @@ work later):
 - Independent review r1 (Opus 5.5): PASS_WITH_LIMITS.
 - The numbers, the per-density counts (review F1), the camera-eye variant (F4) and the limits are in
   [`c2trace/README.md`](c2trace/README.md).
+
+## `camt1/`: CAM-T1, where CAM-K2 v3 crashes and its speed-cap / delay envelope (GPU, preregistered)
+
+- 64 cells on `b3b9f0b` (`camonly/t1`, 2026-11-12): identity IDENTITY_PASS, trace (Stage A) NONINTERFERENCE_PASS,
+  control CONTROL_PASS, envelope (Stage B) COMPLETE; Stage A **DEFINITION_SENSITIVE** (no single retraining lever);
+  Stage B d1 (one-step delay) **WORSE** in both seeds, both speed caps SEEDS_DISAGREE.
+- Independent results review r1 (Opus 5.5): ACCEPT_WITH_LIMITS.
+- The numbers, the wording limits and the file list are in
+  [`camt1/RESULTS_2026-11-12.md`](camt1/RESULTS_2026-11-12.md).

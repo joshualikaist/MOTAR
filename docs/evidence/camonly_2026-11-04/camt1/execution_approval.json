@@ -1,0 +1,10 @@
+{
+ "approved_by": "user (kaist.mesc), in this Claude Code session",
+ "approved_at": "2026-11-12, afternoon KST (before the 16:20 launch)",
+ "scope": "CAM-T1 v1: GPU evaluation of CAM-K2 v3 seeds 1 and 2 in CAM-K2-E3's V3 condition (no_lidar, 66 x 54 deg, CAM-K2 v2 treatments, blob_near rule): Stage A 24 traced cells (4 densities x 3 seeds) with a per-cell noninterference gate against CAM-K2-E3, after a 1-cell native identity; a 3-cell control (K=1/D=0 hook identity, d1 and cap20 smokes); Stage B 36 cells (free speed cap 2.5 and 2.0 m/s, one-step action delay; 115 and 205 bars x 3 seeds); 64 cells, caps 0.25 / 2.0 / 0.5 / 2.5 h per stage with rate gates, idle host; tools/camt1_run.py",
+ "commit": "b3b9f0b238c5224e5c06d2840600f0f4cfdcbc17",
+ "prereg": "docs/plans/prereg_camonly_t1_2026-11-12.md",
+ "source": "User 2026-11-12 KST, after the r2 re-review summary: '오케이 그 부분 수정해서 gpu 테스트까지 통과하도록 해줘'. Re-confirms the earlier in-principle approval of the trace and speed-cap/delay evaluations; covers this unit as preregistered (identity 1, trace 24, control 3, envelope 36 cells), each stage once. Retraining not approved.",
+ "reviews": "pre-gate r1 PASS_WITH_FIXES repaired; r2 PASS_WITH_FIXES repaired (Opus 5.5 fresh-context subagents)",
+ "cpu_gate": "cpu_gate_b3b9f0b238c5224e5c06d2840600f0f4cfdcbc17.json BASELINE_EQUIVALENT (3978 tests, 15 base failures, not 0/0)"
+}

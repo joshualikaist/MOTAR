@@ -1,0 +1,103 @@
+{
+ "analysis": "CAM-T1 positive control on G3",
+ "conditions": {
+  "A": {
+   "at_half_fov": {
+    "crash_episodes_traced": 475,
+    "left_pct": 63.578947368421055,
+    "never_in_1s_pct": 33.68421052631579,
+    "out_last_pct": 48.8421052631579,
+    "valid_share_pct": 97.26315789473684
+   },
+   "matches_record": {
+    "crash_episodes_traced": true,
+    "left_pct": true,
+    "never_in_1s_pct": true,
+    "out_last_pct": true,
+    "valid_share_pct": true
+   },
+   "negative_differs": true,
+   "negative_half_fov_33": {
+    "crash_episodes_traced": 475,
+    "left_pct": 63.578947368421055,
+    "never_in_1s_pct": 40.421052631578945,
+    "out_last_pct": 56.0,
+    "valid_share_pct": 97.26315789473684
+   },
+   "recorded": {
+    "crash_episodes_traced": 475,
+    "left_pct": 63.578947368421055,
+    "never_in_1s_pct": 33.68421052631579,
+    "out_last_pct": 48.8421052631579,
+    "valid_share_pct": 97.26315789473684
+   }
+  },
+  "B_out": {
+   "at_half_fov": {
+    "crash_episodes_traced": 5138,
+    "left_pct": 93.3242506811989,
+    "never_in_1s_pct": 56.4616582327754,
+    "out_last_pct": 72.0708446866485,
+    "valid_share_pct": 99.82483456597897
+   },
+   "matches_record": {
+    "crash_episodes_traced": true,
+    "left_pct": true,
+    "never_in_1s_pct": true,
+    "out_last_pct": true,
+    "valid_share_pct": true
+   },
+   "negative_differs": true,
+   "negative_half_fov_33": {
+    "crash_episodes_traced": 5138,
+    "left_pct": 93.3242506811989,
+    "never_in_1s_pct": 69.96885947839627,
+    "out_last_pct": 79.99221486959907,
+    "valid_share_pct": 99.82483456597897
+   },
+   "recorded": {
+    "crash_episodes_traced": 5138,
+    "left_pct": 93.3242506811989,
+    "never_in_1s_pct": 56.4616582327754,
+    "out_last_pct": 72.0708446866485,
+    "valid_share_pct": 99.82483456597897
+   }
+  },
+  "C": {
+   "at_half_fov": {
+    "crash_episodes_traced": 5109,
+    "left_pct": 93.38422391857506,
+    "never_in_1s_pct": 56.74300254452926,
+    "out_last_pct": 72.85183010373851,
+    "valid_share_pct": 99.74554707379134
+   },
+   "matches_record": {
+    "crash_episodes_traced": true,
+    "left_pct": true,
+    "never_in_1s_pct": true,
+    "out_last_pct": true,
+    "valid_share_pct": true
+   },
+   "negative_differs": true,
+   "negative_half_fov_33": {
+    "crash_episodes_traced": 5109,
+    "left_pct": 93.38422391857506,
+    "never_in_1s_pct": 69.68095517713839,
+    "out_last_pct": 80.23096496378939,
+    "valid_share_pct": 99.74554707379134
+   },
+   "recorded": {
+    "crash_episodes_traced": 5109,
+    "left_pct": 93.38422391857506,
+    "never_in_1s_pct": 56.74300254452926,
+    "out_last_pct": 72.85183010373851,
+    "valid_share_pct": 99.74554707379134
+   }
+  }
+ },
+ "g3_record": "docs/evidence/camonly_2026-11-04/c2trace/c2trace_analysis.json",
+ "g3_record_sha256": "decd64eacaa81f2403f78ae1586ee31eb2c0809b852a26da62a771895a99bdc8",
+ "half_fov_deg": 43.5,
+ "reading": "POSITIVE_CONTROL_PASS",
+ "script_sha256": "4728d98550e3faa58b4422af111445281f1034be009461074e0e07a509b6c782"
+}

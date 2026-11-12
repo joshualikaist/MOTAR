@@ -1,0 +1,29 @@
+{
+ "unit": "CAM-T1",
+ "gate": "CPU baseline equivalence (prereg; review r1 F6, r2 N1)",
+ "head": "b3b9f0b238c5224e5c06d2840600f0f4cfdcbc17",
+ "log": "/home/fair/motar_tmp/camt1_20261112/public_cpu_postcommit_b3b9f0b.log",
+ "log_sha256": "02fc7c136c3a18938f123d73a8e4499660116af5863a6d2ac9e10483e14fd1a2",
+ "report": {
+  "profile": "PUBLIC_CPU",
+  "status": "FAIL",
+  "ran": 3978,
+  "failures": 7,
+  "errors": 8,
+  "skipped": 18,
+  "excluded": 5,
+  "excluded_reasons": {
+   "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+   "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+  }
+ },
+ "ran_line": "3978",
+ "min_ran": 3977,
+ "skipped_required": 18,
+ "baseline_file": "/home/fair/motar_tmp/camt1_20261112/cpu_gate_baseline_failures.txt",
+ "only_in_base": [],
+ "only_in_run": [],
+ "problems": [],
+ "verdict": "BASELINE_EQUIVALENT",
+ "note": "never a PASS: PUBLIC_CPU is not 0/0 (15 pre-existing environment failures)"
+}

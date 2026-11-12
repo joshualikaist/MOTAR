@@ -26546,3 +26546,57 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `tests/test_experiment_index.py` must pass, a full PUBLIC_CPU run with the command above must give
   `cpu_gate_diff.sh` BASELINE_EQUIVALENT (writing `cpu_gate_<HEAD>.json`), and then the user's GPU re-confirmation
   with an approval file naming SCOPE and HEAD.
+
+## 2026-11-12 — CAM-T1 v1 run and results: Stage A DEFINITION_SENSITIVE, Stage B one-step delay WORSE (both seeds), speed caps SEEDS_DISAGREE; results review ACCEPT_WITH_LIMITS
+
+- **Approval and gate:** user, 2026-11-12, "오케이 그 부분 수정해서 gpu 테스트까지 통과하도록 해줘" (after the r2
+  summary), recorded in `execution_approval.json` with the runner's SCOPE and HEAD `b3b9f0b`. Post-commit CPU gate:
+  `Ran 3978 tests` / `FAILED (failures=9, errors=8, skipped=18)`, exactly the 15 base-commit names:
+  BASELINE_EQUIVALENT, reported as "PUBLIC_CPU not 0/0 (baseline-equivalent)"; `test_experiment_index` 9/9 OK.
+- **Run** (`~/motar_tmp/camt1_20261112/run_camt1.sh`, 16:20-19:32 KST, idle host, fault count 0 → 0, boot id and
+  online CPUs `0-3,6-23` unchanged):
+
+  | Stage | Cells | Reading |
+  | --- | ---: | --- |
+  | identity | 1 | IDENTITY_PASS |
+  | trace (Stage A) | 24 | NONINTERFERENCE_PASS (all ledgers byte-identical to CAM-K2-E3) |
+  | control | 3 | CONTROL_PASS |
+  | envelope (Stage B) | 36 | COMPLETE |
+  | G3 positive control / Stage A / Stage B analyses | — | POSITIVE_CONTROL_PASS / DESCRIBED / REPORTED |
+
+- **Stage A** (6,589 VALID quota crashes, pooled, cell-cluster 95 % CI):
+
+  | Profile | BLIND % | LEFT_FOV % | IN_VIEW % |
+  | --- | --- | --- | --- |
+  | footprint (primary) | 10.8 [9.4, 12.0] | 21.5 [20.4, 22.6] | 67.7 [65.7, 69.7] |
+  | nearest point | 42.5 [39.8, 45.1] | 26.7 [25.3, 28.3] | 30.8 [29.3, 32.4] |
+
+  Guidance DEFINITION_SENSITIVE: no single retraining lever. The camera was inside the depth model's 0.4 m minimum
+  at the last frame in every VALID crash, so IN_VIEW is geometric, not "visible". EARLY 11.3 %.
+- **Stage B** (crash pp vs E3 native, bootstrap 95 %):
+
+  | Arm | Seed 1 | Seed 2 | Reading |
+  | --- | --- | --- | --- |
+  | cap25 (free cap 2.5 m/s) | +0.33 [−0.53, 1.53] | +0.59 [−0.20, 1.25] | SEEDS_DISAGREE |
+  | cap20 (constant 2.0 m/s) | +1.74 [0.93, 2.70] | +2.41 [1.63, 3.26] | SEEDS_DISAGREE |
+  | d1 (one-step delay) | +4.95 [4.30, 5.60] | +3.67 [3.12, 4.17] | WORSE |
+
+  Neither cap lowered crashes in either seed; cap20 lengthened the median capture time by 1.10 / 1.20 s.
+- **Hypotheses rejected:**
+  - "A lower first-flight speed cap reduces this policy's crashes in simulation" is rejected at 2.5 and 2.0 m/s
+    (no reduction in either seed).
+  - "One step of command latency is harmless" is rejected: d1 is WORSE in both seeds.
+- **Results review r1** (Claude Code subagent, Opus 5.5, fresh context): ACCEPT_WITH_LIMITS. It recomputed Stage B
+  exactly and Stage A's primary profile exactly from raw; the wording limits R1-R13 are applied in the record.
+- **Evidence:** `docs/evidence/camonly_2026-11-04/camt1/` (`RESULTS_2026-11-12.md`, review and repair rounds, stage
+  reports, analyses, `SHA256_MANIFEST.json` binding 685 raw files under `~/motar_tmp/camt1_20261112/`).
+- **CPU check of this record commit:** full PUBLIC_CPU `Ran 3978 tests` / `FAILED (failures=8, errors=8, skipped=17)`:
+  the 15 base names plus `test_d1_is_a_closed_q3_continuation_not_p3`. That test had stopped skipping because the
+  GPU run's player created an empty, git-ignored `aerial_gym/rl_training/rl_games/runs/` (16:20). After `rmdir` of that
+  empty folder, its module reads `Ran 126 tests` / `OK (skipped=1)`, so the failure set is again the 15 base names.
+- **Decision:** no adoption or retraining decision is taken (retraining is not approved).
+- **Next, for the user:**
+  - choose the retraining direction: latency robustness is the one gated signal; Stage A does not choose between
+    memory/FOV and depth fidelity;
+  - decide on motar-783.19, the real-runtime phantom wall and missing ground removal;
+  - measure end-to-end latency on the vehicle.

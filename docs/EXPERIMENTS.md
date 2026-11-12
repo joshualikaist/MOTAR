@@ -781,14 +781,13 @@ family that is in the test's scope.
     v2 cells under the v2 treatments. Gate D NO_DETECTED_CHANGE: −1.50 / −1.15 pp, below the 2 pp floor despite
     intervals excluding zero. R and T SEEDS_DISAGREE.
     `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md`.
-  - **CAM-T1 v1 (preregistered 2026-11-12 on `camonly/t1`; reviewed r1 + r2, both PASS_WITH_FIXES and repaired;
-    ready to commit; NOT_RUN, GPU pending the user's approval):** where CAM-K2 v3 crashes relative to its 66° camera (a 1-cell native identity
-    first; Stage A: 24 traced E3 V3 cells, per-cell noninterference against CAM-K2-E3, categories BLIND / LEFT_FOV /
-    IN_VIEW + EARLY over VALID crashes, descriptive) and its envelope under a lower free-speed cap (2.5, 2.0 m/s) or
-    a one-step action delay (Stage B: 36 cells at 115 / 205 bars, gate_d against E3's native cells). The analysis
-    reproduces G3's out_last exactly at half-FOV 43.5° (positive control, build run). CPU gate: baseline
-    equivalence with `eefb832` (PUBLIC_CPU not 0/0 in this worktree).
-    GPU approved in principle by the user on 2026-11-12, to be re-confirmed; retraining not approved.
+  - **CAM-T1 v1 (preregistered 2026-11-12 on `camonly/t1`; run 2026-11-12 on `b3b9f0b`; results review r1
+    ACCEPT_WITH_LIMITS):** where CAM-K2 v3 crashes relative to its 66° camera and its envelope under a lower
+    free-speed cap or a one-step action delay. Identity IDENTITY_PASS, trace NONINTERFERENCE_PASS, control
+    CONTROL_PASS, envelope COMPLETE. Stage A **DEFINITION_SENSITIVE** (footprint profile IN_VIEW-dominant,
+    nearest-point profile BLIND-dominant; no single retraining lever). Stage B: d1 **WORSE** in both seeds; cap25 and
+    cap20 SEEDS_DISAGREE, neither lowering crashes. CPU gate: PUBLIC_CPU not 0/0 (baseline-equivalent with `eefb832`).
+    Retraining not approved. `docs/evidence/camonly_2026-11-04/camt1/RESULTS_2026-11-12.md`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -809,6 +808,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md` (CAM-K2-E3: matched evaluation of CAM-K2 v3 against CAM-K2 v2)
   - → `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md` (E3 result record and independent review)
   - → `docs/plans/prereg_camonly_t1_2026-11-12.md` (CAM-T1: CAM-K2 v3 crash location by trace, speed-cap and delay envelope)
+  - → `docs/evidence/camonly_2026-11-04/camt1/RESULTS_2026-11-12.md` (CAM-T1 result record and independent review)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
