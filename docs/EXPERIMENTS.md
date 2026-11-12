@@ -781,6 +781,14 @@ family that is in the test's scope.
     v2 cells under the v2 treatments. Gate D NO_DETECTED_CHANGE: −1.50 / −1.15 pp, below the 2 pp floor despite
     intervals excluding zero. R and T SEEDS_DISAGREE.
     `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md`.
+  - **CAM-T1 v1 (preregistered 2026-11-12 on `camonly/t1`; reviewed r1 + r2, both PASS_WITH_FIXES and repaired;
+    ready to commit; NOT_RUN, GPU pending the user's approval):** where CAM-K2 v3 crashes relative to its 66° camera (a 1-cell native identity
+    first; Stage A: 24 traced E3 V3 cells, per-cell noninterference against CAM-K2-E3, categories BLIND / LEFT_FOV /
+    IN_VIEW + EARLY over VALID crashes, descriptive) and its envelope under a lower free-speed cap (2.5, 2.0 m/s) or
+    a one-step action delay (Stage B: 36 cells at 115 / 205 bars, gate_d against E3's native cells). The analysis
+    reproduces G3's out_last exactly at half-FOV 43.5° (positive control, build run). CPU gate: baseline
+    equivalence with `eefb832` (PUBLIC_CPU not 0/0 in this worktree).
+    GPU approved in principle by the user on 2026-11-12, to be re-confirmed; retraining not approved.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -800,13 +808,15 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md` (CAM-K2 v3: v2 retrained with an invalid-depth validity rule)
   - → `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md` (CAM-K2-E3: matched evaluation of CAM-K2 v3 against CAM-K2 v2)
   - → `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md` (E3 result record and independent review)
+  - → `docs/plans/prereg_camonly_t1_2026-11-12.md` (CAM-T1: CAM-K2 v3 crash location by trace, speed-cap and delay envelope)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
   `docs/plans/prereg_camonly_c2trace_v1.md`, `docs/plans/prereg_camonly_k1_train_v1_2026-11-06.md`,
   `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`, `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md`,
   `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`,
-  `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md`
+  `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md`,
+  `docs/plans/prereg_camonly_t1_2026-11-12.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

@@ -26410,3 +26410,139 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `~/motar_tmp/sitl_amend2_20261110/session_closeout.json` via tools/agent_session.py close; the account-neutral latest
   handoff captures the final record commit and clean state. Next owner reads that handoff before selecting a separately
   scoped follow-up; no execution/push/main-merge approval carries beyond the two completed units.
+
+## 2026-11-12 — CAM-T1 built (CPU only): runner, analysis, launcher copy, tests and preregistration; reviewed r1 + r2 (PASS_WITH_FIXES, repaired), ready to commit; NOT_RUN, GPU pending the user's approval
+- **Unit:** CAM-T1 v1 (Beads motar-783.20), branch `camonly/t1` in worktree `src/MOTAR-camonly-t1`, base `eefb832`;
+  handoff `~/motar_tmp/camt1_20261112/HANDOFF_CAMT1.md` §3 and §4 steps 1–2, design notes `DESIGN_NOTES.md` there.
+  Usage state USAGE_UNKNOWN (no provider signal). No GPU, no simulator, no commit in this step.
+- **Built (as built, before repair r1; the repairs below change the stages, the control and the caps):**
+  - `aerial_gym/rl_training/rl_games/eval_navrl_camt1_arms.sh`: CAM-K2-E's launcher with one `[camt1]` change, the
+    governor's free-speed cap from `CAMT1_GOVERNOR_FREE_MPS` restricted to `3.53553390593` / `2.5` / `2.0`, required,
+    exit 2 otherwise; `NAVRL_MAX_VELOCITY` untouched. SHA-256 `c166f560…` pinned in the runner.
+  - `tools/camt1_run.py`: stages `trace` (Stage A, 24 traced V3 cells, per-cell noninterference against CAM-K2-E3:
+    both ledgers byte-identical + outcome counts), `control` (native and K=1/D=0 hook identity, d1 and cap20 smokes),
+    `envelope` (Stage B, 36 cells: cap25, cap20, d1 × V3s1/V3s2 × 115/205 × 4501–4503, order density, seed, arm) and
+    `plan` (dry run). Fail-closed preflight as CAM-K2-E3 plus branch `camonly/t1`, PYTHONPATH = the worktree with
+    import origins (and the hook's `sitecustomize`) inside it, refusal of inherited `MOTAR_ACTION_*` / `CAMT1_*`,
+    free disk ≥ 1.5 GB, E3 references at the committed v3e manifest, a rolling rate gate and per-stage caps
+    (2.0 / 0.5 / 2.5 h), VOID_HOST_FAULT on a fault-count, boot or online-CPU change. New cell checks
+    (`camt1_problems`) extend the receipt checks for the new keys (snapshot differs from E3 only in run keys plus the
+    arm's trace / free-cap key; condition differs only in `speed_governor_free_mps` for cap arms; hook sidecar exactly
+    for hook arms; trace exactly for traced arms; commanded speed ≤ the arm's cap).
+  - `tools/camt1_analyse.py`: Stage A crash geometry (contacted bar, ambiguity, eye-origin footprint FOV with
+    half-FOV and vertical-FOV parameters, 0.5/1/2 s windows, BLIND / LEFT_FOV / IN_VIEW + EARLY, side, speed,
+    roll/pitch, target visibility; cell-cluster bootstrap within density, env and episode bootstraps as
+    sensitivities; sensitivity profiles); Stage B gate_d per arm and seed with E3's intervals; controls; the G3
+    positive control.
+  - `tests/test_camt1.py` (42 tests after repair r1), `docs/plans/prereg_camonly_t1_2026-11-12.md` (**DRAFT,
+    repaired after review r1, pending re-review**), `docs/EXPERIMENTS.md` camera-only entry, chain
+    `~/motar_tmp/camt1_20261112/run_camt1.sh`.
+- **Design decisions not fixed by the handoff (for the reviewer):**
+  - the preflight checks the KROC2027 protocol's launcher and player pins but not Policy F's checkpoint, which this
+    worktree lacks (`runs/` is ignored) and CAM-T1 never loads;
+  - an extra `native_identity` cell without the hook, so a launcher/commit drift and a hook effect are separable
+    (after review r1 it is its own first stage); Stage B's d1s1 / cap20s1 at 205/4501 must equal the control smokes
+    (determinism);
+  - the primary in-FOV test is the eye-origin footprint overlap; the nearest-point test is a named sensitivity, and
+    the retraining guidance names a direction only when both agree (on G3's traces they differ by tens of points);
+  - primary scope is the quota crash rows (G3 used every traced episode; reported as a sensitivity);
+  - memory bound in the chain: a resident-memory watchdog (20 GB) on each runner's process tree, because a
+    virtual-memory ulimit breaks CUDA and this host's user scopes do not enforce MemoryMax (tested: 400 MB allocated
+    under MemoryMax=100M).
+- **Positive control (run, CPU):** `camt1_analyse.py g3-control` on `aerial_gym_simulator/results/camonly_c2trace_v1`
+  at half-FOV 43.5° reproduces `c2trace_analysis.json` exactly (POSITIVE_CONTROL_PASS):
+
+  | Condition | Crash episodes | out_last | never_in_1s |
+  | --- | --- | --- | --- |
+  | A | 475 | 48.8421 % | 33.6842 % |
+  | B_out | 5,138 | 72.0708 % | 56.4617 % |
+  | C | 5,109 | 72.8518 % | 56.7430 % |
+
+  At 33° (negative control) out_last reads 56.0 / 79.99 / 80.23 %. Output
+  `~/motar_tmp/camt1_20261112/build_smoke/g3_positive_control_build.json` (SHA-256 `cf27c4b6…`).
+- **Stage B gate controls on existing CAM-K2-E cells (115/205 × 3 seeds):** K1s1 − K2s1 WORSE +3.54 pp, K1s2 − K2s2
+  WORSE +4.93 pp, both reverses SMALL_REDUCTION, null K2s1 − K2s2 NEGLIGIBLE +0.42 pp; all as required
+  (`build_smoke/stage_b_controls_build.json`).
+- **Smokes (CPU):** runner `plan` (preflight lists only the expected pre-commit blockers: dirty tree, no approval,
+  new files uncommitted); the three stage loops with `gr_run.run_cell` stubbed by links to E3's cells
+  (NONINTERFERENCE_PASS, CONTROL_PASS, COMPLETE; a one-byte change reads TRACE_INTERFERES; slow cells stop at the rate
+  gate); the Stage A analysis path on G3 traces (all profiles, bootstraps, guidance); stage-a / stage-b on empty
+  folders read TRACE_BINDING_FAIL / EVAL_BINDING_FAIL; the launcher's cap check in `tests/test_camt1.py`; the
+  chain's watchdog, timeout and ulimit helpers. Records in `~/motar_tmp/camt1_20261112/build_smoke/`.
+- **Tests (build, before repair r1):** focused `PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES= python -B -m unittest discover
+  -s tests -p test_camt1.py` 35/35 OK (the module form `-m unittest tests.test_camt1` does not import: `tests/` is not
+  a package); `tests/test_experiment_index.py` 9/9 OK with the new files in a
+  temporary git index (with the real index it fails until the preregistration is committed).
+  - Full PUBLIC_CPU (`OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES= nice -n 10 timeout
+    3600 python -B tools/run_tests.py`, real index): `Ran 3970 tests in 746.429s` / `FAILED (failures=9, errors=8,
+    skipped=18)`; test_camt1's 35 tests pass. **Not 0/0.** The 17: test_experiment_index × 2 (the prereg is
+    untracked until the commit) and 15 that fail identically on a clean detached worktree at base `eefb832`
+    (test_boia_shadow_runner 7, test_sitl_s3a_policy_precision 3, test_result_manifest 2, test_camk1e 1,
+    test_navrl_stopcap_screen_contract 1, test_sitl_s4r1 1: a new worktree lacks Policy F's ignored checkpoint
+    under `runs/` and the untracked raw `results/` folders, and some records name the `MOTAR-camonly` path).
+    Logs `build_smoke/public_cpu_full_r2.log`, `build_smoke/baseline_eefb832_failing_modules.log` (the baseline
+    worktree was removed after use). An earlier run r1 with `GIT_INDEX_FILE` set polluted tests that build their own
+    git repositories (51 errors/failures); it is not used.
+- **Pre-gate review r1** (Claude Code subagent, Opus 5.5, fresh context, read-only;
+  `~/motar_tmp/camt1_20261112/review_pre_r1/REVIEW.md`): **PASS_WITH_FIXES**, no P0/P1, six P2 and four P3. It
+  reproduced the positive control byte for byte, the Stage B controls, the E3 timing and cap-binding claims, and the
+  yaw convention against the kroc2027 ledgers.
+- **Repair r1** (map with file:line and tests: `~/motar_tmp/camt1_20261112/REPAIR_r1.md`):
+  - F1: per seed, trace coverage of the quota crash rows, `actions_match` and `frames_contiguous` below 0.99 read
+    MEASUREMENT_INVALID with the reason;
+  - F2: category shares and intervals over VALID crashes; non-VALID ones reported separately; all-crash shares a
+    sensitivity;
+  - F3: identity requires `result_equal` (as G7);
+  - F4: `native_identity` is a 1-cell `identity` stage run first; NOT_REPRODUCED stops the chain before any trace
+    cell; control is 3 cells; Stage A and B analyses bind IDENTITY_PASS;
+  - F5: the chain records every descendant's session, kills the launcher sessions on a memory-cap kill and after
+    every stage, and waits for an idle GPU before any CPU analysis (smoke: the cap and the timeout kill a child in a
+    new session; a bare `timeout` leaves it alive);
+  - F6: the CPU gate is baseline equivalence, never PASS: `cpu_gate_baseline_failures.txt` (the 15 base names,
+    `LC_ALL=C`) and `cpu_gate_diff.sh`;
+  - F7: Stage A requires the chain's G3 positive control at its own script bytes; scope stated;
+  - F8: no label written on CONTROL_FAIL;
+  - F9 and the rest of F10 disclosed in the preregistration; a written MEASUREMENT_INVALID on unsupported geometry;
+    a GPU idle check before every cell.
+- **Verification after repair r1:**
+  - `tests/test_camt1.py` (discover form): `Ran 42 tests in 22.444s` / `OK`.
+  - G3 positive control rerun: POSITIVE_CONTROL_PASS, the same numbers (`build_smoke/g3_positive_control_repair_r1.json`).
+  - Stage B controls rerun: unchanged labels and means (`build_smoke/stage_b_controls_repair_r1.json`, byte-identical
+    to the build run's).
+  - Smokes: runner `plan`; the four stage loops (IDENTITY_PASS, NONINTERFERENCE_PASS, CONTROL_PASS, COMPLETE;
+    NOT_REPRODUCED, a busy GPU, TRACE_INTERFERES and the rate gate as negatives); Stage A end to end on stand-in G3
+    cells (DESCRIBED; TRACE_BINDING_FAIL without IDENTITY_PASS or with a failing positive control); Stage B end to end
+    (REPORTED; EVAL_BINDING_FAIL on NOT_REPRODUCED); the chain's kill and GPU-wait helpers.
+  - Full PUBLIC_CPU (same command): `Ran 3977 tests in 773.531s` / `FAILED (failures=9, errors=8, skipped=18)`.
+    `cpu_gate_diff.sh` reads BLOCK before the commit: the 15 base names plus exactly the two `test_experiment_index`
+    failures of the untracked preregistration (with the preregistration in a temporary index that test reads 9/9 OK).
+    The gate must read BASELINE_EQUIVALENT after the commit.
+- **Re-review r2** (Claude Code subagent, Opus 5.5, fresh context, read-only;
+  `~/motar_tmp/camt1_20261112/review_pre_r2/REVIEW.md`): **PASS_WITH_FIXES**, no P0/P1; F1–F5, F7–F10 resolved or
+  disclosed, F6 partial. New: N1 (P2) and N2–N7 (P3).
+- **Repair r2** (map: `~/motar_tmp/camt1_20261112/REPAIR_r2.md`):
+  - N1: `cpu_gate_diff.sh` now requires run_tests.py's PUBLIC_CPU report block, ≥ 3,977 tests, 18 skipped,
+    failures + errors = 15 and a log newer than HEAD, and writes `cpu_gate_<HEAD>.json`; `run_camt1.sh` refuses to
+    start without a BASELINE_EQUIVALENT record for its HEAD;
+  - N2: the chain's GPU query runs under `timeout 30`, and a failed query is "not idle"; the runner records
+    `gpu_check_error` and reads INCOMPLETE;
+  - N3 and N4 are disclosed in the preregistration; N5: the discover form is named; N6: `TypeError` is caught and
+    written as MEASUREMENT_INVALID;
+  - N7: the status lines, the r2 record, a rerun sentence (a new parent folder and new output names) and the nonce
+    test case (it now changes `evaluation_nonce`; the checkpoint-path case is kept separately).
+- **Verification after repair r2** (details in `REPAIR_r2.md`):
+  - `tests/test_camt1.py` (discover form): `Ran 43 tests in 22.562s` / `OK`;
+  - G3 positive control POSITIVE_CONTROL_PASS with the same numbers; Stage B controls byte-identical; runner `plan`
+    lists only the pre-commit blockers (1 / 24 / 3 / 36 cells);
+  - gate and chain smokes (`build_smoke/gate_smoke.out`): the 127-test baseline log, a log without the report block,
+    3,900 tests, 17 skipped, a log older than HEAD and an existing record all read BLOCK; a synthetic full log with
+    exactly the 15 names reads BASELINE_EQUIVALENT; the chain stops on a missing record, a BLOCK record and a record for
+    another HEAD, and with a BASELINE_EQUIVALENT record continues to the (missing) approval file; a failing GPU query
+    is not "idle";
+  - full PUBLIC_CPU (same command): `Ran 3978 tests in 764.662s` / `FAILED (failures=9, errors=8, skipped=18)`.
+    `cpu_gate_diff.sh` reads BLOCK before the commit, the difference being exactly the two `test_experiment_index`
+    lines of the untracked preregistration.
+- **Next:** the coordinator reviews the diff and makes the local commit of the named files. After the commit:
+  `tests/test_experiment_index.py` must pass, a full PUBLIC_CPU run with the command above must give
+  `cpu_gate_diff.sh` BASELINE_EQUIVALENT (writing `cpu_gate_<HEAD>.json`), and then the user's GPU re-confirmation
+  with an approval file naming SCOPE and HEAD.
