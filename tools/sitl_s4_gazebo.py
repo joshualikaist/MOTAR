@@ -9,9 +9,11 @@ Pieces used by the S4 runner:
   - GazeboSensorEpisode: tools/sitl_bridge.Episode fed with the Gazebo arrays, with MOTAR's own render at the same
     pose computed beside it as a shadow (never fed to perception) for the sensor-gap record.
 """
+import contextlib
 import math
 import socket
 import struct
+import time
 
 import numpy as np
 
@@ -28,29 +30,104 @@ SENSOR_SCOPE = "default::navrl_quad_s4::base_link::"
 HDR = struct.Struct("<4sI5d7I")
 
 
+class ReadinessError(RuntimeError):
+    pass
+
+
+class ReadinessTimeout(ReadinessError, TimeoutError):
+    pass
+
+
 class S4Client:
     def __init__(self, port=PORT, timeout=5.0):
         self.s = socket.create_connection(("127.0.0.1", port), timeout=timeout)
         self.s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        self._budget = None
+
+    @contextlib.contextmanager
+    def bounded_io(self, deadline, service, clock=time.monotonic, quantum_s=0.025):
+        """One absolute I/O budget; retain partial reads across service slices.
+
+        The callback must itself be bounded. This is cooperative socket scheduling,
+        not a hard real-time guarantee against host/process stalls.
+        A failed transaction closes the stream; partial replies cannot be reused.
+        """
+        if self._budget is not None or not math.isfinite(deadline) or not 0 < quantum_s <= 0.05:
+            raise ValueError("invalid/nested S4 I/O budget")
+        previous = self.s.gettimeout()
+        self._budget = (deadline, service, clock, quantum_s)
+        try:
+            self._service_io()
+            yield
+            self._service_io()
+        except BaseException:
+            self.close()
+            raise
+        else:
+            self.s.settimeout(previous)
+        finally:
+            self._budget = None
+
+    def _service_io(self):
+        if self._budget is None:
+            return
+        deadline, service, clock, quantum = self._budget
+        if clock() >= deadline:
+            raise ReadinessTimeout("HARNESS_INVALID initial target I/O deadline")
+        service()
+        remaining = deadline - clock()
+        if remaining <= 0:
+            raise ReadinessTimeout("HARNESS_INVALID initial target I/O deadline")
+        self.s.settimeout(min(remaining, quantum))
+
+    def _send(self, data):
+        if self._budget is None:
+            self.s.sendall(data)
+            return
+        offset = 0
+        while offset < len(data):
+            self._service_io()
+            try:
+                sent = self.s.send(data[offset:])
+            except socket.timeout:
+                continue
+            if not sent:
+                raise ConnectionError("S4 plugin closed while sending")
+            offset += sent
+        self._service_io()
 
     def _read(self, n):
         buf = bytearray()
         while len(buf) < n:
-            chunk = self.s.recv(n - len(buf))
+            self._service_io()
+            try:
+                chunk = self.s.recv(n - len(buf))
+            except socket.timeout:
+                if self._budget is None:
+                    raise
+                continue
             if not chunk:
                 raise ConnectionError("S4 plugin closed the connection")
             buf += chunk
+        self._service_io()
         return bytes(buf)
 
     def set_target(self, x, y, z):
-        self.s.sendall(b"T" + struct.pack("<3d", x, y, z))
+        self._send(b"T" + struct.pack("<3d", x, y, z))
         return struct.unpack("<d", self._read(8))[0]
 
     def frames(self):
-        self.s.sendall(b"R")
+        self._send(b"R")
         magic, version, now, lt, rt, dt, at, count, lh, lw, rw, rh, dw, dh = HDR.unpack(self._read(HDR.size))
         if magic != b"MS4F" or version != 1:
+            self.close()
             raise ValueError("bad S4 frame header %r %r" % (magic, version))
+        # The v1 rig is fixed. Validate BEFORE allocation/read of peer-sized payloads.
+        # A not-yet-produced modality has both dimensions zero, never mixed zeros.
+        if ((lh, lw) not in ((0, 0), (H, W)) or (rw, rh) not in ((0, 0), (CAM_W, CAM_H))
+                or (dw, dh) not in ((0, 0), (CAM_W, CAM_H))):
+            self.close()
+            raise ValueError("bad S4 sensor dimensions")
         ranges = np.frombuffer(self._read(8 * lh * lw), "<f8").reshape(lh, lw) if lh * lw else None
         rgb = np.frombuffer(self._read(rw * rh * 3), np.uint8).reshape(rh, rw, 3) if rw * rh else None
         depth = np.frombuffer(self._read(4 * dw * dh), "<f4").reshape(dh, dw) if dw * dh else None
@@ -62,6 +139,68 @@ class S4Client:
             self.s.close()
         except OSError:
             pass
+
+
+def wait_initial_target(client, send_target, *, timeout_s=2.0, poll_s=0.01,
+                        maintain_hold=lambda: None, clock=time.monotonic, sleep=time.sleep):
+    """First apply + strictly later RGB/depth/LiDAR; no capture-bound ID in v1.
+
+    Requires exclusive ownership of a fresh bridge. No policy/tracker call occurs
+    during polling. Receipt ACK is not application ACK. This only repairs startup.
+    """
+    if not math.isfinite(timeout_s) or timeout_s <= 0 or not 0 < poll_s <= 0.025:
+        raise ValueError("positive finite timeout and poll <= 0.025 s required")
+    started = clock()
+    deadline = started + timeout_s
+
+    def header(frame):
+        try:
+            count = frame['target_count']
+            ts = {k: float(frame[k]) for k in ('sim_now', 'target_t', 'rgb_t', 'depth_t', 'lidar_t')}
+            if type(count) is not int or count < 0 or not all(math.isfinite(v) for v in ts.values()):
+                raise ValueError()
+            return count, ts
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ReadinessError('HARNESS_INVALID initial target header') from exc
+
+    with client.bounded_io(deadline, maintain_hold, clock=clock):
+        count, base = header(client.frames())
+        if count != 0 or base['target_t'] != -1:
+            raise ReadinessError('HARNESS_INVALID initial target requires fresh bridge')
+        receipt = float(send_target())
+        if not math.isfinite(receipt) or receipt < base['sim_now']:
+            raise ReadinessError('HARNESS_INVALID target receipt clock')
+        previous_count, previous_ts, applied, polls = 0, base, None, 0
+        while True:
+            frame = client.frames()
+            polls += 1
+            count, ts = header(frame)
+            if count > 1 or count < previous_count or any(
+                    ts[k] < previous_ts[k] for k in ('sim_now', 'rgb_t', 'depth_t', 'lidar_t')):
+                raise ReadinessError('HARNESS_INVALID target count/simulation regression')
+            previous_count, previous_ts = count, ts
+            if count == 0 and ts['target_t'] != -1:
+                raise ReadinessError('HARNESS_INVALID unapplied target metadata')
+            if count == 1:
+                if ts['target_t'] < base['sim_now'] or (applied is not None and applied != ts['target_t']):
+                    raise ReadinessError('HARNESS_INVALID target application clock')
+                applied = ts['target_t']
+                # Apply may precede the server's receipt reply under thread scheduling.
+                fresh = (ts['sim_now'] >= max(receipt, applied)
+                         and all(applied < ts[k] <= ts['sim_now'] for k in ('rgb_t', 'depth_t', 'lidar_t')))
+                if fresh and all(getattr(frame.get(k), 'size', 0) > 0 for k in ('rgb', 'depth', 'ranges')):
+                    report = {'scope': 'initial apply and strictly later nonempty sensor buffers',
+                              'receipt_sim_s': receipt, 'applied_sim_s': applied, 'target_count': count,
+                              'polls': polls, 'preflight_packets': polls + 1, 'wall_s': clock() - started,
+                              'timeout_s': timeout_s, 'io_service_quantum_s': 0.025,
+                              'capture_bound_target_identity': 'NOT_RECORDED: MS4F v1 limitation'}
+                    getattr(client, 'record_initial_target_readiness', lambda r: None)(report)
+                    return frame, report
+            maintain_hold()
+            remaining = deadline - clock()
+            if remaining <= 0:
+                raise ReadinessTimeout('HARNESS_INVALID initial target/frame timeout')
+            sleep(min(poll_s, remaining))
 
 
 def motar_lidar(ranges_gz):

@@ -2,6 +2,7 @@
 the per-cell smoke rule, the ULog gzip record, the analysis on synthetic episode records, and the preflight refusals.
 No SITL, PX4, Gazebo or GPU is started; the live path runs against the S3b/S4 test fakes. Every negative check is
 paired with a positive control. Modules under test are loaded by path; patched attributes are restored."""
+import contextlib
 import gzip
 import hashlib
 import importlib.util
@@ -346,10 +347,18 @@ class FakeClient:
 
     def set_target(self, x, y, z):
         self.targets.append((x, y, z))
-        return 0.0
+        return 1.05
+
+    @contextlib.contextmanager
+    def bounded_io(self, deadline, service, **kwargs):
+        service()
+        yield
+        service()
 
     def frames(self):
-        return {"sim_now": 1.0, "lidar_t": 0.0, "rgb_t": 0.0, "depth_t": 0.0, "target_t": 0.0, "target_count": 1,
+        t = 1.1 if self.targets else 0.0
+        return {"sim_now": 1.2 if self.targets else 1.0, "lidar_t": t, "rgb_t": t, "depth_t": t,
+                "target_t": 1.0 if self.targets else -1.0, "target_count": len(self.targets),
                 "ranges": np.full((4, 72), 12.0), "rgb": np.zeros((90, 160, 3), np.uint8),
                 "depth": np.full((90, 160), 25.0, np.float32)}
 
@@ -410,6 +419,8 @@ class TestLivePath(unittest.TestCase):
             self.assertEqual((r["arm"], r["cell"], r["s4_arm"], r["appearance"], r["ground"]),
                              (cell, cell, "ground", "emissive", "unrendered"))
             self.assertTrue(FakeClient.made[0].closed and r["link_closed"])
+            self.assertEqual(r['initial_target_readiness']['preflight_packets'], 2)
+            self.assertTrue(r['post_readiness_start_check']['offboard'])
             written = (tmp / cell / "world" / "motar_s4.world").read_text()
             want = S4F1.world_text_cell(cell, G.world_text_s4(SF.world_text(
                 FAKE_BASE, spec["centers"], spec["halves"], spec["p0"], spec["yaw0"], V0.ODE_ITERS, V0.SPAWN, V0.rot)))
@@ -424,7 +435,7 @@ class TestLivePath(unittest.TestCase):
             self.assertEqual(list((tmp / cell).glob(S4F1.ULOG_GLOB)), [])
             self.assertEqual(S4F1.verify_ulog_record(tmp / cell, u["files"][0]), [])
             self.assertIn("dataman_removed_bytes", r)
-            self.assertIsNotNone(r["late_max_s"])          # the fake frames are stamped 0 s: not a lateness test
+            self.assertIsNotNone(r["late_max_s"])          # synthetic timestamps: not a lateness test
             # negative: a base world without the ground includes cannot become a cell world; the episode errs
             (tmp / "empty.world").write_text(FAKE_BASE.replace("model://ground_plane", "model://x"))
             r2 = S4F1.run_episode(B, OS, V0, spec, tmp / "bad", pol, cell, link_factory=T3B.FakeLink,

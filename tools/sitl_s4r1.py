@@ -1,7 +1,9 @@
 """S4R-1: additive, phase-aligned Gazebo sensor repeatability recorder. NOT_RUN.
 
-The historical S4F1/S4 control functions are imported into private module instances,
-never edited. --smoke and --launch require a committed preregistration and scoped approval.
+S4F1/S4 control functions are imported into private module instances. The historical
+results remain bound to their recorded source. Initial-target readiness is a newer,
+CPU-qualified implementation; live launch is blocked pending a separate execution
+amendment and fresh smoke. --smoke/--launch also require scoped approval.
 Design review r1 (AMEND_FIRST) repairs: ledger arm = condition (BLOCKER-1); relative stamps,
 per-stage max-abs, tie rule and trajectory spread (MAJOR-1); no tree walk in the control loop,
 incremental byte counter (MAJOR-2); no RLIMIT_AS, owned-session RSS watchdog, fixed
@@ -25,6 +27,7 @@ validity bound and first-invalid stop rule remain in force; prior attempt01 stay
 """
 import argparse
 import collections
+import contextlib
 import gzip
 import hashlib
 import importlib.util
@@ -490,6 +493,20 @@ def client_factory(tap, base=G.S4Client):
     class Client:
         def __init__(self):
             self.client = base()
+            self.initial_read = False
+
+        @contextlib.contextmanager
+        def bounded_io(self, *args, **kwargs):
+            self.initial_read = True
+            tap.event('initial_target_wait_begin')
+            try:
+                with self.client.bounded_io(*args, **kwargs):
+                    yield
+            finally:
+                self.initial_read = False
+
+        def record_initial_target_readiness(self, report):
+            tap.event('initial_target_ready', report=report)
 
         def set_target(self, *xyz):
             e = tap.event('target_request', xyz=list(xyz))
@@ -511,18 +528,19 @@ def client_factory(tap, base=G.S4Client):
             f = self.client.frames()
             e['mono_return'] = tap.clock()
             t0 = time.perf_counter()
-            if any(f.get(k) is None for k in ('ranges', 'rgb', 'depth')):
+            if not self.initial_read and any(f.get(k) is None for k in ('ranges', 'rgb', 'depth')):
                 raise RuntimeError('HARNESS_INVALID MISSING_SENSOR_PAYLOAD')
             # Exact payload copies stay in memory; persisted after the flight (no runtime disk work).
             p = {'packet_id': len(tap.packets), 'phase_at_read': tap.phase,
+                 'purpose': 'initial_target_readiness' if self.initial_read else 'control_candidate',
                  'request_mono': e['mono'], 'return_mono': e['mono_return'],
                  'header': {k: v for k, v in f.items() if k not in ('ranges', 'rgb', 'depth')},
                  'link_state_at_return': tap.link_state(),
                  'wire_header': {'magic': 'MS4F', 'version': 1,
-                                 'lidar_h_w': list(f['ranges'].shape),
-                                 'rgb_h_w': list(f['rgb'].shape[:2]),
-                                 'depth_h_w': list(f['depth'].shape)},
-                 'raw': {k: array(f[k]) for k in ('ranges', 'rgb', 'depth')}}
+                                 'lidar_h_w': list(f['ranges'].shape) if f['ranges'] is not None else None,
+                                 'rgb_h_w': list(f['rgb'].shape[:2]) if f['rgb'] is not None else None,
+                                 'depth_h_w': list(f['depth'].shape) if f['depth'] is not None else None},
+                 'raw': {k: array(f[k]) for k in ('ranges', 'rgb', 'depth') if f[k] is not None}}
             tap.packets.append(p)
             tap.charge('frames', t0)
             return f
@@ -667,7 +685,36 @@ def dump_tap(tap, ep_dir, budget):
     manifest = {str(p.relative_to(ep_dir)): {'bytes': p.stat().st_size, 'sha256': SF.sha256_file(p)}
                 for p in sorted(d.iterdir()) if p.is_file()}
     tap.unserializable = list(getattr(tap, 'unserializable', [])) + tagged
-    return {'files': manifest, 'packets': len(packets), 'steps': len(steps)}
+    preflight = sum(p.get('purpose') == 'initial_target_readiness' for p in packets)
+    return {'files': manifest, 'packets': len(packets), 'steps': len(steps),
+            'packet_contract': 'initial-target-readiness-v1' if preflight else 'historical-single-hover',
+            'preflight_packets': preflight if preflight else 1}
+
+
+def packet_mapping_problems(packets, steps, n):
+    """Validate receipt IDs and exact chosen-frame mapping; keep legacy records readable.
+
+    New startup polls are a contiguous explicit prefix, never discarded or counted
+    as policy steps. Historical records retain their single hover-packet contract.
+    """
+    if not isinstance(n, int) or n <= 0 or len(steps) != n:
+        return ['RECORDING_COUNT']
+    if any(p.get('packet_id') != i for i, p in enumerate(packets)):
+        return ['PACKET_MAPPING']
+    ids = [s.get('packet_id') for s in steps]
+    preflight = sum(p.get('purpose') == 'initial_target_readiness' for p in packets)
+    if preflight:
+        if preflight < 2 or any(p.get('purpose') != 'initial_target_readiness' for p in packets[:preflight]):
+            return ['PACKET_MAPPING']
+        if any(p.get('purpose') != 'control_candidate' for p in packets[preflight:]):
+            return ['PACKET_MAPPING']
+    else:
+        preflight = 1
+    if len(packets) != n + preflight:
+        return ['RECORDING_COUNT']
+    if ids != list(range(preflight, len(packets))) or [s.get('k') for s in steps] != list(range(n)):
+        return ['PACKET_MAPPING']
+    return []
 
 
 def recording_problems(tap, result, contact):
@@ -678,8 +725,7 @@ def recording_problems(tap, result, contact):
             p.append('MAVLINK_STREAM_MISSING: ' + typ)
     if result.get('ulog', {}).get('all_verified') is not True:
         p.append('ULOG_INTEGRITY: ' + str(result.get('ulog', {}).get('problems')))
-    if n <= 0 or len(tap.steps) != n or len(tap.packets) != n + 1:
-        p.append('RECORDING_COUNT')
+    p += packet_mapping_problems(tap.packets, tap.steps, n)
     if tap.control_start is None or tap.control_end is None:
         p.append('CONTROL_PHASE_MISSING')
     for s in tap.steps:
@@ -1109,7 +1155,14 @@ def member_problems(ep_dir, row):
         p.append('member%s: Gazebo seed not bound' % idx)
     if (row.get('logger_stop') or {}).get('returncode') != 0:
         p.append('member%s: logger stop not verified' % idx)
-    if rep.get('steps') != row.get('steps') or rep.get('packets') != (row.get('steps') or 0) + 1:
+    try:
+        packets = json.loads((ep_dir / 'repeatability/packets.json').read_text())
+        steps = json.loads((ep_dir / 'repeatability/steps.json').read_text())
+        mapping = packet_mapping_problems(packets, steps, row.get('steps'))
+        counts_ok = rep.get('steps') == len(steps) and rep.get('packets') == len(packets)
+    except (OSError, ValueError, TypeError, AttributeError):
+        mapping, counts_ok = ['PACKET_MAPPING'], False
+    if mapping or not counts_ok:
         p.append('member%s: packet/step counts' % idx)
     return p
 

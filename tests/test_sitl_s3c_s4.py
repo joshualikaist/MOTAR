@@ -1,12 +1,16 @@
 """CPU tests for the S3c and S4 SITL units (tools/sitl_s3c.py, tools/sitl_s4.py, tools/sitl_s4_gazebo.py,
 tools/sitl_s4_model.py). No SITL, PX4, Gazebo or GPU is started; the live paths run against fakes."""
 import importlib.util
+import contextlib
 import json
 import math
 import pathlib
 import shutil
+import socket
+import struct
 import sys
 import tempfile
+import time
 import types
 import unittest
 
@@ -240,12 +244,19 @@ class FakeClient:
 
     def set_target(self, x, y, z):
         self.targets.append((x, y, z))
-        return 0.0
+        return 1.05
+
+    @contextlib.contextmanager
+    def bounded_io(self, deadline, service, **kwargs):
+        service()
+        yield
+        service()
 
     def frames(self):
         self.n += 1
-        t = 0.0
-        return {"sim_now": 1.0, "lidar_t": t, "rgb_t": t, "depth_t": t, "target_t": t, "target_count": self.n,
+        t = 1.1 if self.targets else 0.0
+        return {"sim_now": 1.2 if self.targets else 1.0, "lidar_t": t, "rgb_t": t, "depth_t": t,
+                "target_t": 1.0 if self.targets else -1.0, "target_count": len(self.targets),
                 "ranges": np.full((4, 72), 12.0), "rgb": np.zeros((90, 160, 3), np.uint8),
                 "depth": np.full((90, 160), 25.0, np.float32)}
 
@@ -302,6 +313,8 @@ class TestS4LivePath(unittest.TestCase):
                 sens = np.load(tmp / arm / "sensor_steps.npy")
                 self.assertEqual(sens.shape, (5, 16))
                 self.assertEqual(r["hover_guard"], {"lidar_min_m": 12.0, "depth_min_m": 20.0})
+                self.assertEqual(r['initial_target_readiness']['preflight_packets'], 2)
+                self.assertTrue(r['post_readiness_start_check']['armed'])
                 self.assertAlmostEqual(FakeClient.made[0].targets[0][2], 1.0 + S4.SF_H0)
                 if arm == "ground":
                     self.assertTrue((sens[:, 11] >= 0).all())
@@ -419,6 +432,199 @@ class TestDiskAndGpuRepairs(unittest.TestCase):
         self.assertEqual(len(got["job"]), 1)
         self.assertIn("aerialgym", got["job"][0])
         self.assertNotIn("rustdesk", got["job"][0])
+
+
+class WireClock:
+    def __init__(self):
+        self.t = 0.0
+
+    def now(self):
+        return self.t
+
+    def sleep(self, dt):
+        self.t += dt
+
+
+class FragmentSocket:
+    """Clocked stream, with partial sends/reads and optional silent/drip peer."""
+    def __init__(self, wire, clock, fragment=4096, delay=0.001, silent=False, stalls=0):
+        self.wire, self.clock = bytearray(wire), clock
+        self.fragment, self.delay, self.silent, self.stalls = fragment, delay, silent, stalls
+        self.timeout, self.closed, self.sent, self.read_sizes = 5., False, bytearray(), []
+
+    def gettimeout(self):
+        return self.timeout
+
+    def settimeout(self, value):
+        self.timeout = value
+
+    def send(self, data):
+        n = min(len(data), 7)
+        self.sent.extend(data[:n])
+        return n
+
+    def recv(self, n):
+        self.read_sizes.append(n)
+        if self.silent or self.stalls > 0 or self.delay > self.timeout:
+            self.stalls = max(0, self.stalls - 1)
+            self.clock.t += self.timeout
+            raise socket.timeout()
+        self.clock.t += self.delay
+        chunk = bytes(self.wire[:min(n, self.fragment)])
+        del self.wire[:len(chunk)]
+        return chunk
+
+    def close(self):
+        self.closed = True
+
+
+def wire_frame(count=1, applied=10.1, stamp=10.2, now=10.2, empty=False, **overrides):
+    values = dict(now=now, lidar=stamp, rgb=stamp, depth=stamp, applied=applied)
+    values.update(overrides)
+    dims = (0,) * 6 if empty else (4, 72, 160, 90, 160, 90)
+    header = G.HDR.pack(b'MS4F', 1, *values.values(), count, *dims)
+    if empty:
+        return header
+    return header + np.ones((4, 72), '<f8').tobytes() + bytes(160 * 90 * 3) + np.ones((90, 160), '<f4').tobytes()
+
+
+class TestInitialTargetTransport(unittest.TestCase):
+    def client(self, wire, **kwargs):
+        clock = WireClock()
+        c = G.S4Client.__new__(G.S4Client)
+        c._budget = None
+        c.s = FragmentSocket(wire, clock, **kwargs)
+        return c, clock
+
+    def wait(self, c, clock, service=lambda: None, timeout=.5):
+        return G.wait_initial_target(c, lambda: c.set_target(1, 2, 3), timeout_s=timeout,
+                                     clock=clock.now, sleep=clock.sleep, maintain_hold=service)
+
+    def stream(self, frames):
+        return wire_frame(0, -1, 10, 10, empty=True) + struct.pack('<d', 10.05) + b''.join(frames)
+
+    def test_fragmented_success_preserves_protocol_and_timeout(self):
+        c, clock = self.client(self.stream([wire_frame()]), fragment=1379, stalls=3)
+        service_times = []
+        frame, report = self.wait(c, clock, lambda: service_times.append(clock.t))
+        self.assertEqual(report['preflight_packets'], 2)
+        self.assertEqual(frame['rgb'].shape, (90, 160, 3))
+        self.assertEqual(bytes(c.s.sent), b'R' + b'T' + struct.pack('<3d', 1, 2, 3) + b'R')
+        self.assertFalse(c.s.closed)
+        self.assertEqual(c.s.timeout, 5.)
+        self.assertGreater(len(service_times), 3)
+        self.assertLessEqual(max(np.diff(service_times)), .025 + 1e-9)
+
+    def test_silent_and_slow_drip_deadline_service_hold(self):
+        for options in ({'silent': True}, {'fragment': 1, 'delay': .01}):
+            c, clock = self.client(self.stream([wire_frame()]), **options)
+            service_times = []
+            self.assertRaises(G.ReadinessTimeout, self.wait, c, clock,
+                              lambda: service_times.append(clock.t), .1)
+            self.assertLessEqual(clock.t, .1 + 1e-9)
+            self.assertTrue(c.s.closed)
+            self.assertGreater(len(service_times), 3)
+            self.assertLessEqual(max(np.diff(service_times)), .025 + 1e-9)
+
+    def test_eof_and_partial_payload_close_stream(self):
+        for wire in (b'', self.stream([wire_frame()])[:-20]):
+            c, clock = self.client(wire)
+            self.assertRaises(ConnectionError, self.wait, c, clock)
+            self.assertTrue(c.s.closed)
+
+    def test_dimensions_rejected_before_payload_read(self):
+        for dims in ((4, 2**32-1, 160, 90, 160, 90), (0, 72, 160, 90, 160, 90), (4, 72, 159, 90, 160, 90)):
+            wire = G.HDR.pack(b'MS4F', 1, 10., 10., 10., 10., -1., 0, *dims)
+            c, clock = self.client(wire)
+            self.assertRaises(ValueError, self.wait, c, clock)
+            self.assertTrue(c.s.closed)
+            self.assertEqual(c.s.read_sizes, [G.HDR.size])
+
+    def test_waits_for_apply_and_every_modality(self):
+        frames = [wire_frame(0, -1, stamp=10.), wire_frame(stamp=10.1), wire_frame(depth=10.1, lidar=10.1),
+                  wire_frame(lidar=10.1), wire_frame()]
+        c, clock = self.client(self.stream(frames))
+        _, report = self.wait(c, clock)
+        self.assertEqual(report['polls'], 5)
+
+    def test_receipt_is_not_apply_ack(self):
+        wire = wire_frame(0, -1, 10, 10, empty=True) + struct.pack('<d', 10.15) + wire_frame()
+        c, clock = self.client(wire)
+        self.assertEqual(self.wait(c, clock)[1]['applied_sim_s'], 10.1)
+
+    def test_stale_future_and_empty_frames_never_enter_policy(self):
+        for f in (wire_frame(stamp=10.1), wire_frame(rgb=11), wire_frame(empty=True), wire_frame(0, -1)):
+            c, clock = self.client(self.stream([f] * 20))
+            self.assertRaises(G.ReadinessTimeout, self.wait, c, clock, timeout=.1)
+            self.assertTrue(c.s.closed)
+
+    def test_malformed_regressing_and_nonfresh_rejected(self):
+        cases = [[wire_frame(count=2)], [wire_frame(now=9)], [wire_frame(rgb=float('nan'))],
+                 [wire_frame(0, 10)], [wire_frame(stamp=10.1), wire_frame(0, -1)],
+                 [wire_frame(stamp=10.1, now=10.5), wire_frame(stamp=10.1, now=10.4)],
+                 [wire_frame(stamp=10.1), wire_frame(stamp=10.1, rgb=10.05)],
+                 [wire_frame(stamp=10.1), wire_frame(applied=10.11, stamp=10.11)]]
+        for frames in cases:
+            c, clock = self.client(self.stream(frames))
+            self.assertRaises(G.ReadinessError, self.wait, c, clock)
+            self.assertTrue(c.s.closed)
+        c, clock = self.client(wire_frame())
+        self.assertRaises(G.ReadinessError, self.wait, c, clock)
+
+    def test_liveness_exception_closes_stream(self):
+        c, clock = self.client(self.stream([wire_frame()]))
+        def dead():
+            raise RuntimeError('owned process exited')
+        self.assertRaises(RuntimeError, self.wait, c, clock, dead)
+        self.assertTrue(c.s.closed)
+
+    def test_real_silent_socket_deadline(self):
+        # Local sockets only; no simulator/port/server/thread is started.
+        client_socket, peer = socket.socketpair()
+        c = G.S4Client.__new__(G.S4Client)
+        c.s, c._budget = client_socket, None
+        calls, start = [], time.monotonic()
+        try:
+            self.assertRaises(G.ReadinessTimeout, G.wait_initial_target, c, lambda: None,
+                              timeout_s=.08, maintain_hold=lambda: calls.append(time.monotonic()))
+            self.assertLess(time.monotonic() - start, .5)
+            self.assertGreater(len(calls), 2)
+            self.assertEqual(client_socket.fileno(), -1)
+        finally:
+            client_socket.close()
+            peer.close()
+
+    def test_historical_execution_contract_cannot_launch_readiness_change(self):
+        from unittest import mock
+        with mock.patch('subprocess.run', return_value=NS(returncode=0, stdout='')):
+            self.assertTrue(any(S4.INITIAL_TARGET_CONTRACT in p for p in S4.s4_extra_problems()))
+
+    def test_barrier_maintains_hold_and_rechecks_offboard(self):
+        for fail in (None, 'offboard', 'position', 'disarmed'):
+            c, clock = self.client(self.stream([wire_frame()]), fragment=1600, stalls=3)
+            link = NS(hb=(128, 6 << 16), pos=(10., 0., 0., -1.))
+            sends, checks = [], []
+            link.setpoint = lambda *args: sends.append((clock.t, args))
+            def check(**kwargs):
+                checks.append(kwargs)
+                if clock.t > .1:
+                    if fail == 'offboard': link.hb = (128, 4 << 16)
+                    if fail == 'disarmed': link.hb = (0, 6 << 16)
+                    if fail == 'position': link.pos = (10., 0., 0., -2.)
+            v0 = NS(TM_POS_XYZ=7, ALT=1., DT=.1, COMMAND_YAW='truth')
+            res = {}
+            args = (v0, link, c, NS(check=check), lambda: c.set_target(1, 2, 3),
+                    lambda: (0., 0., 1., 0.), res, .01, .02)
+            if fail:
+                self.assertRaisesRegex(RuntimeError, 'HARNESS_INVALID start state',
+                                       S4.initial_target_barrier, *args, clock=clock.now)
+            else:
+                S4.initial_target_barrier(*args, clock=clock.now)
+                self.assertTrue(res['post_readiness_start_check']['offboard'])
+            self.assertGreater(len(sends), 1)
+            self.assertGreater(len(checks), len(sends))
+            self.assertLessEqual(max(np.diff([t for t, _ in sends])), .125 + 1e-9)
+            self.assertTrue(all(args == (7, .01, .02, -1.) for _, args in sends))
 
 
 if __name__ == "__main__":

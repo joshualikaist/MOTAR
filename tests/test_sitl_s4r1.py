@@ -144,6 +144,10 @@ class FrameSource:
     def set_target(self, *args):
         return 3.0
 
+    @contextlib.contextmanager
+    def bounded_io(self, *args, **kwargs):
+        yield
+
     def close(self):
         return 99
 
@@ -171,7 +175,7 @@ def spec_for(env):
 
 
 def build_member(ep, out_dir, item, spec, n=3, shift=0.0, base=100.0, obs_delta=None, logger_rc=0, seed=4501,
-                 edit=None, extract_ok=True, audit=None, mav=(), sends=(), contact_log=None):
+                 edit=None, extract_ok=True, audit=None, mav=(), sends=(), contact_log=None, preflight=0):
     """One synthetic boot through the real recorder pieces, R.checked_gzip (stubbed pyulog subprocess) and
     R.finish_episode; F1's result has arm = cell."""
     ep = pathlib.Path(ep)
@@ -190,7 +194,13 @@ def build_member(ep, out_dir, item, spec, n=3, shift=0.0, base=100.0, obs_delta=
         for args in sends:
             conn.mav.param_set_send(*args)
     client = R.client_factory(tap, FrameSource(base, edit=edit))()
-    client.frames()                                                    # hover read, before the control phase
+    if preflight:
+        with client.bounded_io(123., lambda: None):
+            for _ in range(preflight):
+                client.frames()
+            client.record_initial_target_readiness({'preflight_packets': preflight})
+    else:
+        client.frames()                                                # historical hover read
     for k in range(n):
         client.frames()
         s = {key: np.array([0.1 * k + shift, 0., 1.]) for key in ('pos', 'vel', 'render_pos')}
@@ -335,6 +345,50 @@ class TestS4R1(unittest.TestCase):
         self.assertIn('RECORDING_COUNT', R.recording_problems(tap, dict(ok, steps=2), True))
         self.assertEqual([x['phase'] for x in tap.events if x['kind'] == 'chosen_frame'], ['control'])
         self.assertEqual(tap.phase, 'post_terminal_landing')
+
+    def test_initial_poll_packet_mapping_positive_and_mutations(self):
+        packets = [{'packet_id': i, 'purpose': 'initial_target_readiness' if i < 4 else 'control_candidate'}
+                   for i in range(7)]
+        steps = [{'k': i, 'packet_id': i+4} for i in range(3)]
+        self.assertEqual(R.packet_mapping_problems(packets, steps, 3), [])
+        for edit in ('missing', 'duplicate', 'unselected', 'interleaved', 'chosen_preflight', 'renumbered'):
+            pp, ss = [dict(p) for p in packets], [dict(s) for s in steps]
+            if edit == 'missing': pp.pop()
+            if edit == 'duplicate': ss[1]['packet_id'] = ss[0]['packet_id']
+            if edit == 'unselected': pp.append({'packet_id': 7, 'purpose': 'control_candidate'})
+            if edit == 'interleaved': pp[3]['purpose'], pp[4]['purpose'] = pp[4]['purpose'], pp[3]['purpose']
+            if edit == 'chosen_preflight': ss[0]['packet_id'] = 3
+            if edit == 'renumbered': pp[2]['packet_id'] = 3
+            self.assertTrue(R.packet_mapping_problems(pp, ss, 3), edit)
+
+    def test_initial_polls_persist_and_posthoc_mapping_is_checked(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            spec = spec_for(0)
+            item = {'contact': False}
+            result = build_member(d / 'ep', d, item, spec, preflight=4)
+            self.assertEqual(result['recording_problems'], [])
+            self.assertEqual((result['repeatability']['packets'], result['repeatability']['steps']), (7, 3))
+            self.assertEqual(R.member_problems(d / 'ep', dict(result, index=0)), [])
+            path = d / 'ep/repeatability/steps.json'
+            steps = json.loads(path.read_text())
+            self.assertEqual([s['packet_id'] for s in steps], [4, 5, 6])
+            steps[1]['packet_id'] = 4
+            path.write_text(json.dumps(steps))
+            # Rebind the bytes: mapping must fail even when manifest integrity passes.
+            rec = result['repeatability']['files']['repeatability/steps.json']
+            rec.update(bytes=path.stat().st_size, sha256=R.SF.sha256_file(path))
+            self.assertIn('member0: packet/step counts', R.member_problems(d / 'ep', dict(result, index=0)))
+
+    def test_missing_preflight_payload_is_recorded_but_control_rejected(self):
+        source = FrameSource(edit=lambda j, f: f.update(rgb=None, depth=None, ranges=None))
+        tap = R.Tap()
+        client = R.client_factory(tap, source)()
+        with client.bounded_io(123., lambda: None):
+            client.frames()
+        self.assertEqual(tap.packets[0]['raw'], {})
+        self.assertEqual(tap.packets[0]['wire_header']['rgb_h_w'], None)
+        self.assertRaisesRegex(RuntimeError, 'MISSING_SENSOR_PAYLOAD', client.frames)
 
     def test_mav_proxy_preserves_calls_and_landing_boundary(self):
         class M:

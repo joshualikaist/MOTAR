@@ -45,6 +45,7 @@ MODEL = "navrl_quad_s4"
 GPU_ALLOWED = ("/usr/share/rustdesk/rustdesk",)   # the user's remote desktop (screen encoding), not a compute job
 HOVER_GUARD_M = 0.35                  # any LiDAR return or depth pixel nearer than this at the start: HARNESS_INVALID
 INVALID_ABORT_TOTAL = 10                # more than 10 INVALID episodes of the 60 stop the unit
+INITIAL_TARGET_CONTRACT = 'initial-target-readiness-v1'
 OWN_SOURCES = ("tools/sitl_s4.py", "tools/sitl_s4_gazebo.py", "tools/sitl_s4_model.py", "tools/sitl_s4/motar_s4_bridge.cc",
                "tools/sitl_s4/CMakeLists.txt", "tools/sitl_s3c.py", "tests/test_sitl_s3c_s4.py") + SF.OWN_SOURCES + (PREREG,)
 
@@ -185,21 +186,13 @@ def _fly(B, V0, L, C, session, spec, policy, arm, res, steps_log, lateness, sens
         for _ in range(int(round(3.0 / V0.DT))):
             L.setpoint(V0.TM_POS_XYZ, sp_n, sp_e, -V0.ALT)
             time.sleep(V0.DT)
-    armed = bool(L.hb and (L.hb[0] & 128))
-    offboard = bool(L.hb and ((L.hb[1] >> 16) & 0xFF) == 6)
-    tx, ty, tz, _ = truth_local()
-    res["start_check"] = {"armed": armed, "offboard": offboard, "truth_alt_m": tz, "ekf_alt_m": -L.pos[3],
-                          "ekf_minus_truth_xy_m": float(math.hypot(L.pos[2] - tx, L.pos[1] - ty)),
-                          "truth_from_spawn_xy_m": float(math.hypot(tx, ty)), "command_yaw": V0.COMMAND_YAW}
-    if not (armed and offboard and abs(-L.pos[3] - V0.ALT) < 0.3 and 0.3 < tz < 2.5 and math.hypot(tx, ty) < 0.25):
-        raise RuntimeError("HARNESS_INVALID start state %s" % res["start_check"])
+    res["start_check"] = checked_start_state(V0, L, truth_local)
     Ep = G.gazebo_episode_class(B)
     ep = Ep(centers, halves, quats)
     prev = np.zeros(4, np.float32)
     outcome, prev_rel = "timeout", None
     min_dist = float("inf")
-    tgt(0)
-    hover = C.frames()
+    hover = initial_target_barrier(V0, L, C, session, lambda: tgt(0), truth_local, res, sp_n, sp_e)
     hl = G.motar_lidar(hover["ranges"])
     _, hd = G.motar_rgbd(hover["rgb"], hover["depth"])
     res["hover_guard"] = {"lidar_min_m": float(hl.min()), "depth_min_m": float(hd.min())}
@@ -305,6 +298,39 @@ def _fly(B, V0, L, C, session, spec, policy, arm, res, steps_log, lateness, sens
 SF_H0 = 0.09        # the settled navrl_quad body-centre height above the ground, the truth origin's offset (AGQ diagnosis)
 
 
+def checked_start_state(V0, L, truth_local):
+    """The existing start-state thresholds, also checked after startup polling."""
+    hb, pn = L.hb, L.pos
+    armed = bool(hb and (hb[0] & 128))
+    offboard = bool(hb and ((hb[1] >> 16) & 0xFF) == 6)
+    tx, ty, tz, _ = truth_local()
+    state = {"armed": armed, "offboard": offboard, "truth_alt_m": tz, "ekf_alt_m": -pn[3],
+             "ekf_minus_truth_xy_m": float(math.hypot(pn[2] - tx, pn[1] - ty)),
+             "truth_from_spawn_xy_m": float(math.hypot(tx, ty)), "command_yaw": V0.COMMAND_YAW}
+    if not (armed and offboard and abs(-pn[3] - V0.ALT) < 0.3 and 0.3 < tz < 2.5 and math.hypot(tx, ty) < 0.25):
+        raise RuntimeError("HARNESS_INVALID start state %s" % state)
+    return state
+
+
+def initial_target_barrier(V0, L, C, session, send_target, truth_local, res, sp_n, sp_e,
+                           clock=time.monotonic):
+    """Keep the existing position hold serviced while waiting for the first target."""
+    next_hold = [0.0]
+
+    def service():
+        session.check(required=('px4', 'gzserver'))
+        now = clock()
+        if now >= next_hold[0]:
+            L.setpoint(V0.TM_POS_XYZ, sp_n, sp_e, -V0.ALT)
+            next_hold[0] = now + V0.DT
+
+    hover, report = G.wait_initial_target(C, send_target, maintain_hold=service, clock=clock)
+    res['initial_target_readiness'] = report
+    service()
+    res['post_readiness_start_check'] = checked_start_state(V0, L, truth_local)
+    return hover
+
+
 def check():
     out = {"input_problems": SF.input_problems(), "schedule": collections.Counter(s["arm"] for s in schedule()),
            "s4_launch_problems": s4_extra_problems(),
@@ -318,7 +344,11 @@ def check():
 def s4_extra_problems():
     import socket
     import subprocess
-    p = []
+    # Startup polling changes the measured protocol. The historical preregs and
+    # smoke folders cannot authorize it. A separate execution amendment must wire
+    # a new source binding/output/smoke contract before removing this blocker.
+    p = ["%s: new committed execution amendment and fresh smoke required; CPU qualification only"
+         % INITIAL_TARGET_CONTRACT]
     so = PLUGIN_DIR / "libmotar_s4_bridge.so"
     if not so.is_file():
         p.append("plugin not built: %s" % PLUGIN_DIR)
