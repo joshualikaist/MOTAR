@@ -975,6 +975,8 @@ family that is in the test's scope.
     Original attempt01 remains ABORTED/INCOMPLETE_INVALID. `docs/evidence/sitl_2026-11-05/s4r1/attempt02_reading.json`.
   - **Camera-only runtime preparation (2026-11-11, CPU source only):** explicit RGB-D startup/model without LiDAR,
     pinned trained CAM-K2-v3 CPU policy, measured-depth validity, estimator-only control and optional OAK input.
+    ROS2 follow-up adds acquisition/frame conversion, asynchronous policy proposals, an explicit-source ament
+    package and a separate default-observation PX4 gateway. Actual ROS graph/DDS/localization/flight remain NOT_TESTED.
     Independent review PASS_WITH_LIMITS; no simulator/hardware/flight qualification, S3a-R remains HOLD.
     [Runtime record](evidence/sitl_2026-11-05/camera_runtime/README.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)

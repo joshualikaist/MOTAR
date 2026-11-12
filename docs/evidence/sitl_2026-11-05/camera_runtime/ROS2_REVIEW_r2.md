@@ -1,0 +1,13 @@
+# ROS2 test-environment repair re-review
+
+Reviewer/model, worktree/base, usage UNKNOWN and read-only authorization are as in REVIEW.md. **Verdict: PASS_WITH_LIMITS for the unchanged CPU source-preparation scope; required source repairs remaining0.** Parent's fresh full PUBLIC_CPU v2 result remains separate/pending at this addendum. No ROS/device/simulator/GPU run or repository write occurred in this review.
+
+The parent's PUBLIC_CPU v1 ran4067 tests with1 failure,0 errors,10 skipped and5 exclusions. I independently read its actual failure trace: the RosNodeMetadata child interpreter could not import camera_ros2_node when the full suite supplied only the repository root in PYTHONPATH. The earlier focused environment had supplied tools. This is a test subprocess import-path defect; it is not evidence that the production ament entry failed. The failing full-suite log is preserved and SHA-bound by public_cpu_v1_binding.json. Earlier REVIEW.md, snapshots and MANIFEST.json remain unchanged.
+
+I compared every file in the22-file final review manifest against current bytes. The sole change is tests/test_camera_ros2_session.py: one line adds Path(sys.argv[2])/'tools' at sys.path[0] inside the child script before importing camera_ros2_node. argv[2] is the explicit selected ROOT already passed by that test; no current directory or another checkout is inferred. The check still verifies UNCONFIGURED status and absence of rclpy, torch and aerial_gym. Production source, package, bindings and checkpoint logic are unchanged.
+
+Independent targeted validation used repository-root-only PYTHONPATH, hidden CUDA, PYTHONNOUSERSITE=1, numerical threads1, nice10, cores12,13,16GiB address-space cap, timeout300s+kill10s and aerialgym Python-B. Exactly1 selected test ran and passed, retained in test_subprocess_import_v2.log. No broader test was repeated by reviewer. Kernel regex count remains0.
+
+v2_snapshot/ and v2_source_sha256.json bind all22 reviewed files after this one-line test fix. New source-manifest SHA256ac3967b84b6732978742f79db214239c798ac90948916e667685c849f04ca232. MANIFEST_v2.json binds the expanded audit package while preserving the original MANIFEST.json. All physical, ROS/DDS, ABI, clock/calibration, command-delivery and flight limits in REVIEW.md continue to apply.
+
+Git Traceability: camonly/dev; base/HEAD eefb832e1c4fc6de8e597e990aa9cd58f2228079; reviewer repository changes NONE; new commit NONE; tests1/1 PASS; working tree remains parent-owned dirty; Remote Push NO; Main Merge NO; raw/checkpoint integrity read only and not modified. No reviewer jobs remain running.

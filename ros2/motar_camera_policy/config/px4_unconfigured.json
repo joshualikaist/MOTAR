@@ -1,0 +1,20 @@
+{
+  "format": "motar-ros2-px4-node-v1",
+  "status": "UNCONFIGURED",
+  "px4_msgs_msg_dir": null,
+  "firmware": {
+    "version": "v1.14.3",
+    "source": null
+  },
+  "frames": {
+    "world": null,
+    "body": null
+  },
+  "topics": {
+    "velocity": "/motar/policy/velocity_enu",
+    "odometry": "/motar/state/odometry",
+    "diagnostics": "/motar/px4/diagnostics"
+  },
+  "enable_offboard_publication": false,
+  "flight_checks_provenance": null
+}

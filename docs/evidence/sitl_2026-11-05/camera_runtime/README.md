@@ -138,3 +138,56 @@ Git Traceability: branch `camonly/dev`, base/HEAD
 `eefb832e1c4fc6de8e597e990aa9cd58f2228079`; new commit NONE, push NO, merge NO.
 Previous uncommitted readiness changes were preserved. This work is intentionally
 uncommitted under the standing user instruction.
+
+## ROS 2 autonomy follow-up, 2026-11-11
+
+The user clarified ROS2 autonomy and delegated new interface design because an
+existing stack/topic contract was unknown. The prepared ament package and detailed
+staged experiment workflow are in [the package README](../../../../ros2/motar_camera_policy/README.md).
+The proposed route is calibrated RGB-D/CameraInfo plus ENU/FLU local odometry,
+the unchanged trained CAM policy, stamped velocity/yaw proposals, and a separate
+PX4 uXRCE-DDS gateway. Local v1.14.3 message pins are a software target, not an
+observation or firmware recommendation for the actual vehicle.
+
+The policy process never publishes flight-controller commands. The separate
+bridge defaults to observation only; enabled offboard publication also requires
+explicit manual-hover handover in armed POSITION mode. During neutral priming it
+refreshes current measured Z and freezes transition Z only when ACTIVE. No arm,
+mode-change or takeoff command exists. Estimator resets stop derived odometry
+before a rebased pose enters old policy history. Async inference results are
+rechecked before publication; capture/receipt age, frame, calibration, clock,
+reset, failsafe and mode-loss violations latch the session. Zero/latched acquisition
+timestamps explicitly reject. Actual offboard-loss recovery remains a physical
+qualification requirement, not a guarantee from stopped streams.
+
+[ROS2_VALIDATION.json](ROS2_VALIDATION.json) records the final full PUBLIC_CPU
+result: **4067 tests, 0 failures, 0 errors,
+10 skipped, 5 GPU tests excluded**; host regex faults
+0 to 0. Focused tests pass55/55. Both actual bound seeds traverse14 synthetic
+ROS-shaped frames and14 PX4 payload pairs each with0 vehicle sends. Synthetic
+fixture time is not latency evidence. The [independent review](ROS2_REVIEW_r2.md)
+is PASS_WITH_LIMITS for CPU source preparation, required repairs remaining0;
+[its22-file snapshot](ROS2_SOURCE_SHA256.json) matches current source. The final full
+suite baseline covers all22 files, including the empty ament resource marker. All
+covered source hashes are unchanged. The first failed-suite baseline omitted that empty
+marker; its supplemental check remains preserved and the final baseline includes it. The prior25 core policy sources are unchanged.
+
+Preserved repairs: ground Z captured before manual flight could survive into
+ACTIVE; zero CameraInfo could pass only at initial near-zero ROS time despite
+the stated contract. Independent positive/negative probes verify the fixes and
+retain the original failures. The first full suite retained4067 tests with1 failure: a new metadata-test child inherited a root-only PYTHONPATH and could not import its module. The fixture now selects its tools path explicitly; production sources were unchanged and a fresh full rerun is recorded. Parent wording-assertion failures and a reviewer
+import-path harness failure also remain in the external unit directory
+`/home/fair/motar_tmp/camera_ros2_20261111/`, with logs, source snapshots, manifests
+and final suite/host records. No old result is relabelled.
+
+This host has no installed/executed ROS graph; actual rclpy/px4_msgs objects,
+colcon installation, DDS, compatible ROS/PyTorch interpreter and vehicle link are
+NOT_TESTED. Policy Python3.8 versus target Humble Python3.10 remains an ABI issue
+to qualify. The camera producer, actual calibration/alignment/clock, local
+position estimator (GNSS/VIO/mocap), real target appearance and takeover/loss
+response remain unqualified. There is no VIO implementation here. LiDAR is not
+required, but valid local state is. Bootstrap red detection is not an arbitrary
+person/object detector. Physical preparation remains INCOMPLETE and S3a-R HOLD.
+No ROS/device/simulator/GPU/flight execution, new checkpoint, commit, push or merge
+was performed. The following source unit does not supersede the original runtime
+validation or create an execution authorization.
