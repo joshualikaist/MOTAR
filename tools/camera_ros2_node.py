@@ -19,6 +19,14 @@ from pathlib import Path
 import sys
 import time
 
+# Outdoor repair r1 (review P2-1): the outdoor profile needs PX4's z_valid, epv and dead_reckoning in every state
+# (camera_policy_runtime.split_state/estimate_ground). The ROS adapter's odometry state does not carry them and the
+# PX4 gateway does not forward epv or dead_reckoning, so every outdoor frame on this node would be refused
+# (estimator_vertical_fields_absent) and the node would hold forever. The node therefore refuses an outdoor
+# contract at load as UNCONFIGURED with this named reason, until a separate unit forwards the fields.
+OUTDOOR_NODE_REFUSAL = 'outdoor_vertical_fields_not_forwarded'
+ROS_PATH_FORWARDS_VERTICAL_FIELDS = False
+
 
 def load_node_config(config_path, source_root):
     root = Path(source_root).resolve()
@@ -65,6 +73,10 @@ def load_node_config(config_path, source_root):
     problem = contract_module.height_reference_problem(contract)
     if problem:
         raise ValueError('UNCONFIGURED: ' + problem)
+    if contract_module.is_outdoor(contract) and not ROS_PATH_FORWARDS_VERTICAL_FIELDS:
+        raise ValueError('UNCONFIGURED: %s: the outdoor profile needs PX4 z_valid/epv/dead_reckoning in the state, '
+                         'which the ROS adapter and the PX4 gateway do not forward yet; every frame would be refused'
+                         % OUTDOOR_NODE_REFUSAL)
     raw['policy_contract_path'] = str(path)
     return raw, contract
 
@@ -154,7 +166,8 @@ def make_node_class():
                     result = self._future.result()
                     proposal = self._session.finish(self._work, result,
                         now_ros_s=self.get_clock().now().nanoseconds/1e9, now_monotonic_s=time.monotonic())
-                    # None: an altitude-gated tick (WAITING_ALTITUDE) that proposes nothing.
+                    # None: an altitude-gated tick (WAITING_ALTITUDE) that proposes nothing. An outdoor frame
+                    # refusal (HOLD_FRAME_REFUSED) returns an explicit zero-velocity hold proposal instead.
                     if proposal is not None and not self._closed:
                         self._publish_proposal(proposal)
                 except Exception as exc:
@@ -176,7 +189,11 @@ def make_node_class():
                 msg = String()
                 msg.data = json.dumps({'state': self._session.status, 'altitude': self._session.altitude,
                     'last_error': self._last_error, 'epoch': self._session.epoch,
-                    'sequence': self._session.sequence, 'vehicle_commands_sent': 0}, allow_nan=False)
+                    'sequence': self._session.sequence, 'vehicle_commands_sent': 0,
+                    # Outdoor profile: the last named frame refusal (a zero hold was proposed) and its run length.
+                    'refusal': self._session.refusal,
+                    'consecutive_refusals': self._session.consecutive_refusals,
+                    'reentry_hold_remaining': self._session.reentry_hold_remaining}, allow_nan=False)
                 self._diagnostics.publish(msg)
                 self._last_diag_wall = wall
 

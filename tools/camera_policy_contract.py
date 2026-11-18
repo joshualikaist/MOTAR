@@ -37,6 +37,105 @@ MAX_CEILING_HEIGHT_M = 100.0
 # runtime with an enabled filter refuses every frame (fail closed) until one is given.
 ESTIMATOR_HEIGHT_KEYS = ("z_is_height_above_floor", "evidence")
 HEIGHT_FILTER_KEYS = ("ground", "ceiling", "estimator_height")
+# Outdoor profile (2026-11-13, opt-in; every contract without it behaves exactly as before). Outdoors the OAK-D
+# reports open sky as depth 0, so the runtime (camera_policy_runtime.py) verifies a ground plane from the camera on
+# every frame, cross-checks it with PX4's estimate and refuses the frame (FrameRefused) when it cannot; the floor and
+# the virtual ceiling are measured from that plane and the sky rule explains sky and far-ground sensor-invalid pixels
+# as no-return. The three optional top-level keys come together. The operator estimator-height assertion is not used
+# outdoors: PX4 z is relative to the take-off point and the per-frame camera check replaces it.
+# ceiling.physical (optional key, accepted only together with the outdoor profile; absent = the historical physical
+# ceiling): false marks a virtual ceiling (outdoor 3.0 m), which removes VALID returns above height_m - margin_m and
+# touches nothing else: it never explains a sensor-invalid pixel (physical=false together with invalid_plane_rule=true
+# is refused) and, since outdoor repair r1 (review P0-2b), its removed pixels never connect the sky rule either.
+# Every threshold below is PROVISIONAL: chosen on synthetic scenes only, to be calibrated on real OAK-D outdoor
+# recordings (tools/oakd_outdoor_replay.py). Each is stored as {"value": v, "status": "PROVISIONAL"}.
+OUTDOOR_PROFILE = "outdoor"
+OUTDOOR_KEYS = ("profile", "sky", "ground_estimate")
+OUTDOOR_CEILING_HEIGHT_M = 3.0
+# Outdoor repair r1 (review P3-3): the virtual ceiling removes valid returns, so a low one deletes real obstacles near
+# the flight altitude; 2.5 m keeps at least 0.97 m above a 1.53 m camera. PROVISIONAL bounds (inclusive).
+OUTDOOR_CEILING_BOUNDS_M = (2.5, 6.0)
+PROVISIONAL = "PROVISIONAL"
+ESTIMATOR_VERTICAL_FIELDS = ("z_valid", "epv", "dead_reckoning")
+# The sky flood starts at the top row of the trained image and passes only through sky candidates and through
+# pixels outside the source camera's field of view (unimaged). Virtual-ceiling-removed pixels are NOT connectors.
+SKY_CONNECTIVITY = "top_border_4_through_sky_or_unimaged"
+
+
+def provisional(value):
+    """A threshold chosen on synthetic scenes only, pending calibration on real OAK-D data."""
+    return {"value": value, "status": PROVISIONAL}
+
+
+SKY_OUTDOOR_DEFAULT = {
+    "enabled": True,
+    "luma_min": provisional(0.5),          # Rec.601 luma of the projected RGB in [0, 1]
+    "gradient_max": provisional(0.03),     # max(|dL/dx|, |dL/dy|) by central differences, luma per trained pixel
+    "connectivity": SKY_CONNECTIVITY,
+    # Outdoor repair r1 (review P0-1): rule 2 (sensor-invalid pixels whose ray meets the verified ground only beyond
+    # MaxZ, or points below the horizon and never meets it, become no-return without any RGB test) is OFF. Depth
+    # alone cannot tell invalid far ground from a dark, thin, sensor-invalid structure inside the vehicle's altitude
+    # band (a rail, a barrier arm, a branch); with the rule on such structures are lost. Enabling it needs real OAK-D
+    # evidence that far ground drops out to depth 0 AND the user's explicit acceptance of that loss
+    # (ros2/motar_camera_policy/README.md). Without it, invalid far ground stays a near (phantom) band.
+    "far_ground_rule": provisional(False),
+    # Outdoor repair r1 (review P0-2/P0-3), edge-enclosure veto (camera_policy_runtime.edge_enclosure): a sensor-
+    # invalid pixel lying between two near valid returns in its row or column is never freed. Range: the trained
+    # riskcap governor releases beyond 5.0 m (training env NAVRL_SPEED_GOVERNOR_RELEASE_M) and the worst-case stop
+    # from its free-speed cap 3.54 m/s at its 2.96 m/s^2 with a 0.3 s delay is about 3.2 m. Span: the whole trained
+    # HFOV (66 deg) plus margin, so that a 2.4 m-wide face at 2 m (64.6 deg) is enclosed. Tolerance: the two
+    # silhouette edges of one face 2.5 m wide seen up to about 25 deg off its normal. Measured trade-off: REPAIR_r1.md.
+    "edge_veto_range_m": provisional(5.0),
+    "edge_veto_span_deg": provisional(70.0),
+    "edge_veto_range_tolerance_m": provisional(1.0),
+}
+GROUND_ESTIMATE_OUTDOOR_DEFAULT = {
+    "enabled": True,
+    "fit_max_range_m": provisional(10.0),
+    "inlier_threshold_m": provisional(0.06),
+    "min_inliers": provisional(300),
+    "min_inlier_share": provisional(0.25),
+    # 3.0 = PX4 attitude error budget (2 deg) + slope of a flat site (1 deg). A wrong plane's tilt t lifts the floor
+    # band by r tan(t) at range r (0.87 m at 10 m for 5 deg); synthetic bridging planes across a step were 3.3-3.8 deg.
+    "tilt_max_deg": provisional(3.0),
+    "height_tolerance_m": provisional(0.30),
+    "epv_max_m": provisional(0.5),
+    "ambiguity_support_ratio": provisional(0.5),
+    "ambiguity_separation_m": provisional(0.15),
+    # Outdoor floor band: a valid return at optical z is floor when its height above the verified plane is below
+    # ground.margin_m + z * (0.5 / fy + floor_noise_margin_per_m): half a trained pixel of angular quantisation
+    # (z-buffer path) plus stereo depth noise and the z-buffer's nearest-sample bias, which grow with range.
+    "floor_noise_margin_per_m": provisional(0.015),
+    # The ground is the lowest surface: a candidate plane with more than this share of the fitted points below it
+    # by more than inlier_threshold_m + floor_noise_margin_per_m * range (a bridging plane across a step, a box top
+    # whose front face reaches lower) is not accepted (ground_not_lowest_surface).
+    "max_below_share": provisional(0.02),
+    # Outdoor repair r1 (review P1-1), wrong-surface checks (camera_policy_runtime.estimate_ground):
+    # any other found horizontal plane holding this share of the points at a different height -> ground_ambiguous;
+    "rival_min_share": provisional(0.10),
+    # the accepted plane's inliers must hold this share of each image half and span this range (10th-90th pct);
+    "min_half_share": provisional(0.10),
+    "min_range_span_m": provisional(1.0),
+    # planes fitted to the nearest/farthest third and to each half of its inliers must tilt less than this from it.
+    "planarity_max_angle_deg": provisional(1.0),
+    "refuse_dead_reckoning": True,
+    "estimator_fields": list(ESTIMATOR_VERTICAL_FIELDS),
+}
+# (lower bound exclusive, upper bound inclusive, integer) for each provisional value.
+SKY_BOUNDS = {"luma_min": (0.0, 1.0, False), "gradient_max": (0.0, 1.0, False),
+              "edge_veto_range_m": (0.4, 20.0, False), "edge_veto_span_deg": (0.0, 90.0, False),
+              "edge_veto_range_tolerance_m": (0.0, 20.0, False)}
+# Provisional JSON-boolean switches of the sky block ({"value": true/false, "status": "PROVISIONAL"}).
+SKY_FLAGS = ("far_ground_rule",)
+# Outdoor repair r1 (review P3-3): tilt_max_deg and height_tolerance_m narrowed from (0, 30] and (0, 2] m.
+GROUND_ESTIMATE_BOUNDS = {"fit_max_range_m": (0.5, 20.0, False), "inlier_threshold_m": (0.0, 0.5, False),
+                          "min_inliers": (10, 2000, True), "min_inlier_share": (0.0, 1.0, False),
+                          "tilt_max_deg": (0.0, 5.0, False), "height_tolerance_m": (0.0, 0.5, False),
+                          "epv_max_m": (0.0, 5.0, False), "ambiguity_support_ratio": (0.0, 1.0, False),
+                          "ambiguity_separation_m": (0.0, 2.0, False), "floor_noise_margin_per_m": (0.0, 0.1, False),
+                          "max_below_share": (0.0, 1.0, False), "rival_min_share": (0.0, 1.0, False),
+                          "min_half_share": (0.0, 0.5, False), "min_range_span_m": (0.0, 20.0, False),
+                          "planarity_max_angle_deg": (0.0, 10.0, False)}
 PINS = {
     1: {"checkpoint": "888e8056b2a6768318e6d9fa4136c5ed01f68b7480954f7f339801b99fafc8e1",
         "report": "b4af1444fcc3a070be7dda545f636d9710c1ffbef88ab708966608b650f57a39",
@@ -183,6 +282,12 @@ def height_reference_problem(contract):
     ground, ceiling = contract["ground"], contract["ceiling"]
     if not (ground["enabled"] is True or ceiling["enabled"] is True):
         return None
+    if is_outdoor(contract):
+        # Outdoor profile: the runtime verifies the ground plane from the camera on every frame and refuses
+        # frames it cannot verify (FrameRefused); the operator assertion is not used (validate_contract). Only a
+        # well-formed outdoor profile is exempt (outdoor repair r1, review P3-3).
+        problems = height_filter_problems(contract) + outdoor_problems(contract)
+        return ("invalid outdoor profile: %s; frame refused" % "; ".join(problems)) if problems else None
     asserted = contract["estimator_height"]
     if (isinstance(asserted, dict) and asserted.get("z_is_height_above_floor") is True
             and _evidence_problem(asserted.get("evidence")) is None):
@@ -208,10 +313,23 @@ def height_filter_problems(contract):
             problems.append("ground.invalid_plane_rule must be a JSON boolean")
         elif ground["invalid_plane_rule"] and ground["enabled"] is not True:
             problems.append("ground.invalid_plane_rule needs the floor filter enabled")
-    if not isinstance(ceiling, dict) or set(ceiling) != set(CEILING_DEFAULT):
+    if not isinstance(ceiling, dict) or set(ceiling) not in (set(CEILING_DEFAULT), set(CEILING_DEFAULT) | {"physical"}):
         problems.append("ceiling must have exactly enabled, height_m, margin_m, height_reference and "
-                        "invalid_plane_rule")
+                        "invalid_plane_rule (and optionally physical)")
     else:
+        if "physical" in ceiling:
+            if not any(key in contract for key in OUTDOOR_KEYS):
+                # Outdoor repair r1 (review P3-3): the key exists for the outdoor profile only; an indoor contract
+                # carrying it is refused exactly as before the outdoor profile existed.
+                problems.append("ceiling.physical is accepted only with the outdoor profile")
+            if not isinstance(ceiling["physical"], bool):
+                problems.append("ceiling.physical must be a JSON boolean")
+            elif ceiling["physical"] is False:
+                if ceiling["enabled"] is not True:
+                    problems.append("a virtual ceiling (physical=false) needs the ceiling filter enabled")
+                if ceiling["invalid_plane_rule"] is not False:
+                    problems.append("a virtual ceiling (physical=false) must never explain sensor-invalid pixels: "
+                                    "invalid_plane_rule must be false")
         if not isinstance(ceiling["enabled"], bool):
             problems.append("ceiling.enabled must be a JSON boolean")
         if not _margin_ok(ceiling["margin_m"]):
@@ -246,13 +364,111 @@ def height_filter_problems(contract):
     return problems
 
 
-def build_contract(seed=1, *, root=ROOT, ground=None, ceiling=None, estimator_height=None):
+def is_outdoor(contract):
+    """True only for a contract carrying the opt-in outdoor profile."""
+    return isinstance(contract, dict) and contract.get("profile") == OUTDOOR_PROFILE
+
+
+def threshold_value(block, key):
+    """The value of a provisional threshold {"value", "status"} (plain values are returned unchanged)."""
+    value = block[key]
+    return value["value"] if isinstance(value, dict) else value
+
+
+def _provisional_problems(block, name, bounds):
+    problems = []
+    for key, (low, high, integer) in bounds.items():
+        item = block.get(key)
+        if not isinstance(item, dict) or set(item) != {"value", "status"}:
+            problems.append("%s.%s must be exactly {value, status}" % (name, key))
+            continue
+        if item["status"] != PROVISIONAL:
+            problems.append("%s.%s.status must be %s (no calibrated value exists yet)" % (name, key, PROVISIONAL))
+        value = item["value"]
+        kind_ok = (type(value) is int) if integer else (not isinstance(value, bool) and isinstance(value, (int, float)))
+        if not kind_ok or not math.isfinite(value) or not low < value <= high:
+            problems.append("%s.%s.value must be %s in (%g, %g]" % (name, key, "an integer" if integer else "finite",
+                                                                   low, high))
+    return problems
+
+
+def outdoor_problems(contract):
+    """Structural checks of the optional outdoor profile (profile, sky, ground_estimate, ceiling.physical)."""
+    present = [key for key in OUTDOOR_KEYS if key in contract]
+    if not present:
+        return []
+    if len(present) != len(OUTDOOR_KEYS):
+        return ["the outdoor profile needs all of %s together" % ", ".join(OUTDOOR_KEYS)]
+    problems = []
+    if contract["profile"] != OUTDOOR_PROFILE:
+        problems.append("profile must be %r" % OUTDOOR_PROFILE)
+    sky, estimate = contract["sky"], contract["ground_estimate"]
+    if not isinstance(sky, dict) or set(sky) != set(SKY_OUTDOOR_DEFAULT):
+        problems.append("sky must have exactly %s" % ", ".join(sorted(SKY_OUTDOOR_DEFAULT)))
+    else:
+        if not isinstance(sky["enabled"], bool):
+            problems.append("sky.enabled must be a JSON boolean")
+        if sky["connectivity"] != SKY_CONNECTIVITY:
+            problems.append("sky.connectivity must be %r" % SKY_CONNECTIVITY)
+        problems.extend(_provisional_problems(sky, "sky", SKY_BOUNDS))
+        for key in SKY_FLAGS:
+            item = sky[key]
+            if (not isinstance(item, dict) or set(item) != {"value", "status"} or not isinstance(item["value"], bool)
+                    or item["status"] != PROVISIONAL):
+                problems.append("sky.%s must be exactly {value: JSON boolean, status: %s}" % (key, PROVISIONAL))
+    if not isinstance(estimate, dict) or set(estimate) != set(GROUND_ESTIMATE_OUTDOOR_DEFAULT):
+        problems.append("ground_estimate must have exactly %s" % ", ".join(sorted(GROUND_ESTIMATE_OUTDOOR_DEFAULT)))
+    else:
+        if estimate["enabled"] is not True:
+            problems.append("ground_estimate.enabled must be true in the outdoor profile (the floor filter and "
+                            "the sky rule use the camera-verified plane)")
+        if estimate["refuse_dead_reckoning"] is not True:
+            # Outdoor repair r1 (review P3-3): dead reckoning has no vertical reference; it is always refused.
+            problems.append("ground_estimate.refuse_dead_reckoning must be JSON true")
+        if estimate["estimator_fields"] != list(ESTIMATOR_VERTICAL_FIELDS):
+            problems.append("ground_estimate.estimator_fields must be %s" % list(ESTIMATOR_VERTICAL_FIELDS))
+        problems.extend(_provisional_problems(estimate, "ground_estimate", GROUND_ESTIMATE_BOUNDS))
+    ground, ceiling = contract.get("ground"), contract.get("ceiling")
+    if isinstance(ground, dict) and (ground.get("enabled") is not True or ground.get("invalid_plane_rule") is not False):
+        problems.append("the outdoor profile needs the floor filter enabled with invalid_plane_rule false")
+    if isinstance(ceiling, dict) and (ceiling.get("enabled") is not True or ceiling.get("physical") is not False):
+        problems.append("the outdoor profile needs an enabled virtual ceiling (physical=false)")
+    elif isinstance(ceiling, dict):
+        height = ceiling.get("height_m")
+        low, high = OUTDOOR_CEILING_BOUNDS_M
+        if (isinstance(height, bool) or not isinstance(height, (int, float)) or not math.isfinite(height)
+                or not low <= height <= high):
+            problems.append("the outdoor virtual ceiling height_m must lie in [%g, %g] m (PROVISIONAL)" % (low, high))
+    if contract.get("estimator_height") is not None:
+        problems.append("the outdoor profile verifies the ground from the camera on every frame; estimator_height "
+                        "(the operator floor assertion) must be null")
+    return problems
+
+
+def outdoor_blocks(ceiling_height_m=OUTDOOR_CEILING_HEIGHT_M, ground_margin_m=None, ceiling_margin_m=None):
+    """The outdoor profile's deployment blocks: floor filter on the camera-verified plane (plane rule off),
+    virtual ceiling (physical=false, default 3.0 m above the verified ground), sky rule on with the far-ground rule
+    OFF (sky.far_ground_rule, outdoor repair r1), ground estimate on."""
+    ground = dict(GROUND_DEFAULT, enabled=True, invalid_plane_rule=False)
+    if ground_margin_m is not None:
+        ground["margin_m"] = ground_margin_m
+    ceiling = dict(CEILING_DEFAULT, enabled=True, height_m=ceiling_height_m, invalid_plane_rule=False, physical=False)
+    if ceiling_margin_m is not None:
+        ceiling["margin_m"] = ceiling_margin_m
+    return {"ground": ground, "ceiling": ceiling, "profile": OUTDOOR_PROFILE,
+            "sky": json.loads(json.dumps(SKY_OUTDOOR_DEFAULT)),
+            "ground_estimate": json.loads(json.dumps(GROUND_ESTIMATE_OUTDOOR_DEFAULT))}
+
+
+def build_contract(seed=1, *, root=ROOT, ground=None, ceiling=None, estimator_height=None, outdoor=None):
     """Bind a selected trained checkpoint to the current inference source, without loading it.
 
     ground/ceiling override the deployment height filters; the ceiling height must be
     the measured room height above the floor. estimator_height is the operator's assertion
     (estimator_height_assertion(evidence)) that the estimator z is the height above the floor;
-    without it an enabled filter refuses every frame.
+    without it an enabled filter refuses every frame. outdoor (opt-in, e.g. outdoor_blocks())
+    adds the outdoor profile: its ground/ceiling blocks replace the indoor ones and
+    estimator_height must stay None.
     """
     contract = _metadata(seed, root)
     if ground is not None:
@@ -261,6 +477,10 @@ def build_contract(seed=1, *, root=ROOT, ground=None, ceiling=None, estimator_he
         contract["ceiling"] = dict(ceiling)
     if estimator_height is not None:
         contract["estimator_height"] = json.loads(json.dumps(estimator_height))
+    if outdoor is not None:
+        if ground is not None or ceiling is not None:
+            raise ValueError("the outdoor profile carries its own ground and ceiling blocks")
+        contract.update(json.loads(json.dumps(outdoor)))
     contract["sources"] = {rel: sha256_file(Path(root) / rel) for rel in SOURCE_PATHS}
     problems = validate_contract(contract, root=root)
     if problems:
@@ -282,9 +502,13 @@ def validate_contract(contract, verify_files=True, *, root=ROOT):
         expected = _metadata(contract.get("seed"), root)
     except (OSError, ValueError, KeyError, TypeError) as exc:
         return ["camera policy training provenance: %s" % exc]
-    if set(contract) != set(expected) | {"sources"}:
+    keys = set(expected) | {"sources"}
+    if any(key in contract for key in OUTDOOR_KEYS):
+        keys |= set(OUTDOOR_KEYS)          # the opt-in outdoor profile; checked by outdoor_problems
+    if set(contract) != keys:
         problems.append("contract keys differ from the supported schema")
     problems.extend(height_filter_problems(contract))
+    problems.extend(outdoor_problems(contract))
     for key, value in expected.items():
         if key in HEIGHT_FILTER_KEYS:
             continue  # deployment settings, checked structurally above
@@ -362,15 +586,33 @@ def main(argv=None):
     parser.add_argument("--height-reference-evidence", type=Path,
                         help="operator assertion that the estimator ENU z is the height above the floor, bound "
                              "to this evidence file by SHA-256; required before an enabled filter accepts frames")
+    parser.add_argument("--profile", choices=(OUTDOOR_PROFILE,),
+                        help="outdoor: floor filter on the camera-verified ground plane (plane rule off), virtual "
+                             "ceiling %.1f m (physical=false; --ceiling-height-m overrides), sky rule on, per-frame "
+                             "ground estimate cross-checked with PX4 (z_valid, epv, dead_reckoning); thresholds are "
+                             "PROVISIONAL. No operator height assertion is used." % OUTDOOR_CEILING_HEIGHT_M)
     args = parser.parse_args(argv)
     filters = (args.no_ground_removal or args.ground_invalid_plane_rule or args.ceiling_invalid_plane_rule
                or any(x is not None for x in (args.ground_margin_m, args.ceiling_height_m, args.ceiling_margin_m,
-                                              args.height_reference_evidence)))
+                                              args.height_reference_evidence, args.profile)))
     try:
         if args.check:
             if args.seed is not None or filters:
                 parser.error("--seed and height-filter options apply only to --output")
             contract = load_contract(args.check)
+        elif args.profile == OUTDOOR_PROFILE:
+            if args.seed is None:
+                parser.error("--output requires an explicit --seed")
+            if (args.no_ground_removal or args.ground_invalid_plane_rule or args.ceiling_invalid_plane_rule
+                    or args.height_reference_evidence is not None):
+                parser.error("--profile outdoor fixes the floor filter on, both invalid plane rules off and uses no "
+                             "operator height assertion")
+            blocks = outdoor_blocks(OUTDOOR_CEILING_HEIGHT_M if args.ceiling_height_m is None else args.ceiling_height_m,
+                                    args.ground_margin_m, args.ceiling_margin_m)
+            contract = build_contract(args.seed, outdoor=blocks)
+            with args.output.open("x") as stream:
+                json.dump(contract, stream, indent=2, sort_keys=True, allow_nan=False)
+                stream.write("\n")
         else:
             if args.seed is None:
                 parser.error("--output requires an explicit --seed")
@@ -396,14 +638,18 @@ def main(argv=None):
             with args.output.open("x") as stream:
                 json.dump(contract, stream, indent=2, sort_keys=True, allow_nan=False)
                 stream.write("\n")
-        print(json.dumps({"status": "CONTRACT_VALID", "seed": contract["seed"],
-                          "checkpoint_sha256": contract["checkpoint"]["sha256"],
-                          "ground": contract["ground"], "ceiling": contract["ceiling"],
-                          "estimator_height": contract["estimator_height"],
-                          "height_filters": ("OFF" if not (contract["ground"]["enabled"] or contract["ceiling"]["enabled"])
-                                             else "REFUSES_EVERY_FRAME_UNTIL_ASSERTED"
-                                             if height_reference_problem(contract) else "ASSERTED"),
-                          "qualification": contract["qualification"]}, sort_keys=True))
+        summary = {"status": "CONTRACT_VALID", "seed": contract["seed"],
+                   "checkpoint_sha256": contract["checkpoint"]["sha256"],
+                   "ground": contract["ground"], "ceiling": contract["ceiling"],
+                   "estimator_height": contract["estimator_height"],
+                   "height_filters": ("OFF" if not (contract["ground"]["enabled"] or contract["ceiling"]["enabled"])
+                                      else "REFUSES_EVERY_FRAME_UNTIL_ASSERTED"
+                                      if height_reference_problem(contract) else "ASSERTED"),
+                   "qualification": contract["qualification"]}
+        if is_outdoor(contract):
+            summary.update(profile=contract["profile"], sky=contract["sky"], ground_estimate=contract["ground_estimate"],
+                           height_filters="CAMERA_VERIFIED_PER_FRAME", thresholds=PROVISIONAL)
+        print(json.dumps(summary, sort_keys=True))
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise SystemExit("camera policy contract refused: %s" % exc) from None
 

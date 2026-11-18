@@ -439,3 +439,24 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   4 × 1.084 / 1.1 = 3.94. 2550KV adds RPM, and bench thrust overstates thrust in flight.
 - **Open, for the user:** the battery cell count (4S assumed), the wheelbase (about 225 mm assumed), whether 1.1 kg
   includes the battery, and any thrust-stand data.
+
+## D-2026-11-13-1 — Camera-only real system for outdoor flight; sky fix required, no GO while obstacles may be missed
+
+- **Decision (user, 2026-11-13).**
+  - "MOTAR는 OAK-D 카메라만 사용하는 Camera-only 시스템입니다. LiDAR(Mid-360 포함)는 없으며, LIO도 사용하지 않습니다.
+    추가 센서 장착을 전제로 설계하지 마세요."
+  - "하늘 오류는 실외 비행 전 반드시 해결해야 합니다." No outdoor flight GO while a dangerous obstacle could be missed
+    or ground/height estimation is uncertain.
+  - Keep the 40 × 40 m box, the 3 m virtual ceiling, the geofence and the wind/braking terms. Height and ground come
+    from the camera plus the flight controller's estimate only, refusing fail-closed.
+  - Order: code → synthetic tests → real OAK-D data → SITL. Do not change the agreed camera-only architecture.
+- **Scope.** The real-flight runtime (`tools/camera_*`, `ros2/motar_camera_policy/`). It does not change the
+  repository's research sensor contract for Policy F (AGENTS.md *Research rules*).
+
+## D-2026-11-15-1 — Stop synthetic patching of the outdoor profile; next are real OAK-D Pro recordings
+
+- **Decision (user, 2026-11-15, option A):** "A로 진행해줘. oakd-pro 로 카메라 진행해주면 될 것 같아." Fix the clearly
+  fixable items once, then stop synthetic patching and validate on real OAK-D Pro recordings.
+- **Why:** three independent reviews (r1-r3) failed the near-obstacle criterion. A single-frame depth-0 pixel has no
+  range, so every synthetic sky rule trades phantom walls against misses; only real data can set the thresholds.
+- **State:** outdoor GO not given; residuals are listed in WORKLOG 2026-11-18 and `OUTDOOR_REVIEW_r3.md`.

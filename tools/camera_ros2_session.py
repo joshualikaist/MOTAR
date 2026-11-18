@@ -11,6 +11,26 @@ runtime.step, finish() returns no proposal and the session reports WAITING_ALTIT
 fault and without advancing the runtime history. Once the first gated tick has finished, input
 freshness, clock and 10 Hz period checks apply exactly as for a running session. The first in-band
 frame after gated ticks starts from a fresh runtime history (runtime.reset(), as a reset does).
+
+Outdoor refusals (2026-11-13, outdoor profile only): when the runtime refuses a frame with FrameRefused
+(its ground plane could not be verified, or PX4's vertical validity is absent/bad), finish() returns an
+explicit ZERO-velocity, zero-yaw-rate hold proposal for that tick (same stamps and freshness checks as
+a policy proposal), the session reports HOLD_FRAME_REFUSED with the named reason, and the next accepted
+frame starts a fresh runtime history. Without this, the first refusal faulted the session, the proposal
+stream stopped, and PX4 kept executing the last nonzero velocity setpoint until its offboard-loss timeout
+(COM_OF_LOSS_T, 1.0 s by default in v1.14.3). Every other InputError still faults the session as before.
+
+Re-entry hysteresis (outdoor repair r1, review P2-1): after a refusal, the first REFUSAL_REENTRY_FRAMES accepted
+frames still propose the explicit zero hold (status HOLD_REENTRY); the runtime steps on them (its fresh history
+fills) and is told that the zero hold, not its command, was applied (runtime.applied_zero_hold). A nonzero command
+resumes only on the next accepted frame; any refusal in between restarts the count. Intermittent refusals therefore
+no longer alternate zero holds with commands from a just-reset history. The hold has NO time limit: bounding or
+escalating a long hold (landing, RTL, pilot alert) is the user's decision and remains open.
+Outdoor repair r2 (review r2 P3-N7): with an outdoor-profile runtime the count restarts on EVERY history reset, not
+only on a refusal: reset() (session start or an explicit reset), an altitude-gated stretch (WAITING_ALTITUDE; the next
+in-band frame starts a fresh history) and a refused frame each set it to REFUSAL_REENTRY_FRAMES, so a nonzero command
+always follows at least that many accepted frames of the current history. Indoor contracts never refuse frames and
+keep the count at 0 (their proposals are unchanged).
 """
 import copy
 from dataclasses import dataclass
@@ -21,6 +41,10 @@ from collections import deque
 import numpy as np
 
 from camera_ros2_adapter import MAX_POSE_BRACKET_S, build_frame, stamp_seconds, validate_binding
+# PROVISIONAL (outdoor repair r1, defined in the runtime since repair r2 so the replays share it): accepted frames held
+# at zero after a history reset before a nonzero command resumes; 5 frames = 0.5 s at the trained 10 Hz, one interval
+# of the trained 0.5 s observation history.
+from camera_policy_runtime import FrameRefused, REFUSAL_REENTRY_FRAMES, _is_outdoor
 
 KINDS = ('rgb', 'depth', 'camera_info', 'odometry')
 MAX_AGE_S, MAX_SKEW_S, CONTROL_DT_S = .15, .025, .1
@@ -67,6 +91,14 @@ class RosPolicySession:
         self.live = False
         self.waiting_altitude = False
         self.altitude = None
+        # Outdoor profile: the last tick's named refusal (a zero hold was proposed) and the run length.
+        self.refusal = None
+        self.consecutive_refusals = 0
+        # Accepted frames still to be held at zero after the last history reset (re-entry hysteresis). Outdoor repair
+        # r2 (review r2 P3-N7): an outdoor-profile session starts with the full count, as after any history reset.
+        self._outdoor = _is_outdoor(getattr(self.runtime, 'contract', None))
+        self.reentry_hold_remaining = REFUSAL_REENTRY_FRAMES if self._outdoor else 0
+        self._reentry_holding = False
         self._fresh_history = False
         self._queues = {k: deque(maxlen=8) for k in KINDS}
         self._last_seen = {}
@@ -85,6 +117,10 @@ class RosPolicySession:
             return 'FAULT'
         if self.waiting_altitude:
             return 'WAITING_ALTITUDE'
+        if self.refusal is not None:
+            return 'HOLD_FRAME_REFUSED'
+        if self._reentry_holding:
+            return 'HOLD_REENTRY'
         return 'RUNNING_PROPOSALS' if self.started else 'WAITING_FOR_INPUTS'
 
     def invalidate(self, reason):
@@ -228,7 +264,11 @@ class RosPolicySession:
             return dict(extra, waiting_altitude=True, altitude=band)
         if item.fresh_history:
             self.runtime.reset()
-        result = self.runtime.step(frame, state, now_s=item.ros_now_s)
+        try:
+            result = self.runtime.step(frame, state, now_s=item.ros_now_s)
+        except FrameRefused as exc:
+            # Outdoor profile: refused before any history advanced; finish() proposes an explicit zero hold.
+            return dict(extra, frame_refused=True, refusal={'reason': exc.reason, 'detail': str(exc)}, altitude=band)
         return dict(result, altitude=band, **extra)
 
     def finish(self, item, result, *, now_ros_s, now_monotonic_s):
@@ -245,7 +285,32 @@ class RosPolicySession:
                 self._last_used, self.live = item.stamps, True
                 self._last_success_wall = float(now_monotonic_s)
                 self.waiting_altitude, self.altitude, self._fresh_history = True, dict(result['altitude']), True
+                self.refusal, self.consecutive_refusals, self._reentry_holding = None, 0, False
+                if self._outdoor:
+                    # Outdoor repair r2 (review r2 P3-N7): the next in-band frame starts a fresh history, so the
+                    # re-entry count restarts here too.
+                    self.reentry_hold_remaining = REFUSAL_REENTRY_FRAMES
                 return None
+            if result.get('frame_refused') is True:
+                # Outdoor refusal: an on-time tick whose frame was refused. Propose an explicit zero velocity and
+                # zero yaw rate (the gateway keeps its altitude hold), never the previous command; the next
+                # accepted frame starts a fresh runtime history.
+                refusal = result.get('refusal')
+                if not isinstance(refusal, dict) or not isinstance(refusal.get('reason'), str):
+                    raise SessionFault('malformed frame refusal')
+                proposal = {'capture_stamp_s': min(item.stamps), 'valid_until_s': min(item.stamps)+MAX_AGE_S,
+                            'frame_id': self.binding['frames']['world'], 'velocity_enu_mps': [0., 0., 0.],
+                            'yaw_rate_enu_rps': 0., 'epoch': item.epoch, 'sequence': item.sequence,
+                            'pose_interpolated': result.get('pose_interpolated') is True,
+                            'command_sent_to_vehicle': False, 'hold': True, 'refusal': refusal['reason']}
+                self._last_used, self.started, self.live = item.stamps, True, True
+                self._last_success_wall = float(now_monotonic_s)
+                self.waiting_altitude, self._fresh_history = False, True
+                self.refusal, self.consecutive_refusals = dict(refusal), self.consecutive_refusals + 1
+                # Re-entry hysteresis: the next REFUSAL_REENTRY_FRAMES accepted frames are held too.
+                self.reentry_hold_remaining, self._reentry_holding = REFUSAL_REENTRY_FRAMES, False
+                self.altitude = dict(result['altitude']) if isinstance(result.get('altitude'), dict) else None
+                return proposal
             velocity = np.asarray(result['velocity_world_enu_mps'], np.float64)
             rate = float(result['yaw_rate_rps'])
             if (velocity.shape != (3,) or not np.isfinite(velocity).all() or abs(velocity[2]) > 1e-6
@@ -257,9 +322,18 @@ class RosPolicySession:
                         'yaw_rate_enu_rps': rate, 'epoch': item.epoch, 'sequence': item.sequence,
                         'pose_interpolated': result.get('pose_interpolated') is True,
                         'command_sent_to_vehicle': False}
+            self._reentry_holding = self.reentry_hold_remaining > 0
+            if self._reentry_holding:
+                # Re-entry hysteresis (outdoor repair r1): an accepted frame within REFUSAL_REENTRY_FRAMES of the last
+                # refusal is still held at zero; the runtime's next previous action is the applied zero hold.
+                self.runtime.applied_zero_hold()
+                self.reentry_hold_remaining -= 1
+                proposal.update(velocity_enu_mps=[0., 0., 0.], yaw_rate_enu_rps=0., hold=True,
+                                reentry_hold_remaining=self.reentry_hold_remaining)
             self._last_used, self.started, self.live = item.stamps, True, True
             self._last_success_wall = float(now_monotonic_s)
             self.waiting_altitude, self._fresh_history = False, False
+            self.refusal, self.consecutive_refusals = None, 0
             self.altitude = dict(result['altitude']) if isinstance(result.get('altitude'), dict) else None
             return proposal
         except BaseException as exc:

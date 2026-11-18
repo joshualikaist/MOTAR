@@ -26477,3 +26477,48 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `ROS2_FIX_r2.md` (08e5f14d…), `ROS2_FIX_REVIEW_r1.md` (91161f71…), `ROS2_FIX_REPAIR_r1.md` (647afa86…). Logs and
   probes stay in `/home/fair/motar_tmp/ros2_runtime_fix_20261112/`.
 - **NOT_TESTED:** ROS graph, DDS, installed px4_msgs, PX4/SITL, the camera and the vehicle. No flight qualification.
+
+## 2026-11-18 — Outdoor camera-only profile r1 and repairs r1/r2 committed; review r3 FAIL on near obstacles, no outdoor GO
+
+- **User instruction (2026-11-13):** MOTAR's real system is camera-only (OAK-D plus the flight controller; no LiDAR,
+  no LIO, no added sensors). The sky phantom wall must be solved before an outdoor flight, but no outdoor GO may be
+  given while a dangerous obstacle could be missed or ground/height estimation is uncertain. Order: code → synthetic
+  tests → real OAK-D data → SITL. Recorded as D-2026-11-13-1.
+- **What the profile does (opt-in contract profile `outdoor`; indoor and default paths byte-identical):**
+  - sky rule (luma/gradient sky-likeness connected to the image top);
+  - edge-enclosure veto that keeps near objects with valid edges;
+  - per-frame camera ground plane cross-checked with PX4 z/z_valid/epv/dead_reckoning;
+  - named `FrameRefused` reasons, answered by the ROS session with an explicit zero hold and a 5-frame re-entry hold;
+  - a 3 m virtual ceiling that never deletes or bridges invalid pixels.
+  - All thresholds are PROVISIONAL. The ROS node refused outdoor contracts (`outdoor_vertical_fields_not_forwarded`)
+    until unit B. `tools/oakd_outdoor_replay.py` replays NPZ recordings offline.
+- **Rounds (CPU, synthetic OAK-D emulation only):**
+
+  | Round | PUBLIC_CPU | Independent review (Claude Opus 5.5, fresh context, read-only) |
+  | --- | --- | --- |
+  | outdoor r1 | 4182 OK (skipped 10) | r1 **FAIL**: criterion 2 (near obstacles missed), sub-items of 3, 4 and 5 |
+  | repair r1 | 4208 OK | r2 **FAIL**: criterion 2 (P0-N1, one-edge and oblique sky-luma faces) |
+  | repair r2 | 4231 OK (skipped 10, expected failures 10) | r3 **FAIL**: criterion 2 (R3-P0-1 no valid edge in view; R3-P1-1 gap class) |
+
+  Review r3 numbers (`OUTDOOR_REVIEW_r3.md`):
+  - Open views: 0 near bearings in 120 open-sky and tree-line scenes.
+  - Light-grey 6 m wide faces with no valid edge in view: kept in 0/156.
+  - Phantom cost: any near valid return above the horizon within 5.0 m makes 134-160 of 160 bearings near.
+  - Near sky speckle at 3e-4 of sky pixels: 160 bearings near.
+- **Decision (user, 2026-11-15, option A):** stop synthetic patching; next are real OAK-D Pro recordings
+  (D-2026-11-15-1). Outdoor GO is NOT given. Open residuals (`OUTDOOR_REVIEW_r3.md`):
+  - the no-edge class and the gap class;
+  - single-sample speckle;
+  - MinZ per stereo mode;
+  - the AF unit on the tilted path.
+- **Committed state:** byte-equal to `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/preB_tree/` (26 paths,
+  `SHA256SUMS`, verified 2026-11-18), the tree after repair r2 plus its README correction.
+- **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`:
+  - `OUTDOOR_r1.md` (5d1cab45…);
+  - `OUTDOOR_REVIEW_r1.md` (e09c81bd…), `OUTDOOR_REPAIR_r1.md` (2e692320…);
+  - `OUTDOOR_REVIEW_r2.md` (55be67e8…), `OUTDOOR_REPAIR_r2.md` (6fb01c93…);
+  - `OUTDOOR_REVIEW_r3.md` (2f264318…).
+
+  Logs, probes and the SITL plan draft (`SITL_PLAN_DRAFT.md`, 4e0c39e0…, not a preregistration) stay in
+  `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/`. Kernel faults 0 throughout these rounds.
+- **NOT_TESTED:** real OAK-D data, ROS graph/DDS, PX4/SITL, the vehicle. No flight qualification.

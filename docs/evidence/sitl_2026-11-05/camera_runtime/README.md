@@ -225,3 +225,73 @@ sensor-invalid, and the tilted path uses the share rule. SITL camera results pro
 are therefore not comparable; a rerun writes to a new folder. Every policy contract generated before these changes
 is invalid because the bound source hashes and the contract schema changed; rebuild it with
 `tools/camera_policy_contract.py --output`.
+
+## Outdoor profile r1, 2026-11-13
+
+The sections above are unchanged. The flights are outdoors with the OAK-D only (no LiDAR, LIO, rangefinder or
+motion capture). The OAK-D reports open sky as depth 0, which the indoor runtime turned into a 0.4 m surface on every
+bearing (blob_near), while training saw the sky as no-return. The runtime now has an opt-in outdoor profile
+(`tools/camera_policy_contract.py --profile outdoor`); every existing contract and every default behaves as before.
+Work record outside Git: `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/OUTDOOR_r1.md` (design, deviations,
+case table, observation and actual-policy comparison, timings, test runs). Evidence status: synthetic scenes on CPU
+only. No OAK-D, recording, ROS graph, PX4, Gazebo, GPU or flight was used; there is no real OAK-D data on this host.
+
+- **Ground verified from the camera on every frame**, cross-checked with PX4 (`z`, `z_valid`, `epv`,
+  `dead_reckoning`). A frame whose ground cannot be verified is refused with a named reason before any history
+  advances; the ROS session then proposes an explicit zero-velocity hold. The floor filter, the 3.0 m virtual
+  ceiling and the sky rule use the verified plane, not raw PX4 z.
+- **Sky rule** on sensor-invalid pixels only: sky-like, top-connected pixels above the horizon, and far ground whose
+  ray meets the verified plane only beyond MaxZ, become no-return. Other invalid pixels keep the training semantics.
+- **Thresholds are PROVISIONAL** (stored as such in the contract) until calibrated with
+  `tools/oakd_outdoor_replay.py` on recordings of the user's OAK-D (capture protocol in
+  `ros2/motar_camera_policy/README.md`, section *Outdoor profile*).
+- **PX4's `epv` and `dead_reckoning` do not reach the ROS path yet**, so outdoor frames there are refused
+  (`estimator_vertical_fields_absent`) until the gateway forwards them.
+- **Limitations**: invalid thin wires are not detected; a bright, smooth near object above the horizon that touches
+  the sky is lost; textured clouds, sun blobs and invalid canopies above the virtual ceiling stay near; a wide
+  horizontal surface hiding all ground within the fit range is accepted as the ground within the PX4 tolerance; the
+  site must be flat. After any session fault or a stopped node, PX4 keeps the last nonzero velocity setpoint until
+  `COM_OF_LOSS_T` (open item).
+
+No outdoor flight GO follows from this unit.
+
+**Repair r1 after the independent review (same day).** An independent Opus 5.5 review
+(`/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/review_r1/REVIEW_r1.md`) found that both sky-rule paths deleted
+sensor-invalid obstacles at the vehicle's own altitude. Work record: `REPAIR_r1.md` in the unit folder above. Synthetic
+scenes on CPU only, as above.
+
+- The virtual ceiling removes valid returns above it and nothing else; it no longer connects the sky rule. Sky
+  enclosed below a removed canopy stays a near phantom.
+- The far-ground rule is an explicit opt-in (`sky.far_ground_rule`, default false, PROVISIONAL). Enabling it needs
+  real OAK-D evidence and the user's acceptance that thin invalid obstacles in the altitude band are then lost.
+  With it off, invalid far ground in an open field is a near band on every bearing.
+- An edge-enclosure veto keeps an invalid pixel that lies between near valid returns in its row or column
+  (PROVISIONAL range 5.0 m, span 70 deg, tolerance 1.0 m). Bright objects with valid vertical edges stay near; sky
+  between near trunks becomes a phantom. Sensor-invalid sky-like objects with no valid edge wholly above the horizon
+  remain lost and are kept as expected-failure tests.
+- Wrong-surface ground fits are refused (`ground_not_planar`, `ground_inlier_spread_insufficient`, a wider
+  `ground_ambiguous`); a raised platform hiding all ground within the PX4 tolerance remains a named residual.
+- The ROS node refuses an outdoor contract (`outdoor_vertical_fields_not_forwarded`) until PX4's vertical fields are
+  forwarded; the session holds the first 5 accepted frames after a refusal (PROVISIONAL). Hold time limit: open,
+  for the user.
+
+No outdoor flight GO follows from the repair either.
+
+**Repair r2 after the second independent review (2026-11-15).** A second Opus 5.5 review
+(`/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/review_r2/REVIEW_r2.md`) found that the edge veto lost bright
+faces with only one valid edge in view or seen obliquely, and that uncovered rectification borders connected the sky
+flood along the image sides. Work record: `REPAIR_r2.md` in the unit folder above. Synthetic scenes on CPU only, as
+above; the camera is an OAK-D Pro (user, 2026-11-15), whose documented facts and capture items are in
+`ros2/motar_camera_policy/README.md`.
+
+- In a row, one near valid edge now encloses an invalid run when the other side is the image border or any stop that
+  is not a near valid return; two near edges of an oblique face enclose up to a 70 deg incidence. The review's
+  one-edge and oblique faces are kept. Cost: sky in the rows of any near valid return within 5.0 m stays near (one
+  trunk inside that range makes most bearings a near wall).
+- Only unimaged pixels above the source camera's imaged region connect the sky flood; side and bottom borders do not.
+- With an outdoor contract the session holds the first 5 accepted frames after every history reset (start, reset,
+  altitude gating, refusal); the NPZ replay and the OAK-D replay tool apply the same hold.
+- Not fixed, kept as expected-failure tests: fully invalid sky-like objects reaching only a few centimetres below the
+  horizon, faces whose valid edges lie beyond 5.0 m, flat-ground refusals under higher stereo noise.
+
+No outdoor flight GO follows from repair r2 either.

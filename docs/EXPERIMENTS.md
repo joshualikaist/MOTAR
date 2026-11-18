@@ -986,6 +986,12 @@ family that is in the test's scope.
     [Fix r1](evidence/sitl_2026-11-05/camera_runtime/ROS2_FIX_r1.md),
     [review r1](evidence/sitl_2026-11-05/camera_runtime/ROS2_FIX_REVIEW_r1.md),
     [repair r1](evidence/sitl_2026-11-05/camera_runtime/ROS2_FIX_REPAIR_r1.md).
+  - **Outdoor camera-only profile (2026-11-13/15, CPU synthetic only; opt-in, indoor byte-identical):** sky rule,
+    camera ground plane cross-checked with PX4 (refusal → zero hold), 3 m virtual ceiling. Reviews r1-r3 **FAIL** on
+    criterion 2 (near obstacles with no valid edge in view are missed; a near trunk walls most bearings). Synthetic
+    patching stopped by the user (D-2026-11-15-1); next are real OAK-D recordings. **No outdoor GO.**
+    [Report](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_r1.md),
+    [review r3](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_REVIEW_r3.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

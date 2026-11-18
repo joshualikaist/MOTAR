@@ -205,3 +205,255 @@ Primary interface references: [ROS Odometry](https://raw.githubusercontent.com/r
 [PX4 ROS 2 example](https://docs.px4.io/v1.14/en/ros/ros2_offboard_control),
 [PX4 offboard requirements](https://docs.px4.io/v1.14/en/flight_modes/offboard),
 [PX4 uXRCE-DDS](https://docs.px4.io/v1.14/en/middleware/uxrce_dds).
+
+## Outdoor profile (2026-11-13, opt-in)
+
+Outdoors the OAK-D reports open sky as depth 0 (no stereo match). With the indoor contract the runtime maps 0 to
+sensor-invalid and blob_near turns the dense sky into a 0.4 m surface on every bearing, while the policy was trained
+with the sky as no-return (MaxZ) and with neither floor nor ceiling. The outdoor profile is opt-in; every contract
+built without it behaves exactly as before.
+
+```bash
+python -B tools/camera_policy_contract.py --output outdoor_contract.json --seed 1 --profile outdoor
+```
+
+`--profile outdoor` writes `profile: "outdoor"`, the floor filter on (plane rule off), a virtual ceiling at 3.0 m
+(`ceiling.physical: false`; `--ceiling-height-m` overrides within [2.5, 6.0] m, PROVISIONAL bounds), and two new
+blocks, `sky` and `ground_estimate`. It refuses `--no-ground-removal`, either invalid plane rule and
+`--height-reference-evidence`. The virtual ceiling removes valid returns above it and touches nothing else: it never
+explains a sensor-invalid pixel (`physical: false` with `invalid_plane_rule: true` is refused) and never connects the
+sky rule. `ceiling.physical` is accepted only together with the outdoor profile; `refuse_dead_reckoning` must be true.
+
+**Ground verified per frame (`estimate_ground`).** PX4's z is relative to the take-off point and drifts by
+decimetres, so it is not trusted alone and the operator floor assertion (`estimator_height`) is not used outdoors;
+it must stay null. On every frame the runtime fits the ground from the camera: valid source pixels whose ray points
+below the horizon within `fit_max_range_m`, in the gravity frame given by PX4's attitude, deterministic sequential
+RANSAC (fixed seed, MSAC score) with total-least-squares refinement. It reports the camera height above the plane,
+the tilt, inlier count and share, residual RMS and the share of points below the plane. The frame is accepted only
+when PX4's `z_valid` is true, `epv` is at most `epv_max_m` and the EKF is not dead reckoning, and when one plane has
+enough support, a tilt within `tilt_max_deg`, no more than `max_below_share` of the points below it (the ground is
+the lowest surface) and a height within `height_tolerance_m` of PX4's camera height (z + 0.03 m). Two such planes
+with comparable support at different heights are AMBIGUOUS. Otherwise the frame is refused (`FrameRefused`) with a
+named reason: `estimator_vertical_fields_absent`, `estimator_z_invalid`, `estimator_epv_exceeds_limit`,
+`estimator_dead_reckoning`, `ground_insufficient_points`, `ground_not_found`, `ground_insufficient_support`,
+`ground_tilt_exceeds_tolerance`, `ground_not_lowest_surface`, `ground_height_disagrees_with_px4`,
+`ground_inlier_spread_insufficient`, `ground_not_planar`, `ground_ambiguous`, `verified_camera_height_outside_band`.
+The last three refuse wrong-surface fits (repair r1): any other horizontal plane found below the camera holding
+`rival_min_share` of the points at a different height (a box top, a step, a platform); inliers covering less than
+`min_half_share` of either image half or less than `min_range_span_m` of range; and a plane whose nearest and farthest
+thirds or image halves, fitted alone, tilt more than `planarity_max_angle_deg` from it (a plane bridging the near
+ground and a farther raised top). The floor filter, the virtual ceiling and the sky rule then use the verified
+plane, never raw PX4 z. A valid return is floor when its height above the plane is below `margin_m` plus
+z x (half a trained pixel + `floor_noise_margin_per_m`); stereo noise and the z-buffer's nearest-sample bias grow
+with range.
+
+**Sky rule (`apply_sky_rule`).** Only sensor-invalid pixels change; valid depth is never altered. An invalid pixel
+becomes no-return if its ray never meets the verified plane and points above the horizon, its RGB is sky-like
+(luma at least `luma_min`, local gradient against the neighbouring invalid pixels at most `gradient_max`) and it is
+4-connected to the top of the image through such pixels or through pixels outside the source camera's field of view
+(the top band a nose-down camera does not image; without it the open sky is a near wall on every bearing at 5-10 deg
+nose-down). Pixels whose valid return the virtual ceiling removed are not connectors (repair r1): sky enclosed below
+a removed canopy above 2.9 m stays sensor-invalid, a near phantom on every bearing it covers. Repair r2: only
+unimaged pixels ABOVE the source camera's imaged region connect (above its top field-of-view edge, or in the
+uncovered rectification border above the first covered row of a source column); uncovered side and bottom borders
+never connect, so a rectification border no longer carries the sky flood down the image sides. An elevation margin
+for these connectors was measured and not adopted (`REPAIR_r2.md`).
+
+*Edge-enclosure veto (repair r1).* An invalid pixel lying between two near valid returns in its row (left and
+right) or column (above and below) is never freed and blocks the sky flood: scanning through invalid pixels only, the
+first non-invalid pixel on each side must be a valid return of the projection (floor returns excluded) within
+`edge_veto_range_m` (5.0 m: the trained riskcap governor's 5.0 m release distance; worst-case stop from 3.54 m/s at
+the trained 2.96 m/s^2 with 0.3 s delay is about 3.2 m), the two edges must subtend at most `edge_veto_span_deg`
+(70 deg: a 2.4 m-wide face at 2 m spans 64.6 deg) and their ranges differ by at most `edge_veto_range_tolerance_m`
+(1.0 m); the enclosed set then grows by `EDGE_VETO_DILATION_PX` = 2 invalid pixels, so a row whose edge sample is
+unresolved (the field-of-view boundary of a nose-down camera) stays protected. The OAK-D's horizontal baseline usually
+matches an object's vertical silhouette edges even where its face is bright and textureless, so such objects stay
+near. Cost (synthetic, measured): sky seen between two near trunks
+becomes a near phantom across the gap between them.
+
+*One edge and oblique faces (repair r2).* In a ROW, a run of invalid pixels with a near valid return on only one side
+is enclosed too when the other side is the image border or any stop that is not a near valid return (an unimaged or
+uncovered pixel, a no-return beyond MaxZ, a valid return beyond `edge_veto_range_m`, a floor return): a face whose
+other silhouette edge is out of view, unresolved or seen against far background. Columns keep the two-edge rule. Two
+near edges whose ranges differ by more than the tolerance still enclose when the chord between their 3-D points is
+seen at most `EDGE_VETO_MAX_INCIDENCE_DEG` = 70 deg off its normal (an oblique face; PROVISIONAL runtime constant).
+**Cost (synthetic, measured; the safe direction):** one frame cannot tell such a face from sky beside a single near
+object, so the sky in every row of any near valid return within 5.0 m that rises above the horizon (a tree trunk, a
+post, a pole, a branch end) stays sensor-invalid and becomes near: one trunk inside that range, ahead or at the image
+border, turns most bearings into a near wall, so the vehicle holds or turns away near trees; sky between trunks is near as
+well. Objects beyond 5.0 m, low objects whose top stays below the camera, open sky, a tree line and an open field with
+ranged far ground add nothing. Valid speckle inside that range in the sky has the same effect (measured with
+synthetic speckle; the OAK-D's sky speckle is NOT_MEASURED). Numbers: `REPAIR_r2.md`.
+
+*Far-ground rule (`far_ground_rule`, OFF by default, repair r1).* With it on, an invalid pixel whose ray meets the
+plane only beyond MaxZ, or points below the horizon and never meets it, becomes no-return without any RGB test (the
+band below the horizon is atan(h / MaxZ) wide: 2.9 deg at a 1.03 m camera). Depth alone cannot tell such far ground
+from a dark, thin, sensor-invalid structure inside the vehicle's own altitude band (a rail, a barrier arm, a branch
+just below the camera), which the rule deletes. **Enabling it requires both real OAK-D evidence that far ground drops
+out to depth 0 (replay below) and the user's explicit acceptance that thin invalid obstacles inside the vehicle's
+altitude band are then lost.** With it off, far ground reported as depth 0 stays sensor-invalid: in an open field
+whose horizon is not occluded within 20 m it is a near band on every bearing (a phantom, the safe direction); far
+ground that the OAK-D still ranges beyond 20 m is no-return as before.
+
+Everything else stays sensor-invalid and becomes near under blob_near as before: dark branches, overhead objects,
+near obstacles, textureless ground inside MaxZ, and invalid structures that reach at least about 3 trained rows below
+the horizon (blob_near's 5 x 5 window at density 0.5). Repair r2 corrects the r1 wording ("at or just below the
+horizon"): an object that is sensor-invalid with no valid edge at all, bright and smooth like the sky, is lost when it
+lies wholly above the horizon OR reaches fewer than about 3 trained rows below it (a lower edge a few centimetres below
+the camera), because its rows above the horizon are freed as sky and the rows below are too few to be near.
+These classes cannot be told from sky in one frame; they are kept as `unittest.expectedFailure` tests that assert the
+safe outcome (`tests/test_camera_runtime_outdoor_r1.py`, `FullyInvalidLimitations`, `RepairR2Residuals`), so the
+limitation stays visible (expectedFailure). Keeping every invalid column run that crosses the horizon was measured and
+not adopted: it keeps only some of them and makes the open sky a near wall (`REPAIR_r2.md`).
+
+**PROVISIONAL thresholds.** Each is stored as `{"value": v, "status": "PROVISIONAL"}`, chosen on synthetic scenes
+only, and must be calibrated on real OAK-D recordings (below):
+
+| Block | Threshold | Value |
+| --- | --- | --- |
+| sky | luma_min | 0.5 |
+| sky | gradient_max | 0.03 |
+| sky | far_ground_rule | false |
+| sky | edge_veto_range_m | 5.0 |
+| sky | edge_veto_span_deg | 70.0 |
+| sky | edge_veto_range_tolerance_m | 1.0 |
+| ground_estimate | fit_max_range_m | 10.0 |
+| ground_estimate | inlier_threshold_m | 0.06 |
+| ground_estimate | min_inliers | 300 |
+| ground_estimate | min_inlier_share | 0.25 |
+| ground_estimate | tilt_max_deg | 3.0 |
+| ground_estimate | height_tolerance_m | 0.3 |
+| ground_estimate | epv_max_m | 0.5 |
+| ground_estimate | ambiguity_support_ratio | 0.5 |
+| ground_estimate | ambiguity_separation_m | 0.15 |
+| ground_estimate | floor_noise_margin_per_m | 0.015 |
+| ground_estimate | max_below_share | 0.02 |
+| ground_estimate | rival_min_share | 0.1 |
+| ground_estimate | min_half_share | 0.1 |
+| ground_estimate | min_range_span_m | 1.0 |
+| ground_estimate | planarity_max_angle_deg | 1.0 |
+
+The ground fit's fixed runtime constants (`camera_policy_runtime.PROVISIONAL_RUNTIME_CONSTANTS`, e.g.
+`GROUND_SEARCH_TILT_DEG` = 30) are PROVISIONAL too; `tilt_max_deg` is bounded to (0, 5] deg and
+`height_tolerance_m` to (0, 0.5] m.
+
+**PX4 vertical validity reaches the runtime only as extra state fields.** The outdoor state carries `z_valid`, `epv`
+[m] and `dead_reckoning` beside the five estimator fields (`camera_policy_runtime.split_state`; the indoor state is
+unchanged and still refuses extra keys). The PX4 gateway already revokes when `z_valid` is false, but it does not
+decode `epv` or `dead_reckoning`, and the Odometry it republishes carries NaN covariance. Until the gateway and the
+ROS adapter forward these fields (a separate unit), every outdoor frame on the ROS path would be refused with
+`estimator_vertical_fields_absent`, so the ROS node refuses an outdoor contract at load as UNCONFIGURED with the
+named reason `outdoor_vertical_fields_not_forwarded` (repair r1) instead of starting a session that holds forever.
+The outdoor profile runs today only through the CPU replays (NPZ `replay`, `tools/oakd_outdoor_replay.py`).
+
+**Refused frames in the ROS session.** A `FrameRefused` frame does not advance the policy history. The session
+answers it with an explicit zero-velocity, zero-yaw-rate hold proposal for that tick (same stamps and freshness
+checks), reports `HOLD_FRAME_REFUSED` with the reason and the run length in the diagnostics, and starts a fresh
+history on the next accepted frame. Re-entry hysteresis (repair r1): after a refusal the first
+`REFUSAL_REENTRY_FRAMES` = 5 accepted frames (PROVISIONAL; 0.5 s, one trained history interval) still propose the
+zero hold (`HOLD_REENTRY`, `reentry_hold_remaining` in the diagnostics) while the policy history refills, and the
+runtime records the applied zero hold as its previous action; a refusal in between restarts the count. Repair r2:
+with an outdoor contract the count restarts on every history reset, not only on a refusal: the session start or an
+explicit reset, and an altitude-gated stretch (`WAITING_ALTITUDE`), so a nonzero command always follows at least
+`REFUSAL_REENTRY_FRAMES` accepted frames of the current history; the NPZ `replay` applies the same hold (its line keeps
+the policy's own command as `policy_*`) and `tools/oakd_outdoor_replay.py` marks such frames `reentry_hold`. Indoor
+contracts never hold. The hold has
+no time limit: bounding or escalating a long hold is the user's decision and remains open. Every other input error
+still faults the session. Before this change a refusal
+faulted the session, the proposal stream stopped, the gateway revoked within about 0.15 s, and PX4 kept the last
+nonzero velocity setpoint until its offboard-loss timeout (`COM_OF_LOSS_T`, 1.0 s by default in v1.14.3) before
+`COM_OBL_RC_ACT`. Any other session fault, or a stopped node, still leaves that window: shorten `COM_OF_LOSS_T` for
+policy flights, and treat a gateway brake-on-loss as an open item. The gateway geofence is unchanged.
+
+**Limitations (outdoor GO is not given).** Wires 1-3 px thick reported invalid are not detected, nor are invalid
+structures thinner than about 3 trained rows (a 0.10 m rail at 5 m; blob_near needs a dense blob). A sensor-invalid,
+bright, smooth object with no valid edge lying wholly above the horizon, or reaching fewer than about 3 trained rows
+below it, is lost when it connects to the top of the image (directly, through low-contrast sky, or through the
+unimaged band of a nose-down camera). A bright face whose only valid edge lies beyond 5.0 m ray range, or is narrower
+than about one trained pixel on the tilted path, is lost too. Textured bright
+clouds, sky between near trunks, sky in the rows of any near valid return (repair r2), sky below a removed canopy,
+invalid canopies above the virtual ceiling, invalid far ground in an open field (also a thin depth-0 band just below
+the horizon) and a saturated sun blob below the horizon stay near (phantom obstacles). A wide horizontal
+surface that hides all ground within the fit range is taken as the ground when its top lies within the PX4 height
+tolerance; low wide boxes beside visible ground are now refused. The site must be flat (one
+plane, slope within the tilt tolerance); with more stereo noise than modelled, flat ground is refused more often
+(0.5 px disparity noise at a 2.0 m camera: refused, a zero hold). The thresholds and the stereo noise model are
+synthetic. Measured results:
+`/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/OUTDOOR_r1.md` and, after the independent reviews, `REPAIR_r1.md`
+and `REPAIR_r2.md` in the same folder.
+
+### OAK-D Pro (the user's camera, confirmed 2026-11-15)
+
+Luxonis documentation, accessed 2026-11-15: [OAK-D Pro product page](https://docs.luxonis.com/hardware/products/OAK-D%20Pro),
+[OAK-D Pro datasheet](https://github.com/luxonis/depthai-hardware/blob/master/DM9098_OAK-D-Pro/Datasheet/OAK-D-Pro_Datasheet.pdf),
+[DepthAI v2.29.0 `DeviceBase.hpp`](https://raw.githubusercontent.com/luxonis/depthai-core/v2.29.0/include/depthai/device/DeviceBase.hpp),
+[depthai-python v2.29.0.0 `DeviceBindings.cpp`](https://raw.githubusercontent.com/luxonis/depthai-python/v2.29.0.0/src/DeviceBindings.cpp).
+None of it is measured on the user's unit; the variant (auto or fixed focus) is NOT_MEASURED.
+
+| Item | Documented value |
+| --- | --- |
+| Stereo pair | OV9282, global shutter, 1280 x 800, DFOV / HFOV / VFOV 89.5 / 80 / 55 deg, fixed focus |
+| RGB, auto-focus variant | IMX378, 4056 x 3040, 78 / 66 / 54 deg |
+| RGB, fixed-focus variant | IMX378, 4056 x 3040, 82 / 69 / 55 deg |
+| Baseline | 7.5 cm |
+| IR dot projector / IR flood LED | 940 nm each, up to 1 W each; the stereo pair has 940 nm notch filters, the RGB camera does not see IR |
+| IMU | BNO086 |
+| Depth | ideal range about 0.8-12 m; depth 0 means invalid; disparity search 0-95 px (extended 0-190 px) |
+
+DepthAI 2.29 sets the emitters on the device: `setIrLaserDotProjectorIntensity(intensity, mask=-1)` and
+`setIrFloodLightIntensity(intensity, mask=-1)`, intensity 0..1, 0 or negative turns the emitter off ("The emitter is
+turned off by default"); the mA setters `setIrLaserDotProjectorBrightness` / `setIrFloodLightBrightness` are
+deprecated; `getIrDrivers()` lists the LED driver. The runtime and `tools/oakd_camera.build_pipeline` never call them,
+so the projector stays off by default; this unit does not change that.
+
+Consequences for this runtime (PROVISIONAL until measured on the unit): the `oakd_like` test preset (1014 x 760,
+69 deg HFOV) matches the fixed-focus variant. The auto-focus variant's 66 deg HFOV equals the trained HFOV and, on a
+4:3 sensor, gives about 51.9 deg VFOV (the page lists 54 deg), below the trained 54 deg: the level path then refuses
+every frame (`source camera does not cover the trained FOV`) and `oakd_camera.Rectifier.require_training_fov` refuses
+the intrinsics (fail closed; `OakdProPresets`). The fixed-focus variant leaves about 8 source pixels above and below
+the trained rows, so a wider rectification border uncovers the trained image's top rows (top-band connectors).
+Whether far ground beyond 20 m, the sky and the stereo search band at one image side read as depth 0 in the
+RGB-aligned depth is NOT_MEASURED (capture items below).
+
+### Recording the user's OAK-D outdoors for calibration (no extra sensors)
+
+`tools/oakd_outdoor_replay.py` replays recorded frames through the outdoor profile without DepthAI, a checkpoint or
+ROS, and writes per-frame refusal, ground, sky and near statistics plus a summary. Its docstring defines the folder
+format (`recording.json`, `frames/NNNNNN.npz` with RGB, depth in mm with 0 invalid, gravity and time).
+
+1. Mount the OAK-D Pro on a tripod with the lens on the tripod axis. Measure the height of the RGB optical centre
+   above the ground with a tape (1.0 m and 1.5 m) and write it to `camera_height_m` with its reading uncertainty.
+   Record in `device` the model and variant (OAK-D Pro, auto or fixed focus RGB), the serial number (MX ID) and the
+   DepthAI version, and keep the device calibration (`readCalibration`) beside the recording.
+2. Capture with the existing pipeline: `tools/oakd_camera.build_pipeline` (12 MP ISP 1/4 RGB, 800P stereo,
+   depth aligned to RGB, measured device calibration) and `Rectifier.apply`, saving the rectified RGB, the
+   rectified depth in mm and the coverage. That pipeline has no IMU node: add a DepthAI `IMU` node (accelerometer,
+   about 100 Hz), average it over each still frame, rotate it into the RGB optical frame with the device's
+   IMU-to-camera extrinsics from the device calibration, and store the up vector (`up_optical`). Without an
+   extrinsic, record `roll_pitch_deg` from the IMU's own orientation and state how it was aligned.
+3. For each height, record pitches 0 and plus/minus 10 deg (positive = nose down), 20-50 frames each, at a flat,
+   short-grass or paved site: open field to the horizon; a tree line; a tree trunk at 0.3 m and 1.5 m; a low branch
+   above camera height; overhead canopy or a roof edge; a pole or post; a wire against the sky if available; clear,
+   partly cloudy and low-sun skies; a gentle slope; a low wide object (box or bench). Note distances in `scene`.
+4. Build an outdoor contract and run
+   `python -B tools/oakd_outdoor_replay.py --contract outdoor_contract.json --recording <folder> --output <new dir>`.
+   Report the height error against the tape, the refusal reasons, the sky and far-ground pixel counts and the near
+   columns per scene before changing any PROVISIONAL threshold. Recordings are raw data: keep them outside Git and
+   bind them by path and SHA-256.
+5. OAK-D Pro IR projector (repair r2): record every scene twice, with the IR dot projector off (the boot default) and
+   on (`setIrLaserDotProjectorIntensity`, the value written in `scene`), flood LED off. Sunlight usually washes the
+   940 nm dots out; in shade and at short range they may add texture. Note sun or shade per scene.
+6. Capture items for the open questions (each with the projector off and on):
+   - rectification border: the `coverage` mask and calibrated intrinsics of the unit; the uncovered border width at the
+     top, sides and bottom of the 1014 x 760 image, and whether `Rectifier.require_training_fov` passes;
+   - stereo search band: the width of a permanent depth-0 band at one side of the RGB-aligned depth, in both stereo
+     modes (`extended`, `subpixel`);
+   - far ground: an open field to the horizon at 1.0 and 1.5 m; the share of depth-0 pixels in the bands 0-1, 1-2 and
+     2-3 deg below the horizon, and the farthest valid ground range;
+   - bright faces: a white and a light-grey board at least 1 m wide at 1.5, 2, 3 and 4 m, against open sky and against
+     a tree line, frontal with both vertical edges in view, with one edge out of view, and turned 30-60 deg; whether
+     the vertical silhouette edge columns are valid and at what depth, and whether the face itself is depth 0;
+   - sky: clear, partly cloudy, overcast, sun in view and low sun near the horizon; the count and ranges of valid
+     speckle pixels in open sky (one near speckle row makes the sky near under the one-edge rule);
+   - thin structures: wires and branches 1-5 m away, 1-3 source pixels thick, against sky;
+   - flat ground noise: the depth spread on flat short grass and on pavement at 2-10 m (for the ground-fit margins).
