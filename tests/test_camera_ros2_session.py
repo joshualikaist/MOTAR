@@ -53,6 +53,8 @@ class Runtime:
     def __init__(self): self.calls, self.resets, self.failed = [], 0, False
     def reset(self): self.resets += 1; self.failed = False
     def invalidate(self): self.failed = True
+    # Always inside the floor/ceiling band; altitude gating is tested in test_camera_runtime_fixes_r2.
+    def height_band(self, state): return dict(in_band=True, camera_height_m=state['pos'][2]+.03, reason=None)
     def step(self, f, s, *, now_s):
         self.calls.append((f, s, now_s))
         return dict(t=now_s, velocity_world_enu_mps=[.2,.1,0.], yaw_rate_rps=.3)

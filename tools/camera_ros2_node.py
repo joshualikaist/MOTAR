@@ -60,6 +60,11 @@ def load_node_config(config_path, source_root):
         raise ValueError('policy contract file differs from its binding')
     contract_module = importlib.import_module('camera_policy_contract')
     contract = contract_module.load_contract(path, root=root)
+    # Repair r1 (F6): an enabled floor/ceiling filter needs the operator's estimator-height assertion;
+    # refuse here so the node never starts a session whose every frame would be refused.
+    problem = contract_module.height_reference_problem(contract)
+    if problem:
+        raise ValueError('UNCONFIGURED: ' + problem)
     raw['policy_contract_path'] = str(path)
     return raw, contract
 
@@ -149,7 +154,8 @@ def make_node_class():
                     result = self._future.result()
                     proposal = self._session.finish(self._work, result,
                         now_ros_s=self.get_clock().now().nanoseconds/1e9, now_monotonic_s=time.monotonic())
-                    if not self._closed:
+                    # None: an altitude-gated tick (WAITING_ALTITUDE) that proposes nothing.
+                    if proposal is not None and not self._closed:
                         self._publish_proposal(proposal)
                 except Exception as exc:
                     self._session.fail_inference(exc)
@@ -168,8 +174,7 @@ def make_node_class():
                     self._last_error = str(exc)
             if wall-self._last_diag_wall >= 1.:
                 msg = String()
-                msg.data = json.dumps({'state': 'FAULT' if self._session.fault else
-                    'RUNNING_PROPOSALS' if self._session.started else 'WAITING_FOR_INPUTS',
+                msg.data = json.dumps({'state': self._session.status, 'altitude': self._session.altitude,
                     'last_error': self._last_error, 'epoch': self._session.epoch,
                     'sequence': self._session.sequence, 'vehicle_commands_sent': 0}, allow_nan=False)
                 self._diagnostics.publish(msg)

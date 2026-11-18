@@ -23,6 +23,10 @@ def config(enabled=False):
     value = N.unconfigured_template()
     value.update(status='CONFIGURED', enable_offboard_publication=enabled)
     value['frames'] = dict(world='map', body='base_link')
+    if enabled:
+        # Repair r1 (F8): publication needs an enabled geofence or an explicit waiver. These bridge tests
+        # do not exercise the fence (test_camera_runtime_fixes_r2 / _repair_r1 do).
+        value['geofence_waiver'] = dict(reason='CPU bridge fixture; geofence tested separately')
     return value
 
 
@@ -77,7 +81,7 @@ class BridgeTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 session.prime(now=100., wall=20.)
             self.assertEqual(session.gate.state, 'REVOKED')
-        gate = P.Px4OffboardGateway(binding(), command_frame_id='map')
+        gate = P.Px4OffboardGateway(binding(), command_frame_id='map', geofence=P.geofence_template())
         with self.assertRaisesRegex(ValueError, 'explicit operator'):
             gate.prime(snapshot(), now_s=100., now_monotonic_s=20.)
 
@@ -147,6 +151,7 @@ class ConfigurationTests(unittest.TestCase):
             self.assertFalse(configured['enable_offboard_publication'])
             self.assertEqual(b.metadata()['dds_delivery'],'NOT_TESTED')
             value['enable_offboard_publication']=True
+            value['geofence_waiver']=dict(reason='CPU fixture')
             path.write_text(json.dumps(value))
             with self.assertRaisesRegex(ValueError,'flight-check'):
                 N.load_node_config(path,ROOT)

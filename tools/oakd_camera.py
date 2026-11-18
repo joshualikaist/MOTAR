@@ -209,6 +209,13 @@ class Rectifier:
         self.mapx, self.mapy = cv2.initUndistortRectifyMap(k, d, np.eye(3), k, (width, height), cv2.CV_32FC1)
 
     def apply(self, bgr, depth_mm):
+        """Return rectified RGB, optical z [m], sensor-invalid mask and source coverage.
+
+        coverage is a ones image remapped with the depth's own map, interpolation and
+        zero border: False marks rectified pixels outside the raw image. The zero depth
+        there is not a sensor return, so the runtime treats it as no-return, never as
+        a dense invalid (near) blob. invalid keeps the raw meaning, depth == 0.
+        """
         np, cv2 = self.np, self.cv2
         bgr, depth = np.asarray(bgr), np.asarray(depth_mm)
         if bgr.shape != (self.height, self.width, 3) or bgr.dtype != np.uint8:
@@ -219,7 +226,10 @@ class Rectifier:
                           borderMode=cv2.BORDER_CONSTANT, borderValue=0)
         rectified_mm = cv2.remap(depth, self.mapx, self.mapy, cv2.INTER_NEAREST,
                                  borderMode=cv2.BORDER_CONSTANT, borderValue=0)
-        return color[:, :, ::-1].copy(), rectified_mm.astype(np.float32) * 0.001, rectified_mm == 0
+        coverage = cv2.remap(np.ones((self.height, self.width), np.uint8), self.mapx, self.mapy,
+                             cv2.INTER_NEAREST, borderMode=cv2.BORDER_CONSTANT, borderValue=0) == 1
+        return (color[:, :, ::-1].copy(), rectified_mm.astype(np.float32) * 0.001, rectified_mm == 0,
+                coverage)
 
     def metadata(self):
         return {"width": self.width, "height": self.height, "fx": float(self.k[0, 0]),
@@ -241,7 +251,8 @@ class Rectifier:
                 "raw_intrinsics": self.k.tolist(), "raw_distortion": self.d.tolist(),
                 "rectification_rotation": "identity", "rectified_intrinsics": self.k.tolist(),
                 "method": "cv2.initUndistortRectifyMap", "rgb_interpolation": "linear",
-                "depth_interpolation": "nearest", "outside_depth": "zero_invalid"}
+                "depth_interpolation": "nearest", "outside_depth": "zero_invalid",
+                "coverage": "ones image, same map, nearest, zero border; False -> runtime no-return"}
 
 
 class OakDQueueCapture:
@@ -297,12 +308,12 @@ class OakDQueueCapture:
             if self.previous is not None and (any(t <= p for t, p in zip(stamps, self.previous[0]))
                                               or any(n <= p for n, p in zip(seq, self.previous[1]))):
                 raise OakDInputError("reused/regressing OAK-D RGB-D packet")
-            rgb, depth_z, invalid = self.rectifier.apply(rgb_msg.getCvFrame(), depth_msg.getFrame())
+            rgb, depth_z, invalid, coverage = self.rectifier.apply(rgb_msg.getCvFrame(), depth_msg.getFrame())
             service_slice()
             if self.clock() >= deadline or any(self.clock() - stamp > MAX_AGE_S for stamp in stamps):
                 raise TimeoutError("OAK-D frame expired during conversion/service")
             self.previous = (stamps, seq)
-            return {"rgb": rgb, "depth_z_m": depth_z, "invalid": invalid,
+            return {"rgb": rgb, "depth_z_m": depth_z, "invalid": invalid, "coverage": coverage,
                     "rgb_t": stamps[0], "depth_t": stamps[1], "now_s": float(self.clock()),
                     "intrinsics": self.rectifier.metadata(), "aligned": True, "rectified": True,
                     "mount_flu_m": list(self.config["mount_flu_m"]),
@@ -385,7 +396,8 @@ def main(argv=None):
         import numpy as np
         for k in range(args.frames):
             frame = capture.frames(deadline=time.monotonic() + 2.0, service=lambda: None)
-            arrays = {key: frame[key] for key in ("rgb", "depth_z_m", "invalid", "rgb_t", "depth_t", "now_s")}
+            arrays = {key: frame[key] for key in ("rgb", "depth_z_m", "invalid", "coverage", "rgb_t", "depth_t",
+                                                  "now_s")}
             metadata = {key: value for key, value in frame.items() if key not in arrays}
             arrays["camera_metadata"] = json.dumps(metadata, sort_keys=True)
             np.savez_compressed(args.output / ("frame_%05d.npz" % k), **arrays)

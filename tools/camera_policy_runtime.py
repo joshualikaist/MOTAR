@@ -26,6 +26,13 @@ ROOT = Path(__file__).resolve().parents[1]
 MAX_AGE_S = 0.15
 MAX_SKEW_S = 0.025
 PERIOD_TOLERANCE_S = 0.025
+# Repair r1 (F4): on the tilted (z-buffer) path a trained pixel is sensor-invalid when at least this share
+# of the source samples landing on it (valid points plus sensor-invalid rays) are sensor-invalid. The level
+# path classifies a trained pixel by ONE nearest source sample, so its probability of being sensor-invalid
+# is the local invalid share; a 0.5 majority reproduces that lookup in expectation. With about 53 OAK-D
+# samples per trained pixel, iid 2 % holes reach a 0.5 share with negligible probability, so they stay
+# valid (no new near blob), while sparse valid speckle on a dense invalid surface no longer hides it.
+ZBUFFER_INVALID_SHARE = 0.5
 
 
 class InputError(ValueError):
@@ -83,14 +90,78 @@ def _intrinsics(c):
     return w, h, fx, fy, cx, cy
 
 
+def _source_classes(frame, z, invalid, depth):
+    """Split source pixels into sensor-invalid and no-return; every other pixel is valid.
+
+    sensor_invalid: the sensor's own invalid return (explicit mask, NaN, or optical z < MinZ,
+    including -inf). Only these may become a near surface under blob_near, as in training.
+    no_return: geometrically not covered (optional `coverage` mask False, e.g. the zero border
+    of an undistortion remap) or optical z > MaxZ (including +inf). These hold MaxZ and are
+    never near. An uncovered pixel without a valid return (flagged, NaN, out of range) is
+    no-return. An uncovered pixel WITH a valid return (finite MinZ <= z <= MaxZ, not flagged)
+    contradicts the producer contract: the calibration does not describe this image, so the
+    whole frame is refused (InputError) instead of erasing measured depth (repair r1, F3).
+    """
+    coverage = frame.get('coverage')
+    if coverage is None:
+        covered = np.ones(z.shape, bool)
+    else:
+        covered = np.asarray(coverage)
+        if covered.shape != z.shape or covered.dtype != np.bool_:
+            raise InputError('coverage must be a same-frame bool mask [H,W]')
+    with np.errstate(invalid='ignore'):
+        too_close = z < float(depth['minz_m'])
+        too_far = z > float(depth['maxz_m'])
+    flagged = invalid | np.isnan(z) | too_close
+    contradicted = ~covered & ~flagged & ~too_far
+    if contradicted.any():
+        raise InputError('coverage is False at %d pixels that carry a valid depth return: the CameraInfo/'
+                         'producer calibration does not match the delivered image; frame refused'
+                         % int(contradicted.sum()))
+    sensor_invalid = covered & flagged
+    no_return = ~covered | (too_far & ~sensor_invalid)
+    return sensor_invalid, no_return
+
+
+def _splat_index(direction, tw, th, tfx, tfy, tcx, tcy, offset=False):
+    """Nearest trained pixel of FLU directions/points [N,3] in front of the camera.
+
+    With offset=True also returns each ray's squared distance (in pixels) from that pixel's centre."""
+    front = direction[:, 0] > 1e-6
+    d = direction[front]
+    xf = -d[:, 1]/d[:, 0]*tfx+tcx
+    yf = -d[:, 2]/d[:, 0]*tfy+tcy
+    xx = np.floor(xf+.5).astype(int)
+    yy = np.floor(yf+.5).astype(int)
+    keep = (xx >= 0) & (xx < tw) & (yy >= 0) & (yy < th)
+    selected = np.flatnonzero(front)[keep]
+    if offset:
+        return selected, yy[keep]*tw + xx[keep], (xf-xx)[keep]**2 + (yf-yy)[keep]**2
+    return selected, yy[keep]*tw + xx[keep]
+
+
 def project_rgbd(frame, state, contract):
     """Rectify a calibrated body-mounted camera into the trained yaw-level camera.
 
     RGB and optical-z depth must already be rectified and aligned to the SAME
-    camera intrinsics. Level/coincident cameras use inverse nearest sampling.
+    camera intrinsics. Level/coincident cameras use inverse nearest sampling and
+    classify each trained pixel by its sampled source pixel.
     For a tilted/translated camera, measured 3-D points are reprojected with a
-    nearest-depth z buffer. Disocclusions remain explicit invalid pixels; no
-    background or range is invented. This is an adapter, not sensor equivalence.
+    nearest-depth z buffer. Sensor-invalid source pixels have no depth, so only
+    their ray DIRECTION is reprojected (rotation only; the camera translation is
+    ignored for these rays because it cannot be applied without a depth). Each
+    trained pixel is classified by the share of the source samples (valid points
+    plus sensor-invalid rays) that land on it (repair r1, F4): sensor-invalid if
+    the invalid share is >= ZBUFFER_INVALID_SHARE (0.5), otherwise valid at the
+    nearest valid depth; no-return if nothing lands (not imaged by the source
+    camera: a tilt band, disocclusion or uncovered border). A sensor-invalid
+    trained pixel carries the colour of the invalid ray nearest to its centre, as
+    the level path carries its sampled source colour. No background or range is
+    invented. This is an adapter, not sensor equivalence.
+
+    Returns (rgb [1,3,H,W], ranges [1,H,W], sensor_invalid [1,H,W],
+    no_return [1,H,W], cosine [H,W], report). Both masked kinds hold MaxZ range;
+    only sensor_invalid is eligible for the blob_near rule.
     """
     _, _, body_r, yaw, _, _ = validate_state(state)
     if frame.get('aligned') is not True or frame.get('rectified') is not True:
@@ -117,7 +188,8 @@ def project_rgbd(frame, state, contract):
     rotation = rel @ optical
     offset = rel @ mount - np.asarray(cam['translation_m'])
     depth = contract['depth']
-    bad = invalid | ~np.isfinite(z) | (z < depth['minz_m']) | (z > depth['maxz_m'])
+    minz, maxz = float(depth['minz_m']), float(depth['maxz_m'])
+    src_invalid, src_no_return = _source_classes(frame, z, invalid, depth)
     if np.allclose(rotation, np.eye(3), atol=1e-8) and np.allclose(offset, 0, atol=1e-8):
         uu = (np.arange(tw)-tcx)/tfx*sfx + scx
         vv = (np.arange(th)-tcy)/tfy*sfy + scy
@@ -128,49 +200,187 @@ def project_rgbd(frame, state, contract):
         yi = np.clip(np.floor(vv + .5).astype(int), 0, sh-1)
         out_rgb = rgb[yi[:, None], xi[None, :]].copy()
         out_z = z[yi[:, None], xi[None, :]].astype(np.float64)
-        out_bad = bad[yi[:, None], xi[None, :]].copy()
+        out_invalid = src_invalid[yi[:, None], xi[None, :]].copy()
+        out_no_return = src_no_return[yi[:, None], xi[None, :]].copy()
         method = 'inverse-nearest'
     else:
         u, v = np.meshgrid((np.arange(sw)-scx)/sfx, (np.arange(sh)-scy)/sfy)
-        good = ~bad
+        good = ~(src_invalid | src_no_return)
         points = np.stack([z[good], -u[good]*z[good], -v[good]*z[good]], axis=-1)
         points = points @ rotation.T + offset
-        front = points[:, 0] > 1e-6
-        points, colours = points[front], rgb[good][front]
-        xx = np.floor(-points[:, 1]/points[:, 0]*tfx+tcx+.5).astype(int)
-        yy = np.floor(-points[:, 2]/points[:, 0]*tfy+tcy+.5).astype(int)
-        keep = (xx >= 0) & (xx < tw) & (yy >= 0) & (yy < th)
-        indices = yy[keep]*tw + xx[keep]
-        zs, colours = points[keep, 0], colours[keep]
+        selected, indices = _splat_index(points, tw, th, tfx, tfy, tcx, tcy)
+        n_valid = np.bincount(indices, minlength=th*tw).reshape(th, tw)
+        zs, colours = points[selected, 0], rgb[good][selected]
         order = np.lexsort((zs, indices))
         indices, zs, colours = indices[order], zs[order], colours[order]
         first = np.r_[True, indices[1:] != indices[:-1]] if len(indices) else np.zeros(0, bool)
         out_z = np.zeros((th, tw), np.float64)
         out_rgb = np.zeros((th, tw, 3), np.uint8)
-        out_bad = np.ones((th, tw), bool)
         out_z.flat[indices[first]] = zs[first]
         out_rgb.reshape(-1, 3)[indices[first]] = colours[first]
-        out_bad.flat[indices[first]] = False
-        out_bad |= (out_z < depth['minz_m']) | (out_z > depth['maxz_m'])
+        # Sensor-invalid rays: direction only (rotation), translation ignored.
+        rays = np.stack([np.ones(int(src_invalid.sum())), -u[src_invalid], -v[src_invalid]], axis=-1)
+        ray_selected, ray_indices, ray_offset = _splat_index(rays @ rotation.T, tw, th, tfx, tfy, tcx, tcy,
+                                                             offset=True)
+        n_invalid = np.bincount(ray_indices, minlength=th*tw).reshape(th, tw)
+        samples = n_valid + n_invalid
+        # F4: the share rule (see ZBUFFER_INVALID_SHARE); n_valid > 0 wherever a sampled pixel is not invalid.
+        invalid_share = (samples > 0) & (n_invalid >= ZBUFFER_INVALID_SHARE * samples)
+        hit = (samples > 0) & ~invalid_share
+        # A sensor-invalid trained pixel takes the colour of the invalid ray nearest to its centre.
+        ray_order = np.lexsort((ray_offset, ray_indices))
+        ray_sorted = ray_indices[ray_order]
+        ray_first = np.r_[True, ray_sorted[1:] != ray_sorted[:-1]] if len(ray_sorted) else np.zeros(0, bool)
+        ray_colours = rgb[src_invalid][ray_selected][ray_order][ray_first]
+        take = invalid_share.flat[ray_sorted[ray_first]]
+        out_rgb.reshape(-1, 3)[ray_sorted[ray_first][take]] = ray_colours[take]
+        # The level camera's own MinZ/MaxZ apply to reprojected valid points, as in training.
+        out_invalid = invalid_share | (hit & (out_z < minz))
+        out_no_return = (samples == 0) | (hit & (out_z > maxz))
         method = 'measured-point-z-buffer'
+    masked = out_invalid | out_no_return
     u, v = np.meshgrid((np.arange(tw)-tcx)/tfx, (np.arange(th)-tcy)/tfy)
     cosine = 1 / np.sqrt(1+u*u+v*v)
-    ranges = np.full((th, tw), float(depth['maxz_m']), np.float64)
-    np.divide(out_z, cosine, out=ranges, where=~out_bad)
-    # Match depth-model ray-range far clamping, retaining the independent mask.
-    ranges = np.minimum(ranges, float(depth['maxz_m'])).astype(np.float32)
+    ranges = np.full((th, tw), maxz, np.float64)
+    np.divide(out_z, cosine, out=ranges, where=~masked)
+    # Match depth-model ray-range far clamping, retaining the independent masks.
+    ranges = np.minimum(ranges, maxz).astype(np.float32)
     return (out_rgb.transpose(2, 0, 1)[None].astype(np.float32)/255., ranges[None],
-            out_bad[None], cosine.astype(np.float32),
-            {'projection': method, 'invalid_pixels': int(out_bad.sum()),
-             'pixels': th*tw, 'synthetic_noise_applied': False})
+            out_invalid[None], out_no_return[None], cosine.astype(np.float32),
+            {'projection': method, 'sensor_invalid_pixels': int(out_invalid.sum()),
+             'no_return_pixels': int(out_no_return.sum()), 'pixels': th*tw,
+             'coverage_mask': frame.get('coverage') is not None, 'synthetic_noise_applied': False})
+
+
+def height_band(state, contract):
+    """Whether the camera height lies inside the enabled floor/ceiling filter band; pure, no history.
+
+    Camera height above the floor = estimator ENU z + the trained camera's z offset. With the floor
+    filter on it must exceed ground.margin_m; with the ceiling filter on it must stay below
+    ceiling.height_m - ceiling.margin_m. Outside the band every return at camera height would be
+    removed as floor or ceiling, so remove_floor_and_ceiling refuses such a frame, and the ROS
+    session waits (WAITING_ALTITUDE) without calling the runtime (e.g. on the ground before take-off).
+    An enabled filter without the operator's estimator-height assertion (contract estimator_height,
+    repair r1 F6) raises InputError instead: the frame fails closed, and the ROS session faults.
+    Returns {'in_band', 'camera_height_m', 'reason'}.
+    """
+    from camera_policy_contract import height_reference_problem
+    problem = height_reference_problem(contract)
+    if problem:
+        raise InputError(problem)
+    p, _, _, _, _, _ = validate_state(state)
+    ground, ceiling = contract['ground'], contract['ceiling']
+    height = float(p[2]) + float(contract['camera']['translation_m'][2])
+    reason = None
+    if ground['enabled'] and not height > float(ground['margin_m']):
+        reason = 'camera height above the floor does not exceed the ground margin'
+    elif ceiling['enabled'] and not height < float(ceiling['height_m']) - float(ceiling['margin_m']):
+        reason = 'camera height is not below the ceiling band'
+    return {'in_band': reason is None, 'camera_height_m': height, 'reason': reason}
+
+
+def remove_floor_and_ceiling(ranges, sensor_invalid, no_return, cosine, state, contract):
+    """Floor and ceiling returns become no-return in the level trained camera.
+
+    The training arena had neither a floor nor a ceiling (navrl_bars_env.py
+    create_ground_plane = False), so both are removed by height; vertical walls and
+    poles, whose hit heights lie between the two bands, are kept. Contract fields
+    `ground` and `ceiling` enable each band; heights are above the floor, so the
+    estimator ENU z must be the height above the floor, which the operator asserts in
+    contract `estimator_height` (without it height_band refuses the frame, F6).
+    Port of tools/sitl_s4_gazebo.py:remove_ground. S4 rotated body-frame depth rays
+    by the full attitude; here the projected image is already yaw-level, so a
+    trained pixel's ray-up component is -(v-cy)/fy * cosine and
+    hit_z = pos_z + camera z + range * ray_up.
+      * floor: a valid pixel with hit_z < ground.margin_m -> range MaxZ, no-return.
+        Only with ground.invalid_plane_rule (opt-in, default OFF): a sensor-invalid
+        pixel whose ray points below the horizon and meets the floor (z = 0) at
+        level-camera optical z in [MinZ, MaxZ] -> no-return.
+      * ceiling: a valid pixel with hit_z > ceiling.height_m - ceiling.margin_m ->
+        range MaxZ, no-return. Only with ceiling.invalid_plane_rule (default OFF): a
+        sensor-invalid pixel whose ray points above the horizon and meets the ceiling
+        plane (z = height_m) at optical z in [MinZ, MaxZ] -> no-return.
+    Repair r1 (F1): the invalid-pixel plane rule looks only at the row, never at the
+    pixel's content, so it also erased a real obstacle closer than MinZ whose top lies
+    a few cm below camera height (a box, a table edge). It is therefore opt-in. With it
+    off, a textureless floor or ceiling inside the sensor range reads as a near surface
+    again (an open item to decide from bench data). MinZ and MaxZ are compared with
+    optical z, on which the sensor defines them. Exact float64 arithmetic; no distance
+    matrix. Inputs are not mutated.
+    """
+    ground, ceiling = contract['ground'], contract['ceiling']
+    info = {'ground': {'enabled': bool(ground['enabled']), 'margin_m': float(ground['margin_m']),
+                       'invalid_plane_rule': ground['invalid_plane_rule'] is True,
+                       'removed_valid_pixels': 0, 'removed_invalid_pixels': 0},
+            'ceiling': {'enabled': bool(ceiling['enabled']), 'height_m': ceiling['height_m'],
+                        'margin_m': float(ceiling['margin_m']),
+                        'invalid_plane_rule': ceiling['invalid_plane_rule'] is True,
+                        'removed_valid_pixels': 0, 'removed_invalid_pixels': 0}}
+    if not ground['enabled'] and not ceiling['enabled']:
+        return ranges, sensor_invalid, no_return, info
+    p, _, _, _, _, _ = validate_state(state)
+    cam, depth = contract['camera'], contract['depth']
+    tw, th, tfx, tfy, tcx, tcy = _intrinsics(cam)
+    if ranges.shape != (1, th, tw) or cosine.shape != (th, tw):
+        raise InputError('floor/ceiling removal needs the trained camera grid')
+    height = float(p[2]) + float(cam['translation_m'][2])
+    # Outside the band every return at camera height would read as floor or ceiling (same predicate
+    # as height_band, which the ROS session checks first so that it never calls the runtime there).
+    band = height_band(state, contract)
+    if not band['in_band']:
+        raise InputError(band['reason'])
+    minz, maxz = float(depth['minz_m']), float(depth['maxz_m'])
+    v = (np.arange(th, dtype=np.float64)-tcy)/tfy
+    hit_z = height + ranges[0].astype(np.float64)*(-v[:, None]*cosine.astype(np.float64))
+    si, nr = sensor_invalid[0], no_return[0]
+    valid = ~(si | nr)
+    removed_valid = np.zeros_like(valid)
+    removed_invalid = np.zeros_like(si)
+    if ground['enabled']:
+        margin = float(ground['margin_m'])
+        info['ground']['camera_height_m'] = height
+        floor = valid & (hit_z < margin)
+        floor_invalid = np.zeros_like(si)
+        if ground['invalid_plane_rule'] is True:
+            below = v > 0
+            floor_z = np.full(th, -np.inf)
+            floor_z[below] = height / v[below]
+            floor_invalid = si & ((floor_z >= minz) & (floor_z <= maxz))[:, None]
+        info['ground']['removed_valid_pixels'] = int(floor.sum())
+        info['ground']['removed_invalid_pixels'] = int(floor_invalid.sum())
+        removed_valid |= floor
+        removed_invalid |= floor_invalid
+    if ceiling['enabled']:
+        top = float(ceiling['height_m'])
+        limit = top - float(ceiling['margin_m'])
+        info['ceiling']['camera_height_m'] = height
+        roof = valid & (hit_z > limit)
+        roof_invalid = np.zeros_like(si)
+        if ceiling['invalid_plane_rule'] is True:
+            above = v < 0
+            ceiling_z = np.full(th, -np.inf)
+            ceiling_z[above] = (top - height) / -v[above]
+            roof_invalid = si & ((ceiling_z >= minz) & (ceiling_z <= maxz))[:, None]
+        info['ceiling']['removed_valid_pixels'] = int(roof.sum())
+        info['ceiling']['removed_invalid_pixels'] = int(roof_invalid.sum())
+        removed_valid |= roof
+        removed_invalid |= roof_invalid
+    out = ranges.copy()
+    out[0][removed_valid] = maxz
+    return (out, (si & ~removed_invalid)[None], (nr | removed_valid | removed_invalid)[None], info)
 
 
 def gazebo_frame(packet):
-    """S4's RGB-D wire packet; ranges/lidar_t are deliberately never inspected."""
+    """S4's RGB-D wire packet; ranges/lidar_t are deliberately never inspected.
+
+    Repair r1 (F10), REP 117 semantics: Gazebo's +inf (no hit, e.g. the sky) stays z = +inf and
+    unflagged, which the runtime classifies as z > MaxZ, i.e. no-return (never near). NaN, -inf and
+    z <= 0 stay sensor-invalid. SITL camera results before and after this change are not comparable.
+    """
     hfov = math.radians(87.)
     f = 160/(2*math.tan(hfov/2))
     z = np.asarray(packet['depth'])
-    return {'rgb': packet['rgb'], 'depth_z_m': z, 'invalid': ~np.isfinite(z) | (z <= 0),
+    return {'rgb': packet['rgb'], 'depth_z_m': z, 'invalid': np.isnan(z) | np.isneginf(z) | (z <= 0),
             'rgb_t': packet['rgb_t'], 'depth_t': packet['depth_t'],
             'intrinsics': {'width': 160, 'height': 90, 'fx': f, 'fy': f, 'cx': 79.5, 'cy': 44.5},
             'aligned': True, 'rectified': True, 'mount_flu_m': [.1, 0, .03],
@@ -278,6 +488,10 @@ class CameraPolicyRuntime:
         """Stop reuse after the companion rejects a tick following inference."""
         self.failed = True
 
+    def height_band(self, state):
+        """height_band() with this runtime's contract; reads no history and changes nothing."""
+        return height_band(state, self.contract)
+
     def _validate_timing(self, frame, state, now_s):
         try:
             stamps = np.array([frame['rgb_t'], frame['depth_t'], state['t']], np.float64)
@@ -298,16 +512,58 @@ class CameraPolicyRuntime:
             raise InputError('control period differs from trained 10 Hz; reset required')
         return stamps, now
 
+    def goal_coloured(self, rgb, ranges):
+        """The production colour rule on the projected frame: the perception's own segmenter score
+        >= its pixel_threshold (0.55), exactly the first term of _detect_rgbd's mask. rgb [1,3,H,W] in
+        [0, 1]; ranges [1,H,W] (MaxZ at masked pixels; the bootstrap head has zero depth weight)."""
+        torch, perception = self.torch, self.perception
+        with torch.no_grad():
+            score = perception.segmenter(torch.from_numpy(np.ascontiguousarray(rgb)),
+                                         torch.from_numpy(np.ascontiguousarray(ranges)), perception.max_camera_range)
+        return (score >= perception.pixel_threshold).numpy()
+
+    def preprocess(self, frame, state):
+        """Measured frame -> the trained camera's RGB and depth tensors; no history is read or changed.
+
+        Order: projection (sensor-invalid / no-return split) -> goal-coloured sensor-invalid pixels
+        become no-return -> optional floor/ceiling removal -> blob_near on the sensor-invalid mask
+        ONLY -> RGB blanking. No-return pixels hold MaxZ and are never turned into a near surface.
+        Repair r1 (F5): a sensor-invalid pixel that the production colour rule (goal_coloured) scores
+        as goal-coloured becomes no-return and keeps its RGB: it is not near, so it adds no phantom
+        obstacle at the goal's bearing, and its MaxZ depth drops it from the goal mask through the
+        detector's own depth < max range gate, so it cannot bias the goal range either. This is the
+        training carve-out of target pixels without the range bias. Other sensor-invalid pixels are
+        unchanged. Blanking (RGB 0) of the remaining sensor-invalid (hence every near) and no-return
+        pixels keeps the colour detector from taking its range from a substituted MinZ surface.
+        """
+        rgb, ranges, invalid, no_return, cosine, projection = project_rgbd(frame, state, self.contract)
+        goal = invalid & self.goal_coloured(rgb, ranges)
+        invalid, no_return = invalid & ~goal, no_return | goal
+        ranges, invalid, no_return, bands = remove_floor_and_ceiling(ranges, invalid, no_return, cosine,
+                                                                     state, self.contract)
+        torch = self.torch
+        depth, near = self.validity.apply_mask(torch.from_numpy(ranges), torch.from_numpy(invalid),
+                                              torch.from_numpy(cosine), min_z_m=self.contract['depth']['minz_m'],
+                                              window=self.contract['depth']['window'], density=self.contract['depth']['density'])
+        near_np = near.numpy()
+        blank = (invalid | no_return | near_np) & ~goal
+        rgb = np.where(blank[:, None], np.float32(0.), rgb).astype(np.float32)
+        counts = {'sensor_invalid_pixels': int(invalid.sum()), 'no_return_pixels': int(no_return.sum()),
+                  'near_pixels': int(near_np.sum()), 'goal_invalid_pixels': int(goal.sum()),
+                  'ground_removed_pixels': bands['ground']['removed_valid_pixels']
+                  + bands['ground']['removed_invalid_pixels'],
+                  'ceiling_removed_pixels': bands['ceiling']['removed_valid_pixels']
+                  + bands['ceiling']['removed_invalid_pixels'],
+                  'height_filter': bands, 'rgb_blanked_pixels': int(blank.sum())}
+        return torch.from_numpy(rgb), depth, counts, projection
+
     def step(self, frame, state, *, now_s):
         if self.failed:
             raise RuntimeError('runtime failed after state advance; reset required')
         p, v, _, yaw, rate, _ = validate_state(state)
         stamps, now = self._validate_timing(frame, state, now_s)
-        rgb, ranges, invalid, cosine, projection = project_rgbd(frame, state, self.contract)
+        rgb, depth, counts, projection = self.preprocess(frame, state)
         torch = self.torch
-        depth, near = self.validity.apply_mask(torch.from_numpy(ranges), torch.from_numpy(invalid),
-                                              torch.from_numpy(cosine), min_z_m=self.contract['depth']['minz_m'],
-                                              window=self.contract['depth']['window'], density=self.contract['depth']['density'])
         T = lambda x: torch.as_tensor(x, dtype=torch.float32).reshape(1, -1)
         # Shape compatibility only, exactly as trained: no measured or rendered
         # LiDAR is accepted, looked up or used in perception/the governor.
@@ -315,7 +571,7 @@ class CameraPolicyRuntime:
         qyaw = [0., 0., math.sin(yaw/2), math.cos(yaw/2)]
         self.failed = True
         with torch.inference_mode():
-            obs, diag = self.perception.observe(rgb=torch.from_numpy(rgb), depth=depth, lidar_m=no_lidar,
+            obs, diag = self.perception.observe(rgb=rgb, depth=depth, lidar_m=no_lidar,
                 drone_pos_w=T(p), drone_vel_w=T(v), vehicle_quat=T(qyaw),
                 yaw_rate=torch.tensor([rate/float(self.tc.yaw_rate_max)]), previous_action=self.prev,
                 max_velocity=self.tc.max_velocity, flight_altitude=self.tc.flight_altitude, training=False)
@@ -347,7 +603,15 @@ class CameraPolicyRuntime:
                 'yaw_rate_rps': float(a[0, 3])*float(self.tc.yaw_rate_max),
                 'previous_action': prev[0].tolist(), 'actor_output': a[0].tolist(),
                 'observation': obs[0].tolist(), 'camera_visible': bool(diag['camera_visible'][0]),
-                'lidar_visible': bool(diag['lidar_visible'][0]), 'depth_near_pixels': int(near.sum()),
+                'lidar_visible': bool(diag['lidar_visible'][0]),
+                # depth_near_pixels is the historical name of near_pixels, kept for existing readers.
+                'depth_near_pixels': counts['near_pixels'], 'near_pixels': counts['near_pixels'],
+                'sensor_invalid_pixels': counts['sensor_invalid_pixels'],
+                'no_return_pixels': counts['no_return_pixels'],
+                'ground_removed_pixels': counts['ground_removed_pixels'],
+                'ceiling_removed_pixels': counts['ceiling_removed_pixels'], 'height_filter': counts['height_filter'],
+                'rgb_blanked_pixels': counts['rgb_blanked_pixels'],
+                'goal_invalid_pixels': counts['goal_invalid_pixels'],
                 'projection': projection, 'checkpoint_sha256': self.contract['checkpoint']['sha256'],
                 'command_sent': False}
 
@@ -356,13 +620,15 @@ def replay(runtime, data, output):
     """Recorded inputs only; no target state or simulator is ever constructed."""
     meta = json.loads(str(data['camera_metadata'].item()))
     required = ('rgb', 'depth_z_m', 'invalid', 'rgb_t', 'depth_t', 'pos', 'vel', 'quat_xyzw', 'yaw_rate_rps', 'state_t', 'now_s')
-    counts = {len(data[k]) for k in required}
+    # Optional per-frame source coverage (False = not imaged, e.g. undistortion border).
+    optional = ('coverage',) if 'coverage' in data else ()
+    counts = {len(data[k]) for k in required + optional}
     if len(counts) != 1 or next(iter(counts)) == 0:
         raise InputError('replay arrays must contain equal nonzero frame counts')
     count = 0
     with Path(output).open('x') as stream:
         for i in range(next(iter(counts))):
-            frame = dict(meta, **{k: data[k][i] for k in ('rgb', 'depth_z_m', 'invalid', 'rgb_t', 'depth_t')})
+            frame = dict(meta, **{k: data[k][i] for k in ('rgb', 'depth_z_m', 'invalid', 'rgb_t', 'depth_t') + optional})
             state = {k: data[k][i] for k in ('pos', 'vel', 'quat_xyzw', 'yaw_rate_rps')}
             state['t'] = data['state_t'][i]
             result = runtime.step(frame, state, now_s=data['now_s'][i])

@@ -239,6 +239,33 @@ class OakDTest(unittest.TestCase):
             with self.assertRaisesRegex(TimeoutError, "service interval exceeded"):
                 capture.frames(deadline=clock() + 0.2, service=lambda: None)
 
+    def test_undistortion_border_is_reported_as_coverage_not_only_as_invalid_depth(self):
+        # Positive control: no distortion -> every rectified pixel is covered.
+        _, _, invalid, coverage = self.rectifier.apply(self.bgr, self.depth)
+        self.assertEqual(coverage.dtype, np.bool_)
+        self.assertTrue(coverage.all())
+        self.assertEqual(int(invalid.sum()), 1)
+        # Strong pincushion distortion (k1 > 0) with the same K: rectified corners sample outside the raw image.
+        warped = C.Rectifier([[30.0, 0, 19.5], [0, 30.0, 14.5], [0, 0, 1]], [0.45, 0.0, 0.0, 0.0, 0.0],
+                             width=40, height=30)
+        bgr = np.full((30, 40, 3), 200, np.uint8)
+        depth = np.full((30, 40), 1500, np.uint16)
+        rgb, z, invalid, coverage = warped.apply(bgr, depth)
+        border = ~coverage
+        self.assertGreater(int(border.sum()), 0)
+        self.assertGreater(int(coverage.sum()), 0)
+        self.assertTrue(border[0, 0] and border[-1, -1] and coverage[15, 20])
+        # The remap writes zero depth there; coverage is what tells the runtime it is not a sensor return.
+        self.assertTrue(np.all(invalid[border]) and np.all(z[border] == 0))
+        self.assertFalse(invalid[coverage].any())
+        self.assertIn("coverage", warped.provenance())
+
+    def test_capture_frame_carries_coverage(self):
+        capture, clock = self.capture([self.group()])
+        frame = capture.frames(deadline=clock() + 0.2, service=lambda: None)
+        self.assertEqual(frame["coverage"].shape, frame["invalid"].shape)
+        self.assertTrue(frame["coverage"].all())
+
     def test_measured_camera_coverage_accepts_wide_and_rejects_cropped_input(self):
         wide = C.Rectifier([[2.0, 0, 1.5], [0, 1.5, 1.0], [0, 0, 1]], [0.0] * 5, width=4, height=3)
         wide.require_training_fov()

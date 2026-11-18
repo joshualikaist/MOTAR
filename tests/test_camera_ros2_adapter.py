@@ -27,10 +27,11 @@ def image(array, encoding, *, big=False, padding=0):
 
 
 def info():
+    # A real sensor_msgs/CameraInfo always carries D; empty D = no distortion (all pixels covered).
     return NS(header=header("camera_optical"), width=2, height=2, binning_x=0, binning_y=0,
               roi=NS(x_offset=0, y_offset=0, height=0, width=0, do_rectify=False),
               k=[90., 0, 0.5, 0, 90., 0.5, 0, 0, 1], r=np.eye(3).ravel().tolist(),
-              p=[20., 0, 0.5, 0, 0, 21., 0.5, 0, 0, 0, 1, 0])
+              p=[20., 0, 0.5, 0, 0, 21., 0.5, 0, 0, 0, 1, 0], d=[], distortion_model="")
 
 
 def odometry(yaw=0.0):
@@ -77,10 +78,18 @@ class RosConvertersTest(unittest.TestCase):
             z, invalid = C.decode_depth(image(source, "16UC1", big=big, padding=3))
             np.testing.assert_allclose(z, [[1., 0.], [2.5, 0.4]], atol=1e-6)
             np.testing.assert_array_equal(invalid, [[False, True], [False, False]])
+        # REP 117 (r2, 2026-11-12): +Inf is "no return within range", not a sensor-invalid return. It used to
+        # be pinned here as invalid, which made a dense +Inf region read as a 0.4 m surface under blob_near.
+        # It now stays z = +inf with invalid False, which the runtime classifies as z > MaxZ -> no-return.
+        # -Inf (too close), NaN (invalid) and a finite z <= 0 remain sensor-invalid with z = 0.
         source = np.array([[1.5, float("nan")], [-1., float("inf")]], ">f4")
         z, invalid = C.decode_depth(image(source, "32FC1", big=True, padding=4))
-        np.testing.assert_array_equal(z, [[1.5, 0], [0, 0]])
-        np.testing.assert_array_equal(invalid, [[False, True], [True, True]])
+        np.testing.assert_array_equal(z, [[1.5, 0], [0, np.inf]])
+        np.testing.assert_array_equal(invalid, [[False, True], [True, False]])
+        source = np.array([[float("-inf"), 0.], [2.5, float("inf")]], "<f4")
+        z, invalid = C.decode_depth(image(source, "32FC1"))
+        np.testing.assert_array_equal(z, [[0, 0], [2.5, np.inf]])
+        np.testing.assert_array_equal(invalid, [[True, True], [False, False]])
         with self.assertRaisesRegex(C.RosInputError, "encoding"):
             C.decode_depth(image(self.z, "mono16"))
 
@@ -124,6 +133,25 @@ class RosConvertersTest(unittest.TestCase):
         self.assertTrue(frame["invalid"][0, 1])
         self.assertNotIn("ranges", frame)
         self.assertTrue(frame["aligned"] and frame["rectified"])
+
+    def test_odometry_bracket_interpolates_to_rgb_time_and_refuses_non_bracketing_pairs(self):
+        rgb, depth, cam = image(self.rgb, "rgb8"), image(self.z, "16UC1"), info()
+        before, after = odometry(), odometry()
+        before.header.stamp = NS(sec=2, nanosec=990000000)
+        after.header.stamp = NS(sec=3, nanosec=10000000)
+        after.pose.pose.position.x = 1.04
+        frame, state = C.build_frame(rgb, depth, cam, after, self.binding, odometry_bracket=(before, after))
+        self.assertTrue(frame["pose_provenance"]["pose_interpolated"])
+        self.assertEqual(state["t"], 3.0)
+        self.assertAlmostEqual(state["pos"][0], 1.02, places=9)
+        self.assertEqual(set(state), {"pos", "vel", "quat_xyzw", "yaw_rate_rps", "t"})
+        # Without a bracket the nearest sample is used as before (control).
+        frame, state = C.build_frame(rgb, depth, cam, after, self.binding)
+        self.assertFalse(frame["pose_provenance"]["pose_interpolated"])
+        self.assertAlmostEqual(frame["pose_provenance"]["pose_skew_s"], 0.01, places=9)
+        self.assertEqual(state["pos"][0], 1.04)
+        with self.assertRaisesRegex(C.RosInputError, "extrapolation"):
+            C.build_frame(rgb, depth, cam, after, self.binding, odometry_bracket=(after, after))
 
     def test_frame_alignment_clock_skew_and_unconfigured_binding_rejected(self):
         rgb, depth, cam, odom = image(self.rgb, "rgb8"), image(self.z, "16UC1"), info(), odometry()

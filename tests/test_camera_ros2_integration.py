@@ -15,17 +15,22 @@ SCRIPT = r'''
 import json,math,sys,tempfile
 from pathlib import Path
 import numpy as np
-from camera_policy_contract import build_contract
+from camera_policy_contract import build_contract,estimator_height_assertion
 from camera_policy_runtime import CameraPolicyRuntime
 from camera_ros2_session import RosPolicySession
 from camera_ros2_px4 import Px4MessageBinding,PX4_VERSION,PX4_MESSAGE_SHA256
 from camera_ros2_px4_node import BridgeSession,unconfigured_template
 from test_camera_ros2_session import binding,messages
 from test_camera_ros2_px4 import snapshot
-c=build_contract(int(sys.argv[1]))
+# Repair r1 (F6): estimator-height assertion as a CPU fixture; (F8): publication needs a fence or a waiver.
+evidence_dir=tempfile.TemporaryDirectory()
+evidence=Path(evidence_dir.name)/'estimator_height_fixture.txt'
+evidence.write_text('CPU test fixture: estimator z is the synthetic height above the floor. Not evidence.')
+c=build_contract(int(sys.argv[1]),estimator_height=estimator_height_assertion(evidence))
 runtime=CameraPolicyRuntime(c)
 cfg=unconfigured_template()
-cfg.update(status='CONFIGURED',enable_offboard_publication=True,frames=dict(world='odom',body='base_link'))
+cfg.update(status='CONFIGURED',enable_offboard_publication=True,frames=dict(world='odom',body='base_link'),
+           geofence_waiver=dict(reason='CPU software composition fixture; geofence covered by test_camera_runtime_fixes_r2'))
 bridge=BridgeSession(cfg,Px4MessageBinding(PX4_VERSION,PX4_MESSAGE_SHA256,'synthetic software composition only'))
 pairs=[]
 with tempfile.TemporaryDirectory() as tmp:

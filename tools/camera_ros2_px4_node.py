@@ -16,12 +16,55 @@ import time
 
 
 def unconfigured_template():
+    """Observation-only template. `geofence` is required and disabled here; enabling it needs the measured
+    flyable inner box (room minus the operator's margin) in frame px4_local_enu (x east, y north, metres, PX4
+    EKF local origin) and a measured latency_s covering estimator-to-response delay plus the 0.1 s gateway
+    period. decel_mps2 defaults to the trained governor's braking deceleration. No stand-in values: the box and
+    latency stay null until measured, and an enabled fence with a missing, non-finite or narrower-than-0.5 m
+    box refuses to load (camera_ros2_px4.Geofence). This literal block equals camera_ros2_px4.geofence_template().
+    A disabled block must leave the box and latency null. Repair r1 (F8): `enable_offboard_publication: true`
+    is refused unless the geofence is enabled and valid, or `geofence_waiver` is {"reason": "<non-empty text>"}
+    (the operator's explicit, recorded decision to fly without the fence). The waiver stays null here.
+    """
     return dict(format='motar-ros2-px4-node-v1', status='UNCONFIGURED',
         px4_msgs_msg_dir=None, firmware=dict(version='v1.14.3', source=None),
         frames=dict(world=None, body=None),
         topics=dict(velocity='/motar/policy/velocity_enu', odometry='/motar/state/odometry',
                     diagnostics='/motar/px4/diagnostics'),
-        enable_offboard_publication=False, flight_checks_provenance=None)
+        enable_offboard_publication=False, flight_checks_provenance=None,
+        geofence=dict(enabled=False, frame='px4_local_enu', x_min_m=None, x_max_m=None, y_min_m=None,
+                      y_max_m=None, decel_mps2=2.9608856678, latency_s=None),
+        geofence_waiver=None)
+
+
+def geofence_waiver_problem(config):
+    """Structural check of `geofence_waiver`: null, or {"reason": non-empty string} with a disabled fence
+    and enabled publication (a waiver never accompanies an enabled fence or an observation-only config)."""
+    waiver = config['geofence_waiver']
+    if waiver is None:
+        return None
+    if not isinstance(waiver, dict) or set(waiver) != {'reason'}:
+        return 'geofence_waiver must be null or exactly {"reason": "<non-empty text>"}'
+    if not isinstance(waiver['reason'], str) or not waiver['reason'].strip():
+        return 'geofence_waiver.reason must be a non-empty string'
+    if config['geofence'].get('enabled') is True:
+        return 'geofence_waiver conflicts with an enabled geofence; remove one of them'
+    if config['enable_offboard_publication'] is not True:
+        return 'observation-only configuration must leave geofence_waiver null'
+    return None
+
+
+def offboard_geofence_problem(config):
+    """None when offboard publication may start: the geofence is enabled (validated separately) or an explicit
+    waiver with a reason is configured. Otherwise the refusal text (repair r1, F8)."""
+    if config['enable_offboard_publication'] is not True:
+        return None
+    if config['geofence'].get('enabled') is True:
+        return None
+    if config['geofence_waiver'] is not None and geofence_waiver_problem(config) is None:
+        return None
+    return ('offboard publication requires an enabled, measured geofence or an explicit geofence_waiver '
+            'with a reason')
 
 
 def verify_message_definitions(directory):
@@ -84,8 +127,10 @@ def load_node_config(config_path, source_root):
         raise ValueError('enable_offboard_publication must be boolean')
     if set(raw['firmware']) != {'version', 'source'}:
         raise ValueError('explicit target firmware declaration required')
-    from camera_ros2_px4 import Px4MessageBinding, PX4_MESSAGE_SHA256
+    from camera_ros2_px4 import Geofence, Px4MessageBinding, PX4_MESSAGE_SHA256
     binding = Px4MessageBinding(raw['firmware']['version'], PX4_MESSAGE_SHA256, raw['firmware']['source'])
+    # Required block; an enabled fence with a missing/non-finite/narrow box refuses before any publisher exists.
+    Geofence.from_config(raw['geofence'])
     raw['px4_msgs_msg_dir'] = str(verify_message_definitions(raw['px4_msgs_msg_dir']))
     proof = raw['flight_checks_provenance']
     if raw['enable_offboard_publication']:
@@ -96,6 +141,9 @@ def load_node_config(config_path, source_root):
             raise ValueError('flight-check record differs from binding')
     elif proof is not None:
         raise ValueError('observation template must leave flight-check record unbound')
+    problem = geofence_waiver_problem(raw) or offboard_geofence_problem(raw)
+    if problem:
+        raise ValueError(problem)
     return raw, binding
 
 
@@ -109,7 +157,11 @@ class BridgeSession:
     def __init__(self, config, binding):
         from camera_ros2_px4 import Px4OffboardGateway
         self.config = copy.deepcopy(config)
-        self.gate = Px4OffboardGateway(binding, command_frame_id=config['frames']['world'])
+        self.gate = Px4OffboardGateway(binding, command_frame_id=config['frames']['world'],
+                                       geofence=config['geofence'])
+        problem = geofence_waiver_problem(self.config)
+        if problem:
+            raise ValueError(problem)
         self.messages, self.receipts, self.identities = {}, {}, {}
         self.fault = None
         self.command = self.command_receipt = None
@@ -177,6 +229,10 @@ class BridgeSession:
         try:
             if self.fault or not self.config['enable_offboard_publication']:
                 raise ValueError(self.fault or 'observation only; offboard publishers disabled')
+            # F8: publication never starts without an enabled fence or an explicit waiver.
+            problem = offboard_geofence_problem(self.config)
+            if problem:
+                raise ValueError(problem)
             self._state(now, wall)
             # Calling prime_from_manual_hover is the operator's explicit handover.
             # The software cannot infer airborne/stable hover from an armed bit.
@@ -189,6 +245,21 @@ class BridgeSession:
         except Exception as exc:
             self.revoke(str(exc))
             raise
+
+    def reset_geofence(self, *, now, wall):
+        """Operator reset of a latched geofence fault (fresh position inside the box required)."""
+        if self.fault:
+            raise ValueError(self.fault)
+        try:
+            return self.gate.reset_geofence(self.snapshot(), now_s=now, now_monotonic_s=wall)
+        finally:
+            if self.gate.state == 'REVOKED':
+                self.revoke(self.gate.reason)
+
+    def diagnostics(self):
+        return dict(state=self.gate.state, fault=self.fault, geofence=self.gate.geofence.metadata(),
+                    geofence_waiver=copy.deepcopy(self.config['geofence_waiver']),
+                    geofence_fault=self.gate.geofence_fault, geofence_record=self.gate.geofence_record)
 
     def poll(self, *, now, wall):
         """Return (new measured state or None, new offboard pair or None)."""
@@ -275,6 +346,7 @@ def make_node_class():
             self._subs.append(self.create_subscription(TwistStamped, config['topics']['velocity'], self._command, qos))
             self._prime_srv = self.create_service(Trigger, '~/prime_from_manual_hover', self._prime)
             self._stop_srv = self.create_service(Trigger, '~/stop', self._stop)
+            self._geofence_srv = self.create_service(Trigger, '~/reset_geofence', self._reset_geofence)
             self._clock = Clock(clock_type=ClockType.STEADY_TIME)
             self._timer = self.create_timer(.02, self._poll, clock=self._clock)
 
@@ -328,6 +400,14 @@ def make_node_class():
             response.success, response.message = True, 'streams stopped; pilot/qualified PX4 loss response owns recovery'
             return response
 
+        def _reset_geofence(self, request, response):
+            try:
+                cleared = self._session.reset_geofence(now=self.get_clock().now().nanoseconds/1e9, wall=time.monotonic())
+                response.success, response.message = True, 'geofence fault cleared inside the box: '+cleared
+            except Exception as exc:
+                response.success, response.message = False, str(exc)
+            return response
+
         def _publish_odometry(self, state):
             message = Odometry()
             sec, ns = stamp_parts(state['t'])
@@ -368,7 +448,7 @@ def make_node_class():
                 self._session.revoke('ROS publication failed: '+str(exc))
             if wall-self._last_diag >= 1.:
                 message = String()
-                message.data = json.dumps(dict(state=self._session.gate.state, fault=self._session.fault,
+                message.data = json.dumps(dict(self._session.diagnostics(),
                     mode='OFFBOARD_CAPABLE' if self._publishers else 'OBSERVATION_ONLY',
                     hardware='NOT_TESTED', dds_delivery='NOT_TESTED'))
                 self._diag.publish(message)
@@ -392,7 +472,9 @@ def main(ros_args=None, *, config_path, source_root, check_only=False):
         raise
     if check_only:
         print(json.dumps(dict(status='CONFIG_VALID', mode='OFFBOARD_CAPABLE' if config['enable_offboard_publication']
-                        else 'OBSERVATION_ONLY', binding=binding.metadata(), ros_graph='NOT_STARTED')))
+                        else 'OBSERVATION_ONLY', binding=binding.metadata(),
+                        geofence='ENABLED' if config['geofence']['enabled'] is True else 'DISABLED',
+                        geofence_waiver=config['geofence_waiver'], ros_graph='NOT_STARTED')))
         return 0
     import rclpy
     node = None

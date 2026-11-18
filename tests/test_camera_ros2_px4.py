@@ -42,7 +42,7 @@ def decode(s, now=100., mono=20.):
 
 
 def activate():
-    gate = P.Px4OffboardGateway(binding(), command_frame_id="map")
+    gate = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
     gate.prime(snapshot(), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
     for i in range(1, 11):
         now, mono = 100.+i/10, 20.+i/10
@@ -70,7 +70,7 @@ class MessageBindingTest(unittest.TestCase):
         with self.assertRaises(TypeError):
             good.message_sha256["VehicleStatus.msg"] = "x"
         with self.assertRaises(P.GatewayError):
-            P.Px4OffboardGateway(None, command_frame_id="map")
+            P.Px4OffboardGateway(None, command_frame_id="map", geofence=P.geofence_template())
 
     def test_pinned_definitions_match_local_primary_source_when_available(self):
         msg = Path("/home/fair/workspaces/px4_ws/PX4-Autopilot/msg")
@@ -162,7 +162,7 @@ class SetpointEncoderTest(unittest.TestCase):
 
 class PublicationGatewayTest(unittest.TestCase):
     def test_disabled_then_continuous_neutral_prime_then_manual_active(self):
-        g = P.Px4OffboardGateway(binding(), command_frame_id="map")
+        g = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
         self.assertIsNone(g.update({}, now_s=100., now_monotonic_s=20.))
         result = g.prime(snapshot(), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
         self.assertEqual(g.state, "PRIMING")
@@ -173,7 +173,7 @@ class PublicationGatewayTest(unittest.TestCase):
         self.assertEqual(active._command_contract, "oldest_capture_twist_enu_v1")
 
     def test_elapsed_time_without_continuous_proposals_cannot_claim_priming(self):
-        g = P.Px4OffboardGateway(binding(), command_frame_id="map")
+        g = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
         g.prime(snapshot(), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
         self.assertIsNone(g.update(snapshot(101.1, 21.1, nav=14), command(101.1),
                                    command_received_monotonic_s=21.1, now_s=101.1, now_monotonic_s=21.1))
@@ -182,15 +182,15 @@ class PublicationGatewayTest(unittest.TestCase):
         self.assertEqual(activate().state, "ACTIVE")
 
     def test_early_offboard_or_unarmed_activation_refuses(self):
-        g = P.Px4OffboardGateway(binding(), command_frame_id="map")
+        g = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
         g.prime(snapshot(), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
         self.assertIsNone(g.update(snapshot(100.1, 20.1, nav=14), command(100.1),
                                    command_received_monotonic_s=20.1, now_s=100.1, now_monotonic_s=20.1))
         self.assertIn("before continuous priming", g.reason)
-        g = P.Px4OffboardGateway(binding(), command_frame_id="map")
+        g = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
         with self.assertRaisesRegex(P.GatewayError, "POSITION hover before OFFBOARD"):
             g.prime(snapshot(nav=14), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
-        g = P.Px4OffboardGateway(binding(), command_frame_id="map")
+        g = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
         g.prime(snapshot(), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
         for i in range(1, 11):
             g.update(snapshot(100+i/10, 20+i/10), now_s=100+i/10, now_monotonic_s=20+i/10)
@@ -302,7 +302,7 @@ class PublicationGatewayTest(unittest.TestCase):
         self.assertEqual(activate().state, "ACTIVE")
 
     def test_native_capture_contract_can_activate_without_inventing_twist_stamps(self):
-        g = P.Px4OffboardGateway(binding(), command_frame_id="map")
+        g = P.Px4OffboardGateway(binding(), command_frame_id="map", geofence=P.geofence_template())
         g.prime(snapshot(), now_s=100., now_monotonic_s=20., manual_hover_handover=True)
         for i in range(1, 11):
             g.update(snapshot(100+i/10, 20+i/10), now_s=100+i/10, now_monotonic_s=20+i/10)

@@ -979,6 +979,13 @@ family that is in the test's scope.
     package and a separate default-observation PX4 gateway. Actual ROS graph/DDS/localization/flight remain NOT_TESTED.
     Independent review PASS_WITH_LIMITS; no simulator/hardware/flight qualification, S3a-R remains HOLD.
     [Runtime record](evidence/sitl_2026-11-05/camera_runtime/README.md).
+  - **Camera-runtime deployment fixes (2026-11-12/13, CPU source only):** floor/ceiling plane rule bounded to
+    [MinZ, MaxZ], invalid-depth kinds, pose interpolation, directional geofence clamp with a latched breach hold,
+    altitude gating and an explicit estimator-height assertion. Independent review r1 PASS_WITH_FIXES; repair r1
+    (F1-F10) not separately re-reviewed. ROS graph, PX4 and camera NOT_TESTED.
+    [Fix r1](evidence/sitl_2026-11-05/camera_runtime/ROS2_FIX_r1.md),
+    [review r1](evidence/sitl_2026-11-05/camera_runtime/ROS2_FIX_REVIEW_r1.md),
+    [repair r1](evidence/sitl_2026-11-05/camera_runtime/ROS2_FIX_REPAIR_r1.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

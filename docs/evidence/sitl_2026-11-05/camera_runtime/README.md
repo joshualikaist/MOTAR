@@ -191,3 +191,37 @@ person/object detector. Physical preparation remains INCOMPLETE and S3a-R HOLD.
 No ROS/device/simulator/GPU/flight execution, new checkpoint, commit, push or merge
 was performed. The following source unit does not supersede the original runtime
 validation or create an execution authorization.
+
+## Runtime fixes, 2026-11-12, and review repair, 2026-11-13
+
+This section describes the camera runtime after the deployment fixes of 2026-11-12 (r1 and r2) and the repair of
+the independent review's findings on 2026-11-13. The sections above are unchanged and describe the runtime as it
+was on 2026-11-11. The work records are outside Git in `/home/fair/motar_tmp/ros2_runtime_fix_20261112/`
+(`FIX_r1.md`, `FIX_r2.md`, `review_r1/REVIEW.md`, `REPAIR_r1.md`). CPU tests only: no Gazebo, GPU, ROS graph or
+hardware was run, so the runtime remains NOT_TESTED in simulation and on the vehicle.
+
+What the runtime does now, on every path that calls `CameraPolicyRuntime.step` (ROS node, OAK-D companion,
+`tools/sitl_camera.py` and the CPU replay):
+
+- Source pixels are split into sensor-invalid (the sensor's own invalid return: flag, NaN, z < MinZ) and no-return
+  (not imaged, or z > MaxZ including +inf). Only a dense sensor-invalid blob becomes a near surface, as in training.
+  A tilt band, an undistortion border and a far region are no-return instead of a 0.4 m phantom wall.
+- An optional same-frame coverage mask (OAK-D remap, or CameraInfo K, D, R, P on the ROS path) marks the
+  undistortion border as no-return. Coverage that contradicts a valid depth return refuses the frame.
+- On the tilted path a trained pixel is sensor-invalid when at least half of the samples landing on it are.
+- Floor removal of valid returns by hit height is on by default, the ceiling filter needs a measured height, and
+  the plane rule for sensor-invalid pixels is opt-in and off by default. An enabled filter requires the operator's
+  hash-bound assertion that the estimator z is the height above the floor; without it every frame is refused.
+- A sensor-invalid pixel that the production colour rule scores as goal-coloured is no-return; other substituted
+  pixels are black before the colour detector, so the goal range never uses a substituted surface.
+- The ROS path interpolates the pose to the RGB capture time, follows REP 117 for 32FC1 depth, waits without a
+  fault outside the height band, and its PX4 gateway limits the published velocity to a measured box with one
+  direction-preserving scale; offboard publication needs an enabled fence or an explicit, reasoned waiver.
+
+The SITL camera path changed with it. `tools/sitl_camera.py` calls the same `runtime.step`, so Gazebo frames now get
+the floor filter of the default contract (which refuses every frame until the contract carries the estimator-height
+assertion, or is built with `--no-ground-removal`), Gazebo's +inf (no hit, such as the sky) is no-return instead of
+sensor-invalid, and the tilted path uses the share rule. SITL camera results produced before and after these changes
+are therefore not comparable; a rerun writes to a new folder. Every policy contract generated before these changes
+is invalid because the bound source hashes and the contract schema changed; rebuild it with
+`tools/camera_policy_contract.py --output`.

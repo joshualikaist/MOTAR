@@ -24,6 +24,8 @@ import numpy as np
 SCHEMA = "motar-ros2-rgbd-v1"
 MAX_DIMENSION = 4096
 MAX_SKEW_S = 0.025
+# Two odometry samples farther apart than the 0.15 s input age bound are never interpolated.
+MAX_POSE_BRACKET_S = 0.15
 # A camera-FLU vector becomes a ROS optical (right, down, forward) vector.
 CAMERA_FLU_TO_OPTICAL = np.array([[0., -1., 0.], [0., 0., -1.], [1., 0., 0.]])
 
@@ -172,6 +174,14 @@ def decode_rgb(msg):
 
 
 def decode_depth(msg):
+    """Return (optical z [m] float32, sensor-invalid mask), with REP 117 semantics for 32FC1.
+
+    REP 117 (https://ros.org/reps/rep-0117.html): +Inf means no return within range (too far),
+    -Inf means too close to measure, NaN means invalid. +Inf is therefore NOT sensor-invalid: it is
+    kept as z = +inf with invalid False, which the runtime classifies as z > MaxZ, i.e. no-return
+    (never near). -Inf and NaN are sensor-invalid (a dense blob may become near, as in training),
+    and so is a finite z <= 0. 16UC1 has no such codes: 0 stays invalid.
+    """
     encoding = getattr(msg, "encoding", None)
     if encoding not in ("16UC1", "32FC1"):
         raise RosInputError("depth Image encoding must be 16UC1 millimetres or 32FC1 metres")
@@ -181,9 +191,71 @@ def decode_depth(msg):
     z = data.view(dtype).reshape(height, width).astype(np.float32)
     if encoding == "16UC1":
         z *= 0.001
-    invalid = ~np.isfinite(z) | (z <= 0)
+    out_of_range = np.isposinf(z) if encoding == "32FC1" else np.zeros(z.shape, bool)
+    invalid = ~out_of_range & (~np.isfinite(z) | (z <= 0))
     z[invalid] = 0.0
     return z, invalid
+
+
+# CameraInfo distortion models that cv2.initUndistortRectifyMap implements (REP 104 / image_geometry names).
+REMAP_DISTORTION_MODELS = ("plumb_bob", "rational_polynomial")
+_COVERAGE_CACHE = {}
+_COVERAGE_CACHE_SIZE = 4
+
+
+def camera_info_coverage(msg, *, width, height):
+    """Source coverage of the delivered rectified image from the CameraInfo's raw calibration.
+
+    With nonzero D, a ones image of the raw size is remapped through
+    cv2.initUndistortRectifyMap(K, D, R, P[:, :3]) with nearest interpolation and a zero border,
+    exactly as tools/oakd_camera.py does for the device path: False marks rectified pixels that lie
+    outside the raw image (the undistortion border), which the runtime treats as no-return, never
+    as a dense invalid (near) blob. With D empty or all zero there is no undistortion border and
+    coverage is all True. The case applied is recorded. Results are cached per CameraInfo content
+    and returned read-only. Unsupported models with nonzero D refuse (fail closed).
+    """
+    k = _finite(getattr(msg, "k", None), (9,), "CameraInfo.K").reshape(3, 3)
+    r = _finite(getattr(msg, "r", None), (9,), "CameraInfo.R").reshape(3, 3)
+    p = _finite(getattr(msg, "p", None), (12,), "CameraInfo.P").reshape(3, 4)
+    raw_d = getattr(msg, "d", None)
+    if raw_d is None:
+        raise RosInputError("CameraInfo.D missing; an empty D is required for undistorted images")
+    try:
+        d = np.asarray(list(raw_d), np.float64)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise RosInputError("CameraInfo.D must be numeric") from exc
+    if d.ndim != 1 or not np.isfinite(d).all():
+        raise RosInputError("CameraInfo.D must be a finite vector")
+    model = getattr(msg, "distortion_model", None)
+    model = model if isinstance(model, str) else None
+    key = (int(width), int(height), model, tuple(k.ravel().tolist()), tuple(d.tolist()),
+           tuple(r.ravel().tolist()), tuple(p.ravel().tolist()))
+    cached = _COVERAGE_CACHE.get(key)
+    if cached is None:
+        if not d.any():
+            coverage = np.ones((height, width), bool)
+            case = "zero_distortion_all_covered"
+        else:
+            if model not in REMAP_DISTORTION_MODELS or d.size not in (4, 5, 8, 12, 14):
+                raise RosInputError("nonzero CameraInfo.D needs a %s model with 4/5/8/12/14 coefficients"
+                                    % "/".join(REMAP_DISTORTION_MODELS))
+            try:
+                import cv2
+            except ImportError as exc:
+                raise RosInputError("OpenCV is required to derive undistortion coverage") from exc
+            mapx, mapy = cv2.initUndistortRectifyMap(k, d, r, np.ascontiguousarray(p[:, :3]), (width, height),
+                                                     cv2.CV_32FC1)
+            coverage = cv2.remap(np.ones((height, width), np.uint8), mapx, mapy, cv2.INTER_NEAREST,
+                                 borderMode=cv2.BORDER_CONSTANT, borderValue=0) == 1
+            case = "undistortion_remap"
+        coverage.flags.writeable = False
+        provenance = {"case": case, "distortion_model": model, "uncovered_pixels": int((~coverage).sum()),
+                      "method": "cv2.initUndistortRectifyMap(K, D, R, P), ones image, nearest, zero border"
+                      if case == "undistortion_remap" else "D all zero: no undistortion border"}
+        while len(_COVERAGE_CACHE) >= _COVERAGE_CACHE_SIZE:
+            _COVERAGE_CACHE.pop(next(iter(_COVERAGE_CACHE)))
+        cached = _COVERAGE_CACHE[key] = (coverage, provenance)
+    return cached[0], dict(cached[1])
 
 
 def rectified_camera_info(msg, *, expected_frame, width, height):
@@ -242,11 +314,52 @@ def odometry_state(msg, *, expected_world_frame, expected_body_frame):
             "yaw_rate_rps": float(angular[2]), "t": t}
 
 
-def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding):
+def _slerp(q0, q1, w):
+    """Shortest-arc spherical interpolation of unit xyzw quaternions, w in [0, 1]."""
+    q0, q1 = np.asarray(q0, np.float64), np.asarray(q1, np.float64)
+    dot = float(np.dot(q0, q1))
+    if dot < 0.0:
+        q1, dot = -q1, -dot
+    dot = min(dot, 1.0)
+    angle = math.acos(dot)
+    if angle < 1e-9:
+        q = (1.0 - w) * q0 + w * q1
+    else:
+        q = (math.sin((1.0 - w) * angle) * q0 + math.sin(w * angle) * q1) / math.sin(angle)
+    return q / np.linalg.norm(q)
+
+
+def interpolate_state(before, after, t):
+    """Estimator state at capture time t from two odometry states that bracket it.
+
+    Position, world velocity and yaw rate are linear in time; orientation is slerped.
+    Extrapolation and brackets longer than MAX_POSE_BRACKET_S are refused.
+    """
+    t0, t1, t = float(before["t"]), float(after["t"]), float(t)
+    if not t0 <= t <= t1:
+        raise RosInputError("odometry samples do not bracket the capture time; extrapolation refused")
+    if t1 - t0 > MAX_POSE_BRACKET_S + 1e-9:
+        raise RosInputError("odometry bracket exceeds %.3f s" % MAX_POSE_BRACKET_S)
+    if t1 == t0:
+        return dict(before)
+    w = (t - t0) / (t1 - t0)
+    mix = lambda key: ((1.0 - w) * np.asarray(before[key], np.float64) + w * np.asarray(after[key], np.float64))
+    return {"pos": mix("pos").tolist(), "vel": mix("vel").tolist(),
+            "quat_xyzw": _slerp(before["quat_xyzw"], after["quat_xyzw"], w).tolist(),
+            "yaw_rate_rps": float((1.0 - w) * before["yaw_rate_rps"] + w * after["yaw_rate_rps"]), "t": t}
+
+
+def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding, *, odometry_bracket=None):
     """Convert one synchronized sample; initialization must verify binding files first.
 
-    No receipt-time substitution, transform lookup or interpolation is performed.
-    All four acquisition timestamps must already share the declared ROS clock.
+    No receipt-time substitution or transform lookup is performed. All acquisition
+    timestamps must already share the declared ROS clock, and odom_msg (the nearest
+    selection) must lie within 0.025 s of the images as before. When the caller also
+    passes odometry_bracket = (before, after) with before.t <= rgb_t <= after.t, the
+    pose is interpolated to the RGB capture time (t = rgb_t). Otherwise the nearest
+    selection is used unchanged. frame['pose_provenance'] records which happened.
+    frame['coverage'] is the CameraInfo-derived source coverage (camera_info_coverage) and
+    frame['coverage_provenance'] records whether the undistortion remap or the zero-D case applied.
     A latched CameraInfo with an old/zero stamp is not supported by this contract;
     the producer must deliver capture-stamped calibration for the paired images.
     """
@@ -256,18 +369,33 @@ def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding):
     state = odometry_state(odom_msg, expected_world_frame=frames["world"], expected_body_frame=frames["body"])
     if max(times + [state["t"]]) - min(times + [state["t"]]) > MAX_SKEW_S + 1e-9:
         raise RosInputError("RGB/depth/CameraInfo/Odometry acquisition skew exceeds 0.025 s")
+    pose = {"pose_interpolated": False, "odometry_t": [state["t"]], "pose_skew_s": abs(state["t"] - times[0])}
+    if odometry_bracket is not None:
+        before, after = (odometry_state(m, expected_world_frame=frames["world"], expected_body_frame=frames["body"])
+                         for m in odometry_bracket)
+        interpolated = interpolate_state(before, after, times[0])
+        if after["t"] > before["t"]:
+            state = interpolated
+            pose = {"pose_interpolated": True, "odometry_t": [before["t"], after["t"]], "pose_skew_s": 0.0}
+        else:
+            # One sample exactly at the capture time: use it as is.
+            state = before
+            pose = {"pose_interpolated": False, "odometry_t": [before["t"]], "pose_skew_s": 0.0}
     rgb, (depth, invalid) = decode_rgb(rgb_msg), decode_depth(depth_msg)
     if rgb.shape[:2] != depth.shape:
         raise RosInputError("depth is not delivered on the RGB pixel grid")
     height, width = depth.shape
     intrinsics = rectified_camera_info(info_msg, expected_frame=frames["optical"], width=width, height=height)
+    coverage, coverage_provenance = camera_info_coverage(info_msg, width=width, height=height)
     geometry = binding["geometry"]
     camera_rotation = _rotation(geometry["optical_to_body_rotation"], "optical_to_body_rotation") @ CAMERA_FLU_TO_OPTICAL
-    frame = {"rgb": rgb, "depth_z_m": depth, "invalid": invalid, "rgb_t": times[0], "depth_t": times[1],
+    frame = {"rgb": rgb, "depth_z_m": depth, "invalid": invalid, "coverage": coverage,
+             "coverage_provenance": coverage_provenance, "rgb_t": times[0], "depth_t": times[1],
              "intrinsics": intrinsics, "aligned": True, "rectified": True,
              "mount_flu_m": list(geometry["mount_flu_m"]), "camera_to_body_rotation": camera_rotation.tolist(),
              "ros_provenance": {"optical_frame": frames["optical"], "world_frame": frames["world"],
                                 "body_frame": frames["body"], "camera_info_t": times[2],
                                 "clock": binding["clock"], "geometry": geometry["provenance"],
-                                "producer": binding["producer"]["provenance"]}}
+                                "producer": binding["producer"]["provenance"]},
+             "pose_provenance": pose}
     return frame, state

@@ -4,6 +4,30 @@ The local firmware source defines these messages. Binding its schema is a softwa
 actual flight-controller firmware, DDS delivery, clock alignment and offboard-loss response remain NOT_TESTED.
 uXRCE-DDS already translates timestamp/timestamp_sample to the agent clock. Receive ages use a separate monotonic
 clock. The caller owns calibrated camera stamps, message reception locks, actual publication and stop handling.
+
+Geofence (deployment layer, not training): the policy was trained in a 40 m open arena without walls, where
+leaving the arena only ended the episode, so a room's walls are outside its training. The gateway therefore
+limits the published XY velocity to a measured inner box (the room minus the operator's margin), whatever the
+policy commands. Frame `px4_local_enu`: x east, y north, metres, origin at the PX4 EKF local-position origin;
+it is the frame of decode_estimator()['pos'] (PX4 NED position, axes swapped) and of the gateway's published
+Odometry position.
+
+Clamp (repair r1, F2): the horizontal command v is scaled by ONE factor s in [0, 1], so its direction is kept.
+decel_mps2 = a is the horizontal deceleration NORM: the vehicle holds s*v for the latency tau, then brakes in a
+straight line at total deceleration a, so axis i travels s*|v_i|*tau + s^2*|v|*|v_i|/(2a). For every nonzero
+component pointing at its wall at distance d_i >= 0 this must not exceed d_i; the largest such s per axis is the
+positive root of that quadratic, and s = min(1, min over those axes). Components pointing away from a nearby
+wall impose a bound only from the far wall they point at (binding only in boxes narrower than their stopping
+distance); a zero component imposes none. Every component is scaled by the same s: a component parallel to a
+wall now slows together with the normal one. This preserves the command's direction and the total braking
+budget, like the trained speed governor, where the previous per-axis clamp assumed deceleration a on both axes
+at once and crossed a corner on a diagonal approach (0.419 m at d = 1.5 m, tau = 0.2 s, (2.5, 2.5) m/s).
+latency_s must cover the whole delay from the estimator sample to the vehicle's response, including the gateway's
+0.1 s publication period; it has no default. A crude closed-loop model (FIX_r2) needed latency_s of about
+2 x (vehicle response delay + 0.1 s): the transport latency alone is not enough, and it must be measured.
+decel_mps2 lies in (0, 10] m/s^2 and latency_s in (0, 1] s. The box is axis-aligned in px4_local_enu; the
+operator inscribes it in the room. A fresh position strictly outside the box sends zero XY velocity with the
+altitude hold and latches a geofence fault until reset_geofence() inside the box.
 """
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -31,10 +55,140 @@ TOPICS = {
     "trajectory_setpoint": "/fmu/in/trajectory_setpoint",
 }
 RESET_FIELDS = ("xy_reset_counter", "z_reset_counter", "vxy_reset_counter", "vz_reset_counter", "heading_reset_counter")
+GEOFENCE_FRAME = "px4_local_enu"
+GEOFENCE_KEYS = ("enabled", "frame", "x_min_m", "x_max_m", "y_min_m", "y_max_m", "decel_mps2", "latency_s")
+# The trained riskcap governor's braking deceleration: NAVRL_SPEED_GOVERNOR_BRAKE_MPS2 of the CAM-K2 v3 training
+# environment (docs/evidence/camonly_2026-11-04/camk2/train_report_v3_s*.json). Default only; not a vehicle measurement.
+GOVERNOR_BRAKE_MPS2 = 2.9608856678
+MIN_GEOFENCE_WIDTH_M = 0.5
+# Sanity bounds (repair r1, P3): not vehicle limits, only a refusal of implausible configuration values.
+MAX_GEOFENCE_DECEL_MPS2 = 10.0
+MAX_GEOFENCE_LATENCY_S = 1.0
 
 
 class GatewayError(ValueError):
     pass
+
+
+def geofence_template():
+    """Disabled geofence block: no stand-in box or latency is ever written."""
+    return {"enabled": False, "frame": GEOFENCE_FRAME, "x_min_m": None, "x_max_m": None, "y_min_m": None,
+            "y_max_m": None, "decel_mps2": GOVERNOR_BRAKE_MPS2, "latency_s": None}
+
+
+def stop_speed(distance_m, decel_mps2, latency_s):
+    """Largest speed that, held for latency_s and then braked at decel_mps2, stops within distance_m (>= 0).
+
+    The single-axis case of axis_scale (axis_scale(|v|, |v|, d, a, tau) * |v| equals it)."""
+    if not distance_m > 0.0:
+        return 0.0
+    reach = decel_mps2 * latency_s
+    return max(0.0, -reach + math.sqrt(reach * reach + 2.0 * decel_mps2 * distance_m))
+
+
+def axis_scale(component_mps, speed_mps, distance_m, decel_mps2, latency_s):
+    """Largest s >= 0 with s*c*tau + s^2*|v|*c/(2a) <= d, for a component c = |v_i| > 0 toward a wall at d.
+
+    Positive root of A s^2 + B s - d = 0 with A = |v| c / (2a), B = c tau, in the cancellation-free form
+    s = 2d / (B + sqrt(B^2 + 4 A d)); 0 at d <= 0."""
+    if not distance_m > 0.0:
+        return 0.0
+    a2 = speed_mps * component_mps / (2.0 * decel_mps2)
+    b = component_mps * latency_s
+    return 2.0 * distance_m / (b + math.sqrt(b * b + 4.0 * a2 * distance_m))
+
+
+@dataclass(frozen=True)
+class Geofence:
+    """Validated XY box in the px4_local_enu frame; a disabled fence carries no box."""
+    enabled: bool
+    x_min_m: float = None
+    x_max_m: float = None
+    y_min_m: float = None
+    y_max_m: float = None
+    decel_mps2: float = GOVERNOR_BRAKE_MPS2
+    latency_s: float = None
+
+    def __post_init__(self):
+        if type(self.enabled) is not bool:
+            raise GatewayError("geofence.enabled must be a JSON boolean")
+        if not self.enabled:
+            # Repair r1 (P3): a disabled block must not silently carry a box or latency that it ignores.
+            carried = [name for name in ("x_min_m", "x_max_m", "y_min_m", "y_max_m", "latency_s")
+                       if getattr(self, name) is not None]
+            if carried:
+                raise GatewayError("disabled geofence must leave %s null (enable it or remove the values)"
+                                   % ", ".join(carried))
+            if self.decel_mps2 is not None:
+                decel = self.decel_mps2
+                if isinstance(decel, (bool, np.bool_)) or not isinstance(decel, (int, float, np.integer, np.floating)):
+                    raise GatewayError("geofence.decel_mps2 must be a JSON number or null")
+                decel = _number(decel, "geofence.decel_mps2")
+                if not 0.0 < decel <= MAX_GEOFENCE_DECEL_MPS2:
+                    raise GatewayError("geofence.decel_mps2 must lie in (0, %g] m/s^2" % MAX_GEOFENCE_DECEL_MPS2)
+            object.__setattr__(self, "decel_mps2", None)
+            return
+        # Enabled: every value is required and finite; a missing one refuses (fail closed, no stand-in).
+        for name in ("x_min_m", "x_max_m", "y_min_m", "y_max_m", "decel_mps2", "latency_s"):
+            value = getattr(self, name)
+            if value is None:
+                raise GatewayError("enabled geofence requires a measured %s" % name)
+            if isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, float, np.integer, np.floating)):
+                raise GatewayError("geofence.%s must be a JSON number" % name)
+            object.__setattr__(self, name, _number(value, "geofence.%s" % name))
+        if not 0.0 < self.decel_mps2 <= MAX_GEOFENCE_DECEL_MPS2:
+            raise GatewayError("geofence.decel_mps2 must lie in (0, %g] m/s^2" % MAX_GEOFENCE_DECEL_MPS2)
+        if not 0.0 < self.latency_s <= MAX_GEOFENCE_LATENCY_S:
+            raise GatewayError("geofence.latency_s must be a positive measured latency of at most %g s"
+                               % MAX_GEOFENCE_LATENCY_S)
+        if (not self.x_max_m - self.x_min_m >= MIN_GEOFENCE_WIDTH_M
+                or not self.y_max_m - self.y_min_m >= MIN_GEOFENCE_WIDTH_M):
+            raise GatewayError("geofence box must be at least %.1f m wide on each axis" % MIN_GEOFENCE_WIDTH_M)
+
+    @classmethod
+    def from_config(cls, block):
+        if not isinstance(block, Mapping) or set(block) != set(GEOFENCE_KEYS):
+            raise GatewayError("geofence block requires exactly %s" % (GEOFENCE_KEYS,))
+        if block["frame"] != GEOFENCE_FRAME:
+            raise GatewayError("geofence.frame must be %r (the gateway's decoded position frame)" % GEOFENCE_FRAME)
+        return cls(block["enabled"], **{k: block[k] for k in GEOFENCE_KEYS if k not in ("enabled", "frame")})
+
+    def metadata(self):
+        return {"enabled": self.enabled, "frame": GEOFENCE_FRAME, "x_min_m": self.x_min_m, "x_max_m": self.x_max_m,
+                "y_min_m": self.y_min_m, "y_max_m": self.y_max_m, "decel_mps2": self.decel_mps2,
+                "latency_s": self.latency_s}
+
+    def outside(self, position):
+        """True when the position lies strictly outside the box (a breach)."""
+        x, y = float(position[0]), float(position[1])
+        return x < self.x_min_m or x > self.x_max_m or y < self.y_min_m or y > self.y_max_m
+
+    def limit(self, velocity_xy, position):
+        """(limited [vx, vy], per-axis record), direction preserving (see the module docstring).
+
+        One scale s = min(1, min_i axis_scale(...)) over the nonzero components, each against the wall
+        it points at with d_i its distance from the position. s < 1 scales BOTH components, so a
+        component parallel to a wall slows together with the normal one. s = 1 returns the command
+        unchanged (the same floats). The record keeps per axis the distance, that axis's bound on s and
+        whether it is the binding one; the gateway's geofence_record adds `scale` = s.
+        """
+        vx, vy = float(velocity_xy[0]), float(velocity_xy[1])
+        speed = math.hypot(vx, vy)
+        scale, axes = 1.0, []
+        for axis, (low, high) in enumerate(((self.x_min_m, self.x_max_m), (self.y_min_m, self.y_max_m))):
+            v, p = (vx, vy)[axis], float(position[axis])
+            if v == 0.0:
+                axes.append({"distance_m": None, "scale_limit": None, "clamped": False})
+                continue
+            distance = max(0.0, high - p) if v > 0.0 else max(0.0, p - low)
+            bound = axis_scale(abs(v), speed, distance, self.decel_mps2, self.latency_s)
+            axes.append({"distance_m": distance, "scale_limit": bound, "clamped": False})
+            scale = min(scale, bound)
+        if scale >= 1.0:
+            return [velocity_xy[0], velocity_xy[1]], axes
+        for record in axes:
+            record["clamped"] = record["scale_limit"] is not None and record["scale_limit"] <= scale
+        return [vx * scale, vy * scale], axes
 
 
 @dataclass(frozen=True)
@@ -220,14 +374,26 @@ class Px4OffboardGateway:
     is {capture_stamp_s, frame_id, velocity_enu_mps, yaw_rate_enu_rps}; capture_stamp_s is the oldest selected input,
     not publication time. The policy source owns synchronization of its hidden individual input stamps. Alternatively
     native runtime commands carry t/rgb_t/depth_t/state_t and their original velocity/yaw keys, with explicit skew checks.
+
+    The required `geofence` (a Geofence or its config block, enabled or disabled) limits every published policy
+    velocity with the position decoded in the same update. A breach latches `geofence_fault`: the streams stay up
+    with zero XY velocity, zero yaw rate and the altitude hold until reset_geofence() finds a fresh position inside
+    the box. Every other fault still revokes as before. `geofence_record` keeps the last output's pre-clamp and
+    post-clamp XY velocity.
     """
-    def __init__(self, binding, *, command_frame_id):
+    def __init__(self, binding, *, command_frame_id, geofence):
         if not isinstance(binding, Px4MessageBinding):
             raise GatewayError("explicit Px4MessageBinding is required")
         if not isinstance(command_frame_id, str) or not command_frame_id.strip():
             raise GatewayError("an explicit ENU command frame_id contract is required")
+        if isinstance(geofence, Mapping):
+            geofence = Geofence.from_config(geofence)
+        if not isinstance(geofence, Geofence):
+            raise GatewayError("an explicit geofence configuration (enabled or disabled) is required")
         self.binding = binding
         self.command_frame_id = command_frame_id
+        self.geofence = geofence
+        self.geofence_fault = self.geofence_record = None
         self.state, self.reason = "DISABLED", None
         self._last_clock = self._prime_mono = self._resets = self._command = self._command_receipt = None
         self._capture = self._signature = None
@@ -295,14 +461,67 @@ class Px4OffboardGateway:
             self.hold_z_ned_m = -decoded["pos"][2]
             self._prime_nav = snapshot["status"]["nav_state"]
             self._prime_mono, self.state = float(now_monotonic_s), "PRIMING"
-            return self._neutral(now_s)
+            self._check_geofence(decoded["pos"])
+            return self._neutral(now_s, decoded["pos"])
         except (GatewayError, KeyError, TypeError, ValueError) as exc:
             self.revoke(exc)
             raise GatewayError(str(exc)) from exc
 
-    def _neutral(self, now_s):
+    def _neutral(self, now_s, position=None, output="neutral_priming"):
+        if position is not None:
+            self._record(position, output, None, [0., 0.], False, None)
         return encode_setpoint({"velocity_world_enu_mps": [0., 0., 0.], "yaw_rate_rps": 0.},
                                hold_z_ned_m=self.hold_z_ned_m, timestamp_us=int(round(now_s*1e6)))
+
+    def _record(self, position, output, pre, post, clamped, axes):
+        bounds = [axis["scale_limit"] for axis in axes or () if axis["scale_limit"] is not None]
+        self.geofence_record = {"enabled": self.geofence.enabled, "frame": GEOFENCE_FRAME,
+                                "position_xy_m": [float(position[0]), float(position[1])], "output": output,
+                                "geofence_clamped": bool(clamped), "pre_clamp_velocity_xy_mps": pre,
+                                "post_clamp_velocity_xy_mps": post,
+                                "scale": None if axes is None else min([1.0] + bounds), "axes": axes,
+                                "fault": self.geofence_fault}
+
+    def _check_geofence(self, position):
+        """Latch a breach from the fresh decoded position; never cleared here."""
+        if self.geofence.enabled and self.geofence.outside(position) and self.geofence_fault is None:
+            self.geofence_fault = "geofence breach at %s (%.3f, %.3f) m" % (GEOFENCE_FRAME, position[0], position[1])
+
+    def _geofenced(self, position, now_s):
+        """Encode the stored policy command limited by the geofence at this update's fresh position."""
+        if self.geofence_fault is not None:
+            return self._neutral(now_s, position, "neutral_geofence_fault")
+        velocity, yaw_rate = _command_values(self._command)
+        pre = [float(velocity[0]), float(velocity[1])]
+        command, post, clamped, axes = self._command, pre, False, None
+        if self.geofence.enabled:
+            post, axes = self.geofence.limit(pre, position)
+            clamped = post[0] != pre[0] or post[1] != pre[1]
+            if clamped:
+                # Only the XY components change; yaw rate and the z hold are untouched.
+                command = {"velocity_world_enu_mps": [post[0], post[1], float(velocity[2])], "yaw_rate_rps": yaw_rate}
+        self._record(position, "policy", pre, list(post), clamped, axes)
+        return encode_setpoint(command, hold_z_ned_m=self.hold_z_ned_m, timestamp_us=int(round(now_s*1e6)))
+
+    def reset_geofence(self, snapshot, *, now_s, now_monotonic_s):
+        """Explicit operator reset of a latched geofence fault; needs a fresh position inside the box.
+
+        An estimator that fails decoding (stale, reset, invalid) revokes as in update(). A position still
+        outside refuses the reset and keeps the fault latched. Returns the cleared fault text.
+        """
+        if self.state not in ("PRIMING", "ACTIVE"):
+            raise GatewayError("geofence reset requires a primed or active gateway")
+        if self.geofence_fault is None:
+            raise GatewayError("no geofence fault is latched")
+        try:
+            decoded = self._decode(snapshot, now_s, now_monotonic_s)
+        except (GatewayError, KeyError, TypeError, ValueError) as exc:
+            self.revoke(exc)
+            raise GatewayError(str(exc)) from exc
+        if self.geofence.outside(decoded["pos"]):
+            raise GatewayError("estimator position is still outside the geofence; reset refused")
+        cleared, self.geofence_fault = self.geofence_fault, None
+        return cleared
 
     def _accept_command(self, command, receipt, now_s, mono):
         if "capture_stamp_s" in command:
@@ -342,7 +561,9 @@ class Px4OffboardGateway:
             return None
         try:
             self._clock(now_s, now_monotonic_s)
+            # Freshness, validity and reset checks run first; the geofence only sees this decoded position.
             decoded = self._decode(snapshot, now_s, now_monotonic_s)
+            self._check_geofence(decoded["pos"])
             status = snapshot["status"]
             if self.state == "ACTIVE" and (status["arming_state"] != ARMED or status["nav_state"] != OFFBOARD):
                 raise GatewayError("armed/OFFBOARD ownership lost")
@@ -357,9 +578,9 @@ class Px4OffboardGateway:
                 if now_monotonic_s-self._prime_mono < PRIME_DURATION_S-1e-9:
                     if status["nav_state"] == OFFBOARD:
                         raise GatewayError("OFFBOARD entered before continuous priming completed")
-                    return self._neutral(now_s)
+                    return self._neutral(now_s, decoded["pos"])
                 if status["nav_state"] != OFFBOARD:
-                    return self._neutral(now_s)
+                    return self._neutral(now_s, decoded["pos"])
                 if status["arming_state"] != ARMED or command is None:
                     raise GatewayError("OFFBOARD activation requires armed state and a fresh policy command")
             if command is not None:
@@ -370,7 +591,6 @@ class Px4OffboardGateway:
             for stamp in self._capture + self._generated:
                 _fresh(stamp, now_s, MAX_AGE_S, "policy command capture/generation")
             self.state = "ACTIVE"
-            return encode_setpoint(self._command, hold_z_ned_m=self.hold_z_ned_m,
-                                   timestamp_us=int(round(now_s*1e6)))
+            return self._geofenced(decoded["pos"], now_s)
         except (GatewayError, KeyError, TypeError, ValueError) as exc:
             return self.revoke(exc)

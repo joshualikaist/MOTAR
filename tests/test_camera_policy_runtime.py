@@ -39,10 +39,12 @@ class MeasuredProjection(unittest.TestCase):
     def test_level_plane_radial_units_and_colour_without_lidar(self):
         c, f, s = sample()
         f['rgb'][:, :, 0] = np.arange(160)
-        rgb, depth, invalid, cosine, report = R.project_rgbd(f, s, c)
+        # 2026-11-12 fix r1: project_rgbd returns sensor_invalid and no_return separately.
+        rgb, depth, invalid, no_return, cosine, report = R.project_rgbd(f, s, c)
         np.testing.assert_array_equal(rgb[0, 0]*255, f['rgb'][:, :, 0])
         np.testing.assert_allclose(depth[0]*cosine, 2., rtol=1e-6)
         self.assertFalse(invalid.any())
+        self.assertFalse(no_return.any())
         self.assertFalse(report['synthetic_noise_applied'])
         self.assertNotIn('ranges', f)
 
@@ -51,9 +53,10 @@ class MeasuredProjection(unittest.TestCase):
         raw = {'rgb': np.zeros((90, 160, 3), np.uint8), 'depth': np.full((90, 160), 2., np.float32),
                'rgb_t': 1., 'depth_t': 1., 'ranges': object(), 'lidar_t': object()}
         f = R.gazebo_frame(raw)
-        rgb, depth, invalid, cosine, _ = R.project_rgbd(f, s, c)
+        rgb, depth, invalid, no_return, cosine, _ = R.project_rgbd(f, s, c)
         self.assertEqual(rgb.shape, (1, 3, 90, 160))
         self.assertFalse(invalid.any())
+        self.assertFalse(no_return.any())
         np.testing.assert_allclose(depth[0]*cosine, 2., rtol=1e-6)
         # A simple HFOV=66 square-pixel replacement cannot cover trained VFOV54.
         f['intrinsics']['fx'] = f['intrinsics']['fy'] = c['camera']['fx']
@@ -66,23 +69,33 @@ class MeasuredProjection(unittest.TestCase):
         f['depth_z_m'][0, :4] = [0., np.nan, np.inf, .1]
         f['depth_z_m'][1, 1] = 20.  # valid far range is not sensor-invalid
         original = copy.deepcopy(f)
-        _, depth, invalid, _, _ = R.project_rgbd(f, s, c)
-        self.assertEqual(int(invalid.sum()), 104)
-        self.assertFalse(invalid[0, 1, 1])
-        self.assertTrue(np.all(depth[invalid] == 20.))
+        _, depth, invalid, no_return, _, report = R.project_rgbd(f, s, c)
+        # Fix r1 (spec A): the former union mask (104) is split. +inf is optical z > MaxZ,
+        # i.e. no-return; 0, NaN and 0.1 < MinZ stay sensor-invalid with the 100 masked.
+        self.assertEqual(int(invalid.sum()), 103)
+        self.assertEqual(int(no_return.sum()), 1)
+        self.assertTrue(no_return[0, 0, 2])
+        self.assertTrue(invalid[0, 0, 0] and invalid[0, 0, 1] and invalid[0, 0, 3])
+        self.assertFalse((invalid & no_return).any())
+        self.assertFalse(invalid[0, 1, 1] or no_return[0, 1, 1])
+        self.assertTrue(np.all(depth[invalid | no_return] == 20.))
+        self.assertEqual((report['sensor_invalid_pixels'], report['no_return_pixels']), (103, 1))
         np.testing.assert_array_equal(f['depth_z_m'], original['depth_z_m'])
         np.testing.assert_array_equal(f['invalid'], original['invalid'])
 
-    def test_estimator_tilt_uses_measured_z_buffer_leaves_disocclusions_invalid(self):
+    def test_estimator_tilt_uses_measured_z_buffer_leaves_disocclusions_no_return(self):
         c, f, s = sample()
         angle = math.radians(20)
         s['quat_xyzw'] = [math.sin(angle/2), 0., 0., math.cos(angle/2)]
-        _, depth, invalid, _, report = R.project_rgbd(f, s, c)
+        _, depth, invalid, no_return, _, report = R.project_rgbd(f, s, c)
         self.assertEqual(report['projection'], 'measured-point-z-buffer')
-        self.assertGreater(int(invalid.sum()), 0)
-        self.assertGreater(int((~invalid).sum()), 0)
+        # Fix r1 (H1): pixels the tilted camera did not image are no-return, not sensor-invalid;
+        # this all-valid frame has no sensor-invalid source pixel at all.
+        self.assertGreater(int(no_return.sum()), 0)
+        self.assertEqual(int(invalid.sum()), 0)
+        self.assertGreater(int((~(invalid | no_return)).sum()), 0)
         self.assertTrue(np.isfinite(depth).all())
-        self.assertTrue(np.all(depth[invalid] == 20.))
+        self.assertTrue(np.all(depth[no_return] == 20.))
 
     def test_reject_alignment_geometry_and_oracle_state(self):
         c, f, s = sample()
@@ -126,9 +139,15 @@ class InputTiming(unittest.TestCase):
 INTEGRATION = r'''
 import copy, json, math, os, sys
 import numpy as np
-from camera_policy_contract import build_contract
+import tempfile
+from pathlib import Path
+from camera_policy_contract import build_contract, estimator_height_assertion
 from camera_policy_runtime import CameraPolicyRuntime, InputError
-c=build_contract(int(sys.argv[1]))
+# Repair r1 (F6): the default floor filter runs only with the operator's estimator-height assertion (CPU fixture).
+evidence_dir=tempfile.TemporaryDirectory()
+evidence=Path(evidence_dir.name)/'estimator_height_fixture.txt'
+evidence.write_text('CPU test fixture: estimator z is the synthetic height above the floor. Not evidence.')
+c=build_contract(int(sys.argv[1]),estimator_height=estimator_height_assertion(evidence))
 os.environ['NAVRL_DETECTOR_CHECKPOINT']='unexpected-inherited-detector.pth'
 try: CameraPolicyRuntime(c)
 except ValueError: pass

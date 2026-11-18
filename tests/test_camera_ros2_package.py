@@ -62,8 +62,9 @@ def main(ros_args=None, *, config_path, source_root, check_only=False):
         self.assertTrue((PACKAGE / 'resource' / xml.findtext('name')).is_file())
         self.assertEqual(xml.findtext('license'), 'BSD-3-Clause')
         dependencies = {e.text for e in xml.findall('exec_depend')}
+        # python3-opencv (repair r1, F7): CameraInfo coverage needs cv2 for every nonzero D.
         self.assertTrue({'rclpy', 'sensor_msgs', 'nav_msgs', 'geometry_msgs', 'std_msgs', 'std_srvs',
-                         'launch', 'launch_ros', 'python3-numpy'}.issubset(dependencies))
+                         'launch', 'launch_ros', 'python3-numpy', 'python3-opencv'}.issubset(dependencies))
         self.assertIn('lib/motar_camera_policy', (PACKAGE / 'setup.cfg').read_text())
         self.assertIn('camera_policy = motar_camera_policy.entry:main', (PACKAGE / 'setup.py').read_text())
 

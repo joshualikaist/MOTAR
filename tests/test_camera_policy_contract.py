@@ -107,6 +107,62 @@ class CameraPolicyContractTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "runtime source set"):
                 C.load_contract(path, verify_files=False)
 
+    def test_height_filters_are_required_validated_and_ceiling_needs_a_measured_height(self):
+        valid = self.contract()
+        self.assertEqual(valid["ground"], C.GROUND_DEFAULT)
+        self.assertEqual(valid["ceiling"], C.CEILING_DEFAULT)
+        self.assertIsNone(valid["ceiling"]["height_m"])       # never a placeholder measurement
+        accepted = []
+        for ground, ceiling in (({"enabled": False}, {}), ({"margin_m": 0.2}, {}),
+                                ({}, {"enabled": True, "height_m": 3.0}),
+                                ({}, {"enabled": True, "height_m": 2.5, "margin_m": 0.05})):
+            value = self.contract()
+            value["ground"].update(ground)
+            value["ceiling"].update(ceiling)
+            self.assertEqual(C.validate_contract(value, verify_files=False), [], (ground, ceiling))
+            accepted.append(value)
+        self.assertEqual(len(accepted), 4)
+        mutations = [("ground", None), ("ceiling", None), ("ground", {"enabled": True}),
+                     ("ground", dict(C.GROUND_DEFAULT, extra=1)), ("ground", dict(C.GROUND_DEFAULT, enabled=1)),
+                     ("ground", dict(C.GROUND_DEFAULT, margin_m=0.0)), ("ground", dict(C.GROUND_DEFAULT, margin_m=0.6)),
+                     ("ground", dict(C.GROUND_DEFAULT, margin_m=True)), ("ground", dict(C.GROUND_DEFAULT, margin_m="0.1")),
+                     ("ground", dict(C.GROUND_DEFAULT, height_reference="takeoff")),
+                     ("ceiling", dict(C.CEILING_DEFAULT, enabled=True)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, enabled=True, height_m=0.8)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, enabled=True, height_m=101.0)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, enabled=True, height_m=True)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, height_m=3.0)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, enabled="yes", height_m=3.0)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, enabled=True, height_m=3.0, margin_m=-0.1)),
+                     ("ceiling", dict(C.CEILING_DEFAULT, height_reference="takeoff"))]
+        for key, replacement in mutations:
+            value = self.contract()
+            if replacement is None:
+                del value[key]
+            else:
+                value[key] = replacement
+            with self.subTest(key=key, replacement=replacement):
+                self.assertTrue(C.validate_contract(value, verify_files=False))
+
+    def test_cli_passes_measured_height_filters_and_refuses_unmeasured_ceiling_margin(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "contract.json"
+            with mock.patch.object(C, "build_contract", return_value=self.contract()) as build:
+                C.main(["--output", str(path), "--seed", "1", "--ceiling-height-m", "2.8", "--ground-margin-m", "0.15"])
+            kwargs = build.call_args.kwargs
+            self.assertEqual(kwargs["ground"], dict(C.GROUND_DEFAULT, margin_m=0.15))
+            self.assertEqual(kwargs["ceiling"], dict(C.CEILING_DEFAULT, enabled=True, height_m=2.8))
+            self.assertTrue(path.exists())
+            with mock.patch.object(C, "build_contract", return_value=self.contract()) as build:
+                C.main(["--output", str(Path(directory) / "off.json"), "--seed", "1", "--no-ground-removal"])
+            self.assertEqual(build.call_args.kwargs["ground"]["enabled"], False)
+            self.assertEqual(build.call_args.kwargs["ceiling"], C.CEILING_DEFAULT)
+            with self.assertRaises(SystemExit):
+                C.main(["--output", str(Path(directory) / "x.json"), "--seed", "1", "--ceiling-margin-m", "0.1"])
+            with self.assertRaises(SystemExit):
+                C.main(["--check", str(path), "--ceiling-height-m", "3"])
+            self.assertFalse((Path(directory) / "x.json").exists())
+
     def test_cli_requires_explicit_seed_and_preserves_existing_output(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "contract.json"

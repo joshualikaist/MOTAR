@@ -26449,3 +26449,31 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Git Traceability (checkpoint):** branch `camonly/dev`; base/HEAD `eefb832e1c4fc6de8e597e990aa9cd58f2228079`; new commit NONE, remote push NO, main merge NO. Earlier dirty files preserved. New files are tools/camera_ros2_{adapter,session,node,px4,px4_node}.py, tests/test_camera_ros2_{adapter,session,package,px4,px4_node,integration}.py and ros2/motar_camera_policy package files. Full dirty path inventory belongs in final external manifest. Raw/checkpoint/preregistration integrity preserved; no jobs continuing at this checkpoint.
 
 - **Final ROS2 source closeout:** independent review PASS_WITH_LIMITS, required source repairs0; final focused55/55PASS. Review reproduced the original ground-Z carryover and initial zero-CameraInfo acceptance, then independently verified manual-hover/transition-Z and nonzero-acquisition repairs with positive controls. Reviewer model recorded as available GPT-6 family identity, exact deployed model ID unavailable. Final full PUBLIC_CPU **4067 tests, failures0, errors0, skipped10, GPU exclusions5**; kernel regex faults0→0, guarded source hashes unchanged. Independent22-file current hashes match; final full-suite start/end guard covers all22, including the empty resource marker omitted from the preserved first baseline. Raw logs/bindings `/home/fair/motar_tmp/camera_ros2_20261111/PUBLIC_CPU_RESULT_v2.json`, `VALIDATION.json`, `review_r1/`; repository compact copies `camera_runtime/ROS2_VALIDATION.json`, `ROS2_REVIEW_r1.md`, `ROS2_REVIEW_r2.md`, `ROS2_SOURCE_SHA256.json`, indexed in the existing SITL family. Both actual seeds14synthetic ROS-shaped frames/14payload pairs each/0sends; no live or latency claim. Broad physical readiness remains INCOMPLETE, S3a-R HOLD; motar-783.17 remains open. Full final dirty path/SHA inventory is `/home/fair/motar_tmp/camera_ros2_20261111/FINAL_MANIFEST.json`; no new commit/push/merge, original raw/checkpoints preserved. All owned test/review jobs ended; account usage USAGE_UNKNOWN without a clock reset. Next action: read motar-783.17 and the package workflow to bind the actual companion/FC/position-estimator and measured camera/clock inventory in a separately reviewed execution amendment before any authorized live test.
+
+## 2026-11-18 — Camera-runtime deployment fixes r1/r2 and repair r1 committed (work of 2026-11-12/13)
+
+- **Scope (CPU source only, no GPU/SITL/ROS launch/hardware):** fixes found by the 2026-11-12 runtime verification
+  (`/home/fair/motar_tmp/ros2_runtime_verify_20261112/REPORT.md`) on top of `fc8aa4d`.
+  - **r1:** the floor/ceiling plane rule for sensor-invalid pixels is bounded to [MinZ, MaxZ]; +inf, z > MaxZ and the
+    OAK/CameraInfo border are no-return; -inf, NaN and z < MinZ stay sensor-invalid; pose interpolation brackets.
+  - **r2:** per-component directional geofence clamp; a breach zeroes XY velocity and yaw rate and latches
+    `geofence_fault` with streams kept; CameraInfo coverage; altitude gating (`WAITING_ALTITUDE`).
+  - **Repair r1:** review findings F1-F10, including the explicit `estimator_height` assertion (F6): with a floor or
+    ceiling filter on, every frame is refused until the operator asserts the height reference.
+- **Tests and review:**
+
+  | Round | PUBLIC_CPU | Kernel faults |
+  | --- | --- | --- |
+  | base `fc8aa4d` | 4067 OK (skipped 10) | — |
+  | fixes r1 | 4092 OK (skipped 10) | 0 → 0 |
+  | fixes r2 | 4114 OK (skipped 10) | 0 → 0 |
+  | repair r1 | 4145 OK (skipped 10) | 0 → 0 |
+
+  Independent review r1 (Claude Opus 5.5, fresh context, read-only): **PASS_WITH_FIXES**. Repair r1 was not separately
+  re-reviewed; the later outdoor reviews r1-r3 checked byte identity of the indoor path against this state only.
+- **Committed state:** byte-equal to the snapshot `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/pre_tree/`
+  (manifest `SHA256.txt`, 24 paths, verified 2026-11-18), taken 2026-11-13 before the outdoor work.
+- **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`: `ROS2_FIX_r1.md` (3ad7757c…),
+  `ROS2_FIX_r2.md` (08e5f14d…), `ROS2_FIX_REVIEW_r1.md` (91161f71…), `ROS2_FIX_REPAIR_r1.md` (647afa86…). Logs and
+  probes stay in `/home/fair/motar_tmp/ros2_runtime_fix_20261112/`.
+- **NOT_TESTED:** ROS graph, DDS, installed px4_msgs, PX4/SITL, the camera and the vehicle. No flight qualification.
