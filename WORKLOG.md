@@ -26584,3 +26584,75 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`: `OUTDOOR_UNIT_B_r1.md` (cc7c91eb…) and
   `OUTDOOR_UNIT_B_REVIEW_r1.md` (review r1) and `OUTDOOR_UNIT_B_REVIEW_r1a.md` (doc-fix checks r1a/r1b). Diff, logs and probes:
   `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/{diff,logs,review_unitB_r1}/`.
+
+## 2026-11-18 — Unit C: OAK-D field recorder for the Orin, PC converter and Korean field protocol (no device tested)
+
+- **Why:** D-2026-11-15-1 makes real OAK-D recordings the next step for the outdoor profile. The camera is on the
+  vehicle and shared with its VIO (D-2026-11-18-2), so the recording runs on the vehicle's Orin and the files are
+  converted on the PC. Beads `motar-783.21`.
+- **What was built (CPU only):**
+  - `tools/oakd_field_recorder.py`: one file for the Orin (stdlib + numpy + DepthAI 2.29.0.0, Python 3.8 syntax).
+    - `--probe` prints the device, sensors, USB speed and calibration.
+    - `--record` detects the colour sensor (OV9782 = OAK-D Pro W at 1280 × 800; IMX378 = OAK-D Pro at 12 MP with
+      ISP 1/4; anything else is refused by name). It records still frames into `motar-oakd-raw-capture-v1`:
+      - the raw YUV colour frame;
+      - depth aligned to CAM_A in millimetres (0 invalid);
+      - accelerometer statistics and device time stamps;
+      - per-frame exposure, ISO, colour temperature and lens position;
+      - the EEPROM calibration and a SHA-256 manifest.
+    - It never talks to PX4 or ROS. The IR projector is set only on request, and the flood LED stays off.
+    - Named refusals include `DEVICE_BUSY` (the VIO holds the camera), `DEVICE_PERMISSION`, `USB_SPEED` and
+      `INSUFFICIENT_DISK`.
+    - A reported but silent IMU is a warning (`WARNING IMU_NO_SAMPLES`); the frames are still saved.
+  - `tools/oakd_recording_convert.py`: raw capture → `motar-oakd-outdoor-recording-v1` for
+    `tools/oakd_outdoor_replay.py`.
+    - The OAK-D Pro W preset is a central 640 × 360 pinhole crop covering the trained 66° × 54° (4 × the trained
+      160 × 90 grid, contract intrinsics convention).
+    - The IMX378 preset reuses the adapter's `Rectifier`.
+    - Depth is resampled nearest-neighbour, so 0 stays invalid.
+    - `--depth-coordinate-model undistorted_pinhole|distorted_rgb` is required and recorded as a hypothesis.
+    - `--gravity-source auto|imu|nominal` selects the gravity input; an IMU that disagrees with the measured pitch by
+      more than 5° is refused.
+  - `ros2/motar_camera_policy/FIELD_RECORDING_KO.md`: the TA's protocol. Props off, never flown, VIO stopped before
+    and restarted and checked after, DepthAI installed with `pip --target` into a folder of its own, a minimum set of
+    22 recordings first and an optional set after it.
+- **Numbers (synthetic frames only; real frame sizes NOT_MEASURED):**
+
+  | Quantity | Value |
+  | --- | --- |
+  | Raw capture per frame at 1280 × 800 (2 DN noise) | 1.559 MB |
+  | Converted per frame (640 × 360) | 0.695 MB |
+  | Minimum set (22 recordings × 20 frames) at the protocol's frame rule | ≤ 0.79 GB on the Orin; 1.0–2.1 GB on the PC (fits 4.4 GB free) |
+  | Minimum + optional set (70 recordings) | ≤ 2.52 GB on the Orin; 3.15–6.6 GB on the PC (does not fit; external drive or staged copy) |
+  | Crop mapping error (review probe, both lens models) | ≤ 0.03 px |
+  | Synthetic end to end: ground-fit error against the tape height, matching depth model | 0.15 / 0.10 mm, 4/4 frames accepted; wrong model 4/4 refused |
+
+- **Reviews (Claude Opus 5.5, fresh context, read-only):**
+  - r1 **FAIL** (P1 3: exposure not recorded, disk budget, install into the drone's Python);
+  - r2 **FAIL** (P1 1 introduced by repair r1: a silent IMU stopped the session with 0 frames);
+  - r3 **PASS_WITH_LIMITS** (P0/P1/P2 0, P3 9 open).
+
+  Repair r1 was done by the implementer subagent; repair r2 by the orchestrating session.
+- **Tests:** PUBLIC_CPU on the repaired tree: 4294 OK (skipped 10, expected failures 10), exit 0, tree unchanged during the run. Kernel faults 1 → 1 (the one line is the QGroundControl
+  user-space segfault of 14:59:46). Mutation checks: implementer 13/13, repair r2 8/8, reviewer r3 9/9 caught.
+  After that run only one Korean sentence of the protocol changed (review r3 N10); `check_public_docs` and the
+  README-pin tests were rerun.
+- **Open:**
+  - the depth-coordinate model, to be decided from the first flat-ground recordings (M01/M02): with the wrong model
+    the ground fit is refused, so the recording itself discriminates;
+  - P3 items N2, N6, N9 and r1 P3-1/-5/-7/-8/-10 (`OAKD_RECORDER_REVIEW_r3.md`).
+- **NOT_TESTED:** a real OAK-D, the Orin, the aarch64 wheel, `pip --target` on JetPack, real calibration, IMU axes,
+  projector and exposure behaviour, real bytes per frame, `DEVICE_BUSY` against the running VIO. No flight
+  qualification and no outdoor GO.
+- **User facts recorded** in D-2026-11-18-2: the VIO shares the OAK-D, PX4 can be set to v1.14.3, no earlier flight
+  logs, the target is another drone.
+- **Next:**
+  1. the TA runs the minimum set at the site (기계동 앞 운동장 옆 숲);
+  2. convert and replay it, and choose the depth model;
+  3. calibrate the PROVISIONAL sky and ground thresholds on the result.
+
+  Separately: the ROS topic list of the VIO-side camera driver, for the flight integration.
+- **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`: `OAKD_RECORDER_r1.md`,
+  `OAKD_RECORDER_REVIEW_r1.md`, `OAKD_RECORDER_REPAIR_r1.md`, `OAKD_RECORDER_REVIEW_r2.md`,
+  `OAKD_RECORDER_REPAIR_r2.md`, `OAKD_RECORDER_REVIEW_r3.md`. Logs, probes and mutation copies:
+  `/home/fair/motar_tmp/oakd_recorder_20261118/`.

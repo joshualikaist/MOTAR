@@ -535,3 +535,19 @@ format (`recording.json`, `frames/NNNNNN.npz` with RGB, depth in mm with 0 inval
      speckle pixels in open sky (one near speckle row makes the sky near under the one-edge rule);
    - thin structures: wires and branches 1-5 m away, 1-3 source pixels thick, against sky;
    - flat ground noise: the depth spread on flat short grass and on pavement at 2-10 m (for the ground-fit margins).
+
+Field tools (unit C, 2026-11-18): `tools/oakd_field_recorder.py` is a single-file recorder for the drone's Jetson
+(stdlib, numpy and DepthAI only, no ROS or vehicle access). `--probe` prints the device and calibration readout;
+`--record` writes still frames (the raw colour ISP frame, the CAM_A-aligned depth, accelerometer samples and device
+timestamps) with the device calibration dump to a new capture folder (`motar-oakd-raw-capture-v1`), choosing the
+pipeline from the detected colour sensor (OV9782 or IMX378; any other sensor is refused). The drone's VIO uses the same
+OAK-D and must be stopped while recording. `tools/oakd_recording_convert.py` converts a capture into the replay format
+above on the PC: the adapter's 1014 x 760 output for the IMX378, or a central crop covering exactly the trained FOV
+for the OV9782. It requires an explicit `--depth-coordinate-model`, because whether the device's aligned depth lies in
+the distorted or the undistorted colour image is not established; the flat-ground recordings of the protocol's minimum
+set (M01 and M02) decide it before any threshold is analysed (in the synthetic end-to-end check of review r1 the
+mismatched model made the camera ground fit refuse every frame). Each frame also carries the colour camera's exposure, ISO, white balance and lens position. The TA's
+step-by-step field protocol, in Korean, is [`FIELD_RECORDING_KO.md`](FIELD_RECORDING_KO.md): a minimum set first, an
+optional set if time and disk allow, DepthAI installed into a separate folder so the drone's own Python packages are
+untouched, and the VIO stopped while recording and checked after its restart. Recording is on a tripod or by hand,
+never in flight; the device, the Jetson and the real calibration are NOT_TESTED.

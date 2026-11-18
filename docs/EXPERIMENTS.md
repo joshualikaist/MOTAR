@@ -997,6 +997,14 @@ family that is in the test's scope.
     fault. Independent review PASS_WITH_LIMITS (P0/P1 0; P2-1 sparse-refusal pattern OPEN as design). rclpy/DDS/PX4
     NOT_TESTED. [Report](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_UNIT_B_r1.md),
     [review](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_UNIT_B_REVIEW_r1.md).
+  - **Unit C, OAK-D field recorder (2026-11-18, CPU only, no device):** a single-file recorder for the vehicle's
+    Orin (`tools/oakd_field_recorder.py`), a PC converter into the replay format
+    (`tools/oakd_recording_convert.py`, OAK-D Pro and Pro W presets) and the Korean field protocol
+    (`ros2/motar_camera_policy/FIELD_RECORDING_KO.md`). Real camera, Orin and calibration NOT_TESTED. Reviews r1
+    and r2 FAIL, r3 PASS_WITH_LIMITS (P0/P1/P2 0). The depth-coordinate model is an open hypothesis to settle on
+    the first flat-ground recording.
+    [Report](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_r1.md),
+    [review r3](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_REVIEW_r3.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

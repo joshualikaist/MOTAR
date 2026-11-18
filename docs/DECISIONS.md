@@ -492,3 +492,22 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
   - the ground-station link;
   - whether the site lies in a prohibited zone. Since September 2026 an unapproved flight there is a criminal
     offence, so check the official map before the first flight.
+
+## D-2026-11-18-2 — Follow-up facts from the user: the VIO shares the OAK-D, no earlier logs, target is another drone
+
+- **Source (user, 2026-11-18, after D-2026-11-18-1).** This entry supersedes the matching "Open" items of
+  D-2026-11-18-1; the rest of that entry stands.
+  - **Camera:** "카메라는 일단 oakd라니까". Proceed with the OAK-D as given. The lens variant is not a blocker: the
+    field recorder reads the sensor at recording time and the converter picks the preset.
+  - **VIO camera:** "vio도 동일하다고". The onboard VIO uses the same OAK-D.
+  - **PX4:** the firmware can be set to exactly v1.14.3.
+  - **Earlier flight logs:** none exist. The first ULog comes from the next flight.
+  - **Target:** another drone.
+- **What it changes:**
+  - A DepthAI device accepts one host connection, so the VIO is stopped while the field recorder runs.
+  - In flight the policy cannot open the device itself. It must take RGB and depth from the streams of the VIO-side
+    camera driver. Which streams that driver publishes is not yet known.
+  - The policy's target detector is the trained red-colour rule. An unmarked drone is not detected by it; a red
+    marker on the target or a separate detector integration is needed before any tracking trial.
+- **Still open (asked of the TA):** the ROS topic list with the VIO running and a free PX4 port for uXRCE-DDS, the
+  in-flight monitoring link, and a ULog from the next flight.
