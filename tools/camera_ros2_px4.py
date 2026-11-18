@@ -55,6 +55,22 @@ TOPICS = {
     "trajectory_setpoint": "/fmu/in/trajectory_setpoint",
 }
 RESET_FIELDS = ("xy_reset_counter", "z_reset_counter", "vxy_reset_counter", "vz_reset_counter", "heading_reset_counter")
+# Unit B (2026-11-18): VehicleLocalPosition fields forwarded to the camera policy node inside the gateway's private
+# Odometry (camera_ros2_adapter.VERTICAL_ENCODING); z_valid is also part of the validity gate of decode_estimator.
+VERTICAL_FIELDS = ("z_valid", "epv", "dead_reckoning")
+# Generated px4_msgs field types (rosidl names, after the float32 -> float / bool -> boolean aliases) of every field the
+# gateway reads. The node checks them on the INSTALLED classes in addition to the full .msg comparison, so a px4_msgs
+# build whose generated type differs fails at construction. The .msg SHA-256 bindings above are unchanged.
+READ_FIELD_TYPES = {
+    "VehicleOdometry": {"timestamp": "uint64", "timestamp_sample": "uint64", "pose_frame": "uint8",
+                        "velocity_frame": "uint8", "position": "float[3]", "velocity": "float[3]", "q": "float[4]",
+                        "angular_velocity": "float[3]", "reset_counter": "uint8"},
+    "VehicleLocalPosition": dict({"timestamp": "uint64", "timestamp_sample": "uint64", "xy_valid": "boolean",
+                                  "z_valid": "boolean", "v_xy_valid": "boolean", "v_z_valid": "boolean",
+                                  "heading_good_for_control": "boolean", "epv": "float", "dead_reckoning": "boolean"},
+                                 **{name: "uint8" for name in RESET_FIELDS}),
+    "VehicleStatus": {"timestamp": "uint64", "arming_state": "uint8", "nav_state": "uint8", "failsafe": "boolean"},
+}
 GEOFENCE_FRAME = "px4_local_enu"
 GEOFENCE_KEYS = ("enabled", "frame", "x_min_m", "x_max_m", "y_min_m", "y_max_m", "decel_mps2", "latency_s")
 # The trained riskcap governor's braking deceleration: NAVRL_SPEED_GOVERNOR_BRAKE_MPS2 of the CAM-K2 v3 training
@@ -332,6 +348,26 @@ def decode_estimator(odometry, local_position, status, *, now_s, now_monotonic_s
         raise GatewayError("required PX4 estimator/status fields missing") from exc
     return {"pos": (ned_to_enu @ p).tolist(), "vel": (ned_to_enu @ v).tolist(),
             "quat_xyzw": _quaternion_xyzw(r), "yaw_rate_rps": -float(rate[2]), "t": ot}
+
+
+def vertical_fields(local_position):
+    """PX4 VehicleLocalPosition z_valid, epv [m] and dead_reckoning, validated, for forwarding (unit B).
+
+    Raises GatewayError when one is missing or malformed (z_valid/dead_reckoning not booleans, epv not a finite real
+    >= 0): the gateway then forwards NO field, never a default. It does not judge the values (a large epv or dead
+    reckoning is forwarded; the outdoor contract refuses it). decode_estimator separately keeps refusing z_valid false."""
+    try:
+        z_valid, epv, dead = (local_position[name] for name in VERTICAL_FIELDS)
+    except (KeyError, TypeError) as exc:
+        raise GatewayError("local_position vertical fields z_valid/epv/dead_reckoning missing") from exc
+    if not isinstance(z_valid, (bool, np.bool_)) or not isinstance(dead, (bool, np.bool_)):
+        raise GatewayError("local_position z_valid/dead_reckoning must be booleans")
+    if isinstance(epv, (bool, np.bool_)) or not isinstance(epv, (int, float, np.integer, np.floating)):
+        raise GatewayError("local_position epv must be a real number of metres")
+    epv = float(epv)
+    if not math.isfinite(epv) or epv < 0:
+        raise GatewayError("local_position epv must be finite and >= 0")
+    return {"z_valid": bool(z_valid), "epv": epv, "dead_reckoning": bool(dead)}
 
 
 def _command_values(command):

@@ -34,6 +34,115 @@ class RosInputError(ValueError):
     pass
 
 
+# Unit B (2026-11-18): PX4 VehicleLocalPosition z_valid, epv [m] and dead_reckoning, forwarded by the MOTAR PX4 gateway
+# (tools/camera_ros2_px4_node.py) INSIDE its own private nav_msgs/Odometry, the same message whose pose the policy uses,
+# so no second message is paired by time. Private encoding motar-px4-vertical-v1 (that Odometry already marks every
+# covariance NaN = unavailable and must not feed an estimator):
+#   pose.covariance[0] = VERTICAL_ENCODING_TAG (-20261118.0: a negative variance, never a valid covariance)
+#   pose.covariance[1] = z_valid (1.0 true, 0.0 false)
+#   pose.covariance[2] = epv in metres (finite, >= 0)
+#   pose.covariance[3] = dead_reckoning (1.0 true, 0.0 false)
+#   pose.covariance[4:36] and twist.covariance[0:36] = NaN
+# Absent fields: every covariance NaN (the gateway's Odometry before unit B). A consumer reads the encoding only when
+# its binding declares odometry_source == gateway_odometry_source(); an arbitrary Odometry producer is never trusted.
+GATEWAY_ODOMETRY_PRODUCER = "motar_px4_gateway"
+VERTICAL_ENCODING = "motar-px4-vertical-v1"
+VERTICAL_ENCODING_TAG = -20261118.0
+VERTICAL_FIELD_ORDER = ("z_valid", "epv", "dead_reckoning")     # pose.covariance[1:4]
+COVARIANCE_SIZE = 36
+
+
+def gateway_odometry_source():
+    """The binding's explicit declaration that its odometry topic is the MOTAR PX4 gateway's private Odometry carrying
+    the versioned vertical-field encoding (optional binding key `odometry_source`)."""
+    return {"producer": GATEWAY_ODOMETRY_PRODUCER, "vertical_encoding": VERTICAL_ENCODING}
+
+
+def declared_vertical_encoding(binding):
+    """VERTICAL_ENCODING when the (validated) binding declares the gateway odometry source, else None."""
+    source = binding.get("odometry_source") if isinstance(binding, dict) else None
+    return VERTICAL_ENCODING if source == gateway_odometry_source() else None
+
+
+def encode_vertical_covariance(fields):
+    """(pose covariance, twist covariance) lists of 36 floats for the gateway's Odometry.
+
+    fields = {"z_valid": bool, "epv": finite float >= 0, "dead_reckoning": bool} writes the encoding; None writes
+    all-NaN covariances (fields absent). Anything else raises RosInputError: the gateway never publishes a guess."""
+    nan = float("nan")
+    twist = [nan] * COVARIANCE_SIZE
+    if fields is None:
+        return [nan] * COVARIANCE_SIZE, twist
+    if not isinstance(fields, dict) or set(fields) != set(VERTICAL_FIELD_ORDER):
+        raise RosInputError("vertical fields must be exactly %s" % (VERTICAL_FIELD_ORDER,))
+    z_valid, epv, dead = fields["z_valid"], fields["epv"], fields["dead_reckoning"]
+    if (type(z_valid) is not bool or type(dead) is not bool or isinstance(epv, bool)
+            or not isinstance(epv, (int, float)) or not math.isfinite(epv) or epv < 0):
+        raise RosInputError("vertical fields need boolean z_valid/dead_reckoning and a finite epv >= 0 m")
+    pose = [VERTICAL_ENCODING_TAG, 1.0 if z_valid else 0.0, float(epv), 1.0 if dead else 0.0]
+    return pose + [nan] * (COVARIANCE_SIZE - 4), twist
+
+
+def _covariance(msg, part):
+    value = getattr(getattr(msg, part, None), "covariance", None)
+    if value is None:
+        raise RosInputError("Odometry %s.covariance missing" % part)
+    try:
+        array = np.asarray(value, np.float64)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise RosInputError("Odometry %s.covariance must be numeric" % part) from exc
+    if array.shape != (COVARIANCE_SIZE,):
+        raise RosInputError("Odometry %s.covariance must hold %d values" % (part, COVARIANCE_SIZE))
+    return array
+
+
+def decode_vertical_covariance(msg):
+    """Read motar-px4-vertical-v1 from one Odometry message: {"status", "fields", "detail"}.
+
+    status FORWARDED (fields = {z_valid, epv, dead_reckoning}), ABSENT (every covariance NaN: the gateway had no
+    valid fields) or MALFORMED (anything else: another tag or version, filler that is not NaN, a flag that is not
+    exactly 0 or 1, epv negative or not finite, missing or wrongly sized covariance). Never raises and never
+    substitutes a default: without FORWARDED the caller attaches no field and the outdoor runtime refuses the frame."""
+    try:
+        pose, twist = _covariance(msg, "pose"), _covariance(msg, "twist")
+    except RosInputError as exc:
+        return {"status": "MALFORMED", "fields": None, "detail": str(exc)}
+    if np.isnan(pose).all() and np.isnan(twist).all():
+        return {"status": "ABSENT", "fields": None, "detail": "all covariances NaN: no vertical fields forwarded"}
+    if pose[0] != VERTICAL_ENCODING_TAG:
+        return {"status": "MALFORMED", "fields": None,
+                "detail": "pose.covariance[0] is not the %s tag" % VERTICAL_ENCODING}
+    if not np.isnan(pose[4:]).all() or not np.isnan(twist).all():
+        return {"status": "MALFORMED", "fields": None,
+                "detail": "%s requires NaN in pose.covariance[4:] and twist.covariance" % VERTICAL_ENCODING}
+    z_valid, epv, dead = (float(x) for x in pose[1:4])
+    if z_valid not in (0.0, 1.0) or dead not in (0.0, 1.0):
+        return {"status": "MALFORMED", "fields": None, "detail": "z_valid/dead_reckoning must be exactly 0 or 1"}
+    if not math.isfinite(epv) or epv < 0:
+        return {"status": "MALFORMED", "fields": None, "detail": "epv must be a finite number of metres >= 0"}
+    return {"status": "FORWARDED", "fields": {"z_valid": z_valid == 1.0, "epv": epv, "dead_reckoning": dead == 1.0},
+            "detail": None}
+
+
+def _vertical_state(messages, encoding):
+    """Vertical fields for the pose built from these Odometry messages (one, or the two of an interpolation bracket).
+
+    Every message must carry FORWARDED fields; a bracket combines them conservatively (z_valid only if both,
+    epv the larger, dead_reckoning if either), so an interpolated pose is never better qualified than either sample.
+    Returns (fields or None, provenance)."""
+    decoded = [decode_vertical_covariance(m) for m in messages]
+    provenance = {"encoding": encoding, "samples": [{"status": d["status"], "detail": d["detail"]} for d in decoded]}
+    if any(d["status"] != "FORWARDED" for d in decoded):
+        worst = next(d for d in decoded if d["status"] != "FORWARDED")
+        provenance.update(status=worst["status"], detail=worst["detail"])
+        return None, provenance
+    fields = [d["fields"] for d in decoded]
+    combined = {"z_valid": all(f["z_valid"] for f in fields), "epv": max(f["epv"] for f in fields),
+                "dead_reckoning": any(f["dead_reckoning"] for f in fields)}
+    provenance.update(status="FORWARDED", detail=None, fields=dict(combined))
+    return combined, provenance
+
+
 def unconfigured_template():
     """Engineering topic namespace only; no physical calibration/readiness implied."""
     return {"schema": SCHEMA, "status": "UNCONFIGURED",
@@ -91,8 +200,15 @@ def validate_binding(binding, *, verify_files=True):
     """
     if not isinstance(binding, dict) or binding.get("schema") != SCHEMA or binding.get("status") != "CONFIGURED":
         raise RosInputError("ROS camera binding is UNCONFIGURED or has an unsupported schema")
-    if set(binding) != {"schema", "status", "topics", "frames", "geometry", "producer", "conventions", "clock"}:
+    keys = {"schema", "status", "topics", "frames", "geometry", "producer", "conventions", "clock"}
+    # Unit B: the optional `odometry_source` declares the PX4 gateway's private Odometry (gateway_odometry_source());
+    # without it (every binding before unit B) the odometry is treated as an arbitrary producer, as before.
+    if set(binding) not in (keys, keys | {"odometry_source"}):
         raise RosInputError("ROS camera binding keys differ from the supported schema")
+    if "odometry_source" in binding and binding["odometry_source"] != gateway_odometry_source():
+        raise RosInputError("odometry_source must be exactly %s (the MOTAR PX4 gateway Odometry with the %s "
+                            "encoding), or absent" % (json.dumps(gateway_odometry_source(), sort_keys=True),
+                                                       VERTICAL_ENCODING))
     try:
         value = json.loads(json.dumps(binding, allow_nan=False))
     except (ValueError, TypeError) as exc:
@@ -349,8 +465,14 @@ def interpolate_state(before, after, t):
             "yaw_rate_rps": float((1.0 - w) * before["yaw_rate_rps"] + w * after["yaw_rate_rps"]), "t": t}
 
 
-def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding, *, odometry_bracket=None):
+def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding, *, odometry_bracket=None, vertical_encoding=None):
     """Convert one synchronized sample; initialization must verify binding files first.
+
+    vertical_encoding (unit B; the session passes it for an outdoor-profile runtime only): None (default) reads no
+    vertical field, exactly as before. VERTICAL_ENCODING requires the binding's odometry_source declaration and decodes
+    z_valid/epv/dead_reckoning from the very Odometry message(s) whose pose is used (the nearest selection, or both
+    samples of the interpolation bracket); FORWARDED fields are added to the state, otherwise none is added (the outdoor
+    runtime then refuses the frame: estimator_vertical_fields_absent). frame['vertical_provenance'] records the case.
 
     No receipt-time substitution or transform lookup is performed. All acquisition
     timestamps must already share the declared ROS clock, and odom_msg (the nearest
@@ -364,12 +486,16 @@ def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding, *, odometry_bra
     the producer must deliver capture-stamped calibration for the paired images.
     """
     binding = validate_binding(binding, verify_files=False)
+    if vertical_encoding is not None and (vertical_encoding != VERTICAL_ENCODING
+                                          or declared_vertical_encoding(binding) != vertical_encoding):
+        raise RosInputError("vertical fields need the binding's odometry_source declaration of %s" % VERTICAL_ENCODING)
     frames = binding["frames"]
     times = [_header(msg, frames["optical"]) for msg in (rgb_msg, depth_msg, info_msg)]
     state = odometry_state(odom_msg, expected_world_frame=frames["world"], expected_body_frame=frames["body"])
     if max(times + [state["t"]]) - min(times + [state["t"]]) > MAX_SKEW_S + 1e-9:
         raise RosInputError("RGB/depth/CameraInfo/Odometry acquisition skew exceeds 0.025 s")
     pose = {"pose_interpolated": False, "odometry_t": [state["t"]], "pose_skew_s": abs(state["t"] - times[0])}
+    pose_messages = (odom_msg,)
     if odometry_bracket is not None:
         before, after = (odometry_state(m, expected_world_frame=frames["world"], expected_body_frame=frames["body"])
                          for m in odometry_bracket)
@@ -377,10 +503,18 @@ def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding, *, odometry_bra
         if after["t"] > before["t"]:
             state = interpolated
             pose = {"pose_interpolated": True, "odometry_t": [before["t"], after["t"]], "pose_skew_s": 0.0}
+            pose_messages = tuple(odometry_bracket)
         else:
             # One sample exactly at the capture time: use it as is.
             state = before
             pose = {"pose_interpolated": False, "odometry_t": [before["t"]], "pose_skew_s": 0.0}
+            pose_messages = (odometry_bracket[0],)
+    vertical = None
+    if vertical_encoding is not None:
+        fields, vertical = _vertical_state(pose_messages, vertical_encoding)
+        vertical["odometry_t"] = list(pose["odometry_t"])
+        if fields is not None:
+            state = dict(state, **fields)
     rgb, (depth, invalid) = decode_rgb(rgb_msg), decode_depth(depth_msg)
     if rgb.shape[:2] != depth.shape:
         raise RosInputError("depth is not delivered on the RGB pixel grid")
@@ -398,4 +532,6 @@ def build_frame(rgb_msg, depth_msg, info_msg, odom_msg, binding, *, odometry_bra
                                 "clock": binding["clock"], "geometry": geometry["provenance"],
                                 "producer": binding["producer"]["provenance"]},
              "pose_provenance": pose}
+    if vertical is not None:
+        frame["vertical_provenance"] = vertical
     return frame, state

@@ -992,6 +992,11 @@ family that is in the test's scope.
     patching stopped by the user (D-2026-11-15-1); next are real OAK-D recordings. **No outdoor GO.**
     [Report](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_r1.md),
     [review r3](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_REVIEW_r3.md).
+  - **Unit B (2026-11-18, CPU only):** PX4 vertical fields forwarded from the gateway to the policy node
+    (`motar-px4-vertical-v1`, explicit binding declaration) and a PROVISIONAL 3.0 s refusal-hold bound with a latched
+    fault. Independent review PASS_WITH_LIMITS (P0/P1 0; P2-1 sparse-refusal pattern OPEN as design). rclpy/DDS/PX4
+    NOT_TESTED. [Report](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_UNIT_B_r1.md),
+    [review](evidence/sitl_2026-11-05/camera_runtime/OUTDOOR_UNIT_B_REVIEW_r1.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

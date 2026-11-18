@@ -39,6 +39,12 @@ JSON. Exit code 0 when every frame was processed (refusals are results, not erro
 Re-entry hysteresis (outdoor repair r2, review r2 P3-N8): as in the ROS session, the first REFUSAL_REENTRY_FRAMES
 accepted frames of the recording and after every refused frame are marked reentry_hold (the session would propose
 the explicit zero hold on them while the policy history refills); the summary counts them. No policy runs here.
+
+Bounded hold (unit B, 2026-11-18): each row carries hold_episode_s, the session's refusal-hold episode at that frame
+(camera_policy_runtime.RefusalHoldEpisode on the frame times t; None on a frame that would carry a policy command), and
+the first frame at which the session would latch refusal_hold_timeout (the contract's PROVISIONAL
+ground_estimate.refusal_hold_max_s) is marked refusal_hold_timeout: true and named in the summary. Frame times of a
+tripod recording need not be 10 Hz; the episode uses them as recorded.
 """
 import argparse
 import importlib.util
@@ -193,6 +199,23 @@ def replay_recording(folder, contract):
     rows, last_t = [], None
     tape = float(meta['camera_height_m'])
     hold = R.REFUSAL_REENTRY_FRAMES                     # the replay starts from a fresh history (review r2 P3-N8)
+    # Unit B (2026-11-18): the ROS session's refusal-hold episode on the frames' capture times t (refused and
+    # reentry_hold frames are holds, other accepted frames would carry a policy command). The first frame at which the
+    # session would latch refusal_hold_timeout is marked; the replay keeps processing (calibration only).
+    episode = R.RefusalHoldEpisode(R.refusal_hold_limit_s(contract))
+    timeout = None
+
+    def hold_tick(row, holding):
+        nonlocal timeout
+        if not holding:
+            episode.command()
+            row['hold_episode_s'] = None
+            return
+        elapsed, timed_out = episode.hold(row['t'])
+        row['hold_episode_s'] = elapsed
+        if timed_out and timeout is None:
+            timeout = {'index': row['index'], 't': row['t'], 'episode_s': elapsed}
+            row[R.REFUSAL_HOLD_TIMEOUT] = True
     for index, relative in enumerate(meta['frames']):
         frame, state, roll, pitch, t = frame_inputs(folder, meta, relative, contract)
         if last_t is not None and not t > last_t:
@@ -208,6 +231,7 @@ def replay_recording(folder, contract):
                        candidates=[{k: q[k] for k in ('height_m', 'tilt_deg', 'inliers', 'share', 'below_share', 'failed')}
                                    for q in report.get('candidates', [])],
                        points=report.get('points'))
+            hold_tick(row, True)
             rows.append(row)
             hold = R.REFUSAL_REENTRY_FRAMES
             continue
@@ -225,6 +249,7 @@ def replay_recording(folder, contract):
                    ceiling_removed_pixels=counts['ceiling_removed_pixels'],
                    near_columns=int((cols < 1.).sum()), obstacle_columns=int((cols < 10.).sum()),
                    min_column_m=float(cols.min()), reentry_hold=hold > 0)
+        hold_tick(row, hold > 0)
         hold = max(0, hold - 1)
         rows.append(row)
     accepted = [r for r in rows if r['refused'] is None]
@@ -253,6 +278,9 @@ def replay_recording(folder, contract):
                'reentry_held_frames': sum(1 for r in accepted if r['reentry_hold']),
                'frames_free_to_command': sum(1 for r in accepted if not r['reentry_hold']),
                'far_ground_pixels_total': sum(r['sky']['far_ground_pixels'] for r in accepted),
+               # Unit B: the session's bounded hold on these capture times (PROVISIONAL limit from the contract).
+               'refusal_hold_max_s': episode.limit_s, 'longest_hold_episode_s': episode.longest_s,
+               'refusal_hold_timeout': timeout,
                'thresholds': {'sky': contract['sky'], 'ground_estimate': contract['ground_estimate']},
                'camera_height_m': tape, 'scene': meta['scene'], 'goal_carve_out': 'NOT_APPLIED (no checkpoint)',
                'policy': 'NOT_RUN', 'hardware_flight': 'NOT_TESTED'}

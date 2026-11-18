@@ -94,6 +94,73 @@ def _is_outdoor(contract):
     return isinstance(contract, dict) and contract.get('profile') == 'outdoor'
 
 
+# Unit B (2026-11-18): bounded refusal hold. The session fault's name (not a frame refusal: REFUSAL_REASONS name refused
+# frames, this names the end of a session).
+REFUSAL_HOLD_TIMEOUT = 'refusal_hold_timeout'
+# Capture stamps are ROS seconds rebuilt from integer nanoseconds; a sum of 0.1 s steps may land 1e-15 s short.
+HOLD_TIMEOUT_TOLERANCE_S = 1e-6
+
+
+def refusal_hold_limit_s(contract):
+    """Outdoor profile: the contract's PROVISIONAL ground_estimate.refusal_hold_max_s in seconds; None for every other
+    contract (indoor contracts never refuse a frame, so they never hold). A missing or malformed outdoor value raises
+    ValueError (fail closed: a session never starts with an unbounded hold)."""
+    if not _is_outdoor(contract):
+        return None
+    from camera_policy_contract import GROUND_ESTIMATE_BOUNDS, PROVISIONAL
+    block = contract.get('ground_estimate')
+    item = block.get('refusal_hold_max_s') if isinstance(block, dict) else None
+    low, high, _ = GROUND_ESTIMATE_BOUNDS['refusal_hold_max_s']          # inclusive at both ends
+    value = item.get('value') if isinstance(item, dict) and set(item) == {'value', 'status'} else None
+    if (not isinstance(item, dict) or item.get('status') != PROVISIONAL or isinstance(value, bool)
+            or not isinstance(value, (int, float)) or not math.isfinite(value) or not low <= value <= high):
+        raise ValueError('outdoor contract needs ground_estimate.refusal_hold_max_s = {"value": v in [%g, %g] s, '
+                         '"status": "%s"}' % (low, high, PROVISIONAL))
+    return float(value)
+
+
+class RefusalHoldEpisode:
+    """Outdoor profile: the current refusal-hold episode, shared by the ROS session and the replays.
+
+    An episode is the run of consecutive ticks whose proposal is the explicit zero hold (a refused frame or a re-entry
+    hold) without an intervening policy command; refusals inside it never restart it. Its duration is measured on the
+    held proposals' capture stamps (seconds of the declared shared ROS clock): elapsed = this hold's capture stamp minus
+    the episode's first one. hold() returns (elapsed_s, timed_out); timed_out is True once elapsed reaches limit_s
+    (within HOLD_TIMEOUT_TOLERANCE_S), so held proposals span less than the limit. command() ends the episode; a tick
+    that proposes nothing (altitude gating) neither extends nor ends it. Capture stamps must increase."""
+    def __init__(self, limit_s):
+        if limit_s is not None and (isinstance(limit_s, bool) or not isinstance(limit_s, (int, float))
+                                    or not math.isfinite(limit_s) or limit_s <= 0):
+            raise ValueError('refusal hold limit must be a positive number of seconds or None')
+        self.limit_s = None if limit_s is None else float(limit_s)
+        self.start_s = self.last_s = self.elapsed_s = None
+        self.ticks = 0
+        self.longest_s = 0.
+
+    def hold(self, capture_s):
+        capture = float(capture_s)
+        if not math.isfinite(capture):
+            raise ValueError('hold capture stamp must be finite')
+        if self.limit_s is None:
+            raise ValueError('a zero hold without a refusal-hold limit (indoor contracts never hold)')
+        if self.last_s is not None and not capture > self.last_s:
+            raise ValueError('hold capture stamps must increase')
+        if self.start_s is None:
+            self.start_s, self.ticks = capture, 0
+        self.last_s, self.ticks = capture, self.ticks + 1
+        self.elapsed_s = capture - self.start_s
+        self.longest_s = max(self.longest_s, self.elapsed_s)
+        return self.elapsed_s, self.elapsed_s >= self.limit_s - HOLD_TIMEOUT_TOLERANCE_S
+
+    def command(self):
+        self.start_s = self.elapsed_s = None
+        self.ticks = 0
+
+    @property
+    def active(self):
+        return self.start_s is not None
+
+
 def split_state(state, contract):
     """(estimator state, PX4 vertical-validity fields or None).
 
@@ -1283,6 +1350,11 @@ def replay(runtime, data, output):
     # refused frame, propose the explicit zero hold while the policy history refills; the policy's own command is kept
     # in the line as policy_*, and the runtime records the applied zero hold. Other contracts are unchanged.
     hold = REFUSAL_REENTRY_FRAMES if outdoor else 0
+    # Unit B (2026-11-18), outdoor only and report-only: the ROS session's refusal-hold episode on the same capture
+    # stamps (the oldest of rgb_t, depth_t and state_t); the line at which the session would latch
+    # refusal_hold_timeout is marked. The replay keeps processing afterwards (the session would propose nothing more).
+    episode = RefusalHoldEpisode(refusal_hold_limit_s(runtime.contract)) if outdoor else None
+    timeout_at = None
     with Path(output).open('x') as stream:
         for i in range(next(iter(counts))):
             frame = dict(meta, **{k: data[k][i] for k in ('rgb', 'depth_z_m', 'invalid', 'rgb_t', 'depth_t') + optional})
@@ -1308,6 +1380,16 @@ def replay(runtime, data, output):
                                   policy_yaw_rate_rps=result.get('yaw_rate_rps'), velocity_world_enu_mps=[0., 0., 0.],
                                   velocity_vehicle_flu_mps=[0., 0., 0.], yaw_rate_rps=0., hold=True,
                                   previous_action=[0., 0., 0., 0.], reentry_hold_remaining=hold)
+            if episode is not None:
+                if result.get('hold') is True:
+                    capture = min(float(data[k][i]) for k in ('rgb_t', 'depth_t', 'state_t'))
+                    elapsed, timed_out = episode.hold(capture)
+                    result['hold_episode_s'] = elapsed
+                    if timed_out and timeout_at is None:
+                        timeout_at = capture
+                        result[REFUSAL_HOLD_TIMEOUT] = True
+                else:
+                    episode.command()
             stream.write(json.dumps(result, allow_nan=False) + '\n')
             count += 1
     report = {'status': 'CPU_REPLAY_COMPLETE', 'frames': count, 'commands_sent': 0,
@@ -1315,6 +1397,9 @@ def replay(runtime, data, output):
     if outdoor:
         report['refused_frames'] = refused
         report['reentry_held_frames'] = held
+        report['refusal_hold_max_s'] = episode.limit_s
+        report['longest_hold_episode_s'] = episode.longest_s
+        report['refusal_hold_timeout_capture_s'] = timeout_at
     return report
 
 

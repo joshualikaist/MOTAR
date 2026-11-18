@@ -20,10 +20,14 @@ import sys
 import time
 
 # Outdoor repair r1 (review P2-1): the outdoor profile needs PX4's z_valid, epv and dead_reckoning in every state
-# (camera_policy_runtime.split_state/estimate_ground). The ROS adapter's odometry state does not carry them and the
-# PX4 gateway does not forward epv or dead_reckoning, so every outdoor frame on this node would be refused
-# (estimator_vertical_fields_absent) and the node would hold forever. The node therefore refuses an outdoor
-# contract at load as UNCONFIGURED with this named reason, until a separate unit forwards the fields.
+# (camera_policy_runtime.split_state/estimate_ground). An arbitrary Odometry producer does not carry them, so every
+# outdoor frame on this node would be refused (estimator_vertical_fields_absent). The node therefore refuses an
+# outdoor contract at load as UNCONFIGURED with this named reason.
+# Unit B (2026-11-18): the MOTAR PX4 gateway now forwards the three fields inside its own Odometry (encoding
+# camera_ros2_adapter.VERTICAL_ENCODING). The node accepts an outdoor contract only when its binding explicitly
+# declares that source (binding key odometry_source = camera_ros2_adapter.gateway_odometry_source()); without that
+# declaration the refusal above stands unchanged. ROS_PATH_FORWARDS_VERTICAL_FIELDS keeps describing the UNDECLARED
+# odometry path, which still carries no vertical field.
 OUTDOOR_NODE_REFUSAL = 'outdoor_vertical_fields_not_forwarded'
 ROS_PATH_FORWARDS_VERTICAL_FIELDS = False
 
@@ -73,10 +77,14 @@ def load_node_config(config_path, source_root):
     problem = contract_module.height_reference_problem(contract)
     if problem:
         raise ValueError('UNCONFIGURED: ' + problem)
-    if contract_module.is_outdoor(contract) and not ROS_PATH_FORWARDS_VERTICAL_FIELDS:
-        raise ValueError('UNCONFIGURED: %s: the outdoor profile needs PX4 z_valid/epv/dead_reckoning in the state, '
-                         'which the ROS adapter and the PX4 gateway do not forward yet; every frame would be refused'
-                         % OUTDOOR_NODE_REFUSAL)
+    if contract_module.is_outdoor(contract) and adapter.declared_vertical_encoding(raw['binding']) is None:
+        raise ValueError('UNCONFIGURED: %s: the outdoor profile needs PX4 z_valid/epv/dead_reckoning in the state; '
+                         'only the MOTAR PX4 gateway Odometry forwards them, and this binding does not declare it '
+                         '(binding odometry_source = %s); every frame would be refused'
+                         % (OUTDOOR_NODE_REFUSAL, json.dumps(adapter.gateway_odometry_source(), sort_keys=True)))
+    if contract_module.is_outdoor(contract):
+        # Unit B: the bounded refusal hold needs a valid PROVISIONAL limit (validate_contract checked it already).
+        importlib.import_module('camera_policy_runtime').refusal_hold_limit_s(contract)
     raw['policy_contract_path'] = str(path)
     return raw, contract
 
@@ -187,13 +195,10 @@ def make_node_class():
                     self._last_error = str(exc)
             if wall-self._last_diag_wall >= 1.:
                 msg = String()
-                msg.data = json.dumps({'state': self._session.status, 'altitude': self._session.altitude,
-                    'last_error': self._last_error, 'epoch': self._session.epoch,
-                    'sequence': self._session.sequence, 'vehicle_commands_sent': 0,
-                    # Outdoor profile: the last named frame refusal (a zero hold was proposed) and its run length.
-                    'refusal': self._session.refusal,
-                    'consecutive_refusals': self._session.consecutive_refusals,
-                    'reentry_hold_remaining': self._session.reentry_hold_remaining}, allow_nan=False)
+                # Session state (camera_ros2_session.RosPolicySession.diagnostics): the earlier keys plus, since unit
+                # B, hold_episode_s, hold_limit_s (PROVISIONAL), hold_timeout (refusal_hold_timeout record) and the
+                # last tick's PX4 vertical-field status.
+                msg.data = json.dumps(dict(self._session.diagnostics(), last_error=self._last_error), allow_nan=False)
                 self._diagnostics.publish(msg)
                 self._last_diag_wall = wall
 
@@ -218,8 +223,13 @@ def main(ros_args=None, *, config_path, source_root, check_only=False):
             return 2
         raise
     if check_only:
-        print(json.dumps({'status': 'CONFIG_VALID', 'lineage': contract['lineage'], 'seed': contract['seed'],
-                          'ros_graph': 'NOT_STARTED', 'hardware': 'NOT_TESTED'}))
+        summary = {'status': 'CONFIG_VALID', 'lineage': contract['lineage'], 'seed': contract['seed'],
+                   'ros_graph': 'NOT_STARTED', 'hardware': 'NOT_TESTED'}
+        if contract.get('profile') == 'outdoor':
+            # Unit B: the declared gateway encoding and the PROVISIONAL hold limit of an outdoor configuration.
+            summary.update(profile='outdoor', odometry_source=config['binding']['odometry_source'],
+                           refusal_hold_max_s=contract['ground_estimate']['refusal_hold_max_s'])
+        print(json.dumps(summary))
         return 0
     # Policy restore happens before creating ROS entities or any offboard stream.
     from camera_policy_runtime import CameraPolicyRuntime

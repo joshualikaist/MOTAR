@@ -460,3 +460,35 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Why:** three independent reviews (r1-r3) failed the near-obstacle criterion. A single-frame depth-0 pixel has no
   range, so every synthetic sky rule trades phantom walls against misses; only real data can set the thresholds.
 - **State:** outdoor GO not given; residuals are listed in WORKLOG 2026-11-18 and `OUTDOOR_REVIEW_r3.md`.
+
+## D-2026-11-18-1 — Real-system facts from the TA: VIO instead of GNSS, Orin NX, PX4 1.14, forest site
+
+- **Source (TA answers relayed by the user, 2026-11-18).** Recorded as given; items marked unconfirmed need a reading
+  from the vehicle.
+  - **Camera:** "아마 OV9782일건데, 정확한건 드론 켜서 데이터를 읽어보긴 해야합니다." OV9782 is the colour option of the
+    OAK-D Pro W (Luxonis: 150/127/79.5° D/H/V, 1280 × 800, global shutter); the standard OAK-D Pro colour sensor is
+    the IMX378. **Unconfirmed.** If confirmed, the adapter's 12 MP IMX378 pipeline does not apply.
+  - **Mount (nominal, not calibrated):** 8 cm forward and 3 cm up from the vehicle centre, facing straight ahead.
+  - **Companion:** Jetson Orin NX already mounted, JetPack version unknown, software ROS 1 (ROS 2 via Docker is
+    acceptable to the TA), DepthAI installable, USB3 available.
+  - **Flight controller:** PX4 about 1.14, exact version unknown. The TA can reflash; MOTAR asks for exactly v1.14.3
+    (the px4_msgs binding and SITL version).
+  - **Localization:** no GNSS in the target environments (indoor, forest). An onboard camera + IMU VIO is already set
+    up. Which camera it uses is not yet known.
+  - **Vehicle:** 250 class (replaces the 225 mm wheelbase assumption of D-2026-11-08-1); flight time about 10 min.
+  - **Site and safety:** a forest-like area beside the playground in front of the mechanical engineering building,
+    on campus. In the TA's experience no flight report is needed on campus. A licensed person holds the RC. Wind is
+    not considered for sheltered sites. A manual log flight is not possible right away.
+  - **Recording:** OAK-D data are recorded on the drone's Orin and copied off.
+- **What it changes:**
+  - The outdoor geofence and estimator checks run on the VIO local frame, not GNSS.
+  - The site is the outdoor profile's hardest case (trunks, thin branches).
+- **Open:**
+  - which camera the VIO uses (one DepthAI host connection per device);
+  - the Orin-PX4 link (MAVROS?) and a free port for uXRCE-DDS;
+  - the exact camera, JetPack and PX4 versions;
+  - existing ULogs;
+  - the target object;
+  - the ground-station link;
+  - whether the site lies in a prohibited zone. Since September 2026 an unapproved flight there is a criminal
+    offence, so check the official map before the first flight.

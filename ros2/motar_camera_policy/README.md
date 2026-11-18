@@ -332,19 +332,58 @@ only, and must be calibrated on real OAK-D recordings (below):
 | ground_estimate | min_half_share | 0.1 |
 | ground_estimate | min_range_span_m | 1.0 |
 | ground_estimate | planarity_max_angle_deg | 1.0 |
+| ground_estimate | refusal_hold_max_s | 3.0 |
 
 The ground fit's fixed runtime constants (`camera_policy_runtime.PROVISIONAL_RUNTIME_CONSTANTS`, e.g.
 `GROUND_SEARCH_TILT_DEG` = 30) are PROVISIONAL too; `tilt_max_deg` is bounded to (0, 5] deg and
-`height_tolerance_m` to (0, 0.5] m.
+`height_tolerance_m` to (0, 0.5] m. `refusal_hold_max_s` (unit B, below) is bounded to [1.0, 10.0] s, both ends
+inclusive.
 
 **PX4 vertical validity reaches the runtime only as extra state fields.** The outdoor state carries `z_valid`, `epv`
 [m] and `dead_reckoning` beside the five estimator fields (`camera_policy_runtime.split_state`; the indoor state is
-unchanged and still refuses extra keys). The PX4 gateway already revokes when `z_valid` is false, but it does not
-decode `epv` or `dead_reckoning`, and the Odometry it republishes carries NaN covariance. Until the gateway and the
-ROS adapter forward these fields (a separate unit), every outdoor frame on the ROS path would be refused with
-`estimator_vertical_fields_absent`, so the ROS node refuses an outdoor contract at load as UNCONFIGURED with the
-named reason `outdoor_vertical_fields_not_forwarded` (repair r1) instead of starting a session that holds forever.
-The outdoor profile runs today only through the CPU replays (NPZ `replay`, `tools/oakd_outdoor_replay.py`).
+unchanged and still refuses extra keys). Repair r1 refused every outdoor contract on the ROS node as UNCONFIGURED
+with the named reason `outdoor_vertical_fields_not_forwarded`, because nothing on the ROS path carried these fields.
+
+*Forwarding (unit B, 2026-11-18).* The PX4 gateway now forwards them inside its own private Odometry
+(`/motar/state/odometry` by default), the same message whose pose the policy uses, so the policy node pairs nothing by
+time. Encoding `motar-px4-vertical-v1` (`camera_ros2_adapter.VERTICAL_ENCODING`):
+
+| Odometry slot | Content |
+| --- | --- |
+| `pose.covariance[0]` | tag -20261118.0 (a negative variance: never a valid covariance) |
+| `pose.covariance[1]` | `z_valid`, 1.0 or 0.0 |
+| `pose.covariance[2]` | `epv` in metres, finite, at least 0 |
+| `pose.covariance[3]` | `dead_reckoning`, 1.0 or 0.0 |
+| every other `pose.covariance` and `twist.covariance` slot | NaN |
+
+The fields come from the PX4 `VehicleLocalPosition` sample that the gateway already pairs with the `VehicleOdometry`
+sample to gate pose validity (same snapshot, capture skew at most 0.025 s). The gateway still revokes when `z_valid`
+is false; it does not judge `epv` or `dead_reckoning` (the outdoor contract does). When a field is missing or
+malformed it forwards none: every covariance stays NaN, exactly the message published before unit B. Besides the
+unchanged `.msg` SHA-256 bindings, the gateway now checks the generated type of every field it reads on the
+installed `px4_msgs` classes (`camera_ros2_px4.READ_FIELD_TYPES`: `epv` float, `dead_reckoning` boolean, ...), so a
+mismatched build fails at construction. Its diagnostics report the encoding and the last forwarded fields.
+
+*Supersedes (2026-11-18, review unitB r1 P2-2).* The earlier sentences "The private derived Odometry contains NaN
+covariance entries ... The policy ignores covariance." above are kept unchanged only because a test pins that prefix;
+they no longer hold. The gateway writes this encoding on every deployment, indoor included, so whenever the fields are
+forwarded `pose.covariance[0]` reads -20261118.0 and slots 1-3 carry the fields. Only a policy node whose binding
+declares the encoding (below) reads them. Any other reader of `/motar/state/odometry` must not treat
+`pose.covariance` as a covariance.
+
+The policy node reads the encoding only when its binding declares the gateway as the odometry source with the
+optional binding key `"odometry_source": {"producer": "motar_px4_gateway", "vertical_encoding":
+"motar-px4-vertical-v1"}` (`camera_ros2_adapter.gateway_odometry_source()`); any other value is refused. Without
+that declaration an outdoor contract stays UNCONFIGURED with `outdoor_vertical_fields_not_forwarded` as before, and an
+indoor session never reads the covariance. With it, each outdoor frame's state takes the fields of the Odometry
+message used for its pose; for a pose interpolated between two Odometry samples both must carry the fields and they
+combine conservatively (`z_valid` only if both, the larger `epv`, `dead_reckoning` if either). Absent or malformed
+fields (another tag or version, filler that is not NaN, a flag that is not exactly 0 or 1, a negative or non-finite
+`epv`) attach nothing, so the runtime refuses the frame with `estimator_vertical_fields_absent` (a zero hold); a
+forwarded `z_valid` false, a large `epv` or dead reckoning give `estimator_z_invalid`,
+`estimator_epv_exceeds_limit` or `estimator_dead_reckoning`. No default is ever substituted. The session's
+diagnostics report the decode status of the last tick (`vertical_fields`). The CPU replays (NPZ `replay`,
+`tools/oakd_outdoor_replay.py`) take the fields from their own inputs as before.
 
 **Refused frames in the ROS session.** A `FrameRefused` frame does not advance the policy history. The session
 answers it with an explicit zero-velocity, zero-yaw-rate hold proposal for that tick (same stamps and freshness
@@ -357,9 +396,48 @@ with an outdoor contract the count restarts on every history reset, not only on 
 explicit reset, and an altitude-gated stretch (`WAITING_ALTITUDE`), so a nonzero command always follows at least
 `REFUSAL_REENTRY_FRAMES` accepted frames of the current history; the NPZ `replay` applies the same hold (its line keeps
 the policy's own command as `policy_*`) and `tools/oakd_outdoor_replay.py` marks such frames `reentry_hold`. Indoor
-contracts never hold. The hold has
-no time limit: bounding or escalating a long hold is the user's decision and remains open. Every other input error
-still faults the session. Before this change a refusal
+contracts never hold. Until unit B the hold had no time limit.
+
+*Bounded hold (unit B, 2026-11-18).* A hold episode is the run of consecutive ticks whose proposal is the explicit zero
+hold (`HOLD_FRAME_REFUSED` or `HOLD_REENTRY`) without an intervening policy command: a refusal inside it does not
+restart it, a tick that proposes nothing (`WAITING_ALTITUDE`) neither extends nor ends it, and only a policy command or
+an explicit session reset ends it. Its duration is measured on the held proposals' capture stamps (the declared ROS
+clock): every proposal carries one, they strictly increase, each is checked within 0.15 s of the ROS clock, that clock
+is checked against monotonic time and the 10 Hz period is enforced on it; the replays have the same stamps, and under
+simulated time it is the vehicle's own time base. When the episode reaches `ground_estimate.refusal_hold_max_s`
+(PROVISIONAL, 3.0 s by default, bounds [1.0, 10.0] s; not derived from a measurement), the session proposes nothing
+more and latches the fault `refusal_hold_timeout` (status `FAULT`); there is no automatic re-entry, only the explicit
+reset service (`~/reset_policy_session`, a fresh session) clears it. Held proposals therefore span less than the
+limit. The gateway then revokes on its existing stale-command path (no fresh command within 0.15 s), so PX4's
+offboard-loss failsafe (`COM_OF_LOSS_T`, then `COM_OBL_RC_ACT`) and the pilot take over; the last setpoint PX4 keeps
+until then is the zero hold. No arm, land or mode command is sent. The node's
+diagnostics report `hold_episode_s`, `hold_limit_s`, `hold_limit_status` and the `hold_timeout` record (reason,
+episode length, held proposals, refused frames, last refusal). An exactly zero command from the policy itself is a
+policy command and ends the episode. The NPZ `replay` and `tools/oakd_outdoor_replay.py` mark the frame at which the
+session would latch (`refusal_hold_timeout: true`, `hold_episode_s` per held frame) and report it in their summary.
+
+*Limits of the bounded hold (review unitB r1, 2026-11-18).*
+- **Sparse commands defeat the bound (P2-1, review r1a).** A policy command ends the episode. Any refusal pattern that
+  lets one policy command through before the hold reaches the limit therefore never latches: at most 25 consecutive
+  refused ticks, then 5 re-entry holds and a command; the densest such pattern is every 7th tick. In the review probes
+  this held the vehicle at zero for up to 97 % of ticks for 60 s with no fault (26 consecutive refusals did latch at
+  3.0 s). Each such command follows `REFUSAL_REENTRY_FRAMES` accepted frames of fresh history, but the vehicle mostly
+  holds and no fault alerts the pilot. A rate-based bound (share of held ticks in a window) is OPEN. Until it exists,
+  the operator watches the diagnostics `state` (`HOLD_REENTRY` or `HOLD_FRAME_REFUSED`) and `hold_episode_s`, and takes
+  over on a persistent hold pattern. (`refusal` and `consecutive_refusals` reset on every accepted frame, so they stay
+  near null and 0 in a sparse pattern.)
+- **Gated time counts.** "Neither extends nor ends" above means a `WAITING_ALTITUDE` tick does not end the episode.
+  The duration runs from the episode's first held capture stamp, so time spent gated still counts. If an episode is
+  open when the gated stretch begins (the last proposal was a zero hold, for example refusals during the descent), a
+  re-climb in the same session latches at its first hold; reset the session before re-arming. The latch can also fire
+  before the pilot selects OFFBOARD (for example, ground unverifiable for the limit right after take-off); the
+  operator then resets the session before the handover.
+- **Clock.** The checks above catch jumps, pauses and a wrong period, but not a ROS clock that runs uniformly slow.
+  The review estimates that the hold can then stretch to about 1.33-1.5 times the limit in wall time.
+- **Replay stamps.** The NPZ `replay` now stops on a duplicate capture stamp between consecutive held frames, where it
+  used to finish. Recordings must carry strictly increasing stamps.
+
+Every other input error still faults the session. Before the zero-hold change of 2026-11-13 a refusal
 faulted the session, the proposal stream stopped, the gateway revoked within about 0.15 s, and PX4 kept the last
 nonzero velocity setpoint until its offboard-loss timeout (`COM_OF_LOSS_T`, 1.0 s by default in v1.14.3) before
 `COM_OBL_RC_ACT`. Any other session fault, or a stopped node, still leaves that window: shorten `COM_OF_LOSS_T` for

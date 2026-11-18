@@ -78,8 +78,12 @@ def verify_message_definitions(directory):
     return path.resolve()
 
 
-def validate_generated_type(cls, definition):
-    """Bind the generated Python fields to the already SHA-checked .msg source."""
+def validate_generated_type(cls, definition, required=None):
+    """Bind the generated Python fields to the already SHA-checked .msg source.
+
+    required (unit B): {field: generated type} of the fields the gateway reads (camera_ros2_px4.READ_FIELD_TYPES);
+    each must exist with exactly that type, so the forwarded epv (float) and dead_reckoning (boolean) cannot be read
+    from a px4_msgs build that generates them differently."""
     aliases = {'float32': 'float', 'float64': 'double', 'bool': 'boolean'}
     expected = {}
     for line in Path(definition).read_text().splitlines():
@@ -95,13 +99,18 @@ def validate_generated_type(cls, definition):
     actual = {name: aliases.get(kind, kind) for name, kind in actual.items()}
     if not expected or actual != expected:
         raise ValueError('generated px4_msgs fields differ from source: '+Path(definition).name)
+    for name, kind in (required or {}).items():
+        if actual.get(name) != kind:
+            raise ValueError('generated px4_msgs field %s.%s must be %s, found %s'
+                             % (Path(definition).stem, name, kind, actual.get(name)))
 
 
 def load_node_config(config_path, source_root):
     root = Path(source_root).resolve()
     if not Path(source_root).is_absolute() or not (root/'tools/camera_ros2_px4.py').is_file():
         raise ValueError('explicit absolute PX4 source root required')
-    for name in ('camera_ros2_px4', 'camera_ros2_px4_node', 'camera_ros2_node'):
+    # Unit B: camera_ros2_adapter defines the published Odometry vertical-field encoding, so it must come from this root.
+    for name in ('camera_ros2_px4', 'camera_ros2_px4_node', 'camera_ros2_node', 'camera_ros2_adapter'):
         loaded = sys.modules.get(name)
         if loaded is not None and Path(loaded.__file__).resolve().parent != root/'tools':
             raise ValueError('module already imported from another source root: '+name)
@@ -166,6 +175,8 @@ class BridgeSession:
         self.fault = None
         self.command = self.command_receipt = None
         self.resets = self.last_odom = self.last_tick = self.last_clocks = None
+        # Unit B: status of the PX4 vertical fields of the last published odometry state.
+        self.last_vertical = None
 
     def revoke(self, reason):
         if self.fault is None:
@@ -214,7 +225,7 @@ class BridgeSession:
         return dict(self.messages, receipts=dict(self.receipts))
 
     def _state(self, now, wall):
-        from camera_ros2_px4 import decode_estimator, RESET_FIELDS
+        from camera_ros2_px4 import decode_estimator, vertical_fields, GatewayError, RESET_FIELDS
         snapshot = self.snapshot()
         state = decode_estimator(snapshot['odometry'], snapshot['local_position'], snapshot['status'],
                                  now_s=now, now_monotonic_s=wall, receipts=snapshot['receipts'])
@@ -222,6 +233,13 @@ class BridgeSession:
         if self.resets is not None and resets != self.resets:
             raise ValueError('estimator reset; restart gateway and reset policy before rebinding')
         self.resets = resets
+        # Unit B: z_valid/epv/dead_reckoning of the SAME local_position sample that decode_estimator just paired with
+        # this odometry sample (same snapshot, capture skew <= 0.025 s) travel in the same published Odometry. A missing
+        # or malformed field forwards none (the policy node then refuses outdoor frames), never a default.
+        try:
+            state['vertical'], state['vertical_problem'] = vertical_fields(snapshot['local_position']), None
+        except GatewayError as exc:
+            state['vertical'], state['vertical_problem'] = None, str(exc)
         return state
 
     def prime(self, *, now, wall):
@@ -257,9 +275,11 @@ class BridgeSession:
                 self.revoke(self.gate.reason)
 
     def diagnostics(self):
+        from camera_ros2_adapter import VERTICAL_ENCODING
         return dict(state=self.gate.state, fault=self.fault, geofence=self.gate.geofence.metadata(),
                     geofence_waiver=copy.deepcopy(self.config['geofence_waiver']),
-                    geofence_fault=self.gate.geofence_fault, geofence_record=self.gate.geofence_record)
+                    geofence_fault=self.gate.geofence_fault, geofence_record=self.gate.geofence_record,
+                    odometry_vertical_encoding=VERTICAL_ENCODING, vertical_fields=copy.deepcopy(self.last_vertical))
 
     def poll(self, *, now, wall):
         """Return (new measured state or None, new offboard pair or None)."""
@@ -280,6 +300,9 @@ class BridgeSession:
                 state = None
             else:
                 self.last_odom = state['t']
+                self.last_vertical = dict(status='FORWARDED' if state['vertical'] is not None else 'ABSENT',
+                                          fields=copy.deepcopy(state['vertical']), problem=state['vertical_problem'],
+                                          odometry_t=state['t'])
             payload = None
             if self.gate.state not in ('DISABLED', 'REVOKED') and (self.last_tick is None or wall-self.last_tick >= .1-1e-9):
                 payload = self.gate.update(self.snapshot(), self.command,
@@ -291,6 +314,15 @@ class BridgeSession:
         except Exception as exc:
             self.revoke(str(exc))
             return None, None
+
+
+def odometry_covariances(state):
+    """(pose, twist) covariance lists of the gateway's private Odometry for one polled state (unit B).
+
+    The state's PX4 vertical fields (BridgeSession._state) are written in the camera_ros2_adapter VERTICAL_ENCODING;
+    without them every covariance stays NaN, exactly the Odometry published before unit B."""
+    from camera_ros2_adapter import encode_vertical_covariance
+    return encode_vertical_covariance(state.get('vertical'))
 
 
 def message_mapping(message):
@@ -314,7 +346,7 @@ def make_node_class():
     from std_msgs.msg import String
     from std_srvs.srv import Trigger
     from px4_msgs.msg import VehicleOdometry, VehicleLocalPosition, VehicleStatus, OffboardControlMode, TrajectorySetpoint
-    from camera_ros2_px4 import TOPICS
+    from camera_ros2_px4 import READ_FIELD_TYPES, TOPICS
     from camera_ros2_adapter import stamp_seconds
     from camera_ros2_node import stamp_parts
 
@@ -324,7 +356,8 @@ def make_node_class():
             # user-selected firmware source directory. Never create publishers first.
             definitions = verify_message_definitions(Path(get_package_share_directory('px4_msgs'))/'msg')
             for cls in (VehicleOdometry, VehicleLocalPosition, VehicleStatus, OffboardControlMode, TrajectorySetpoint):
-                validate_generated_type(cls, definitions/(cls.__name__+'.msg'))
+                # Unit B: also the generated type of every field read (incl. the forwarded epv and dead_reckoning).
+                validate_generated_type(cls, definitions/(cls.__name__+'.msg'), READ_FIELD_TYPES.get(cls.__name__))
             super().__init__('motar_px4_gateway')
             self._session = BridgeSession(config, binding)
             self._closed = False
@@ -431,8 +464,12 @@ def make_node_class():
             # Unknown cross-covariance/angular-rate uncertainty is not a measured
             # zero. Private policy input only: NaNs explicitly mean unavailable;
             # this Odometry must not be reused as an estimator-fusion input.
-            message.pose.covariance = [float('nan')]*36
-            message.twist.covariance = [float('nan')]*36
+            # Unit B: pose.covariance[0:4] carry PX4's z_valid/epv/dead_reckoning of this
+            # same state (camera_ros2_adapter.VERTICAL_ENCODING, tag slot 0 negative, so
+            # never a valid covariance); every other slot stays NaN. No fields: all NaN.
+            pose_covariance, twist_covariance = odometry_covariances(state)
+            message.pose.covariance = pose_covariance
+            message.twist.covariance = twist_covariance
             self._odom.publish(message)
 
         def _poll(self):

@@ -26522,3 +26522,65 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   Logs, probes and the SITL plan draft (`SITL_PLAN_DRAFT.md`, 4e0c39e0…, not a preregistration) stay in
   `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/`. Kernel faults 0 throughout these rounds.
 - **NOT_TESTED:** real OAK-D data, ROS graph/DDS, PX4/SITL, the vehicle. No flight qualification.
+
+## 2026-11-18 — Unit B: PX4 vertical fields reach the policy node; refusal hold bounded (PROVISIONAL 3.0 s)
+
+- **User direction (2026-11-18):** prepare the flight software path now, in parallel with waiting for the TA's
+  answers and real recordings, instead of after the outdoor fix ("이거 준비 미리 해놓을 수는 있는거아니야?" → "진행해").
+- **Goal 1, forwarding.** The gateway writes PX4 `VehicleLocalPosition` z_valid, epv and dead_reckoning into its own
+  private Odometry (`/motar/state/odometry`), the message whose pose the policy uses. Encoding
+  `motar-px4-vertical-v1`:
+  - `pose.covariance[0]` = tag -20261118.0;
+  - `[1..3]` = z_valid, epv in metres, dead_reckoning;
+  - every other slot NaN.
+
+  The policy node reads it only when its binding declares
+  `odometry_source = {producer: motar_px4_gateway, vertical_encoding: motar-px4-vertical-v1}`. Without the
+  declaration an outdoor contract stays UNCONFIGURED (`outdoor_vertical_fields_not_forwarded`).
+  - Absent or malformed fields give `estimator_vertical_fields_absent`. An interpolated pose combines the fields
+    conservatively.
+  - `.msg` SHA-256 bindings are unchanged. `READ_FIELD_TYPES` checks the installed px4_msgs types at construction.
+- **Goal 2, bounded hold.** A hold episode is the run of consecutive explicit zero holds (refusal or re-entry) without
+  a policy command. Its duration is measured on capture stamps. At `ground_estimate.refusal_hold_max_s`
+  (PROVISIONAL 3.0 s, bounds [1.0, 10.0] s, not derived from a measurement):
+  - the session stops proposing and latches `refusal_hold_timeout`;
+  - only an explicit reset clears it;
+  - the gateway revokes on its existing stale-command path, then PX4's offboard-loss failsafe and the pilot take over;
+  - no vehicle command is added.
+- **Results:**
+
+  | Check | Result |
+  | --- | --- |
+  | PUBLIC_CPU (final tree, before the README-only wording fixes) | 4259 OK (skipped 10, expected failures 10) = 4231 + 28 new |
+  | After the README wording fixes | `test_camera_ros2_package` 8 OK, `test_camera_runtime_unit_b` 28 OK, `test_camera_runtime_outdoor_r1` 86 OK (xfail 10), `check_public_docs` PASS |
+  | Indoor/gateway comparison against `preB_tree` | identical proposals, states, preprocessing and payloads |
+  | Mutation checks | implementer 7/7, reviewer 27/27 caught |
+  | Kernel faults | 0 → 1: the single line is a QGroundControl `libQt5Gui` segfault at 14:59:46 from an off-screen AppImage smoke test (user-space, not a host fault); `logs/unitB_kfault_attribution.txt` |
+
+- **Independent review r1 (Claude Opus 5.5, fresh context, read-only): PASS_WITH_LIMITS.**
+  - Findings: P0 0, P1 0, P2 2, P3 8.
+  - P2-2 (stale pinned covariance text) is closed by a dated superseding paragraph.
+  - P2-1 is documented after the r1a/r1b wording checks, and stays OPEN as design: a refusal pattern that lets one
+    command through every ≤ 3 s never latches (up to about 97 % zero-hold ticks for 60 s with no fault). A rate-based
+    bound is needed.
+  - The P3 items are documented: gated time counts, a slow ROS clock stretches the hold 1.33-1.5×, the producer is
+    trusted from configuration, and the replay stops on non-increasing stamps.
+- **NOT_TESTED:** rclpy/DDS paths, installed px4_msgs, PX4 `COM_OF_LOSS_T`/`COM_OBL_RC_ACT`, real epv/dead_reckoning
+  values. No flight qualification and no outdoor GO.
+- **Host preparation (outside the repository):**
+  - Two obsolete VS Code extension copies and three cached VSIX files deleted with the user's approval (free space
+    3.63 → 5.07 GB).
+  - DepthAI 2.29.0.0 is in `/home/fair/venvs/oakd-depthai-2.29`: wheel SHA-256 matches PyPI, and it reuses the
+    aerialgym numpy/OpenCV (run it with `PYTHONNOUSERSITE=1`). `oakd_camera.sdk_inventory()` reports
+    AVAILABLE_PINNED; no device is attached.
+  - QGroundControl v4.4.4 is in `/home/fair/Applications/`. v4.4.5 needs GLIBC 2.35 although its docs say Ubuntu
+    20.04; v4.4.4 is the last release built on 20.04. Its libraries load; a GUI launch is NOT_TESTED.
+  - `/home/fair/Applications/px4_practice_sitl.sh` runs PX4 v1.14.3 iris SITL for QGC practice. It refuses while
+    another SITL or a GPU job runs, and is not an evaluation.
+- **Real-system facts** from the TA are recorded in D-2026-11-18-1: VIO, not GNSS; Orin NX with ROS 1 and Docker;
+  PX4 about 1.14; camera probably OAK-D Pro W (unconfirmed); forest site.
+- **Next:** the TA's readings (camera model, VIO camera, Orin-PX4 link, PX4 v1.14.3), then an OAK-D Pro W preset if
+  confirmed and an Orin recording script, then forest recordings.
+- **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`: `OUTDOOR_UNIT_B_r1.md` (cc7c91eb…) and
+  `OUTDOOR_UNIT_B_REVIEW_r1.md` (review r1) and `OUTDOOR_UNIT_B_REVIEW_r1a.md` (doc-fix checks r1a/r1b). Diff, logs and probes:
+  `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/{diff,logs,review_unitB_r1}/`.

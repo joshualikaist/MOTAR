@@ -295,3 +295,26 @@ above; the camera is an OAK-D Pro (user, 2026-11-15), whose documented facts and
   horizon, faces whose valid edges lie beyond 5.0 m, flat-ground refusals under higher stereo noise.
 
 No outdoor flight GO follows from repair r2 either.
+
+## Unit B, 2026-11-18: PX4 vertical fields on the ROS path and a bounded refusal hold
+
+Work record: `/home/fair/motar_tmp/ros2_runtime_outdoor_20261113/UNIT_B_r1.md`. CPU tests with ROS-shaped stand-in
+messages and synthetic scenes only (`tests/test_camera_runtime_unit_b.py`); ROS graph, DDS, PX4, SITL, Gazebo, camera
+and vehicle are NOT_TESTED.
+
+- The PX4 gateway forwards `VehicleLocalPosition` `z_valid`, `epv` and `dead_reckoning` inside its own private
+  Odometry, the message whose pose the policy uses (encoding `motar-px4-vertical-v1` in `pose.covariance`; absent or
+  malformed fields: all NaN as before). The `.msg` SHA-256 bindings are unchanged; the generated type of every field
+  the gateway reads is now checked on the installed `px4_msgs` classes.
+- The policy node accepts an outdoor contract only when its binding declares the gateway as odometry source
+  (`odometry_source`); otherwise it still refuses with `outdoor_vertical_fields_not_forwarded`. Absent or malformed
+  fields attach nothing, and the runtime refuses the frame with its existing named reasons (a zero hold).
+- A hold episode (consecutive zero holds without a policy command) ends at the outdoor contract's
+  `ground_estimate.refusal_hold_max_s`, 3.0 s by default (PROVISIONAL, bounds [1.0, 10.0] s), measured on the capture
+  stamps: the session latches `refusal_hold_timeout`, proposes nothing more and needs an explicit reset; the gateway
+  then revokes on its stale-command path and PX4's offboard-loss failsafe and the pilot take over. Indoor contracts
+  never hold. The NPZ replay and the OAK-D replay tool mark the frame at which the session would latch.
+- Not measured: the limit itself (PROVISIONAL), PX4's `COM_OF_LOSS_T` / `COM_OBL_RC_ACT` response, and whether real
+  PX4 `epv` and `dead_reckoning` values pass the outdoor contract in flight.
+
+No outdoor flight GO follows from unit B.

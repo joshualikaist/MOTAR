@@ -31,6 +31,28 @@ only on a refusal: reset() (session start or an explicit reset), an altitude-gat
 in-band frame starts a fresh history) and a refused frame each set it to REFUSAL_REENTRY_FRAMES, so a nonzero command
 always follows at least that many accepted frames of the current history. Indoor contracts never refuse frames and
 keep the count at 0 (their proposals are unchanged).
+
+Bounded hold (unit B, 2026-11-18; supersedes "NO time limit" above). A hold episode is the run of consecutive ticks
+whose proposal is the explicit zero hold (HOLD_FRAME_REFUSED or HOLD_REENTRY) without an intervening policy command
+(camera_policy_runtime.RefusalHoldEpisode); a refusal inside it never restarts it, an altitude-gated tick (no proposal)
+neither extends nor ends it, only a policy command or reset() does. Its duration is measured on the held proposals'
+capture stamps. When it reaches the outdoor contract's PROVISIONAL ground_estimate.refusal_hold_max_s (default 3.0 s),
+finish() proposes nothing, raises HoldTimeout and the session latches the fault `refusal_hold_timeout`: no automatic
+re-entry, only an explicit reset() (a fresh session; the node's reset service) clears it. The PX4 gateway then revokes
+on its existing stale-command path (no new command within 0.15 s), so PX4's offboard-loss failsafe (COM_OF_LOSS_T,
+then COM_OBL_RC_ACT) and the pilot take over. No vehicle command is sent here. Indoor contracts never hold, so they
+never reach it. Why capture stamps: every proposal carries one; they strictly increase from tick to tick (offer() drops
+old samples, prepare() takes only newer ones); each is checked within 0.15 s of the ROS clock at prepare() and again at
+finish(), and that clock is checked against monotonic time (never backwards, never paused) with the 10 Hz period
+enforced on it, so ticks cannot be skipped. The replays have the same stamps and no receipt clock, so they compute the
+same episode offline. On the vehicle the ROS clock is the system clock; under simulated time it is the simulator's
+clock, the vehicle's own time base, where a monotonic measure would fire at a different vehicle time.
+
+PX4 vertical fields (unit B). For an outdoor-profile runtime and a binding that declares
+odometry_source = camera_ros2_adapter.gateway_odometry_source(), build_frame decodes z_valid, epv and dead_reckoning
+from the gateway's own Odometry (the same message whose pose the policy uses) and attaches them to the state; absent
+or malformed fields leave them out, so the runtime refuses the frame (estimator_vertical_fields_absent, a zero hold).
+Indoor sessions never read them.
 """
 import copy
 from dataclasses import dataclass
@@ -40,11 +62,13 @@ from collections import deque
 
 import numpy as np
 
-from camera_ros2_adapter import MAX_POSE_BRACKET_S, build_frame, stamp_seconds, validate_binding
+from camera_ros2_adapter import (MAX_POSE_BRACKET_S, build_frame, declared_vertical_encoding, stamp_seconds,
+                                 validate_binding)
 # PROVISIONAL (outdoor repair r1, defined in the runtime since repair r2 so the replays share it): accepted frames held
 # at zero after a history reset before a nonzero command resumes; 5 frames = 0.5 s at the trained 10 Hz, one interval
 # of the trained 0.5 s observation history.
-from camera_policy_runtime import FrameRefused, REFUSAL_REENTRY_FRAMES, _is_outdoor
+from camera_policy_runtime import (FrameRefused, REFUSAL_HOLD_TIMEOUT, REFUSAL_REENTRY_FRAMES, RefusalHoldEpisode,
+                                   _is_outdoor, refusal_hold_limit_s)
 
 KINDS = ('rgb', 'depth', 'camera_info', 'odometry')
 MAX_AGE_S, MAX_SKEW_S, CONTROL_DT_S = .15, .025, .1
@@ -52,6 +76,15 @@ MAX_AGE_S, MAX_SKEW_S, CONTROL_DT_S = .15, .025, .1
 
 class SessionFault(RuntimeError):
     pass
+
+
+class HoldTimeout(SessionFault):
+    """The refusal-hold episode reached the contract limit; record holds the episode facts (JSON-serializable)."""
+    def __init__(self, record):
+        self.reason, self.record = REFUSAL_HOLD_TIMEOUT, dict(record)
+        super().__init__('%s: zero-hold episode reached %.3f s (limit %.3f s, PROVISIONAL) after %d held proposals; '
+                         'proposals stopped, explicit session reset required'
+                         % (REFUSAL_HOLD_TIMEOUT, record['episode_s'], record['limit_s'], record['held_proposals']))
 
 
 @dataclass(frozen=True)
@@ -99,6 +132,14 @@ class RosPolicySession:
         self._outdoor = _is_outdoor(getattr(self.runtime, 'contract', None))
         self.reentry_hold_remaining = REFUSAL_REENTRY_FRAMES if self._outdoor else 0
         self._reentry_holding = False
+        # Unit B: bounded refusal hold (outdoor contracts only; None for indoor) and the declared PX4 vertical-field
+        # encoding of the odometry input (outdoor only; indoor sessions never read it).
+        self.hold_limit_s = refusal_hold_limit_s(getattr(self.runtime, 'contract', None))
+        self._episode = RefusalHoldEpisode(self.hold_limit_s)
+        self._episode_refusals, self._episode_last_refusal = 0, None
+        self.hold_timeout = None
+        self.vertical_encoding = declared_vertical_encoding(self.binding) if self._outdoor else None
+        self.vertical_fields = None
         self._fresh_history = False
         self._queues = {k: deque(maxlen=8) for k in KINDS}
         self._last_seen = {}
@@ -254,10 +295,12 @@ class RosPolicySession:
         """Single worker only; no callbacks/publishers/ROS clock reads here."""
         m = item.messages
         frame, state = build_frame(m['rgb'], m['depth'], m['camera_info'], m['odometry'], self.binding,
-                                   odometry_bracket=item.odometry_bracket)
+                                   odometry_bracket=item.odometry_bracket, vertical_encoding=self.vertical_encoding)
         pose = frame['pose_provenance']
         extra = dict(pose_interpolated=pose['pose_interpolated'], pose_skew_s=pose['pose_skew_s'],
                      coverage_case=frame['coverage_provenance']['case'])
+        if 'vertical_provenance' in frame:
+            extra['vertical_fields'] = frame['vertical_provenance']
         band = self.runtime.height_band(state)
         if not band['in_band']:
             # Outside the floor/ceiling filter band: no runtime call, no history advance, no proposal.
@@ -291,6 +334,8 @@ class RosPolicySession:
                     # re-entry count restarts here too.
                     self.reentry_hold_remaining = REFUSAL_REENTRY_FRAMES
                 return None
+            if isinstance(result.get('vertical_fields'), dict):
+                self.vertical_fields = dict(result['vertical_fields'])
             if result.get('frame_refused') is True:
                 # Outdoor refusal: an on-time tick whose frame was refused. Propose an explicit zero velocity and
                 # zero yaw rate (the gateway keeps its altitude hold), never the previous command; the next
@@ -298,11 +343,14 @@ class RosPolicySession:
                 refusal = result.get('refusal')
                 if not isinstance(refusal, dict) or not isinstance(refusal.get('reason'), str):
                     raise SessionFault('malformed frame refusal')
+                # Unit B: a refusal never restarts the hold episode; at the limit nothing is proposed.
+                elapsed = self._hold_tick(item, refusal['reason'])
                 proposal = {'capture_stamp_s': min(item.stamps), 'valid_until_s': min(item.stamps)+MAX_AGE_S,
                             'frame_id': self.binding['frames']['world'], 'velocity_enu_mps': [0., 0., 0.],
                             'yaw_rate_enu_rps': 0., 'epoch': item.epoch, 'sequence': item.sequence,
                             'pose_interpolated': result.get('pose_interpolated') is True,
-                            'command_sent_to_vehicle': False, 'hold': True, 'refusal': refusal['reason']}
+                            'command_sent_to_vehicle': False, 'hold': True, 'refusal': refusal['reason'],
+                            'hold_episode_s': elapsed}
                 self._last_used, self.started, self.live = item.stamps, True, True
                 self._last_success_wall = float(now_monotonic_s)
                 self.waiting_altitude, self._fresh_history = False, True
@@ -324,12 +372,17 @@ class RosPolicySession:
                         'command_sent_to_vehicle': False}
             self._reentry_holding = self.reentry_hold_remaining > 0
             if self._reentry_holding:
+                # Unit B: a re-entry hold belongs to the hold episode too; at the limit nothing is proposed.
+                elapsed = self._hold_tick(item, None)
                 # Re-entry hysteresis (outdoor repair r1): an accepted frame within REFUSAL_REENTRY_FRAMES of the last
                 # refusal is still held at zero; the runtime's next previous action is the applied zero hold.
                 self.runtime.applied_zero_hold()
                 self.reentry_hold_remaining -= 1
                 proposal.update(velocity_enu_mps=[0., 0., 0.], yaw_rate_enu_rps=0., hold=True,
-                                reentry_hold_remaining=self.reentry_hold_remaining)
+                                reentry_hold_remaining=self.reentry_hold_remaining, hold_episode_s=elapsed)
+            else:
+                # The policy's own command ends the hold episode (unit B).
+                self._episode.command()
             self._last_used, self.started, self.live = item.stamps, True, True
             self._last_success_wall = float(now_monotonic_s)
             self.waiting_altitude, self._fresh_history = False, False
@@ -343,6 +396,42 @@ class RosPolicySession:
             self._pending, self._busy = None, False
             if self.fault:
                 self.runtime.invalidate()
+
+    def _hold_tick(self, item, refusal_reason):
+        """Count one zero-hold proposal in the current episode; at the limit latch refusal_hold_timeout (unit B)."""
+        capture = min(item.stamps)
+        if not self._episode.active:
+            self._episode_refusals, self._episode_last_refusal = 0, None
+        elapsed, timed_out = self._episode.hold(capture)
+        if refusal_reason is not None:
+            self._episode_refusals += 1
+            self._episode_last_refusal = refusal_reason
+        if timed_out:
+            self.hold_timeout = {'reason': REFUSAL_HOLD_TIMEOUT, 'episode_s': elapsed, 'limit_s': self.hold_limit_s,
+                                 'limit_status': 'PROVISIONAL', 'first_hold_capture_s': self._episode.start_s,
+                                 'capture_stamp_s': capture, 'held_proposals': self._episode.ticks - 1,
+                                 'refused_frames': self._episode_refusals, 'last_refusal': self._episode_last_refusal,
+                                 'epoch': item.epoch, 'sequence': item.sequence}
+            raise HoldTimeout(self.hold_timeout)
+        return elapsed
+
+    @property
+    def hold_episode_s(self):
+        """Duration of the current refusal-hold episode at its last held proposal; None outside an episode."""
+        return self._episode.elapsed_s
+
+    def diagnostics(self):
+        """JSON-serializable session state for the node's diagnostic topic (no node-local fields)."""
+        return {'state': self.status, 'fault': self.fault, 'altitude': self.altitude, 'epoch': self.epoch,
+                'sequence': self.sequence, 'vehicle_commands_sent': 0,
+                # Outdoor profile: the last named frame refusal (a zero hold was proposed) and its run length.
+                'refusal': self.refusal, 'consecutive_refusals': self.consecutive_refusals,
+                'reentry_hold_remaining': self.reentry_hold_remaining,
+                # Unit B: the bounded hold (PROVISIONAL limit) and the PX4 vertical fields of the last tick.
+                'hold_episode_s': self.hold_episode_s, 'hold_limit_s': self.hold_limit_s,
+                'hold_limit_status': None if self.hold_limit_s is None else 'PROVISIONAL',
+                'hold_timeout': self.hold_timeout, 'vertical_encoding': self.vertical_encoding,
+                'vertical_fields': self.vertical_fields}
 
     def fail_inference(self, error):
         self._pending, self._busy = None, False

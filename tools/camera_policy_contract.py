@@ -118,6 +118,12 @@ GROUND_ESTIMATE_OUTDOOR_DEFAULT = {
     "min_range_span_m": provisional(1.0),
     # planes fitted to the nearest/farthest third and to each half of its inliers must tilt less than this from it.
     "planarity_max_angle_deg": provisional(1.0),
+    # Unit B (2026-11-18): the longest refusal-hold episode of the ROS session (consecutive explicit zero-hold
+    # proposals, frame refusals and re-entry holds alike, without an intervening policy command), measured on the
+    # proposals' capture stamps. At this duration the session latches refusal_hold_timeout and stops proposing; the
+    # PX4 gateway then revokes on its stale-command path and PX4's offboard-loss failsafe and the pilot take over.
+    # 3.0 s = 30 trained 10 Hz ticks, six times the 0.5 s re-entry hold; PROVISIONAL, not derived from a measurement.
+    "refusal_hold_max_s": provisional(3.0),
     "refuse_dead_reckoning": True,
     "estimator_fields": list(ESTIMATOR_VERTICAL_FIELDS),
 }
@@ -135,7 +141,12 @@ GROUND_ESTIMATE_BOUNDS = {"fit_max_range_m": (0.5, 20.0, False), "inlier_thresho
                           "ambiguity_separation_m": (0.0, 2.0, False), "floor_noise_margin_per_m": (0.0, 0.1, False),
                           "max_below_share": (0.0, 1.0, False), "rival_min_share": (0.0, 1.0, False),
                           "min_half_share": (0.0, 0.5, False), "min_range_span_m": (0.0, 20.0, False),
-                          "planarity_max_angle_deg": (0.0, 10.0, False)}
+                          "planarity_max_angle_deg": (0.0, 10.0, False),
+                          "refusal_hold_max_s": (1.0, 10.0, False)}
+# Unit B (2026-11-18): provisional values whose LOWER bound is inclusive too ([low, high]); every other bound above is
+# (low, high]. refusal_hold_max_s lies in [1.0, 10.0] s: at least ten trained ticks (twice the 0.5 s re-entry hold), at
+# most ten seconds of hovering without a policy command (PROVISIONAL bounds).
+INCLUSIVE_LOW_BOUNDS = ("refusal_hold_max_s",)
 PINS = {
     1: {"checkpoint": "888e8056b2a6768318e6d9fa4136c5ed01f68b7480954f7f339801b99fafc8e1",
         "report": "b4af1444fcc3a070be7dda545f636d9710c1ffbef88ab708966608b650f57a39",
@@ -386,9 +397,10 @@ def _provisional_problems(block, name, bounds):
             problems.append("%s.%s.status must be %s (no calibrated value exists yet)" % (name, key, PROVISIONAL))
         value = item["value"]
         kind_ok = (type(value) is int) if integer else (not isinstance(value, bool) and isinstance(value, (int, float)))
-        if not kind_ok or not math.isfinite(value) or not low < value <= high:
-            problems.append("%s.%s.value must be %s in (%g, %g]" % (name, key, "an integer" if integer else "finite",
-                                                                   low, high))
+        inclusive = key in INCLUSIVE_LOW_BOUNDS
+        if not kind_ok or not math.isfinite(value) or not (low <= value if inclusive else low < value) or not value <= high:
+            problems.append("%s.%s.value must be %s in %s%g, %g]" % (name, key, "an integer" if integer else "finite",
+                                                                    "[" if inclusive else "(", low, high))
     return problems
 
 
