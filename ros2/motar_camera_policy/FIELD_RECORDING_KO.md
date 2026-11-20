@@ -1,6 +1,7 @@
 # OAK-D 야외 녹화 절차 (조교님용)
 
-작성 2026-11-18, 수정 r1 (독립 검토 반영). 녹화 프로그램: `tools/oakd_field_recorder.py` (파일 하나).
+작성 2026-11-18, 수정 r2 (2026-11-21: 실제 DepthAI 프로그램으로 사전 점검한 결과 반영, 책상 시험 추가).
+녹화 프로그램: `tools/oakd_field_recorder.py` (파일 하나).
 PC 변환: `tools/oakd_recording_convert.py`.
 
 ## 목적
@@ -9,8 +10,13 @@ PC 변환: `tools/oakd_recording_convert.py`.
 정한 임시값)을 실제 카메라 데이터로 확정하려고 합니다. **비행이 아닙니다.** 드론은 손으로 들거나 삼각대에 올려 두고 카메라만
 녹화합니다.
 
-**순서 요약**: 준비(2) → VIO 끄기(3) → **최소 세트** 녹화(9.1, 약 1시간) → 시간과 공간이 남으면 선택 세트(9.2) → VIO 다시 켜고
-정상 확인(11) → USB 메모리로 복사(11).
+**순서 요약**
+
+1. **먼저, 실내에서 (약 10분)**: 준비(2) → VIO 끄기(3) → **책상 시험(4)** → 결과를 학생에게 보내고 **답을 기다립니다.**
+2. **학생이 확인한 뒤, 야외에서**: VIO 끄기(3) → **최소 세트** 녹화(9.1, 약 1시간) → 시간과 공간이 남으면 선택 세트(9.2) →
+   VIO 다시 켜고 정상 확인(11) → USB 메모리로 복사(11).
+
+이 프로그램은 실제 OAK-D 와 Orin 에서 아직 한 번도 실행된 적이 없습니다. 그래서 야외에 나가기 전에 책상 시험을 먼저 합니다.
 
 ## 0. 안전 규칙 (반드시)
 
@@ -31,6 +37,10 @@ PC 변환: `tools/oakd_recording_convert.py`.
 | USB3 케이블 (OAK-D 정품 또는 USB3 표시가 있는 것) | 카메라 연결 |
 | USB 메모리: 최소 세트만 1 GB 이상, 선택 세트까지 3 GB 이상 비어 있는 것 | 녹화 폴더를 PC로 옮기기 |
 | 메모장 또는 휴대폰 메모 | 장면 기록 |
+| 충전된 배터리 2개 이상 (또는 Orin 을 켜 둘 외부 전원) | 녹화하는 약 1시간 동안 Orin 과 카메라가 계속 켜져 있습니다. 비행용 배터리 하나로는 부족할 수 있습니다 |
+
+배터리 전압이 평소 비행을 멈추는 전압까지 내려가면 녹화를 멈추고, `sync` 를 입력한 뒤 평소 방법대로 Orin 을 끄고 배터리를
+바꿉니다. 녹화 도중에 전원이 꺼지면 그 녹화 폴더는 쓸 수 없게 될 수 있습니다.
 
 ## 2. Orin 준비 (한 번만)
 
@@ -50,20 +60,26 @@ PC 변환: `tools/oakd_recording_convert.py`.
 cat ~/oakd_env_before.txt
 ```
 
-`python3 -m pip --version` 이 "No module named pip" 이면 **여기서 멈추고** 학생에게 알려 주세요 (시스템 설치 프로그램 apt 를
-쓰지 않기 위해서입니다).
+다음 두 경우에는 **여기서 멈추고** 학생에게 알려 주세요.
+
+- `python3 -m pip --version` 이 "No module named pip" 인 경우 (시스템 설치 프로그램 apt 를 쓰지 않기 위해서입니다).
+- `python3 --version` 이 3.8, 3.9, 3.10, 3.11 중 하나가 **아닌** 경우 (2.2 의 설치 파일이 이 버전들만 지원합니다).
 
 ### 2.2 녹화 전용 폴더에 설치합니다
 
 ```bash
-PIP_USER=0 python3 -m pip install --target ~/oakd_rec_pkgs depthai==2.29.0.0 numpy
+PIP_USER=0 python3 -m pip install --no-cache-dir --target ~/oakd_rec_pkgs depthai==2.29.0.0 numpy==1.24.4
 ```
 
 - `PIP_USER=0` : pip 이 사용자 공용 위치(`~/.local`)에 설치하지 않게 하는 설정입니다. 지우지 말고 그대로 입력합니다.
 - `--target ~/oakd_rec_pkgs` : 이 폴더에만 설치합니다. 드론의 VIO 등 기존 프로그램이 쓰는 depthai·numpy 는 그대로입니다.
+- `--no-cache-dir` : 내려받은 파일의 사본을 다른 폴더(`~/.cache/pip`)에 남기지 않습니다.
 - 이 방법을 쓰는 이유: 가상환경(venv)은 Jetson 에 `python3-venv` 가 없으면 apt 설치가 필요하지만, `--target` 은 pip 만
   있으면 됩니다.
-- 인터넷 연결이 필요합니다 (휴대폰 핫스팟 가능).
+- `depthai==2.29.0.0`, `numpy==1.24.4` : 버전을 고정합니다. 다른 버전(예: numpy 2)은 이 녹화 프로그램과 함께 시험되지
+  않았습니다.
+- 인터넷 연결이 필요합니다 (휴대폰 핫스팟 가능). 인터넷이 안 되거나 이 명령이 오류로 끝나면 **멈추고** 오류 문장을 학생에게
+  보내 주세요. 인터넷 없이 설치하는 파일 묶음을 학생이 따로 준비해 두었습니다.
 
 ### 2.3 짧은 이름(alias) 만들기
 
@@ -90,7 +106,14 @@ python3 -c "import depthai; print(depthai.__version__)"
 
 1. `oakd_field_recorder.py` 파일 하나를 Orin 의 홈 폴더(`~`)로 복사합니다 (USB 메모리 사용).
 2. **udev 규칙** (= 일반 사용자가 USB 카메라를 열 수 있게 하는 리눅스 설정): VIO 가 이미 OAK-D 를 쓰고 있으므로 보통
-   이미 되어 있습니다. 녹화 때 `DEVICE_PERMISSION` 오류가 날 때만 학생에게 연락해 주세요.
+   이미 되어 있습니다. `DEVICE_PERMISSION` 오류가 **날 때만** 아래 두 줄을 실행하고 카메라 USB 를 뺐다 다시 꽂습니다.
+   Luxonis(카메라 제조사)가 안내하는 설정 내용이며, 새 설정 파일 한 개(`99-oakd-recorder.rules`)를 추가할 뿐 기존 파일과
+   프로그램은 바꾸지 않습니다. 나중에 되돌리려면 그 파일만 지우면 됩니다.
+
+   ```bash
+   echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | sudo tee /etc/udev/rules.d/99-oakd-recorder.rules
+   sudo udevadm control --reload-rules && sudo udevadm trigger
+   ```
 3. 저장 공간을 확인합니다: `df -h ~` 의 "Avail" 값. 최소 세트만: **1.5 GB 이상**, 선택 세트까지: **3.5 GB 이상**
    (계산은 10번).
 4. OAK-D 를 **USB3 포트**(보통 파란색)에 USB3 케이블로 연결합니다. USB2 로 연결되면 `USB_SPEED` 로 거부됩니다.
@@ -99,25 +122,53 @@ python3 -c "import depthai; print(depthai.__version__)"
 
 드론의 VIO(카메라로 위치를 추정하는 프로그램)는 **같은 OAK-D**를 씁니다. 한 카메라는 한 프로그램만 열 수 있으므로:
 
-1. 녹화(그리고 선택 사항인 `--probe`) **전에** VIO 와 OAK-D 를 쓰는 다른 모든 프로그램을 **끕니다.** 평소 VIO 를 실행한
+1. 책상 시험(4번)과 녹화 **전에** VIO 와 OAK-D 를 쓰는 다른 모든 프로그램을 **끕니다.** 평소 VIO 를 실행한
    방법대로 종료합니다. 예: VIO 를 띄운 터미널에서 `Ctrl+C`. 부팅 때 자동으로 켜지는 "서비스"라면
-   `sudo systemctl stop <서비스 이름>` (서비스 이름을 모르면 학생에게 물어봐 주세요).
-2. 꺼졌는지 확인합니다. 아래 명령에 VIO 나 depthai 프로그램이 보이면 아직 켜져 있는 것입니다.
+   `sudo systemctl stop 서비스이름` (서비스 이름을 모르면 학생에게 물어봐 주세요). VIO 가 Docker(컨테이너) 안에서 돈다면 `docker ps` 로 확인하고 평소 방법대로 그
+   컨테이너를 멈춥니다.
+2. 꺼졌는지 확인합니다. 아래 명령에 VIO, ROS 실행 프로그램(roslaunch), depthai 프로그램이 보이면 아직 켜져 있는 것입니다.
 
    ```bash
-   ps aux | grep -i -E "vio|depthai|oak" | grep -v grep
+   ps aux | grep -i -E "vio|vins|slam|msckf|basalt|spectacular|rtabmap|depthai|oak|roslaunch" | grep -v grep
    ```
 
+   이 목록은 이름으로 찾는 것이라 빠질 수 있습니다. 가장 확실한 확인은 녹화 프로그램 자체입니다.
 3. VIO 가 켜진 채로 녹화하면 `DEVICE_BUSY` 로 멈춥니다. 이때는 1번으로 돌아갑니다.
 4. 녹화가 모두 끝나면 VIO 를 **다시 켜고 정상인지 확인**합니다 (11번).
 
-## 4. (선택) 장치 정보 확인 `--probe`
+## 4. 책상 시험 (필수) — 야외에 나가기 전에, 실내에서 약 10분
 
-필수 단계가 아닙니다. 녹화할 때 카메라 종류·보정값은 자동으로 `capture.json` 에 기록됩니다.
+야외에서 1시간을 쓰기 전에 프로그램이 이 카메라와 Orin 에서 실제로 도는지 확인하는 단계입니다. 2번(설치)과 3번(VIO 끄기)을
+마친 뒤, 프로펠러를 뗀 채로 실내에서 아래 세 명령을 실행합니다. 카메라는 아무 곳이나 향해도 되고, 높이와 기울기는 재지 않아도
+됩니다 (아래 값 그대로 입력).
 
 ```bash
-oakrec --probe > ~/oakd_probe.json
+oakrec --probe --output ~/oakd_probe.json
+
+oakrec --record --output ~/oakd_desk_test_ir0 --scene "DESK TEST indoors, not data, projector 0" \
+  --camera-height-m 1.00 --camera-height-uncertainty-m 0.02 --pitch-deg 0 --frames 3 --projector 0
+
+oakrec --record --output ~/oakd_desk_test_ir05 --scene "DESK TEST indoors, not data, projector 0.5" \
+  --camera-height-m 1.00 --camera-height-uncertainty-m 0.02 --pitch-deg 0 --frames 3 --projector 0.5
 ```
+
+1. `--probe` 는 카메라 종류·보정값·USB 속도를 `~/oakd_probe.json` 파일로 저장하고 `probe written to ...` 라고 찍습니다.
+2. 두 녹화는 각각 3장만 저장하며 20초 안에 끝납니다. 끝에 `{"status": "COMPLETE", ...}` 이 찍히면 성공입니다.
+3. **오류가 나도 괜찮습니다.** 오류 문장을 고치려 하지 말고 그대로 보내 주세요. 그것을 미리 찾는 것이 이 시험의 목적입니다.
+   오류는 `oakd_field_recorder refused: 코드: 설명` 한 줄로 찍힙니다. 그 아래에 다른 영어 줄이 더 붙어 나오더라도 이 한 줄이
+   기준입니다 (그 줄들도 같이 보내 주세요).
+4. 아래 명령으로 결과를 파일 하나(약 10 MB)로 묶어서, **터미널에 찍힌 글 전체**(복사 또는 사진)와 함께 학생에게 보냅니다.
+   (10번의 "tar 를 만들지 않는다"는 규칙은 큰 야외 녹화에만 해당합니다.)
+
+   ```bash
+   cd ~ && tar czf oakd_desk_test.tgz oakd_env_before.txt oakd_probe.json oakd_desk_test_ir0 oakd_desk_test_ir05
+   ```
+
+   오류 때문에 없는 파일이 있으면 그 이름을 빼고 묶습니다.
+5. VIO 를 다시 켜고 평소처럼 동작하는지 확인합니다 (11번의 2, 3).
+6. **학생이 "확인했습니다"라고 답한 뒤에** 야외 녹화(5번 이후)를 진행합니다. 프로그램을 고쳐야 하면 학생이 새
+   `oakd_field_recorder.py` 를 보내 드립니다. 책상 시험을 **다시** 할 때는 폴더 이름 끝에 `_2` 를 붙입니다
+   (예: `~/oakd_desk_test_ir0_2`). 같은 이름을 다시 쓰면 `OUTPUT_EXISTS` 로 거부됩니다.
 
 ## 5. 높이와 기울기 재는 법
 
@@ -145,8 +196,9 @@ oakrec --record --output ~/oakd_rec/M01_ground_h100_p0_ir05 \
   --camera-height-m 1.00 --camera-height-uncertainty-m 0.02 --pitch-deg 0 --frames 20 --projector 0.5
 ```
 
-1. 실행하면 먼저 `estimated ... MB/frame` 이 찍히고, 약 2초 동안 밝기를 맞춘 뒤(이 영상은 버림) 저장을 시작합니다.
-2. 첫 장을 저장하면 `first frame X MB ... exposure ..., ISO ..., accelerometer samples N` 이 찍힙니다.
+1. 실행하면 먼저 `estimated ... MB/frame` 이 찍히고, 첫 영상이 들어온 뒤 약 3초 동안 밝기를 맞춥니다
+   (`warm-up: ... frames discarded` 라고 찍힘; 이 영상은 버림). 그다음 저장을 시작합니다. 녹화 한 번은 15초쯤 걸립니다.
+2. 첫 장을 저장하면 `first frame X MB ... exposure ..., ISO ..., accelerometer samples N; depth valid P %, ...` 이 찍힙니다.
    - **맨 처음 녹화의 X 값을 메모**하고, 10번 표에 따라 이후 `--frames` 를 정합니다.
    - `accelerometer samples` 가 0 이면 `WARNING IMU_NO_SAMPLES` 경고가 찍힙니다 (카메라 안 가속도계 값이 안 들어온다는
      뜻). **녹화는 멈추지 않고 계속 저장됩니다.** 이 경우 PC 에서는 수평계로 잰 기울기(`--pitch-deg`)를 대신 쓰므로,
@@ -224,8 +276,9 @@ partly cloudy, sun left, camera in shade, projector 0.5`
 - 프로그램은 녹화마다 남은 공간을 확인하고 부족하면 `INSUFFICIENT_DISK` 로 멈춥니다 (그때까지의 녹화는 안전합니다).
 - **Orin 에서 묶음 파일(tar)을 만들지 않습니다.** 같은 디스크에 복사본이 하나 더 생기기 때문입니다. 11번처럼 USB 메모리로
   폴더를 바로 복사합니다.
-- PC 쪽 (학생용): 최소 세트는 복사본 0.8 GB + 변환 결과 약 0.4 GB = **약 1.2 GB** 로 PC 의 빈 공간(약 4.4 GB)에 들어갑니다.
-  선택 세트까지는 복사본 2.6 GB + 변환 결과 약 1.3 GB = **약 3.9 GB** 로 안전하게 들어가지 않으므로 **외장 드라이브**를 쓰거나,
+- PC 쪽 (학생용): 최소 세트는 복사본 0.8 GB + 변환 결과 약 0.4 GB = **약 1.2 GB** 입니다. PC 의 빈 공간은 옮기기 전에
+  `df -h` 로 확인합니다 (2026-11-21 기준 약 3.4 GB 로, 최소 세트는 들어갑니다).
+  선택 세트까지는 복사본 2.6 GB + 변환 결과 약 1.3 GB = **약 3.9 GB** 로 들어가지 않으므로 **외장 드라이브**를 쓰거나,
   최소 세트를 먼저 옮겨 변환한 뒤 나머지를 **나누어 옮깁니다.** 변환 프로그램은 `--dry-run` 에서 결과 크기를 미리 보여 주고,
   공간이 부족하면 `INSUFFICIENT_DISK` 로 거부합니다.
 
@@ -240,15 +293,18 @@ partly cloudy, sun left, camera in shade, projector 0.5`
 
    ```bash
    ls /media/$USER/                                   # USB 메모리 이름 확인
-   cp -r ~/oakd_rec ~/oakd_env_before.txt /media/$USER/<USB이름>/
+   USB="/media/$USER/USB이름"                         # USB이름 을 위에서 본 이름으로 바꿔서 입력 (따옴표는 그대로)
+   cp -r ~/oakd_rec ~/oakd_env_before.txt ~/oakd_probe.json "$USB"/
    sync
    ```
 
-   `--probe` 를 했다면 `~/oakd_probe.json` 도 같이 복사합니다.
+   책상 시험에서 `~/oakd_probe.json` 이 만들어지지 않았다면 그 파일이 없다는 오류 한 줄이 나오지만, 나머지는 복사됩니다.
+   `ls /media/$USER/` 에 아무것도 안 보이면(원격 접속만 쓰는 경우) 평소 Orin 에서 파일을 꺼내는 방법(예: `scp -r`)으로
+   `~/oakd_rec` 폴더를 통째로 옮겨도 됩니다.
 5. 복사가 맞는지 확인합니다 (`sha256sum -c` = 파일이 깨지지 않았는지 확인하는 명령). 모든 줄이 `OK` 여야 합니다.
 
    ```bash
-   cd /media/$USER/<USB이름>/oakd_rec && for d in */; do (cd "$d" && sha256sum -c --quiet MANIFEST.sha256 && echo "$d OK"); done
+   cd "$USB"/oakd_rec && for d in */; do (cd "$d" && sha256sum -c --quiet MANIFEST.sha256 && echo "$d OK"); done
    ```
 
 6. USB 메모리와 장면 메모를 학생에게 전달합니다. Orin 의 `~/oakd_rec` 는 학생이 PC 복사를 확인했다고 할 때까지 지우지 않습니다.
@@ -260,21 +316,30 @@ partly cloudy, sun left, camera in shade, projector 0.5`
 | 코드 | 뜻 | 할 일 |
 | --- | --- | --- |
 | `DEVICE_BUSY` | 다른 프로그램(VIO 등)이 OAK-D 를 쓰는 중 | 3번: VIO 끄기. 이미 껐다면 카메라 USB 를 뺐다 다시 꽂기 |
-| `DEVICE_PERMISSION` | 이 사용자가 카메라를 열 권한이 없음 (udev 규칙) | 학생에게 연락 |
+| `DEVICE_PERMISSION` | 이 사용자가 카메라를 열 권한이 없음 (udev 규칙) | 2.5 의 2번 명령을 실행하고 USB 를 뺐다 꽂기. 그래도 안 되면 연락 |
 | `DEVICE_OPEN_FAILED` | 카메라는 보이지만 열리지 않음 | VIO 꺼졌는지 확인, USB 뺐다 꽂기, 그래도 안 되면 연락 |
 | `NO_DEVICE` | 카메라를 못 찾음 | 케이블 확인, VIO 끄기 |
-| `USB_SPEED` | USB2 속도로 연결됨 | USB3 케이블과 USB3 포트로 바꾸기 |
+| `USB_SPEED` | USB2 속도로 연결됨 | USB3 케이블과 USB3 포트로 바꾸기. 바꿀 수 없으면 학생에게 연락 |
 | `OUTPUT_EXISTS` | 같은 폴더 이름이 이미 있음 | 새 폴더 이름 |
 | `BAD_ARGUMENT` | 명령에 빠진 값 (예: `--pitch-deg`) | 오류 문장대로 고치기 |
 | `FRAMES_OUT_OF_RANGE` | `--frames` 가 1-100 밖 | 20 또는 10 |
 | `INSUFFICIENT_DISK` | 저장 공간 부족 | 10번 표 확인, 학생에게 연락 |
 | `OS_ERROR` | 디스크 쓰기 오류 (예: 공간이 꽉 참) | 학생에게 연락 |
-| `UNSUPPORTED_DEPTHAI_VERSION` | depthai 가 2.29.0.0 이 아니거나 `oakrec` 를 안 씀 | 2.3 의 alias 를 다시 입력 |
+| `UNSUPPORTED_DEPTHAI_VERSION` | depthai 가 2.29.0.0 이 아니거나 `oakrec` 를 안 씀 | 2.3 의 alias 를 다시 입력. 그래도 나오면 2.4 의 두 줄 결과를 학생에게 보내기 |
+| `oakrec: command not found` | 이 터미널에서 alias 를 아직 입력하지 않음 | 2.3 의 alias 줄을 입력 |
+| `ModuleNotFoundError` 또는 `No module named ...` | 2.2 의 설치가 안 됨 | 2.2 와 2.4 를 다시 하고, 결과를 학생에게 보내기 |
 | `PROJECTOR_NOT_APPLIED` | 프로젝터가 켜지지 않음 | 그 장면은 프로젝터 0 만 녹화, 메모 |
 | `NO_IR_PROJECTOR` | 이 카메라에는 IR 프로젝터가 없음 | 프로젝터 0 만 녹화 |
 | `WARNING IMU_NO_SAMPLES` (오류 아님, 경고) | 카메라 안 가속도계 값이 안 들어옴. 녹화는 계속 저장됨 | 기울기를 정확히 재고, 경고가 나왔다고 메모 |
+| `WARNING COLOUR_SENSOR_NAME` (오류 아님, 경고) | 컬러 카메라가 흑백 센서 이름으로 인식됨. 녹화는 계속 저장됨 | 경고가 나왔다고 메모 |
 | `NO_CAM_A`, `UNSUPPORTED_COLOUR_SENSOR`, `NO_STEREO_PAIR`, `UNSUPPORTED_STEREO_SENSOR` | 예상과 다른 카메라 | 오류 문장 전체를 메모해서 보내 주기 |
-| `FRAME_TIMEOUT`, `NON_INCREASING_DEVICE_TIMESTAMP`, `UNEXPECTED_ISP_LAYOUT`, `UNEXPECTED_DEPTH_LAYOUT` | 영상이 끊기거나 형식이 다름 | 케이블 다시 꽂고 새 폴더로 다시, 반복되면 메모 |
+| `FRAME_TIMEOUT` | 카메라에서 영상이 오지 않음 | USB 를 뺐다 꽂고 새 폴더로 다시. 두 번 반복되면 멈추고 오류 문장을 보내 주기 |
+| `NON_INCREASING_DEVICE_TIMESTAMP`, `UNEXPECTED_ISP_LAYOUT`, `UNEXPECTED_DEPTH_LAYOUT` | 영상이 끊기거나 형식이 다름 | 케이블 다시 꽂고 새 폴더로 다시. 두 번 나오면 멈추고 오류 문장을 학생에게 보내 주기 |
+| `WARNING ISP_PADDED` (오류 아님, 경고) | 컬러 영상이 예상보다 큰 형식으로 들어옴. 녹화는 계속 저장됨 | 경고가 나왔다고 메모 (책상 시험에서 나오면 학생이 확인) |
+| `WARNING:` 로 시작하는 그 밖의 줄 | 참고용 알림. 녹화는 계속 저장됨 | 메모 |
+| `usage: ...` 와 `error: ...` | 명령을 잘못 입력함 (철자, 빠진 값) | `error:` 줄을 읽고 명령을 다시 입력 |
+| `UNEXPECTED` | 그 밖의 카메라 오류. 보통 USB 연결이나 전원이 순간적으로 끊긴 것 (`X_LINK_ERROR`) | USB 를 뺐다 꽂고 새 폴더로 다시. 프로젝터 0.5 에서만 반복되면 그 장면은 프로젝터 0 만 녹화하고 메모 |
+| `INTERRUPTED` | 녹화 중에 Ctrl+C 를 누름 | 새 폴더 이름으로 다시 녹화 |
 
 ## 13. 체크리스트
 
@@ -287,16 +352,19 @@ partly cloudy, sun left, camera in shade, projector 0.5`
 | 5 | OAK-D 를 USB3 케이블·USB3 포트로 연결 | ☐ |
 | 6 | **VIO 와 OAK-D 를 쓰는 다른 프로그램 모두 종료** (`ps aux` 확인) | ☐ |
 | 7 | 새 터미널마다 `alias oakrec=...` 입력 | ☐ |
-| 8 | 기울기 앱의 + 방향(앞으로 숙임) 확인 | ☐ |
-| 9 | 첫 녹화의 "first frame X MB" 메모 → 10번 표로 `--frames` 결정 | ☐ |
-| 10 | 최소 세트 M01-M11, 각각 프로젝터 0 과 0.5 (M01, M02 최우선) | ☐ |
-| 11 | (선택) 선택 세트 O01-O24 | ☐ |
-| 12 | 모든 녹화에 높이·기울기·거리·하늘·해·그늘을 `--scene` 에 기록 | ☐ |
-| 13 | 계획한 녹화마다 status 가 COMPLETE 인 폴더가 있음 (INCOMPLETE 폴더는 지우지 않음) | ☐ |
-| 14 | **VIO 다시 켜기** | ☐ |
-| 15 | **VIO 가 평소처럼 동작하는지 확인** | ☐ |
-| 16 | USB 메모리로 `cp -r` 복사, `sha256sum -c` 모두 OK (Orin 에서 tar 만들지 않기) | ☐ |
-| 17 | USB 메모리와 메모 전달; 학생 확인 전에는 `~/oakd_rec` 지우지 않기 | ☐ |
-| 18 | (학생 확인 후) `rm -rf ~/oakd_rec_pkgs` 로 녹화 전용 설치 제거 | ☐ |
+| 8 | **책상 시험(4)**: 결과 묶음과 터미널 글을 학생에게 보냄, VIO 다시 켜고 확인 | ☐ |
+| 9 | **학생의 "확인했습니다" 답을 받음** (그 전에는 야외 녹화를 하지 않음) | ☐ |
+| 10 | 야외: 충전된 배터리 2개 이상, 프로펠러 분리, VIO 종료 | ☐ |
+| 11 | 기울기 앱의 + 방향(앞으로 숙임) 확인 | ☐ |
+| 12 | 첫 녹화의 "first frame X MB" 메모 → 10번 표로 `--frames` 결정 | ☐ |
+| 13 | 최소 세트 M01-M11, 각각 프로젝터 0 과 0.5 (M01, M02 최우선) | ☐ |
+| 14 | (선택) 선택 세트 O01-O24 | ☐ |
+| 15 | 모든 녹화에 높이·기울기·거리·하늘·해·그늘을 `--scene` 에 기록 | ☐ |
+| 16 | 계획한 녹화마다 status 가 COMPLETE 인 폴더가 있음 (INCOMPLETE 폴더는 지우지 않음) | ☐ |
+| 17 | **VIO 다시 켜기** | ☐ |
+| 18 | **VIO 가 평소처럼 동작하는지 확인** | ☐ |
+| 19 | USB 메모리로 `cp -r` 복사, `sha256sum -c` 모두 OK (Orin 에서 tar 만들지 않기) | ☐ |
+| 20 | USB 메모리와 메모 전달; 학생 확인 전에는 `~/oakd_rec` 지우지 않기 | ☐ |
+| 21 | (학생 확인 후) `rm -rf ~/oakd_rec_pkgs` 로 녹화 전용 설치 제거 | ☐ |
 
 이 녹화는 임계값 확인용 데이터일 뿐이며, 비행 가능 여부를 판단하는 시험이 아닙니다.

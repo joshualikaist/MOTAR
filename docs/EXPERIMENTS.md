@@ -1005,6 +1005,16 @@ family that is in the test's scope.
     the first flat-ground recording.
     [Report](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_r1.md),
     [review r3](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_REVIEW_r3.md).
+  - **Unit C, preflight r4 and repair r3 (2026-11-21, CPU only, no device):** the recorder checked against the
+    real DepthAI 2.29.0.0 module, Luxonis' own sources and a literal run of the protocol before its first device
+    run. Changed: Sync threshold 10 → 60 ms, IMX378 ISP 1/4 → 4/13 (aligned depth width must be a multiple of 16),
+    warm-up from the first frame, argument checks before the SDK import (a fast refusal aborted with exit 134),
+    every accelerometer sample kept in `imu.npz`, a required desk test in the protocol. Reviews r4, r4b and r4c
+    PASS_WITH_LIMITS (P0/P1/P2 0; P3 open: F12, N6, R1-R3). Device, Orin and firmware still NOT_TESTED.
+    [Report](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_REPAIR_r3.md),
+    [review r4](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_REVIEW_r4.md),
+    [r4b](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_REVIEW_r4b.md),
+    [r4c](evidence/sitl_2026-11-05/camera_runtime/OAKD_RECORDER_REVIEW_r4c.md).
 - **Read first:** [`docs/plans/sitl_validation_plan_v1.md`](plans/sitl_validation_plan_v1.md)
 - **Lineage:**
   - user direction 2026-11-05 (real flight, SITL check first)

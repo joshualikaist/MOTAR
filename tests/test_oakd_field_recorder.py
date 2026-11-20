@@ -10,11 +10,14 @@ import json
 import math
 import os
 from pathlib import Path
+import re
+import shlex
 import sys
 import tempfile
 import types
 import unittest
 from unittest import mock
+import warnings
 
 import numpy as np
 
@@ -52,6 +55,11 @@ class Node:
         self.inputs = {'rgb': Port(), 'depth': Port()}
 
     def __getattr__(self, name):
+        if name == 'setDefaultProfilePreset':      # DepthAI 2.29 warns here on every call (review r4 F3)
+            def preset(*args):
+                warnings.warn('HIGH_DENSITY is deprecated, will be removed in future releases', DeprecationWarning)
+                self.calls.append((name, args))
+            return preset
         if name.startswith(('set', 'enable')):
             return lambda *args: self.calls.append((name, args))
         raise AttributeError(name)
@@ -111,9 +119,17 @@ class Calibration:
 
 
 class ColourMsg:
-    def __init__(self, t, seq, width, height, depth_shape=None):
+    def __init__(self, t, seq, width, height, depth_shape=None, padding=0):
         self.t, self.seq, self.width, self.height = t, seq, width, height
-        self.depth_shape = depth_shape
+        self.depth_shape, self.padding = depth_shape, padding
+
+    def getData(self):                             # the delivered bytes; getFrame() hides excess data (r4 F4)
+        return np.full(self.width * self.height * 3 // 2 + self.padding, 7, np.uint8)
+
+    def getRaw(self):
+        return types.SimpleNamespace(fb=types.SimpleNamespace(stride=self.width + 16, p1Offset=0, p2Offset=1,
+                                                              p3Offset=2, width=self.width, height=self.height,
+                                                              bytesPP=1))
 
     def getExposureTime(self):
         return timedelta(microseconds=800 + 10 * self.seq)
@@ -174,8 +190,9 @@ class Clock:
 
 
 class FrameQueue:
-    def __init__(self, stamps, size, clock, depth_shape=None):
-        self.groups = [{'rgb': ColourMsg(t, i, *size), 'depth': DepthMsg(t + 0.001, i, *size, depth_shape)}
+    def __init__(self, stamps, size, clock, depth_shape=None, padding=0, depth_offsets=(0.001,)):
+        self.groups = [{'rgb': ColourMsg(t, i, *size, padding=padding),
+                        'depth': DepthMsg(t + depth_offsets[i % len(depth_offsets)], i, *size, depth_shape)}
                        for i, t in enumerate(stamps)]
         self.clock = clock
 
@@ -206,10 +223,12 @@ class ImuQueue:
 
 class Device:
     def __init__(self, sensors, usb='SUPER', stamps=(1.0, 1.1, 1.2), ir=True, imu='BNO086', clock=None,
-                 extrinsics=True, dot_ok=True, flood_ok=True, imu_silent=False, depth_shape=None):
+                 extrinsics=True, dot_ok=True, flood_ok=True, imu_silent=False, depth_shape=None, padding=0,
+                 depth_offsets=(0.001,)):
         self.sensors, self.usb, self.stamps, self.ir, self.imu = sensors, usb, stamps, ir, imu
         self.dot_ok, self.flood_ok, self.imu_silent, self.depth_shape = dot_ok, flood_ok, imu_silent, depth_shape
-        self.queues = []
+        self.padding, self.depth_offsets = padding, depth_offsets
+        self.queues, self.queue_sizes = [], {}
         self.clock = clock or Clock()
         self.calibration = Calibration(extrinsics)
         self.ir_calls, self.started, self.closed = [], [], False
@@ -257,10 +276,14 @@ class Device:
         pipeline = self.started[-1]
         colour = pipeline.nodes('ColorCamera')[0]
         size = colour.called('setResolution')[0][0]
-        width, height = {'THE_800_P': (1280, 800), 'THE_12_MP': (1014, 760)}[size.name]
+        width, height = {'THE_800_P': (1280, 800), 'THE_12_MP': (4056, 3040)}[size.name]
+        for num, den in colour.called('setIspScale'):
+            width, height = (width * num - 1) // den + 1, (height * num - 1) // den + 1
         self.queues.append(name)
+        self.queue_sizes[name] = maxSize
         if name == 'rgbd':
-            self.frames = FrameQueue(self.stamps, (width, height), self.clock, self.depth_shape)
+            self.frames = FrameQueue(self.stamps, (width, height), self.clock, self.depth_shape, self.padding,
+                                     self.depth_offsets)
             return self.frames
         return ImuQueue(self.frames, [0.0, 0.0, 1.0], silent=self.imu_silent)
 
@@ -336,9 +359,10 @@ class RecorderTest(unittest.TestCase):
         colour = pipeline.nodes('ColorCamera')[0]
         stereo = pipeline.nodes('StereoDepth')[0]
         self.assertEqual(colour.called('setResolution')[0][0].name, 'THE_12_MP')
-        self.assertEqual(colour.called('setIspScale'), [(1, 4)])
+        self.assertEqual(colour.called('setIspScale'), [(4, 13)])
         self.assertEqual(colour.called('setManualFocus'), [(131,)])
-        self.assertEqual(stereo.called('setOutputSize'), [(1014, 760)])
+        self.assertEqual(stereo.called('setOutputSize'), [(1248, 936)])
+        self.assertEqual(description['colour']['size'], [1248, 936])
         self.assertEqual(stereo.called('setSubpixel'), [(True,)])
         self.assertEqual(len(pipeline.nodes('IMU')[0].called('enableIMUSensor')), 2)
         self.assertEqual(description['imu']['sensors'], ['ACCELEROMETER_RAW', 'ROTATION_VECTOR'])
@@ -441,7 +465,7 @@ class RecorderTest(unittest.TestCase):
         self.assertIsNotNone(on_disk['calibration']['imu_to_cam_a']['matrix_4x4'])
         self.assertAlmostEqual(on_disk['calibration']['stereo_min_z_hints']['baseline_m'], 0.075)
         manifest = (out / 'MANIFEST.sha256').read_text().splitlines()
-        self.assertEqual(len(manifest), 4)
+        self.assertEqual(len(manifest), 5)                              # 3 frames, imu.npz, capture.json
         for line in manifest:
             digest, relative = line.split('  ')
             self.assertEqual(R.sha256_file(out / relative), digest)
@@ -471,12 +495,12 @@ class RecorderTest(unittest.TestCase):
         self.assertEqual(len(meta['frames']), 3)
 
     def test_bytes_per_frame_estimate_is_reported_and_bounded(self):
-        sizes = {size: R.estimate_bytes_per_frame(*size) for size in ((1280, 800), (1014, 760))}
+        sizes = {size: R.estimate_bytes_per_frame(*size) for size in ((1280, 800), (1248, 936))}
         for size, value in sizes.items():
             raw = size[0] * size[1] * 3.5                             # YUV420 + uint16 depth, uncompressed
             self.assertGreater(value, 0.2 * raw)
             self.assertLess(value, 2_500_000)
-        self.assertGreater(sizes[(1280, 800)], sizes[(1014, 760)])
+        self.assertGreater(sizes[(1248, 936)], sizes[(1280, 800)])    # the IMX378 profile has more pixels
         with mock.patch.object(R.shutil, 'disk_usage', return_value=types.SimpleNamespace(free=1 << 20)):
             with self.assertRaises(R.RecorderError) as caught:
                 R.check_disk(os.path.join(self.tmp.name, 'x'), 20, sizes[(1280, 800)])
@@ -561,7 +585,7 @@ class RecorderTest(unittest.TestCase):
         imports = [line.split()[1] for line in source.splitlines() if line.startswith(('import ', 'from '))]
         self.assertTrue(imports)
         allowed = {'argparse', 'datetime', 'hashlib', 'io', 'json', 'math', 'os', 'platform', 'shutil', 'sys',
-                   'time', 'numpy'}
+                   'time', 'warnings', 'numpy'}
         self.assertEqual(set(imports) - allowed, set())
         for word in ('rclpy', 'mavsdk', 'pymavlink', 'cv2', 'px4'):
             self.assertNotIn('import %s' % word, source)
@@ -656,6 +680,10 @@ class RecorderTest(unittest.TestCase):
             status = json.loads(stdout.getvalue().strip().splitlines()[-1])
             self.assertEqual((status['status'], status['frames'], status['frames_without_imu_samples']),
                              ('COMPLETE', 3, expected))
+            self.assertEqual(status['sequence_gaps'], 0)
+            self.assertAlmostEqual(status['depth_minus_colour_ms']['max'], 1.0, places=6)   # fixture: depth 1 ms later
+            self.assertEqual(status['depth_minus_colour_ms']['sync_threshold_ms'], 60)
+            self.assertEqual(status['imu_samples_total'] > 0, not silent)
 
     def test_sequence_gaps_are_counted(self):
         class GapDevice(Device):
@@ -677,7 +705,8 @@ class RecorderTest(unittest.TestCase):
         with self.assertRaises(R.RecorderError) as caught:
             R.check_sdk(wrong)
         self.assertEqual(caught.exception.code, 'UNSUPPORTED_DEPTHAI_VERSION')
-        for text in ('--target ~/oakd_rec_pkgs', 'oakrec', 'do NOT pip install into the drone'):
+        for text in ('oakrec', 'do NOT pip install into the drone',
+                     '--no-cache-dir --target ~/oakd_rec_pkgs depthai==2.29.0.0 numpy==1.24.4'):
             self.assertIn(text, str(caught.exception))
         self.assertNotIn('; pip install depthai', str(caught.exception))
         R.check_sdk(types.SimpleNamespace(__version__=R.SDK_VERSION))                          # control: accepted
@@ -733,6 +762,318 @@ class RecorderTest(unittest.TestCase):
         self.assertEqual(code, 0)                                                              # control
         self.assertEqual(json.loads(Path(self.tmp.name, 'ok_cli', 'capture.json').read_text())['pitch_deg_nominal'],
                          -10.0)
+
+    # ---- preflight r4 (real-SDK and Luxonis-forum findings before the first run on a device)
+    def test_sync_threshold_is_above_half_the_frame_period(self):
+        # The SDK default (10 ms, attempts -1) sends nothing until colour and depth are that close; the DepthAI
+        # depth_video_synced example uses 50 ms. Above half the frame period a partner always exists.
+        self.assertEqual(R.SYNC_THRESHOLD_MS, 60)
+        self.assertGreater(R.SYNC_THRESHOLD_MS, 1000.0 / R.FPS / 2.0)
+        self.assertLess(R.SYNC_THRESHOLD_MS, 1000.0 / R.FPS)
+        pipeline, description = R.build_pipeline(fake_dai(), R.select_profile(PRO_W), 'extended')
+        sync = pipeline.nodes('Sync')[0]
+        self.assertEqual(sync.called('setSyncThreshold'), [(timedelta(milliseconds=60),)])
+        self.assertEqual(sync.called('setSyncAttempts'), [])
+        self.assertEqual(description['sync']['threshold_ms'], 60)
+        meta, _ = self.record(Device(PRO_W, depth_offsets=(0.001, -0.004, 0.023)))
+        self.assertEqual(meta['depth_minus_colour_ms']['sync_threshold_ms'], 60)
+        self.assertAlmostEqual(meta['depth_minus_colour_ms']['min'], -4.0, places=6)
+        self.assertAlmostEqual(meta['depth_minus_colour_ms']['max'], 23.0, places=6)
+        self.assertEqual(len(meta['frames']), 3)
+        self.assertTrue(any('depth-colour time 1.0 ms' in line and 'depth valid' in line for line in self.log))
+
+    def test_profile_sizes_fit_the_device_depth_width_rule(self):
+        # Device rule: "Disparity/depth width must be multiple of 16" for a depth aligned to the colour camera.
+        sensor_sizes = {'THE_800_P': (1280, 800), 'THE_12_MP': (4056, 3040)}
+        self.assertEqual(sorted(R.PROFILES), ['IMX378', 'OV9282', 'OV9782'])
+        for name, profile in R.PROFILES.items():
+            width, height = profile['size']
+            self.assertEqual(width % 16, 0, name)
+            self.assertEqual(height % 2, 0, name)
+            full = sensor_sizes[profile['resolution']]
+            num, den = profile['isp_scale'] or (1, 1)
+            self.assertEqual((width, height), tuple((v * num - 1) // den + 1 for v in full), name)   # SDK getIspSize
+        self.assertEqual(R.PROFILES['IMX378']['size'], (1248, 936))
+        for size in ((1014, 760), (1280, 801)):                # the former 1/4 profile; an odd height
+            bad = dict(R.select_profile(PRO), size=size, isp_scale=(1, 4))
+            with self.assertRaises(R.RecorderError) as caught:
+                R.build_pipeline(fake_dai(), bad, 'extended', lens_position=131)
+            self.assertEqual(caught.exception.code, 'BAD_ARGUMENT')
+            self.assertIn('multiple of 16', str(caught.exception))
+        plan = R.probe(fake_dai(Device(PRO)), imu_seconds=0)['recording_plan']
+        self.assertEqual((plan['profile'], plan['size'], list(plan['isp_scale'])), ('IMX378', [1248, 936], [4, 13]))
+        meta, args = self.record(Device(PRO), name='imx')                             # positive control: records
+        self.assertEqual(meta['status'], 'COMPLETE')
+        with np.load(Path(args.output) / meta['frames'][0]['file'], allow_pickle=False) as data:
+            self.assertEqual(data['isp'].shape, (1404, 1248))
+            self.assertEqual(data['depth_mm'].shape, (936, 1248))
+        self.assertEqual(meta['calibration']['sockets']['CAM_A']['output_size'], [1248, 936])
+
+    def test_warmup_counts_from_the_first_received_frame(self):
+        class SlowStart(Device):
+            # the pipeline start takes 3 s before the first frame; warm-up time must not run during it
+            def getOutputQueue(self, name, maxSize, blocking):
+                queue = Device.getOutputQueue(self, name, maxSize, blocking)
+                if name == 'rgbd':
+                    real, calls = queue.tryGet, []
+
+                    def late():
+                        calls.append(1)
+                        if len(calls) <= 30:
+                            self.clock.t += 0.1
+                            return None
+                        return real()
+                    queue.tryGet = late
+                return queue
+        stamps = tuple(1.0 + 0.1 * i for i in range(12))
+        for name, cls in (('prompt', Device), ('slow', SlowStart)):
+            self.log.clear()
+            meta, _ = self.record(cls(PRO_W, stamps=stamps), name='warm_' + name, warmup_s=0.25)
+            warm = meta['warmup']
+            # fake clock: 0.1 s per received frame, so frames at 0.0, 0.1, 0.2 and 0.3 s are discarded (0.3 >= 0.25)
+            self.assertEqual(warm['frames_discarded'], 4, name)
+            self.assertEqual(warm['counted_from'], 'first received frame')
+            self.assertEqual((warm['first']['exposure_time_us'], warm['last']['exposure_time_us']), (800.0, 830.0))
+            self.assertEqual((warm['first']['sensitivity_iso'], warm['last']['sensitivity_iso']), (100, 103))
+            self.assertEqual([f['sequence_num'] for f in meta['frames']], [4, 5, 6], name)
+            self.assertEqual(sum('warm-up: 4 frames discarded' in line for line in self.log), 1)
+            self.assertTrue(all(f['accel_count'] > 0 for f in meta['frames']))
+            # every accelerometer sample is kept, the warm-up's included (review r4 F2)
+            with np.load(Path(self.tmp.name, 'warm_' + name, 'imu.npz'), allow_pickle=False) as data:
+                kept = data['accel']
+            self.assertEqual(kept.shape[1], 4)
+            self.assertEqual(kept.shape[0], meta['imu_all_samples']['count'])
+            self.assertLess(kept[0, 0], 1.0)                              # before the first (discarded) frame
+            self.assertGreaterEqual(kept[-1, 0], meta['frames'][-1]['t_device_s'])
+            self.assertTrue(np.all(np.diff(kept[:, 0]) > 0))
+            self.assertGreater(kept.shape[0], sum(f['accel_count'] for f in meta['frames']))
+        meta, _ = self.record(Device(PRO_W), name='warm_zero')                         # --warmup-s 0 discards none
+        self.assertEqual((meta['warmup']['frames_discarded'], meta['warmup']['first']), (0, None))
+        self.assertEqual([f['sequence_num'] for f in meta['frames']], [0, 1, 2])
+        self.assertEqual(R.parser().parse_args(['--record']).warmup_s, 3.0)
+
+    def test_unexpected_sdk_error_is_named_and_keeps_the_capture(self):
+        link_error = ("Communication exception - possible device error/misconfiguration. Original message "
+                      "'Couldn't read data from stream: 'rgbd' (X_LINK_ERROR)'")
+
+        class Dropping(Device):
+            def __init__(self, sensors, error):
+                Device.__init__(self, sensors)
+                self.error = error
+
+            def getOutputQueue(self, name, maxSize, blocking):
+                queue = Device.getOutputQueue(self, name, maxSize, blocking)
+                if name == 'rgbd':
+                    real, calls = queue.tryGet, []
+
+                    def dropping():
+                        calls.append(1)
+                        if len(calls) > 1:
+                            raise self.error
+                        return real()
+                    queue.tryGet = dropping
+                return queue
+
+        def run(name, device):
+            stderr = io.StringIO()
+            with mock.patch.object(R.sys, 'stderr', stderr), mock.patch.object(R.sys, 'stdout', io.StringIO()):
+                code = R.main(['--record', '--output', os.path.join(self.tmp.name, name), '--scene', 's',
+                               '--camera-height-m', '1', '--camera-height-uncertainty-m', '0.02', '--pitch-deg', '0',
+                               '--frames', '3', '--warmup-s', '0'], dai=fake_dai(device))
+            return code, stderr.getvalue()
+        code, text = run('dropped', Dropping(PRO_W, RuntimeError(link_error)))
+        self.assertEqual(code, 2)
+        self.assertTrue(text.startswith('oakd_field_recorder refused: UNEXPECTED: RuntimeError: '))
+        for word in ('X_LINK_ERROR', 'NEW folder', '--projector 0'):
+            self.assertIn(word, text)
+        self.assertNotIn('Traceback', text)
+        meta = json.loads(Path(self.tmp.name, 'dropped', 'capture.json').read_text())
+        self.assertEqual((meta['status'], meta['stop_error']['code'], len(meta['frames'])),
+                         ('INCOMPLETE', 'UNEXPECTED', 1))
+        self.assertEqual(len(Path(self.tmp.name, 'dropped', 'MANIFEST.sha256').read_text().splitlines()), 3)
+        code, text = run('ctrl_c', Dropping(PRO_W, KeyboardInterrupt()))
+        self.assertEqual(code, 130)
+        self.assertIn('INTERRUPTED', text)
+        self.assertEqual(json.loads(Path(self.tmp.name, 'ctrl_c', 'capture.json').read_text())['status'], 'INCOMPLETE')
+        broken = Device(PRO_W)                                           # an SDK error before any folder exists
+        broken.readCalibration = mock.Mock(side_effect=RuntimeError('Failed to read calibration'))
+        code, text = run('no_calibration', broken)
+        self.assertEqual(code, 2)
+        self.assertIn('UNEXPECTED: RuntimeError: Failed to read calibration', text)
+        self.assertFalse(os.path.exists(os.path.join(self.tmp.name, 'no_calibration')))
+        self.assertTrue(broken.closed)
+        code, text = run('control', Device(PRO_W))                       # positive control
+        self.assertEqual((code, text), (0, ''))
+
+    def test_colour_socket_reported_as_ov9282_records_with_a_warning(self):
+        grey = {'CAM_A': 'OV9282', 'CAM_B': 'OV9282', 'CAM_C': 'OV9282'}
+        meta, _ = self.record(Device(grey), name='grey')
+        self.assertEqual(meta['status'], 'COMPLETE')
+        self.assertEqual(meta['pipeline']['colour']['sensor'], 'OV9282')
+        self.assertIn('GREY', meta['pipeline']['colour']['sensor_warning'])
+        self.assertEqual(sum('WARNING COLOUR_SENSOR_NAME' in line for line in self.log), 1)
+        self.assertEqual(meta['pipeline']['colour']['size'], [1280, 800])
+        report = R.probe(fake_dai(Device(grey)), imu_seconds=0)
+        self.assertIn('GREY', report['recording_plan']['warning'])
+        self.assertIsNone(report['recording_plan']['refusal'])
+        self.log.clear()
+        meta, _ = self.record(Device(PRO_W), name='colour')                            # control: no warning
+        self.assertIsNone(meta['pipeline']['colour']['sensor_warning'])
+        self.assertFalse(any('COLOUR_SENSOR_NAME' in line for line in self.log))
+        self.assertIsNone(R.probe(fake_dai(Device(PRO_W)), imu_seconds=0)['recording_plan']['warning'])
+        spaced = R.sensor_map(None, Device({'CAM_A': ' ov9782 ', 'CAM_B': 'OV9282', 'CAM_C': 'OV9282'}))
+        self.assertEqual(R.select_profile(spaced)['colour_sensor'], 'OV9782')          # names are normalised
+
+    # ---- review r4
+    def test_argument_refusals_come_before_the_depthai_import(self):
+        # F1: a process that exits right after "import depthai" was aborted by the SDK (exit 134). With depthai not
+        # importable, an argument refusal must still be the one reported: the import was never reached.
+        os.mkdir(os.path.join(self.tmp.name, 'taken'))
+        base = ['--record', '--scene', 's', '--camera-height-m', '1', '--camera-height-uncertainty-m', '0.02']
+        cases = ((base + ['--pitch-deg', '0', '--output', os.path.join(self.tmp.name, 'taken')], 'OUTPUT_EXISTS'),
+                 (base + ['--pitch-deg', '0', '--output', os.path.join(self.tmp.name, 'a'), '--frames', '101'],
+                  'FRAMES_OUT_OF_RANGE'),
+                 (base + ['--output', os.path.join(self.tmp.name, 'b')], 'BAD_ARGUMENT'),
+                 (base + ['--pitch-deg', '0', '--output', os.path.join(self.tmp.name, 'no_parent', 'c')],
+                  'BAD_ARGUMENT'))
+        for argv, code in cases:
+            stderr = io.StringIO()
+            with mock.patch.dict(sys.modules, {'depthai': None}), mock.patch.object(R.sys, 'stderr', stderr):
+                self.assertEqual(R.main(argv), 2)
+            self.assertIn('refused: %s:' % code, stderr.getvalue())
+            self.assertNotIn('UNSUPPORTED_DEPTHAI_VERSION', stderr.getvalue())
+        self.assertIn('mkdir -p', stderr.getvalue())                     # the missing parent names its fix
+        stderr = io.StringIO()                                           # control: valid arguments reach the import
+        with mock.patch.dict(sys.modules, {'depthai': None}), mock.patch.object(R.sys, 'stderr', stderr):
+            self.assertEqual(R.main(base + ['--pitch-deg', '0', '--output', os.path.join(self.tmp.name, 'ok')]), 2)
+        self.assertIn('UNSUPPORTED_DEPTHAI_VERSION', stderr.getvalue())
+        events = []
+        with mock.patch.object(R.sys, 'stdout', mock.Mock(flush=lambda: events.append('out'))), \
+                mock.patch.object(R.sys, 'stderr', mock.Mock(flush=lambda: events.append('err'))), \
+                mock.patch.object(R.os, '_exit', side_effect=lambda code: events.append(code)):
+            R._leave(2)
+        self.assertEqual(events, ['out', 'err', 2])                      # flushed, then left with the code
+        source = (ROOT / 'tools/oakd_field_recorder.py').read_text()
+        self.assertTrue(source.rstrip().endswith("if __name__ == '__main__':\n    _leave(main())"))
+
+    def test_padded_isp_data_is_flagged_and_kept_whole(self):
+        # Review r4 F4 / r4b N1: never stored silently as garbled colour, and never a refusal that repeats per frame.
+        meta, args = self.record(Device(PRO_W, padding=4096), name='padded')
+        self.assertEqual((meta['status'], meta['isp_padded_frames'], len(meta['frames'])), ('COMPLETE', 3, 3))
+        self.assertEqual(sum('WARNING ISP_PADDED' in line for line in self.log), 1)
+        with np.load(Path(args.output) / meta['frames'][0]['file'], allow_pickle=False) as data:
+            self.assertEqual(data['isp_raw'].shape, (1280 * 1200 + 4096,))
+            self.assertEqual(data['isp_raw'].dtype, np.uint8)
+            self.assertTrue((data['isp_raw'] == 7).all())
+            self.assertEqual(data['isp_fb'].tolist(), [1296, 0, 1, 2, 1280, 800, 1])
+        self.assertEqual(meta['frames'][0]['isp_bytes_delivered'], 1280 * 1200 + 4096)
+        self.assertEqual(R.frame_buffer_layout(object()), [-1] * 7)
+        self.log.clear()
+        meta, args = self.record(Device(PRO_W), name='unpadded')                               # control
+        self.assertEqual(meta['isp_padded_frames'], 0)
+        self.assertFalse(any('ISP_PADDED' in line for line in self.log))
+        with np.load(Path(args.output) / meta['frames'][0]['file'], allow_pickle=False) as data:
+            self.assertNotIn('isp_raw', data.files)
+        self.assertEqual([f['isp_bytes_delivered'] for f in meta['frames']], [1280 * 1200] * 3)
+        self.assertEqual([f['depth_exposure_time_us'] for f in meta['frames']], [800.0, 810.0, 820.0])
+
+    def test_imu_queue_is_large_drained_while_waiting_and_synced_to_disk(self):
+        device = Device(PRO_W)
+        with mock.patch.object(R.os, 'sync') as synced:
+            meta, args = self.record(device)
+        synced.assert_called_once_with()
+        self.assertEqual(device.queue_sizes, {'rgbd': 4, 'imu': R.IMU_QUEUE_SIZE})
+        self.assertGreaterEqual(R.IMU_QUEUE_SIZE, 1000)
+        self.assertEqual(meta['pipeline']['imu']['host_queue_messages'], R.IMU_QUEUE_SIZE)
+        manifest = Path(args.output, 'MANIFEST.sha256').read_text().splitlines()
+        self.assertEqual([line.split('  ')[1] for line in manifest][-2:], ['imu.npz', 'capture.json'])
+        self.assertEqual(R.sha256_file(Path(args.output, 'imu.npz')), meta['imu_all_samples']['sha256'])
+        self.assertGreater(meta['imu_all_samples']['count'], 0)
+        polls, idles = [None, None, None, 'group'], []
+        queue = types.SimpleNamespace(tryGet=lambda: polls.pop(0))
+        clock = Clock()
+        self.assertEqual(R._next_group(queue, clock() + 1.0, clock, clock.sleep, lambda: idles.append(1)), 'group')
+        self.assertEqual(len(idles), 3)                                  # drained on every empty poll
+        with self.assertRaises(R.RecorderError) as caught:
+            R._next_group(types.SimpleNamespace(tryGet=lambda: None), clock() + 0.02, clock, clock.sleep)
+        self.assertEqual(caught.exception.code, 'FRAME_TIMEOUT')
+        on_disk = json.loads(Path(args.output, 'capture.json').read_text())      # r4b N2: the files, not memory
+        self.assertEqual(on_disk['imu_all_samples'], meta['imu_all_samples'])
+
+        def no_imu_file(path, *a, **k):
+            if str(path).endswith('imu.npz'):
+                raise OSError(28, 'No space left on device')
+            return open(path, *a, **k)
+        with mock.patch.object(R, 'open', side_effect=no_imu_file, create=True):
+            with self.assertRaises(OSError):
+                self.record(Device(PRO_W), name='imu_disk_full')
+        kept = json.loads(Path(self.tmp.name, 'imu_disk_full', 'capture.json').read_text())
+        self.assertEqual(len(kept['frames']), 3)                         # the status record survives the disk error
+        self.assertFalse(os.path.exists(os.path.join(self.tmp.name, 'imu_disk_full', 'imu.npz')))
+        meta, args = self.record(Device(PRO_W, imu='NONE'), name='no_imu')        # no IMU: an empty imu.npz
+        self.assertEqual(meta['imu_all_samples']['count'], 0)
+        with np.load(Path(args.output, 'imu.npz'), allow_pickle=False) as data:
+            self.assertEqual(data['accel'].shape, (0, 4))
+
+    def test_preset_deprecation_warning_is_not_shown_to_the_operator(self):
+        with warnings.catch_warnings(record=True) as shown:
+            warnings.simplefilter('always')
+            pipeline, _ = R.build_pipeline(fake_dai(), R.select_profile(PRO_W), 'extended')
+        self.assertEqual([str(w.message) for w in shown], [])
+        self.assertEqual(len(pipeline.nodes('StereoDepth')[0].called('setDefaultProfilePreset')), 1)
+        with warnings.catch_warnings(record=True) as shown:              # control: the fake does warn
+            warnings.simplefilter('always')
+            Node('x').setDefaultProfilePreset('HD')
+        self.assertEqual(len(shown), 1)
+
+    def test_probe_writes_its_json_to_a_file_when_asked(self):
+        target = os.path.join(self.tmp.name, 'probe.json')
+        stdout = io.StringIO()
+        with mock.patch.object(R.sys, 'stdout', stdout):
+            code = R.main(['--probe', '--probe-imu-s', '0', '--output', target], dai=fake_dai(Device(PRO_W)))
+        self.assertEqual(code, 0)
+        self.assertEqual(json.loads(Path(target).read_text())['recording_plan']['profile'], 'OV9782')
+        self.assertEqual(stdout.getvalue().strip(), 'probe written to %s' % target)
+        stdout = io.StringIO()
+        with mock.patch.object(R.sys, 'stdout', stdout):                 # control: without --output, to stdout
+            self.assertEqual(R.main(['--probe', '--probe-imu-s', '0'], dai=fake_dai(Device(PRO_W))), 0)
+        self.assertEqual(json.loads(stdout.getvalue())['recording_plan']['profile'], 'OV9782')
+
+    def test_protocol_commands_parse_and_match_the_pinned_versions(self):
+        # Review r4 F16: the commands the TA types are checked against the argument parser and the pins.
+        text = (ROOT / 'ros2/motar_camera_policy/FIELD_RECORDING_KO.md').read_text()
+        blocks = '\n'.join(re.findall(r'```bash\n(.*?)```', text, re.S)).replace('\\\n', ' ')
+        commands = [line.strip() for line in blocks.splitlines() if line.strip().startswith('oakrec ')]
+        self.assertEqual(len(commands), 5)                               # probe, 2 desk-test, 2 M01 recordings
+        home = self.tmp.name
+        os.mkdir(os.path.join(home, 'oakd_rec'))
+        recorded = 0
+        for command in commands:
+            argv = [word.replace('~', home) for word in shlex.split(command)[1:]]
+            args = R.parser().parse_args(argv)
+            if args.record:
+                R.check_record_args(args)
+                self.assertIn(args.projector, (0.0, 0.5))
+                recorded += 1
+            else:
+                self.assertTrue(args.probe and args.output.endswith('oakd_probe.json'))
+        self.assertEqual(recorded, 4)
+        install = 'PIP_USER=0 python3 -m pip install --no-cache-dir --target ~/oakd_rec_pkgs depthai==%s numpy==%s' \
+                  % (R.SDK_VERSION, R.NUMPY_PIN)
+        self.assertIn(install + '\n', text)
+        self.assertIn(install, R.INSTALL_HINT)
+        alias = "alias oakrec='PYTHONNOUSERSITE=1 PYTHONPATH=$HOME/oakd_rec_pkgs python3 $HOME/oakd_field_recorder.py'"
+        self.assertIn(alias, text)
+        codes = set(re.findall(r"RecorderError\('([A-Z_0-9]+)'", (ROOT / 'tools/oakd_field_recorder.py').read_text()))
+        codes |= {'OS_ERROR', 'UNEXPECTED', 'INTERRUPTED'}
+        self.assertGreaterEqual(len(codes), 19)
+        table = text.split('## 12.')[1].split('## 13.')[0]
+        for code in sorted(codes) + ['WARNING IMU_NO_SAMPLES', 'WARNING ISP_PADDED', 'WARNING COLOUR_SENSOR_NAME']:
+            self.assertIn('`%s`' % code, table, code)                    # every code the program prints is explained
+        for line in ('mkdir -p ~/oakd_rec\n', 'USB="/media/$USER/USB이름"', '"$USB"/',
+                     '/etc/udev/rules.d/99-oakd-recorder.rules', 'oakrec --probe --output ~/oakd_probe.json\n'):
+            self.assertIn(line, text, line)
+        self.assertNotIn('80-movidius', (ROOT / 'tools/oakd_field_recorder.py').read_text())
 
 
 if __name__ == '__main__':

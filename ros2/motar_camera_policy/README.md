@@ -540,14 +540,27 @@ Field tools (unit C, 2026-11-18): `tools/oakd_field_recorder.py` is a single-fil
 (stdlib, numpy and DepthAI only, no ROS or vehicle access). `--probe` prints the device and calibration readout;
 `--record` writes still frames (the raw colour ISP frame, the CAM_A-aligned depth, accelerometer samples and device
 timestamps) with the device calibration dump to a new capture folder (`motar-oakd-raw-capture-v1`), choosing the
-pipeline from the detected colour sensor (OV9782 or IMX378; any other sensor is refused). The drone's VIO uses the same
-OAK-D and must be stopped while recording. `tools/oakd_recording_convert.py` converts a capture into the replay format
-above on the PC: the adapter's 1014 x 760 output for the IMX378, or a central crop covering exactly the trained FOV
-for the OV9782. It requires an explicit `--depth-coordinate-model`, because whether the device's aligned depth lies in
-the distorted or the undistorted colour image is not established; the flat-ground recordings of the protocol's minimum
+pipeline from the detected colour sensor (OV9782 at 1280 x 800, or IMX378 at 1248 x 936; any other sensor is refused).
+The drone's VIO uses the same OAK-D and must be stopped while recording. `tools/oakd_recording_convert.py` converts a
+capture into the replay format above on the PC as a central crop covering exactly the trained FOV (the adapter's
+1014 x 760 output only for an IMX378 capture of that size). It requires an explicit `--depth-coordinate-model`,
+because whether the device's aligned depth lies in the distorted or the undistorted colour image is not established;
+the flat-ground recordings of the protocol's minimum
 set (M01 and M02) decide it before any threshold is analysed (in the synthetic end-to-end check of review r1 the
 mismatched model made the camera ground fit refuse every frame). Each frame also carries the colour camera's exposure, ISO, white balance and lens position. The TA's
 step-by-step field protocol, in Korean, is [`FIELD_RECORDING_KO.md`](FIELD_RECORDING_KO.md): a minimum set first, an
 optional set if time and disk allow, DepthAI installed into a separate folder so the drone's own Python packages are
 untouched, and the VIO stopped while recording and checked after its restart. Recording is on a tripod or by hand,
 never in flight; the device, the Jetson and the real calibration are NOT_TESTED.
+
+*Preflight r4 (2026-11-21), before the first run on a device.* The recorder was exercised against the real DepthAI
+2.29.0.0 module without a camera, and three settings that the fake-SDK tests could not judge were changed on Luxonis'
+own evidence: the colour-depth Sync threshold is 60 ms (the SDK default of 10 ms sends nothing until a pair is that
+close); the IMX378 is recorded at ISP scale 4/13 (the device refuses an aligned depth whose width is not a multiple
+of 16, so 1014 x 760 could not have worked); and the warm-up counts from the first received frame. Every
+accelerometer sample of a capture is also kept in `imu.npz`. The protocol now
+starts with a required desk test (`--probe` and two 3-frame recordings indoors) whose output the student checks
+before the outdoor session. An independent review (r4) then found that a refusal printed right after the SDK import
+could be followed by a C++ abort trace; arguments are now checked before the import. `tools/oakd_camera.build_pipeline`,
+the flight adapter, still asks for a 1014 x 760 aligned depth, which Luxonis' ISP-scaling table lists as unsupported,
+and keeps the 10 ms threshold, with which it may deliver no frames; it is not changed here.

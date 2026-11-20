@@ -26656,3 +26656,63 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `OAKD_RECORDER_REVIEW_r1.md`, `OAKD_RECORDER_REPAIR_r1.md`, `OAKD_RECORDER_REVIEW_r2.md`,
   `OAKD_RECORDER_REPAIR_r2.md`, `OAKD_RECORDER_REVIEW_r3.md`. Logs, probes and mutation copies:
   `/home/fair/motar_tmp/oakd_recorder_20261118/`.
+
+## 2026-11-21 — Unit C preflight r4 / repair r3: recorder checked against the real DepthAI before its first device run
+
+- **Why:** the user asked (2026-11-21) to judge once more, before the TA runs the recorder, whether anything is
+  wrong, small errors included. Reviews r1-r3 had only a fake SDK. Base `a76c5cc`. CPU only, no device, no GPU.
+- **Method:** (1) the real DepthAI 2.29.0.0 module without a camera; (2) Luxonis primary sources (forum threads
+  5933, 5060, 6070, the `depth_video_synced.py` example at v2.29.0.0, SDK docstrings, PyPI); (3) `record()` run with
+  real SDK message objects and a stand-in device; (4) every `bash` block of `FIELD_RECORDING_KO.md` run literally
+  with Ubuntu 20.04's own Python 3.8.10 and pip 20.0.2 in an empty HOME; (5) independent review r4, r4b, r4c.
+- **Found and changed:**
+
+  | Finding | Evidence | Change |
+  | --- | --- | --- |
+  | Sync node at 10 ms with attempts −1 can deliver no frame at all | SDK docstring; Luxonis example uses 50 ms; forum 5060 | 60 ms; depth-minus-colour time recorded and printed |
+  | IMX378 profile: aligned depth 1014 px wide, not a multiple of 16 | forum 5933 device error text; Luxonis ISP-scaling sheet (reviewer) | ISP 4/13 → 1248 × 936; guard; converter `auto` preset by size |
+  | A refusal within milliseconds of `import depthai` aborted with a C++ trace, exit 134 | reproduced 3 of 5 on `a76c5cc` with the protocol's install | argument checks before the import; exit through `os._exit` after flushing: 7 of 7 clean |
+  | Host IMU queue of 50 messages, drained once per frame | review r4 F2 (inference) | queue 2000, drained on every empty poll, all samples in `imu.npz` |
+  | Warm-up counted from the pipeline start | code | from the first received frame, 3 s, exposure at start and end recorded |
+  | SDK errors ended in a traceback | code | `UNEXPECTED`, `INTERRUPTED` |
+  | Padded colour buffer would be stored garbled | real SDK `getFrame` drops excess bytes | kept whole (`isp_raw`, `isp_fb`), flagged, converter refuses `ISP_PADDED` |
+  | numpy unpinned (numpy 2 on Python ≥ 3.9) | PyPI | `numpy==1.24.4`, `--no-cache-dir` |
+  | CAM_A reported as OV9282 refused | forum 6070 | recorded with a warning |
+  | Protocol went straight outdoors | — | required desk test (probe + two 3-frame recordings), answer awaited |
+
+- **Checked and correct without change:** every SDK call exists in 2.29.0.0; aarch64 wheels for cp38 and cp310;
+  `pip 20.0.2 --target` with `PIP_USER=0` installs and leaves nothing in `~/.local` or `~/.cache`; the protocol's
+  commands parse; copy and `sha256sum -c` steps work, also with a space in the USB label.
+- **Numbers:**
+
+  | Quantity | Value |
+  | --- | --- |
+  | PUBLIC_CPU run 1 (my command lacked `OMP_NUM_THREADS=1 MKL_NUM_THREADS=1`) | Ran 4300, FAILED errors 3: the SITL attempt guards that require those variables (same three as in the 2026-11-13 note); not evidence |
+  | PUBLIC_CPU run 2 (variables set, tree before the r4b fixes) | Ran 4306, OK (skipped 10, expected failures 10), exit 0 |
+  | PUBLIC_CPU run 3 (final tree) | Ran 4306 in 941.7 s, OK (skipped 10, expected failures 10), exit 0; tree unchanged during the run |
+  | Kernel fault count before / after each run | 1 / 1 (the QGroundControl user-space segfault of 2026-11-18) |
+  | Recorder / converter tests | 29 / 18 (were 19 / 16) |
+  | Author mutants caught | 42 / 44 (survivors M31 redundant drain, M44 status-line field) |
+  | Reviewer mutants caught (r4 / r4b / r4c) | 10 of 14 / 14 of 21 / 12 of 18 |
+
+- **Reviews (Claude Opus 5.5, fresh context, read-only):** r4 PASS_WITH_LIMITS (P2 2: abort after refusal, IMU
+  queue; P3 18), r4b PASS_WITH_LIMITS (P2 1: padded-buffer refusal would repeat; P3 5), r4c PASS_WITH_LIMITS
+  (P0/P1/P2 0). Open P3: F12 (IMX378 intrinsics scaled by 936/3040 instead of 4/13, +0.064 %), N6 (C stdio not
+  flushed before `os._exit`, inference), R1 (a colour buffer smaller than expected is named `UNEXPECTED`), R2 (no
+  manifest after an `imu.npz` disk error), R3 (six surviving reviewer mutants). No review after the r4c verdict
+  was needed: nothing was changed after it except these records.
+- **Open, not this unit:** `tools/oakd_camera.build_pipeline` (flight adapter) still asks for the 1014 × 760 aligned
+  depth and the 10 ms threshold. Beads issue filed.
+- **NOT_TESTED:** a real OAK-D, the Orin, the aarch64 wheel on JetPack, the Sync node at 60 ms, the auto exposure
+  settling time, sensor names of this unit, IMU model and axes, projector power on the Orin's USB port, real bytes
+  per frame, `DEVICE_BUSY` against the running VIO, the depth-coordinate model. No flight qualification, no
+  outdoor GO.
+- **Outside the repository:** offline install kit `/home/fair/motar_tmp/oakd_recorder_20261118/offline_kit/`
+  (four aarch64 wheels, SHA-256 equal to PyPI, 53 MB). Preflight scripts and logs
+  `/home/fair/motar_tmp/oakd_recorder_20261118/preflight_r4/`, review audit `review_r4/`. apport wrote
+  `/var/crash/_usr_bin_python3.8.1000.crash` (6.3 MB) during the abort reproductions; not deleted.
+- **Next:** the TA runs the desk test (protocol step 4) and sends `oakd_desk_test.tgz` with the terminal text; check
+  it (sensor names, Sync offsets, exposure settling, IMU samples, colour decoding, converter) before the outdoor
+  session.
+- **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`: `OAKD_RECORDER_REPAIR_r3.md`,
+  `OAKD_RECORDER_REVIEW_r4.md`, `OAKD_RECORDER_REVIEW_r4b.md`, `OAKD_RECORDER_REVIEW_r4c.md`.

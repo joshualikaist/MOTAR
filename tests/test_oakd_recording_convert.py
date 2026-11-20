@@ -244,6 +244,49 @@ class ConvertTest(unittest.TestCase):
         with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):   # no default on the CLI
             V.main(['--capture', str(self.root), '--dry-run'])
 
+    # ---- preflight r4: the recorder's IMX378 size and a colour socket reported as OV9282
+    def test_auto_preset_follows_the_capture_size_and_sensor_name(self):
+        size, k = (1248, 936), np.array([[800.0, 0, 623.5], [0, 800.0, 467.5], [0, 0, 1]])
+        d = np.array([0.01, -0.005] + [0.0] * 12)
+        cap = self.capture('imx_1248', frames=[plain_frame(size) + (up_for(0.0), 1.0)], k=k, d=d, size=size,
+                           sensor='IMX378')
+        recording, rows = self.convert(cap, 'imx_1248_out')
+        self.assertEqual(recording['device']['conversion']['preset'], 'trained_crop')
+        self.assertEqual((recording['intrinsics']['width'], recording['intrinsics']['height']), (640, 360))
+        self.assertTrue(recording['device']['conversion']['trained_fov_check'].startswith('PASS'))
+        self.assertEqual(rows[0]['coverage_share'], 1.0)
+        self.assertEqual(len(replay.load_recording(self.root / 'imx_1248_out')['frames']), 1)
+        self.assertEqual(V.choose_preset('auto', 'IMX378', (1248, 936)), 'trained_crop')
+        self.assertEqual(V.choose_preset('auto', 'IMX378', (1014, 760)), 'adapter')       # the legacy size
+        self.assertEqual(V.choose_preset('auto', 'OV9782', (1280, 800)), 'trained_crop')
+        self.assertEqual(V.choose_preset('auto', 'OV9282', (1280, 800)), 'trained_crop')
+        self.assertEqual(V.choose_preset('adapter', 'OV9782', (1280, 800)), 'adapter')     # explicit choice wins
+        with self.assertRaises(V.ConvertError) as caught:
+            V.choose_preset('auto', 'IMX214', (1280, 800))
+        self.assertEqual(caught.exception.code, 'PRESET')
+        # review r4 F15: auto gravity uses the IMU only when the capture was recorded with one
+        for name, present, expected in (('with_imu', True, 'imu'), ('without_imu', False, 'nominal_pitch')):
+            cap = self.capture('auto_' + name)
+            meta = json.loads((cap / 'capture.json').read_text())
+            meta['pipeline']['imu'] = {'present': present}
+            (cap / 'capture.json').write_text(json.dumps(meta))
+            recording, _ = self.convert(cap, 'auto_%s_out' % name)
+            self.assertEqual(recording['device']['conversion']['gravity']['source'], expected)
+            self.assertEqual(recording['device']['conversion']['gravity']['requested'], 'auto')
+        # review r4b N1: a capture the recorder flagged as padded is refused by name; unflagged converts (above)
+        padded = self.capture('padded')
+        meta = json.loads((padded / 'capture.json').read_text())
+        meta['isp_padded_frames'] = 2
+        (padded / 'capture.json').write_text(json.dumps(meta))
+        with self.assertRaises(V.ConvertError) as caught:
+            self.convert(padded, 'padded_out')
+        self.assertEqual(caught.exception.code, 'ISP_PADDED')
+        self.assertFalse((self.root / 'padded_out').exists())
+        grey = self.capture('grey', sensor='OV9282')
+        recording, _ = self.convert(grey, 'grey_out')
+        self.assertEqual(recording['device']['conversion']['preset'], 'trained_crop')
+        self.assertEqual(recording['device']['colour_sensor'], 'OV9282')
+
     # ---- presets and FOV
     def test_presets_and_fov_shortfall(self):
         imx_size, imx_k = (1014, 760), np.array([[650.0, 0, 506.5], [0, 650.0, 379.5], [0, 0, 1]])

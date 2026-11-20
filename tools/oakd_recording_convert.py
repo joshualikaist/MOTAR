@@ -36,7 +36,9 @@ Presets (--preset, default auto):
                 pixel (i, j) is exactly the k x k block of output pixels around (k i + (k - 1) / 2, k j + (k - 1) / 2)
                 and the image edges subtend exactly 66 and 54 deg. Pixels are not square (fx != fy), as in the trained
                 camera. Every output pixel must be covered by the raw image (else FOV_SHORTFALL).
-  auto          OV9782 -> trained_crop, IMX378 -> adapter.
+  auto          OV9782 -> trained_crop; IMX378 -> adapter when the capture is 1014 x 760, else trained_crop (the
+                recorder records the IMX378 at 1248 x 936 since preflight r4, because the device needs an aligned
+                depth width that is a multiple of 16); CAM_A reported as OV9282 -> trained_crop.
 
 Gravity: up_optical = R_imu_to_cam_a @ (mean accelerometer / its norm), R from the recorded
 CalibrationHandler.getImuToCameraExtrinsics(CAM_A) (DepthAI 2.29 docstring: "relative rotation and translation from
@@ -49,10 +51,11 @@ disagree on v2 handedness, so each frame's IMU roll / pitch is compared with the
 the capture) and a deviation above --max-imu-nominal-deviation-deg is refused (IMU_NOMINAL_PITCH_MISMATCH). Without
 a stored extrinsic, roll_pitch_deg = (0, nominal pitch) is written and recording.json.device says so.
 
-Gravity source (--gravity-source, repair r1 P2-2): auto (default) = imu when the capture holds an extrinsic, else
-nominal; imu forces the accelerometer (refused NO_IMU_EXTRINSICS without one); nominal writes roll_pitch_deg =
-(0, the recorded --pitch-deg) and ignores the IMU, e.g. for a dead IMU or a placeholder extrinsic. The choice is in
-recording.json.device.conversion.gravity. The IMU-vs-nominal check is on unless --no-imu-nominal-check.
+Gravity source (--gravity-source, repair r1 P2-2): auto (default) = imu when the capture holds an extrinsic and was
+recorded with an IMU, else nominal; imu forces the accelerometer (refused NO_IMU_EXTRINSICS without one); nominal
+writes roll_pitch_deg = (0, the recorded --pitch-deg) and ignores the IMU, e.g. for a dead IMU or a placeholder
+extrinsic. The choice is in recording.json.device.conversion.gravity. The IMU-vs-nominal check is on unless
+--no-imu-nominal-check.
 
 Colour 3A (repair r1 P1-1): the recorder's per-frame exposure_time_us, sensitivity_iso, colour_temperature_k,
 lens_position(_raw) and auto_exposure / auto_white_balance_configured are copied into each output frame (extra npz
@@ -62,7 +65,7 @@ Disk (repair r1 P1-2): the output size is estimated from the first converted fra
 --dry-run); a real run refuses INSUFFICIENT_DISK unless the output's file system has 1.2 x that + 10 MB free.
 
 Refusal codes: CAPTURE_UNREADABLE, NO_IMU_EXTRINSICS, NO_NOMINAL_PITCH, INSUFFICIENT_DISK, CAPTURE_FORMAT,
-INCOMPLETE_CAPTURE, FRAME_HASH_MISMATCH, FRAME_LAYOUT,
+INCOMPLETE_CAPTURE, ISP_PADDED, FRAME_HASH_MISMATCH, FRAME_LAYOUT,
 NON_INCREASING_TIMESTAMPS, CALIBRATION_MISSING, UNSUPPORTED_DISTORTION_MODEL, PRESET, FOV_SHORTFALL,
 BAD_IMU_EXTRINSICS, IMU_NO_SAMPLES, IMU_NOT_STILL, IMU_NOMINAL_PITCH_MISMATCH, NO_GRAVITY_SOURCE, OUTPUT_EXISTS.
 Hardware, the real calibration and the depth coordinate model are NOT_TESTED here.
@@ -297,6 +300,10 @@ def load_capture(folder):
     if meta.get('status') != 'COMPLETE':
         raise ConvertError('INCOMPLETE_CAPTURE', 'capture status %r (stop error %r)'
                            % (meta.get('status'), meta.get('stop_error')))
+    if meta.get('isp_padded_frames'):            # review r4b N1: the recorder kept isp_raw / isp_fb for these
+        raise ConvertError('ISP_PADDED', '%r colour frames were delivered with padding; their isp array is not '
+                                         'trustworthy. Decode isp_raw with isp_fb (stride, plane offsets) first'
+                           % (meta['isp_padded_frames'],))
     frames = meta.get('frames')
     if not isinstance(frames, list) or not frames:
         raise ConvertError('CAPTURE_FORMAT', 'capture has no frames')
@@ -367,13 +374,13 @@ def decode_frame(folder, entry, size):
     return rgb, depth, arrays, t
 
 
-def choose_preset(preset, sensor):
+def choose_preset(preset, sensor, size=None):
     if preset != 'auto':
         return preset
-    if sensor == 'OV9782':
+    if sensor in ('OV9782', 'OV9282'):       # OV9282: an OV9782 module the firmware reports under the mono name
         return 'trained_crop'
     if sensor == 'IMX378':
-        return 'adapter'
+        return 'adapter' if size is not None and tuple(size) == ADAPTER_SIZE else 'trained_crop'
     raise ConvertError('PRESET', 'no automatic preset for colour sensor %r' % (sensor,))
 
 
@@ -437,13 +444,14 @@ def convert(capture, output=None, *, depth_model, preset='auto', crop_size=DEFAU
         raise ConvertError('PRESET', 'gravity source must be one of %s' % (GRAVITY_SOURCES,))
     meta = load_capture(capture)
     k_raw, distortion, model, size, sensor = capture_calibration(meta)
-    chosen = choose_preset(preset, sensor)
+    chosen = choose_preset(preset, sensor, size)
     geometry = Geometry(chosen, k_raw, distortion, model, size, depth_model, crop_size, allow_fov_shortfall)
     extrinsic = imu_rotation(meta.get('calibration'))
     nominal = meta.get('pitch_deg_nominal')
     requested_gravity = gravity_source
-    if gravity_source == 'auto':
-        gravity_source = 'imu' if extrinsic is not None else 'nominal'
+    imu_recorded = ((meta.get('pipeline') or {}).get('imu') or {}).get('present', True) is not False
+    if gravity_source == 'auto':                 # review r4 F15: a capture without an IMU has nothing to use
+        gravity_source = 'imu' if extrinsic is not None and imu_recorded else 'nominal'
     if gravity_source == 'imu':
         if extrinsic is None:
             raise ConvertError('NO_IMU_EXTRINSICS', 'the capture has no IMU-to-CAM_A extrinsic; use --gravity-source '

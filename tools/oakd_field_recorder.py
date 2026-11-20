@@ -8,23 +8,37 @@ PC. This script never imports ROS, PX4, MAVLink, cv2 or repository code and neve
 Python 3.8 or newer (JetPack 5 ships 3.8).
 
 Modes
-  --probe   open the device and print one JSON object: DepthAI version, product / EEPROM names, MX id, USB speed,
-            every connected camera (socket, sensor, size), the IMU, a calibration summary (intrinsics, distortion
-            model and coefficients per socket, IMU-to-CAM_A extrinsics if stored, stereo baseline and MinZ hints),
-            the recording profile that --record would use (or the reason it would refuse) and, if an IMU is present,
-            the mean accelerometer over --probe-imu-s seconds.
+  --probe   open the device and print one JSON object (into the file given with --output, else to stdout; the SDK
+            logs to stdout, so the file form keeps the JSON clean). It holds the DepthAI version, product / EEPROM
+            names, MX id, USB speed, every connected camera (socket, sensor, size), the IMU, a calibration summary
+            (intrinsics, distortion model and coefficients per socket, IMU-to-CAM_A extrinsics if stored, stereo
+            baseline and MinZ hints), the recording profile that --record would use (or the reason it would refuse)
+            and, if an IMU is present, the mean accelerometer over --probe-imu-s seconds.
   --record  record --frames still frames into a NEW directory (layout below).
 
 The colour sensor decides the pipeline (the camera model is not assumed; D-2026-11-18-1: the TA says "probably
 OV9782", i.e. the OAK-D Pro W, UNCONFIRMED):
   OV9782 (OAK-D Pro W colour, global shutter)  -> ColorCamera THE_800_P, ISP output 1280 x 800, fixed focus.
-  IMX378 (OAK-D Pro colour)                    -> ColorCamera THE_12_MP with ISP scale 1/4 -> 1014 x 760, focus set
-     to the calibration lens position: the approach of tools/oakd_camera.build_pipeline. THE_1080_P is rejected
-     because it is a 16:9 crop of the 4:3 sensor and drops the vertical field of view below the trained 54 deg.
+  OV9282 on CAM_A                              -> the same 1280 x 800 pipeline, with a WARNING: the firmware reports
+     some OV9782 modules as OV9282 and such a module delivers grey images (Luxonis forum thread 6070); the name is
+     recorded as reported.
+  IMX378 (OAK-D Pro colour)                    -> ColorCamera THE_12_MP with ISP scale 4/13 -> 1248 x 936 (the full
+     4:3 sensor), focus set to the calibration lens position. Preflight r4: the device refuses an aligned depth
+     whose width is not a multiple of 16 ("Disparity/depth width must be multiple of 16, but RGB camera width is
+     1352", Luxonis forum thread 5933), so the 1/4 scale of tools/oakd_camera.build_pipeline (1014 x 760) cannot be
+     used here. THE_1080_P is rejected because it is a 16:9 crop of the 4:3 sensor and drops the vertical field of
+     view below the trained 54 deg.
   any other colour sensor, or no CAM_A           -> refused with a named reason.
 Stereo: CAM_B / CAM_C mono THE_800_P (OV9282 or OV9782 sensors), StereoDepth HIGH_DENSITY preset, left-right check,
 depth aligned to CAM_A at the colour output size, calibrated (not design-spec) translations, extended disparity or
 subpixel. IMU: ACCELEROMETER_RAW at 100 Hz, plus ROTATION_VECTOR when the IMU is a BNO08x.
+Colour and depth are paired on the device by the Sync node with a 60 ms threshold: above half the 10 FPS frame
+period, so a partner always exists whatever the constant offset between the colour and the stereo timestamps
+(DepthAI's own depth_video_synced example uses 50 ms). The SDK default (10 ms, and the node sends nothing until a
+pair is that close) can deliver no frame at all; the measured depth-minus-colour time is saved per frame.
+Warm-up: --warmup-s seconds of frames are discarded, counted from the FIRST received frame (not from the pipeline
+start, which can take seconds), so the auto exposure of the colour and the mono cameras has settled; the exposure
+at the start and the end of the warm-up is recorded.
 
 Colour is stored as the ISP frame exactly as delivered (YUV420p / NV12, H*3/2 x W bytes), not as RGB: converting on
 the Jetson would need cv2, and the PC converter applies the conversion DepthAI's own getCvFrame uses
@@ -34,6 +48,9 @@ Output directory (format motar-oakd-raw-capture-v1):
   capture.json        device, EEPROM / calibration dump (readCalibration().eepromToJson()), pipeline description,
                       scene, heights, nominal pitch, start / end times, status, per-frame sizes and SHA-256
   MANIFEST.sha256     "sha256  path" lines for every frame and capture.json (sha256sum -c works)
+  imu.npz             accel float64 [N, 4]: EVERY accelerometer sample received from the warm-up to the last frame
+                      (device time s, x, y, z), so gravity can be averaged over the whole still capture even when a
+                      frame's own window is empty (review r4 F2)
   frames/NNNNNN.npz   np.savez_compressed, allow_pickle=False:
      isp uint8 [H*3/2, W] and isp_type ("YUV420p" | "NV12"), width, height     raw (distorted) colour, CAM_A
      depth_mm uint16 [H, W]        depth aligned to CAM_A by the device, 0 = invalid
@@ -45,6 +62,10 @@ Output directory (format motar-oakd-raw-capture-v1):
      auto_exposure_configured, auto_white_balance_configured bool   (AE on, AWB AUTO, set explicitly; review r1 P1-1)
      rotation_vector float64 [5]   (i, j, k, real, accuracy rad) last BNO08x sample, NaN if none
      t_device_s, t_depth_device_s, t_host_synced_s, t_host_monotonic_s float64, sequence_num int
+     isp_raw uint8 [delivered bytes], isp_fb int64 [7]   ONLY when the delivered colour buffer is larger than
+                                   H*3/2*W (stride or plane padding): the whole buffer and the SDK's frame-buffer
+                                   layout (stride, p1Offset, p2Offset, p3Offset, width, height, bytesPP); isp is
+                                   then NOT trustworthy and capture.json counts isp_padded_frames
 
 The drone's VIO uses the same OAK-D (user, 2026-11-18): stop the VIO and any other program using the camera before
 --probe / --record and restart it afterwards. This script has no ROS or VIO integration.
@@ -55,8 +76,14 @@ cause), PROJECTOR_NOT_APPLIED, OS_ERROR (e.g. disk full), UNSUPPORTED_DEPTHAI_VE
 NO_CAM_A, UNSUPPORTED_COLOUR_SENSOR, NO_STEREO_PAIR, UNSUPPORTED_STEREO_SENSOR, USB_SPEED (below SUPER without
 --allow-usb2), NO_IR_PROJECTOR (--projector > 0 on a device without one), OUTPUT_EXISTS, FRAMES_OUT_OF_RANGE,
 BAD_ARGUMENT, INSUFFICIENT_DISK, FRAME_TIMEOUT, UNEXPECTED_ISP_LAYOUT, UNEXPECTED_DEPTH_LAYOUT,
-NON_INCREASING_DEVICE_TIMESTAMP. A stop after the first saved frame still writes capture.json with status
-INCOMPLETE and the error; the converter refuses incomplete captures.
+NON_INCREASING_DEVICE_TIMESTAMP, UNEXPECTED (any other SDK error, e.g. the USB link dropped: X_LINK_ERROR),
+INTERRUPTED (Ctrl+C, exit code 130). A stop after the output folder was created still writes capture.json with
+status INCOMPLETE and the error; the converter refuses incomplete captures.
+
+Process exit (review r4 F1): with the pip --target install on Python 3.8 a process that exits within a few
+milliseconds of "import depthai" was aborted by the SDK's own resource-loading thread (C++ trace, "core dumped",
+exit 134) after the refusal line. Arguments are therefore checked BEFORE depthai is imported, and the script leaves
+through os._exit after flushing, so the exit code is the one documented here.
 
 Not a refusal (review r2 N1): an IMU that is reported but delivers no accelerometer sample. The frames are recorded,
 counted in capture.json (frames_without_imu_samples) and the final status line, and announced with
@@ -82,15 +109,18 @@ import platform
 import shutil
 import sys
 import time
+import warnings
 
 import numpy as np
 
 FORMAT = 'motar-oakd-raw-capture-v1'
 SDK_VERSION = '2.29.0.0'
+NUMPY_PIN = '1.24.4'                      # has aarch64 wheels for Python 3.8-3.11; numpy 2 is untested with this SDK
 FPS = 10.0
 IMU_RATE_HZ = 100
 IMU_WINDOW_S = 0.5
-SYNC_THRESHOLD_MS = 10
+SYNC_THRESHOLD_MS = 60                    # above half the frame period (50 ms at FPS 10), below the period
+IMU_QUEUE_SIZE = 2000                     # host queue, messages: about 20 s at 100 Hz (review r4 F2)
 MAX_FRAMES = 100
 FIRST_FRAME_TIMEOUT_S = 10.0
 FRAME_TIMEOUT_S = 3.0
@@ -99,10 +129,17 @@ DISK_MARGIN = 1.5
 PROFILES = {
     'OV9782': {'resolution': 'THE_800_P', 'isp_scale': None, 'size': (1280, 800), 'manual_focus': False,
                'why': 'OAK-D Pro W colour sensor (global shutter, fixed focus); full 1280x800 sensor'},
-    'IMX378': {'resolution': 'THE_12_MP', 'isp_scale': (1, 4), 'size': (1014, 760), 'manual_focus': True,
-               'why': 'tools/oakd_camera.build_pipeline approach: 4056x3040 ISP 1/4 keeps the full 4:3 sensor; '
-                      'THE_1080_P is a 16:9 crop below the trained 54 deg vertical FOV'},
+    'OV9282': {'resolution': 'THE_800_P', 'isp_scale': None, 'size': (1280, 800), 'manual_focus': False,
+               'why': 'CAM_A reported as OV9282: the OV9782 pipeline is used and the name is recorded as reported',
+               'warning': 'the colour socket CAM_A reports the mono sensor name OV9282. The firmware reports some '
+                          'OV9782 modules this way and then delivers GREY images (Luxonis forum 6070). Recording '
+                          'continues; report this warning'},
+    'IMX378': {'resolution': 'THE_12_MP', 'isp_scale': (4, 13), 'size': (1248, 936), 'manual_focus': True,
+               'why': '4056x3040 ISP 4/13 keeps the full 4:3 sensor at a width that is a multiple of 16, which the '
+                      'device requires of an aligned depth; THE_1080_P is a 16:9 crop below the trained 54 deg '
+                      'vertical FOV'},
 }
+DEPTH_WIDTH_MULTIPLE = 16                 # device rule for a depth aligned to the colour camera (preflight r4)
 STEREO_SENSORS = ('OV9282', 'OV9782')
 FAST_USB = ('SUPER', 'SUPER_PLUS')
 
@@ -170,7 +207,8 @@ def check_output_dir(path):
         raise RecorderError('OUTPUT_EXISTS', '%s already exists; give a NEW directory' % path)
     parent = os.path.dirname(os.path.abspath(path))
     if not os.path.isdir(parent):
-        raise RecorderError('BAD_ARGUMENT', 'parent directory %s does not exist' % parent)
+        raise RecorderError('BAD_ARGUMENT', 'parent directory %s does not exist; create it first: mkdir -p %s'
+                            % (parent, parent))
     return path
 
 
@@ -194,8 +232,12 @@ def check_record_args(args):
 
 
 INSTALL_HINT = ("install it into the recorder's own folder and run through the oakrec alias "
-                "(FIELD_RECORDING_KO.md step 2: PIP_USER=0 python3 -m pip install --target ~/oakd_rec_pkgs "
-                "depthai==%s numpy); do NOT pip install into the drone's own Python" % SDK_VERSION)
+                "(FIELD_RECORDING_KO.md step 2: PIP_USER=0 python3 -m pip install --no-cache-dir --target "
+                "~/oakd_rec_pkgs depthai==%s numpy==%s); do NOT pip install into the drone's own Python"
+                % (SDK_VERSION, NUMPY_PIN))
+UNEXPECTED_HINT = ('this is usually the USB link or its power dropping (X_LINK_ERROR): unplug and replug the camera '
+                   'and record again into a NEW folder; if it happens only with --projector above 0, record that '
+                   'scene with --projector 0 and report this message')
 
 
 def check_sdk(dai):
@@ -218,7 +260,7 @@ def check_usb(speed, allow_usb2):
 def sensor_map(dai, device):
     """{socket name: sensor name} from the connected device."""
     names = device.getCameraSensorNames()
-    return {socket_name(k): str(v) for k, v in dict(names).items()}
+    return {socket_name(k): str(v).strip().upper() for k, v in dict(names).items()}
 
 
 def select_profile(sensors):
@@ -236,6 +278,7 @@ def select_profile(sensors):
             raise RecorderError('UNSUPPORTED_STEREO_SENSOR', '%s sensor %s is not one of %s'
                                 % (socket, sensors[socket], STEREO_SENSORS))
     profile = dict(PROFILES[colour])
+    profile.setdefault('warning', None)
     profile['colour_sensor'] = colour
     profile['stereo_sensors'] = [sensors['CAM_B'], sensors['CAM_C']]
     return profile
@@ -251,6 +294,9 @@ def build_pipeline(dai, profile, stereo_mode, lens_position=None, rotation_vecto
     if stereo_mode not in ('extended', 'subpixel'):
         raise RecorderError('BAD_ARGUMENT', 'unsupported stereo mode %r' % (stereo_mode,))
     width, height = profile['size']
+    if width % DEPTH_WIDTH_MULTIPLE or height % 2:
+        raise RecorderError('BAD_ARGUMENT', 'profile size %dx%d: the device needs an aligned depth width that is a '
+                                            'multiple of %d and an even height' % (width, height, DEPTH_WIDTH_MULTIPLE))
     pipeline = dai.Pipeline()
     rgb = pipeline.create(dai.node.ColorCamera)
     left = pipeline.create(dai.node.MonoCamera)
@@ -275,7 +321,9 @@ def build_pipeline(dai, profile, stereo_mode, lens_position=None, rotation_vecto
         mono.setBoardSocket(socket)
         mono.setResolution(dai.MonoCameraProperties.SensorResolution.THE_800_P)
         mono.setFps(FPS)
-    stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
+    with warnings.catch_warnings():            # 2.29 prints "HIGH_DENSITY is deprecated" on every run (r4 F3)
+        warnings.simplefilter('ignore', DeprecationWarning)
+        stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
     stereo.setLeftRightCheck(True)
     stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
     stereo.setDepthAlignmentUseSpecTranslation(False)
@@ -323,7 +371,7 @@ def build_pipeline(dai, profile, stereo_mode, lens_position=None, rotation_vecto
                             ('fixed focus (no lens control)' if not profile['manual_focus'] else
                              'NOT_SET (no calibration lens position)'),
                    'per_frame': 'exposure_time_us, sensitivity_iso, colour_temperature_k, lens_position in each npz',
-                   'profile_reason': profile['why']},
+                   'profile_reason': profile['why'], 'sensor_warning': profile.get('warning')},
         'stereo': {'sockets': ['CAM_B', 'CAM_C'], 'sensors': profile['stereo_sensors'], 'resolution': 'THE_800_P',
                    'fps': FPS, 'preset': 'HIGH_DENSITY', 'left_right_check': True, 'mode': stereo_mode,
                    'extended_disparity': stereo_mode == 'extended', 'subpixel': stereo_mode == 'subpixel',
@@ -333,8 +381,11 @@ def build_pipeline(dai, profile, stereo_mode, lens_position=None, rotation_vecto
                    'initial_config': stereo_config,
                    'aligned_depth_coordinate_model': 'NOT_ESTABLISHED (distorted CAM_A image or undistorted CAM_A '
                                                      'pinhole); chosen explicitly at conversion'},
-        'sync': {'node': 'Sync', 'threshold_ms': SYNC_THRESHOLD_MS},
+        'sync': {'node': 'Sync', 'threshold_ms': SYNC_THRESHOLD_MS, 'attempts': 'SDK default (-1: only synced pairs)',
+                 'per_frame': 'depth_minus_colour_s in capture.json frames'},
         'imu': {'present': bool(imu_present), 'sensors': imu_sensors, 'rate_hz': IMU_RATE_HZ,
+                'rate_hz_is': 'the REQUESTED rate; the IMU rounds it to a rate it supports (a BNO08x up to 125 Hz)',
+                'host_queue_messages': IMU_QUEUE_SIZE, 'all_samples_file': 'imu.npz',
                 'batch_report_threshold': 1,
                 'max_batch_reports': 10, 'frame_window_s': IMU_WINDOW_S},
     }
@@ -434,7 +485,7 @@ def imu_has_rotation_vector(identity):
 
 BUSY_HINT = ('the drone VIO uses this same OAK-D: stop the VIO (and any other program using the camera) before '
              '--probe / --record and restart it afterwards')
-UDEV_HINT = ('if the VIO is already stopped, check the udev rule (/etc/udev/rules.d/80-movidius.rules, vendor 03e7) '
+UDEV_HINT = ('if the VIO is already stopped, check the udev rule for USB vendor 03e7 (FIELD_RECORDING_KO.md 2.5) '
              'and unplug / replug the camera')
 
 
@@ -472,7 +523,7 @@ def open_device(dai):
             'DEVICE_BUSY': 'an OAK-D is connected but another process holds it (%s; devices %s): %s; %s'
                            % (text, listed, BUSY_HINT, UDEV_HINT),
             'DEVICE_PERMISSION': 'an OAK-D is connected but this user may not open it (%s; devices %s): the udev rule '
-                                 'is missing or not loaded (/etc/udev/rules.d/80-movidius.rules, vendor 03e7); also '
+                                 'for USB vendor 03e7 is missing or not loaded (FIELD_RECORDING_KO.md 2.5); also '
                                  'make sure the VIO is stopped' % (text, listed),
             'DEVICE_OPEN_FAILED': 'an OAK-D is listed but cannot be opened (%s; devices %s): %s; %s'
                                   % (text, listed, BUSY_HINT, UDEV_HINT),
@@ -542,6 +593,24 @@ def colour_3a(message):
             values[key] = float(value)
         else:
             values[key] = int(value)
+    return values
+
+
+FB_FIELDS = ('stride', 'p1Offset', 'p2Offset', 'p3Offset', 'width', 'height', 'bytesPP')
+
+
+def frame_buffer_layout(message):
+    """The SDK's frame-buffer description of a colour frame (FB_FIELDS order); -1 where it cannot be read."""
+    try:
+        fb = message.getRaw().fb
+    except Exception:
+        return [-1] * len(FB_FIELDS)
+    values = []
+    for name in FB_FIELDS:
+        try:
+            values.append(int(getattr(fb, name)))
+        except Exception:
+            values.append(-1)
     return values
 
 
@@ -660,7 +729,8 @@ def probe(dai, imu_seconds=1.0):
         try:
             profile = select_profile(sensors)
             plan = {'profile': profile['colour_sensor'], 'size': list(profile['size']),
-                    'resolution': profile['resolution'], 'refusal': None}
+                    'resolution': profile['resolution'], 'isp_scale': profile['isp_scale'],
+                    'warning': profile.get('warning'), 'refusal': None}
         except RecorderError as exc:
             profile, plan = None, {'profile': None, 'refusal': str(exc)}
         report = {'format': 'motar-oakd-probe-v1', 'host': host_info(), 'device': identity, 'sensors': sensors,
@@ -696,23 +766,32 @@ def _write_json(path, value):
         stream.write('\n')
 
 
-def _next_group(queue, deadline, clock, sleep):
+def _next_group(queue, deadline, clock, sleep, idle=None):
+    """Next synchronized group; idle() runs on every empty poll (the IMU queue is drained while waiting)."""
     while True:
         group = queue.tryGet()
         if group is not None:
             return group
+        if idle is not None:
+            idle()
         if clock() >= deadline:
-            raise RecorderError('FRAME_TIMEOUT', 'no synchronized RGB-D frame before the deadline')
+            raise RecorderError('FRAME_TIMEOUT', 'no synchronized RGB-D frame before the deadline; the camera '
+                                                 'delivered no colour + depth pair (replug the USB cable and record '
+                                                 'into a NEW folder; if it repeats, send this message)')
         sleep(0.005)
 
 
-def _drain_imu(queue, accel, rotation):
+def _drain_imu(queue, accel, rotation, keep=None):
+    """Move every queued accelerometer sample into accel (per-frame windows) and keep (the whole capture)."""
     for data in queue.tryGetAll():
         for packet in data.packets:
             a = packet.acceleroMeter
             t = _seconds(a.getTimestampDevice())
             if t > 0:
-                accel.append((t, float(a.x), float(a.y), float(a.z)))
+                sample = (t, float(a.x), float(a.y), float(a.z))
+                accel.append(sample)
+                if keep is not None:
+                    keep.append(sample)
             if rotation is not None:
                 r = packet.rotationVector
                 if _seconds(r.getTimestampDevice()) > 0:
@@ -720,12 +799,16 @@ def _drain_imu(queue, accel, rotation):
                                    float(r.rotationVectorAccuracy)]
 
 
-def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=print):
+def _say(message):
+    print(message, flush=True)
+
+
+def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=_say):
     """Record args.frames frames into args.output. Returns the capture metadata."""
     check_record_args(args)
     check_sdk(dai)
     device = open_device(dai)
-    output, meta, frames_dir = args.output, None, None
+    output, meta, frames_dir, accel_all = args.output, None, None, None
     try:
         usb = check_usb(device.getUsbSpeed(), args.allow_usb2)
         sensors = sensor_map(dai, device)
@@ -742,6 +825,8 @@ def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=print):
         rotation_vector = imu_has_rotation_vector(identity)
         imu_present = imu_is_present(identity)
         pipeline, description = build_pipeline(dai, profile, args.stereo_mode, lens, rotation_vector, imu_present)
+        if profile.get('warning'):
+            log('WARNING COLOUR_SENSOR_NAME: %s' % profile['warning'])
         estimate = estimate_bytes_per_frame(width, height)
         free, need = check_disk(output, args.frames, estimate)
         log('estimated %.2f MB/frame (synthetic %dx%d, sensor noise 2 DN), %d frames -> about %.0f MB; %d MB free'
@@ -785,26 +870,48 @@ def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=print):
                                         ' record this scene with --projector 0 only' % args.projector)
             else:
                 emitters['ir_dot_projector_applied'] = 'NOT_SET (boot default off)'
+        accel_all = []                             # every accelerometer sample of this capture (imu.npz)
         rgbd = device.getOutputQueue(name='rgbd', maxSize=4, blocking=False)
-        imu_queue = device.getOutputQueue(name='imu', maxSize=50, blocking=False) if imu_present else None
+        imu_queue = (device.getOutputQueue(name='imu', maxSize=IMU_QUEUE_SIZE, blocking=False)
+                     if imu_present else None)
         accel, rotation = [], ([math.nan] * 5 if rotation_vector else None)
+
+        def drain():                               # also called on every empty poll, so the IMU queue never fills
+            if imu_queue is not None:
+                _drain_imu(imu_queue, accel, rotation, accel_all)
         guard, previous, previous_seq = TimestampGuard(), None, None
         meta['frames_without_imu_samples'] = 0
         meta['sequence_gaps'] = 0
-        start = clock()
-        deadline = start + FIRST_FRAME_TIMEOUT_S
-        while clock() - start < args.warmup_s:     # let auto exposure settle; frames are discarded
-            _next_group(rgbd, max(deadline, start + args.warmup_s + FRAME_TIMEOUT_S), clock, sleep)
-            if imu_queue is not None:
-                _drain_imu(imu_queue, accel, rotation)
+        meta['isp_padded_frames'] = 0
+        # Warm-up (preflight r4): the pipeline start itself can take seconds, so the warm-up time counts from the
+        # first RECEIVED frame; every warm-up frame is discarded and the exposure it started and ended at is kept.
+        warm = {'seconds_requested': float(args.warmup_s), 'counted_from': 'first received frame',
+                'frames_discarded': 0, 'first': None, 'last': None}
+        meta['warmup'] = warm
+        if args.warmup_s > 0:
+            group = _next_group(rgbd, clock() + FIRST_FRAME_TIMEOUT_S, clock, sleep, drain)
+            warm_start = clock()
+            while True:
+                state = colour_3a(group['rgb'])
+                state = {'exposure_time_us': state['exposure_time_us'], 'sensitivity_iso': state['sensitivity_iso']}
+                warm['first'] = warm['first'] or state
+                warm['last'] = state
+                warm['frames_discarded'] += 1
+                drain()
+                if clock() - warm_start >= args.warmup_s:
+                    break
+                group = _next_group(rgbd, clock() + FRAME_TIMEOUT_S, clock, sleep, drain)
+            log('warm-up: %d frames discarded in %.1f s after the first frame; exposure %.0f -> %.0f us, ISO %d -> %d'
+                % (warm['frames_discarded'], clock() - warm_start, warm['first']['exposure_time_us'],
+                   warm['last']['exposure_time_us'], warm['first']['sensitivity_iso'],
+                   warm['last']['sensitivity_iso']))
         for index in range(args.frames):
             group = _next_group(rgbd, clock() + (FIRST_FRAME_TIMEOUT_S if index == 0 else FRAME_TIMEOUT_S),
-                                clock, sleep)
+                                clock, sleep, drain)
             host_t = float(clock())
             colour, depth = group['rgb'], group['depth']
             t = guard.check(_seconds(colour.getTimestampDevice()))
-            if imu_queue is not None:
-                _drain_imu(imu_queue, accel, rotation)
+            drain()
             window = accel_window(accel, t, previous)
             accel[:] = [s for s in accel if s[0] > t]
             stamps = {'t_device_s': t, 't_depth_device_s': _seconds(depth.getTimestampDevice()),
@@ -813,8 +920,25 @@ def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=print):
             camera = colour_3a(colour)
             camera.update(auto_exposure_configured=True, auto_white_balance_configured=True)
             sequence = int(colour.getSequenceNum())
+            # Review r4 F4: getFrame() returns exactly H*3/2 x W and silently drops excess bytes, so a frame with
+            # stride or plane padding would be stored garbled. The delivered byte count is checked instead.
+            # Review r4b N1: such a frame is not refused (it would repeat on every frame and cost the session). The
+            # whole delivered buffer and the frame-buffer layout are saved as well, the capture is flagged
+            # (isp_padded_frames) and the converter refuses it by name until the layout has been decoded on the PC.
+            raw = np.asarray(colour.getData(), np.uint8).ravel()
+            delivered = int(raw.size)
+            expected = int(colour.getWidth()) * int(colour.getHeight()) * 3 // 2
+            mono = colour_3a(depth)                # the depth frame's exposure state, if the device carries it
             arrays = frame_arrays(colour.getFrame(), isp_type, int(colour.getWidth()), int(colour.getHeight()),
                                   depth.getFrame(), window, rotation, stamps, sequence, camera)
+            if delivered != expected:
+                meta['isp_padded_frames'] += 1
+                arrays['isp_raw'] = raw.copy()
+                arrays['isp_fb'] = np.asarray(frame_buffer_layout(colour), np.int64)
+                if meta['isp_padded_frames'] == 1:
+                    log('WARNING ISP_PADDED: the colour frame carries %d bytes, %dx%d YUV 4:2:0 without padding has '
+                        '%d. Recording CONTINUES and keeps the whole buffer (isp_raw) for decoding on the PC; '
+                        'report this warning.' % (delivered, colour.getWidth(), colour.getHeight(), expected))
             if imu_present and int(arrays['accel_count']) == 0:
                 # Review r2 N1: a silent IMU must not cost the field session. The frame is recorded without gravity
                 # and counted; the PC conversion then needs --gravity-source nominal (the measured --pitch-deg).
@@ -841,15 +965,22 @@ def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=print):
                                    'accel_count': int(arrays['accel_count']), 'isp_type': isp_type,
                                    'sequence_num': sequence,
                                    'valid_depth_share': float((arrays['depth_mm'] > 0).mean()),
+                                   'isp_bytes_delivered': delivered,
+                                   'depth_exposure_time_us': mono['exposure_time_us'],
+                                   'depth_sensitivity_iso': mono['sensitivity_iso'],
                                    **{key: camera[key] for key in COLOUR_3A_KEYS}})
             if index == 0:
                 log('first frame %.2f MB (%s); %d frames -> about %.0f MB; exposure %.0f us, ISO %d, %d K, '
-                    'accelerometer samples %d'
+                    'accelerometer samples %d; depth valid %.0f %%, depth-colour time %.1f ms'
                     % (len(data) / 1e6, isp_type, args.frames, len(data) * args.frames / 1e6,
                        camera['exposure_time_us'], camera['sensitivity_iso'], camera['colour_temperature_k'],
-                       int(arrays['accel_count'])))
+                       int(arrays['accel_count']), 100.0 * float((arrays['depth_mm'] > 0).mean()),
+                       1e3 * (stamps['t_depth_device_s'] - t)))
             previous, previous_seq = t, sequence
         meta['colour_3a_summary'] = colour_3a_summary(meta['frames'])
+        offsets = [1e3 * f['depth_minus_colour_s'] for f in meta['frames']]
+        meta['depth_minus_colour_ms'] = {'min': min(offsets), 'max': max(offsets),
+                                         'sync_threshold_ms': SYNC_THRESHOLD_MS}
         meta['status'] = 'COMPLETE'
         return meta
     except RecorderError as exc:
@@ -870,11 +1001,31 @@ def record(args, dai, clock=time.monotonic, sleep=time.sleep, log=print):
             if meta is not None:
                 meta['ended_utc'] = _now_utc()
                 meta['bytes_total'] = sum(f['bytes'] for f in meta['frames'])
-                _write_json(os.path.join(output, 'capture.json'), meta)
                 lines = ['%s  %s' % (f['sha256'], f['file']) for f in meta['frames']]
+                imu_bytes = None
+                if accel_all is not None:
+                    samples = np.asarray(accel_all, np.float64).reshape(-1, 4)
+                    buffer = io.BytesIO()
+                    np.savez_compressed(buffer, accel=samples)
+                    imu_bytes = buffer.getvalue()
+                    meta['imu_all_samples'] = {
+                        'file': 'imu.npz', 'sha256': sha256_bytes(imu_bytes), 'count': int(samples.shape[0]),
+                        't_first_s': float(samples[0, 0]) if len(samples) else None,
+                        't_last_s': float(samples[-1, 0]) if len(samples) else None,
+                        'columns': 'device time s, x, y, z m/s^2 (raw IMU axes), warm-up included'}
+                    lines.append('%s  imu.npz' % meta['imu_all_samples']['sha256'])
+                # capture.json first (review r4b N2): a disk error on imu.npz must not lose the status record
+                _write_json(os.path.join(output, 'capture.json'), meta)
+                if imu_bytes is not None:
+                    with open(os.path.join(output, 'imu.npz'), 'xb') as stream:
+                        stream.write(imu_bytes)
                 lines.append('%s  capture.json' % sha256_file(os.path.join(output, 'capture.json')))
                 with open(os.path.join(output, 'MANIFEST.sha256'), 'x') as stream:
                     stream.write('\n'.join(lines) + '\n')
+                try:
+                    os.sync()                      # battery-powered host: the capture is on disk before the next
+                except (AttributeError, OSError):
+                    pass
 
 
 def parser():
@@ -883,7 +1034,7 @@ def parser():
     mode.add_argument('--probe', action='store_true', help='print the device / calibration readout as JSON')
     mode.add_argument('--record', action='store_true', help='record still frames into a new directory')
     ap.add_argument('--probe-imu-s', type=float, default=1.0, help='probe: seconds of accelerometer to average')
-    ap.add_argument('--output', help='record: NEW directory')
+    ap.add_argument('--output', help='record: NEW directory; probe: file for the JSON (overwritten)')
     ap.add_argument('--scene', help='record: objects, tape distances, sky, sun or shade, projector value')
     ap.add_argument('--camera-height-m', type=float, help='record: tape height of the RGB lens centre [m]')
     ap.add_argument('--camera-height-uncertainty-m', type=float, help='record: tape reading uncertainty [m]')
@@ -891,7 +1042,8 @@ def parser():
     ap.add_argument('--frames', type=int, default=20, help='record: 1..%d frames (default 20)' % MAX_FRAMES)
     ap.add_argument('--projector', type=float, default=0.0, help='record: IR dot projector 0..1 (default 0 = off)')
     ap.add_argument('--stereo-mode', choices=('extended', 'subpixel'), default='extended')
-    ap.add_argument('--warmup-s', type=float, default=2.0, help='record: seconds of frames discarded first')
+    ap.add_argument('--warmup-s', type=float, default=3.0,
+                    help='record: seconds of frames discarded first, counted from the first received frame')
     ap.add_argument('--allow-usb2', action='store_true', help='record even below USB3 SUPER speed')
     return ap
 
@@ -902,6 +1054,13 @@ def main(argv=None, dai=None):
     args = ap.parse_args(argv)
     args.argv = argv
     try:
+        if args.record:                            # review r4 F1: every argument refusal comes BEFORE the import
+            missing = [k for k in ('output', 'scene', 'camera_height_m', 'camera_height_uncertainty_m', 'pitch_deg')
+                       if getattr(args, k) is None]
+            if missing:
+                raise RecorderError('BAD_ARGUMENT', '--record needs %s' % ', '.join('--' + k.replace('_', '-')
+                                                                                   for k in missing))
+            check_record_args(args)
         if dai is None:
             try:
                 import depthai as dai
@@ -909,17 +1068,22 @@ def main(argv=None, dai=None):
                 raise RecorderError('UNSUPPORTED_DEPTHAI_VERSION', 'depthai is not importable (%s); %s'
                                     % (exc, INSTALL_HINT)) from None
         if args.probe:
-            print(json.dumps(_jsonable(probe(dai, args.probe_imu_s)), indent=1, sort_keys=True, allow_nan=False))
+            text = json.dumps(_jsonable(probe(dai, args.probe_imu_s)), indent=1, sort_keys=True, allow_nan=False)
+            if args.output:                        # review r4 F10: the SDK logs to stdout; keep the JSON apart
+                with open(args.output, 'w') as stream:
+                    stream.write(text + '\n')
+                _say('probe written to %s' % args.output)
+            else:
+                print(text)
             return 0
-        missing = [k for k in ('output', 'scene', 'camera_height_m', 'camera_height_uncertainty_m', 'pitch_deg')
-                   if getattr(args, k) is None]
-        if missing:
-            raise RecorderError('BAD_ARGUMENT', '--record needs %s' % ', '.join('--' + k.replace('_', '-')
-                                                                               for k in missing))
         meta = record(args, dai)
         print(json.dumps({'status': meta['status'], 'frames': len(meta['frames']), 'output': args.output,
                           'bytes_total': sum(f['bytes'] for f in meta['frames']),
                           'frames_without_imu_samples': meta.get('frames_without_imu_samples', 0),
+                          'sequence_gaps': meta.get('sequence_gaps', 0),
+                          'depth_minus_colour_ms': meta.get('depth_minus_colour_ms'),
+                          'imu_samples_total': (meta.get('imu_all_samples') or {}).get('count', 0),
+                          'isp_padded_frames': meta.get('isp_padded_frames', 0),
                           'vehicle_commands_sent': False}, sort_keys=True))
         return 0
     except RecorderError as exc:
@@ -928,7 +1092,22 @@ def main(argv=None, dai=None):
     except OSError as exc:                         # e.g. ENOSPC: capture.json already says INCOMPLETE / OS_ERROR
         print('oakd_field_recorder refused: OS_ERROR: %s: %s' % (type(exc).__name__, exc), file=sys.stderr)
         return 2
+    except KeyboardInterrupt:
+        print('oakd_field_recorder refused: INTERRUPTED: stopped by Ctrl+C; a folder that was already created is '
+              'INCOMPLETE and stays, record again into a NEW folder', file=sys.stderr)
+        return 130
+    except Exception as exc:                       # preflight r4: an SDK error is named, never a bare traceback
+        print('oakd_field_recorder refused: UNEXPECTED: %s: %s; %s' % (type(exc).__name__, exc, UNEXPECTED_HINT),
+              file=sys.stderr)
+        return 2
+
+
+def _leave(code):
+    """Flush and leave without interpreter teardown (review r4 F1: the SDK's loader thread aborts a fast exit)."""
+    sys.stdout.flush()
+    sys.stderr.flush()
+    os._exit(code)
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    _leave(main())
