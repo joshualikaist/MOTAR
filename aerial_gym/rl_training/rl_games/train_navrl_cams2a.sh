@@ -108,6 +108,9 @@ export NAVRL_CAMTRAIN_HFOV_DEG=66.7      # OAK-D-PRO-FF IMX378 full 4:3 (profile
 export NAVRL_CAMTRAIN_VFOV_DEG=52.6
 # Same-drone target (R1/R2): the quadrotor mesh (D8 v3 asset) rendered flat; its mask is the clean detection.
 export NAVRL_DYNAMIC_MESH_TREATMENT=mesh_flat
+# D8 refuses a detection resolution that differs from the camera render (amendment 1): both are set.
+export NAVRL_CAMERA_WIDTH="${CAMS2_DETECT_WIDTH:?}"
+export NAVRL_CAMERA_HEIGHT="${CAMS2_DETECT_HEIGHT:?}"
 export NAVRL_DETECT_WIDTH="${CAMS2_DETECT_WIDTH:?}"
 export NAVRL_DETECT_HEIGHT="${CAMS2_DETECT_HEIGHT:?}"
 export NAVRL_CAMTRAIN_YAW_ALIGN_WEIGHT=0.6

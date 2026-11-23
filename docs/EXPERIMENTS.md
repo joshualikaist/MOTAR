@@ -805,6 +805,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md` (smoke01 failed at the trainer's final save with no finished episode; report stream bound; smoke02 at 25 epochs; run settings unchanged)
   - CAM-S1 run 1 (2026-11-23 19:16-20:04; records outside the repository in ~/motar_tmp/cams1_20261123/train_s1/): **ABORTED_BY_USER** at epoch 849 of 12,000 (70 bars) after the vehicle-side measurements showed the training's depth and camera assumptions do not match the real OAK-D-PRO-FF stream (D-2026-11-23-2); no result, the next run waits for the full vehicle information
   - → `docs/plans/prereg_camonly_s2a_2026-11-23.md` (CAM-S2a: from scratch against the quadrotor-mesh target, measured vehicle values, 1-2 step action delay, capture <= 1.0 m and <= 1.0 m/s and detected, altitude 1.5 m; training only)
+  - → `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md` (smoke 1 refused at task build: D8 needs detection = render resolution; both set to 312 x 234, 4:3; 624 x 468 deferred)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -813,7 +814,7 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`,
   `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md`,
   `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`, `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md`,
-  `docs/plans/prereg_camonly_s2a_2026-11-23.md`
+  `docs/plans/prereg_camonly_s2a_2026-11-23.md`, `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

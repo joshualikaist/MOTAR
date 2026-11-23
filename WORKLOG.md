@@ -26842,3 +26842,11 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   model f*B 29.88 / sigma_d 0.125 / MinZ 0.315, blob_near off, T/W 3.5, gain randomisation +-20 %, time-based
   curriculum, P9.
 - **Next:** smoke, then the run; independent review of the run code in parallel.
+
+## 2026-11-23 — CAM-S2a amendment 1: D8 target needs detection = render resolution; both 312 x 234
+
+- Smoke `~/motar_tmp/cams2a_20261123/train_s1_smoke_220814/` failed at task build (D8 refuses detect-resolution
+  decoupling). `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md`: camera render and detection 312 x 234 (4:3,
+  half of the real 624 x 468; 624 x 468 x 128 envs would need ~3.1 GB extra GPU memory). Launcher sets
+  NAVRL_CAMERA_WIDTH/HEIGHT from the same values. Next: smoke again, then the run (detached chain
+  `~/motar_tmp/cams2a_20261123/chain_smoke_then_run.sh`).
