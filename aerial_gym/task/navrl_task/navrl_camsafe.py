@@ -32,6 +32,7 @@ navrl_task.py and navrl_perception.py are byte-pinned, so their methods are wrap
 """
 import math
 import os
+import sys
 
 ENV_SWITCH = "NAVRL_CAMSAFE"
 PARAMETERS = {
@@ -140,6 +141,9 @@ def install_task(task_cls, s):
     # Counters live on the tensors' device and are read only when a report is printed (review r1 P3: no host sync
     # per step).
     stats = {"gov_calls": 0, "acc": None}
+    # Bound now: rl_games' quiet startup swaps sys.stdout / sys.stderr for /dev/null while it builds the task (as in
+    # navrl_depth_model.py), so a report printed through sys.stdout later can vanish.
+    stream = sys.stderr
 
     def _acc(device):
         if stats["acc"] is None:
@@ -149,11 +153,12 @@ def install_task(task_cls, s):
     def _report():
         acc = stats["acc"].tolist() if stats["acc"] is not None else [0.0] * 6
         cmds, capped, alive, penalised, pen_sum, rss_sum = acc
-        print("[camsafe] calls=%d capped_frac=%.4f penalised_frac=%.4f mean_penalty=%.5f mean_r_ss_clip=%.4f "
-              "blind_mps=%g weight=%g rss_clip_m=%g" % (stats["gov_calls"], capped / max(1.0, cmds),
-                                                        penalised / max(1.0, alive), pen_sum / max(1.0, alive),
-                                                        rss_sum / max(1.0, alive), blind_mps, weight, clip_m),
-              flush=True)
+        stream.write("[camsafe] calls=%d capped_frac=%.4f penalised_frac=%.4f mean_penalty=%.5f mean_r_ss_clip=%.4f "
+                     "blind_mps=%g weight=%g rss_clip_m=%g\n" % (stats["gov_calls"], capped / max(1.0, cmds),
+                                                                 penalised / max(1.0, alive),
+                                                                 pen_sum / max(1.0, alive), rss_sum / max(1.0, alive),
+                                                                 blind_mps, weight, clip_m))
+        stream.flush()
 
     def _apply_sensor_speed_governor(self, command_xy):
         governed = orig_governor(self, command_xy)

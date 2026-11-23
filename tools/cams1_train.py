@@ -11,6 +11,8 @@ While the run is active a watcher parses the launcher log's epoch blocks ("epoch
 preregistered stop rule once: at epoch STOP_CHECK_EPOCH, if the density is still the curriculum start and the
 episode-weighted capture rate of the last STOP_WINDOW_EPOCHS epochs is below STOP_MIN_CAPTURE, the run is stopped
 (SIGINT, then SIGTERM) and the verdict is STOPPED_NO_LEARNING.
+The smoke runs SMOKE_EPOCHS (800 steps > the 600-step episode limit, so every environment finishes at least one
+episode; with 2 epochs the trainer's final save fails when no episode has ended, smoke01 of 2026-11-23).
 usage: cams1_train.py {--smoke | --run} [--max-hours H] [--max-epochs N]
 """
 import argparse
@@ -86,6 +88,7 @@ def stop_rule(blocks):
     w = window_summary(blocks, STOP_WINDOW_EPOCHS)
     return blocks[-1][6] == START_BARS and w["capture"] is not None and w["capture"] < STOP_MIN_CAPTURE
 DEFAULT_MAX_EPOCHS = 12000
+SMOKE_EPOCHS = 25
 DEFAULT_MAX_HOURS = 17.0
 
 
@@ -131,18 +134,18 @@ def preflight(run_dir):
 def main():
     ap = argparse.ArgumentParser()
     mode = ap.add_mutually_exclusive_group(required=True)
-    mode.add_argument("--smoke", action="store_true", help="2 epochs, development only, not a result")
+    mode.add_argument("--smoke", action="store_true", help="SMOKE_EPOCHS epochs, development only, not a result")
     mode.add_argument("--run", action="store_true")
     ap.add_argument("--max-hours", type=float, default=DEFAULT_MAX_HOURS)
     ap.add_argument("--max-epochs", type=int, default=DEFAULT_MAX_EPOCHS)
     args = ap.parse_args()
-    name = "train_s1_smoke" if args.smoke else "train_s1"
+    name = "train_s1_smoke02" if args.smoke else "train_s1"
     run_dir = UNIT / name
     pre = preflight(run_dir)
     run_dir.mkdir(parents=True)
     env = {k: v for k, v in os.environ.items() if not k.startswith(("NAVRL_", "CAMS1_", "CAMK", "REALVEH_"))}
     env.update(VALUES)
-    env.update({"CAMS1_MAX_EPOCHS": "2" if args.smoke else str(args.max_epochs),
+    env.update({"CAMS1_MAX_EPOCHS": str(SMOKE_EPOCHS) if args.smoke else str(args.max_epochs),
                 "CAMS1_TAG_SUFFIX": "-smoke" if args.smoke else "",
                 "NAVRL_REALVEH_RECEIPT": str(run_dir / "receipt.json"),
                 "OMP_NUM_THREADS": "1", "MKL_NUM_THREADS": "1", "PYTHONNOUSERSITE": "1"})

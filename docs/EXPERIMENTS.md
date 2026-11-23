@@ -802,6 +802,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md` (CAM-K2-E3: matched evaluation of CAM-K2 v3 against CAM-K2 v2)
   - → `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md` (E3 result record and independent review)
   - → `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md` (CAM-S1: camera-only policy trained from scratch, blind-direction cap, 4 m static-safety range, calibrated gates; training only; design review r1 AMEND_FIRST and reward review r1 SOUND_WITH_CHANGES answered in the preregistration; `docs/evidence/camonly_2026-11-04/cams1/`)
+  - → `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md` (smoke01 failed at the trainer's final save with no finished episode; report stream bound; smoke02 at 25 epochs; run settings unchanged)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -809,7 +810,7 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_k1_eval_v1_2026-11-08.md`, `docs/plans/prereg_camonly_k2_train_v1_2026-11-08.md`,
   `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`,
   `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md`,
-  `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`
+  `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`, `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
