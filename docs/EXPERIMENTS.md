@@ -803,7 +803,7 @@ family that is in the test's scope.
   - → `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md` (E3 result record and independent review)
   - → `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md` (CAM-S1: camera-only policy trained from scratch, blind-direction cap, 4 m static-safety range, calibrated gates; training only; design review r1 AMEND_FIRST and reward review r1 SOUND_WITH_CHANGES answered in the preregistration; `docs/evidence/camonly_2026-11-04/cams1/`)
   - → `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md` (smoke01 failed at the trainer's final save with no finished episode; report stream bound; smoke02 at 25 epochs; run settings unchanged)
-  - CAM-S1 run 1 (2026-11-23 19:16-20:04, `~/motar_tmp/cams1_20261123/train_s1/`): **ABORTED_BY_USER** at epoch 849 of 12,000 (70 bars) after the vehicle-side measurements showed the training's depth and camera assumptions do not match the real OAK-D-PRO-FF stream (D-2026-11-23-2); no result, the next run waits for the full vehicle information
+  - CAM-S1 run 1 (2026-11-23 19:16-20:04; records outside the repository in ~/motar_tmp/cams1_20261123/train_s1/): **ABORTED_BY_USER** at epoch 849 of 12,000 (70 bars) after the vehicle-side measurements showed the training's depth and camera assumptions do not match the real OAK-D-PRO-FF stream (D-2026-11-23-2); no result, the next run waits for the full vehicle information
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
