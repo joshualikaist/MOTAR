@@ -26778,3 +26778,27 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** smoke (2 epochs, counters non-zero), then the run (seed 1, <= 12,000 epochs, <= 17 h); CAM-S1-E
   preregistration before any evaluation; 2026-11-24 manual flight with recording. Reviews copied to
   `docs/evidence/camonly_2026-11-04/cams1/`.
+
+## 2026-11-23 — CAM-S1 run 1 ABORTED_BY_USER at epoch 849; real camera stream measured on the vehicle
+
+- **Run:** `python3 tools/cams1_train.py --run` at `13a3e2b`, started 19:16 KST, stopped by the user's instruction at
+  20:04 (SIGINT to the launcher's process group; driver exit 130; host faults 1 -> 1). Epoch 849 of 12,000, still at 70
+  bars; last-100-epoch training-rollout capture 0.784, crash 0.139, timeout 0.076 (exploration noise, not a result).
+  `[camsafe]` cumulative capped fraction fell 0.81 -> 0.40 over the first ~500 epochs. Checkpoints ep 250 / 500 / 750
+  in `aerial_gym/rl_training/rl_games/runs/ppo_261123_1916_navrl_v2-cams1-scratch-camonly-s1/` (ignored, 37 MB).
+  Records `~/motar_tmp/cams1_20261123/train_s1/` (USER_STOP.md, progress_at_user_stop.json, run_report.json, receipt.json;
+  SHA-256 in `~/motar_tmp/cams1_20261123/train_s1_SHA256.txt`). The driver's verdict TRAINING_FAIL reflects only the exit
+  code; the label is ABORTED_BY_USER (D-2026-11-23-2).
+- **Why stopped:** the vehicle-side measurements (D-2026-11-23-2) contradict the training's depth and camera model:
+  real invalid depth 30-39 %/frame indoors versus 2 % iid; f*B 29.86 versus 66.19 px m; colour 63.9 x 38.7 deg versus
+  66 x 54; depth on the right mono camera, not colour-aligned. The `blob_near` rule (CAM-K2 v3 and CAM-S1) would turn
+  textureless regions and sky into 0.4 m surfaces on this stream.
+- **Simulated camera, for the vehicle side:** pinhole, non-square pixels, 160 x 90 over 66 x 54 deg: fx 123.189,
+  fy 88.317, cx 79.5, cy 44.5; obstacle depth 40 x 24 (fx 30.797, fy 23.551) as Euclidean range along the ray, 10 m.
+  Real depth crop for 66 deg: x 60-577 of 640, all 400 rows (53.3 deg, 27.9 up / 25.4 down).
+- **Tests:** full PUBLIC_CPU during the run (cores 6,7,12,13, nice 10, 10 GB cap, 19:19-19:35): 4,321 run, 8 failures,
+  all "refusing duplicate NavRL training" from launcher-contract tests while the run held the training lock; after the
+  stop the four modules (154 tests) pass. Tree unchanged during the run.
+- **Open for the next run:** IR projector state, stereo settings, colour 4:3 option and colour-aligned depth, outdoor
+  depth statistics, hover thrust from the ULog, RTL/RC-loss settings before forest flights (RC loss -> Return with
+  VIO-only height), ROS 1 on the vehicle versus the ROS 2 runtime.

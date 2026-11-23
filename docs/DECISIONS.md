@@ -530,3 +530,20 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
     uses the red-colour detector (design review r1 P0-F).
 - **Supersedes:** nothing. D-2026-11-04-3 (camera-only study) and the official RGB-D + LiDAR contract stand.
 
+## D-2026-11-23-2 — Stop CAM-S1 run 1; retrain only after the full vehicle information
+
+- **Source (user, 2026-11-23 ~20:03).** "오늘 밤 학습하는거 어차피 오늘 확인 못하는거 이러한 정보들 다시 다 받은 다음에
+  했으면 하는데?" and "원래 하던 학습 꺼."
+- **Why.** The vehicle-side session measured the real camera the same evening: OAK-D-PRO-FF (colour IMX378, not the
+  Pro W / OV9782 that D-2026-11-18-1 recorded as "probably"); the VIO-side driver streams 400p depth 640 x 400
+  (77.6 x 53.3 deg, right-mono frame, not aligned to colour) and colour 1280 x 720 (63.9 x 38.7 deg); indoor depth is
+  invalid in 30-39 % of pixels per frame with 12-13 % flicker and a 0.315 m minimum range. The training assumed one
+  66 x 54 deg camera for colour and depth, 800P depth (f*B 66.19 px m versus the real 29.86), 2 % iid holes and the
+  `blob_near` rule that turns dense invalid depth into a 0.4 m surface. PX4 is v1.14.3 with EKF2 on VIO only (height
+  from VIO). Copy: `~/motar_tmp/cams1_20261123/vehicle_facts/README.md`.
+- **Decision.** CAM-S1 run 1 stopped at epoch 849 (ABORTED_BY_USER, no result). The next camera-only training is
+  designed after the outdoor depth recording, the stereo and colour stream settings, the hover thrust (ULog) and the
+  latency budget are known.
+- **Supersedes:** the run scope of `prereg_camonly_s1_scratch_2026-11-23.md` (its single run is used up); D-2026-11-18-1's
+  camera-sensor guess.
+
