@@ -26,7 +26,8 @@ This page is not a source of results. Its few result numbers are copied from
 run conditions (seeds, densities, episode counts) are copied from the family's records. Milestones are in
 `HISTORY.md` and current work in [`PROJECT_STATE.md`](PROJECT_STATE.md). A status below is copied
 from the family's records. Where it and the newest record of the family disagree, that record is
-right; report the conflict.
+right; report the conflict. [`SIMULATION_EXPERIMENT_MAP.md`](SIMULATION_EXPERIMENT_MAP.md) (2026-11-23)
+collects every family's newest label, headline numbers and branch on one page for the paper draft.
 
 ## How to use this page
 

@@ -26716,3 +26716,27 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   session.
 - **Evidence copies** in `docs/evidence/sitl_2026-11-05/camera_runtime/`: `OAKD_RECORDER_REPAIR_r3.md`,
   `OAKD_RECORDER_REVIEW_r4.md`, `OAKD_RECORDER_REVIEW_r4b.md`, `OAKD_RECORDER_REVIEW_r4c.md`.
+
+## 2026-11-23 — Simulation experiment map for the paper draft (read-only synthesis, no run)
+
+- **Why:** the user is starting the paper and the simulation records are spread over five local branches
+  (`codex/mt-p1`, `gainrand/dev`, `camonly/dev`, `camonly/t1`, `cplanner/dev`), none merged into `main` and none
+  on GitHub after 2026-10-23. `docs/PROJECT_STATE.md` is last verified 2026-10-21 and `docs/paper_draft_2026-09-05.md`
+  predates everything from the safety-filter attribution on.
+- **What:** `docs/SIMULATION_EXPERIMENT_MAP.md`: one page with the branch tree and worktrees, the policies that
+  appear, a timeline table (30 rows, one per family or November unit), a section per family with question,
+  policy, newest label verbatim, headline numbers each with its source path, read-first file, raw folders and
+  recorded limits; the condensed comparable groups; the paper wording limits; what is not in the repository.
+  `docs/EXPERIMENTS.md` gets one pointer sentence.
+- **Method:** four read-only extraction passes (subagents) over `docs/EXPERIMENTS.md`, `docs/EVIDENCE.md`,
+  `docs/HISTORY.md` and each family's own records on its branch; every number copied verbatim with its path,
+  none re-derived. Discrepancy found and recorded in the map: S-L1C v2 reads `GPU_QUALIFIED_PENDING_REVIEW` in
+  `docs/evidence/s_l1c_v2_2026-10-18/RESULTS.md` while `EXPERIMENTS.md` says "GO in a limited scope".
+- **Branch state at writing:** `camonly/dev` `5d9610e` is 154 commits ahead of GitHub `codex/mt-p1` (`13d5f19`);
+  `camonly/t1` +2, `gainrand/dev` +7, `cplanner/dev` +18 beyond `camonly/dev`. Secret and personal-data scan of
+  the unpublished commits: no token or key patterns; e-mail addresses only in `CITATION.cff` (the author's, already
+  public) and a citation; largest new file 1.1 MB.
+- **Not done:** no numbers re-derived; no family status changed; no merge; `PROJECT_STATE.md` not updated (it needs
+  its own pass).
+- **Next:** the user decides the paper's scope (KRoC core families only, or the camera-only chain as well); the
+  push of these branches is the user's instruction of 2026-11-23.
