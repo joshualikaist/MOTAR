@@ -26740,3 +26740,16 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   its own pass).
 - **Next:** the user decides the paper's scope (KRoC core families only, or the camera-only chain as well); the
   push of these branches is the user's instruction of 2026-11-23.
+
+## 2026-11-23 — Paper draft: camera-only policy and its sim-to-real preparation (Korean, no run)
+
+- **Why:** the user chose the paper's scope (2026-11-23): the camera-only study as the road to sim-to-real.
+- **What:** `docs/paper_draft_camonly_sim2real_2026-11-23.md`, in the form of `paper_draft_2026-09-05.md`: claim
+  boundary, five claims, system and task, the design of C2 / G3 / CAM-K1 / CAM-K2 v2 / v3 / CAM-T1 / G7 / GR-0 / SITL
+  and the ROS 2 runtime, result tables with every number next to its record path, discussion within the recorded
+  labels, explicit limits, remaining work, related-work note (Class A = 0), citation list, source table.
+- **Method:** design facts extracted read-only from the preregistrations, `docs/plans/sitl_validation_plan_v1.md`,
+  `ros2/motar_camera_policy/README.md`, `docs/DECISIONS.md` and `docs/relation_to_published_systems_2026-09-16.md`;
+  numbers from `SIMULATION_EXPERIMENT_MAP.md` and the records it cites. Nothing re-derived; labels verbatim.
+- **Not done:** no new measurement; no status changed; the draft is not a reviewed record. Citation details for the
+  external works come from the repository's own notes and should be checked against the papers before submission.
