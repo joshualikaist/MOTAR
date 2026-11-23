@@ -26753,3 +26753,28 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   numbers from `SIMULATION_EXPERIMENT_MAP.md` and the records it cites. Nothing re-derived; labels verbatim.
 - **Not done:** no new measurement; no status changed; the draft is not a reviewed record. Citation details for the
   external works come from the repository's own notes and should be checked against the papers before submission.
+
+## 2026-11-23 — CAM-S1 preregistered: camera-only policy from scratch, with two independent reviews answered
+
+- **Why:** D-2026-11-23-1. The user wants a camera-only policy that never inherited a LiDAR-trained policy, and said
+  earlier (2026-09-11) that the object must be a quadrotor, not a red ball; the trained lineage still used the red
+  default.
+- **Design reviews before any run:**
+  - design review r1 (Claude Opus 5.5, fresh, read-only): AMEND_FIRST; no P0 for the run; P0-F for flight use (runtime
+    pins CAM-K2 v3, no blind cap in the runtime, P9 would switch on in flight from the copied environment, colour
+    detector); P1 F's gates unreachable camera-only, no mid-run evaluation possible (6.3 of 8 GB GPU, fresh mode cannot
+    resume), P9 is a detection-loss placeholder on a 160 x 90 image, full-stack smoke needed;
+  - reward review r1 (Claude Fable 5.1, fresh, read-only): SOUND_WITH_CHANGES. Hypothesis "-0.05 x 600 = -30 makes
+    crashing preferable, -40 removes it" rejected: discounted alive cost is 4.99; the real crash-versus-survive driver
+    is the 12 m static-safety term (synthetic -0.34 / -0.87 per step at 70 / 205 bars). Adopted: 4 m range, governor
+    FREE 2.5, keep cap 1.0 and weight 0.5.
+- **Code (opt-in, F unchanged):** `aerial_gym/task/navrl_task/navrl_camsafe.py` (blind cap, blind penalty, collision
+  penalty, 4 m static-safety range), `tools/realveh_entry.py` (installs it only with NAVRL_CAMSAFE=1, after the
+  ablation), `aerial_gym/rl_training/rl_games/train_navrl_cams1.sh`, `tools/cams1_train.py` (preflight, progress.json,
+  stop rule at epoch 3,000), `tests/test_camsafe.py` (15 tests: refusals with positive controls, cap, penalty,
+  static-safety equivalence with the original at 12 m, real-ablation install order, entry off-path unchanged).
+- **Gates:** F's schedule x 0.3459 = `70:0.284,85:0.266,100:0.249,115:0.242` (CAM-K2 v3 last-window rollout capture
+  26.73 / 28.51 % over GR-1 ctrl 79.84 % at 205 bars).
+- **Next:** smoke (2 epochs, counters non-zero), then the run (seed 1, <= 12,000 epochs, <= 17 h); CAM-S1-E
+  preregistration before any evaluation; 2026-11-24 manual flight with recording. Reviews copied to
+  `docs/evidence/camonly_2026-11-04/cams1/`.

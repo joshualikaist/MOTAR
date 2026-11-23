@@ -44,6 +44,7 @@ RETIRED = ("NAVRL_REALVEH_ROBOT", "NAVRL_REALVEH_WARMSTART_FROM")
 VEH_RAND = ROOT / "aerial_gym/task/navrl_task/navrl_vehicle_rand.py"
 DEPTH = ROOT / "aerial_gym/task/navrl_task/navrl_depth_model.py"
 VALIDITY = ROOT / "aerial_gym/task/navrl_task/navrl_depth_validity.py"     # CAM-K2 v3; hashed only when on
+CAMSAFE = ROOT / "aerial_gym/task/navrl_task/navrl_camsafe.py"     # CAM-S1; hashed only when on
 VALIDITY_RULE = "blob_near"
 VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
@@ -158,6 +159,15 @@ def settings(environ=None):
         stray = sorted(k for k in VALIDITY_PARAMETERS if env.get(k, "").strip())
         if stray:
             raise SystemExit("realveh: %s set while NAVRL_DEPTH_VALIDITY is off" % ", ".join(stray))
+    # CAM-S1 only (NAVRL_CAMSAFE=1): blind-direction speed cap and reward terms. Off: the module is not loaded and
+    # `out` is exactly as before (no camsafe key), so CAM-K2 receipts are unchanged.
+    if env.get("NAVRL_CAMSAFE", "").strip() or any(k.startswith("NAVRL_CAMSAFE_") and env[k].strip() for k in env):
+        try:
+            camsafe = _load_private("realveh_camsafe_settings", CAMSAFE).settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if camsafe is not None:
+            out["camsafe"] = camsafe
     return out
 
 
@@ -224,6 +234,12 @@ def main():
 
     info["ablation"] = ablation.install(ablation.condition_from_env())
     before, after = camtrain.apply_overrides(task_config, s["camtrain"])
+    if s.get("camsafe") is not None:        # 4. CAM-S1: after the ablation, whose governor wrapper must be inner
+        from aerial_gym.task.navrl_task import navrl_camsafe as camsafe
+
+        info["camsafe"] = camsafe.install(s["camsafe"], task_config)
+        info["camsafe_module"] = camsafe.__file__
+        info["camsafe_sha256"] = sha256(CAMSAFE)
     info.update({"overrides_before": before, "overrides_after": after, "script": script,
                  "entry": str(pathlib.Path(__file__).resolve())})
     print("[realveh] " + json.dumps(info, sort_keys=True), flush=True)

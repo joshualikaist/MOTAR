@@ -511,3 +511,22 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
     marker on the target or a separate detector integration is needed before any tracking trial.
 - **Still open (asked of the TA):** the ROS topic list with the VIO running and a free PX4 port for uXRCE-DDS, the
   in-flight monitoring link, and a ULog from the next flight.
+
+## D-2026-11-23-1 — Camera-only policy from scratch (CAM-S1); the flight of 2026-11-24 is manual with recording
+
+- **Source (user, 2026-11-23).** "빨간 공만 찾게 하지 말라고 했잖아. 상대 드론을 동일한걸로 만들어서 인식하는거라고
+  했잖아." / "학습 시켜야된다고 하면 첨부터 다시 해야지." / "지금 학습량을 조금 줄여서 하는게 답이지 않을까? ...
+  처음부터 학습 시작해." Then, answering the questions: the 898-D layout kept; curriculum gates lowered with a stop
+  rule; about 12,000 epochs, evaluation the next afternoon; the 2026-11-24 flight manual with camera and flight-log
+  recording. The user also asked for an independent check and for a mathematical check of the reward by Fable.
+- **Decision.**
+  - A camera-only policy is trained from random initialisation (CAM-S1,
+    `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`), not continued from F or CAM-K2, because a continuation
+    inherits a LiDAR-trained policy's weights and habits.
+  - Recognising the other drone is a perception task (an image detector), not a policy input: the policy receives a
+    track. In simulation the object stays the analytic proxy; the P9 error injector is used, and recorded as a
+    detection-loss placeholder (design review r1 P1-3), not as drone recognition.
+  - No autonomous flight on 2026-11-24. The flight runtime cannot load a CAM-S1 checkpoint, has no blind cap and still
+    uses the red-colour detector (design review r1 P0-F).
+- **Supersedes:** nothing. D-2026-11-04-3 (camera-only study) and the official RGB-D + LiDAR contract stand.
+
