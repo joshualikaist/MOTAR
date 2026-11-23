@@ -37,6 +37,10 @@ from types import MappingProxyType
 import numpy as np
 
 MAX_AGE_S = 0.15
+# Capture age of the policy command at publication: from the policy contract's trained action delay
+# (camera_policy_contract.capture_age_bound_s); MAX_AGE_S (0.15 s, a policy trained without delay) by default, never
+# above MAX_COMMAND_CAPTURE_AGE_S. Receipt, cadence and estimator ages keep MAX_AGE_S.
+MAX_COMMAND_CAPTURE_AGE_S = 0.5
 MAX_SKEW_S = 0.025
 STATUS_MAX_AGE_S = 2.0
 PRIME_DURATION_S = 1.1
@@ -417,7 +421,7 @@ class Px4OffboardGateway:
     the box. Every other fault still revokes as before. `geofence_record` keeps the last output's pre-clamp and
     post-clamp XY velocity.
     """
-    def __init__(self, binding, *, command_frame_id, geofence):
+    def __init__(self, binding, *, command_frame_id, geofence, capture_age_s=MAX_AGE_S):
         if not isinstance(binding, Px4MessageBinding):
             raise GatewayError("explicit Px4MessageBinding is required")
         if not isinstance(command_frame_id, str) or not command_frame_id.strip():
@@ -426,6 +430,10 @@ class Px4OffboardGateway:
             geofence = Geofence.from_config(geofence)
         if not isinstance(geofence, Geofence):
             raise GatewayError("an explicit geofence configuration (enabled or disabled) is required")
+        if (isinstance(capture_age_s, bool) or not isinstance(capture_age_s, (int, float))
+                or not MAX_AGE_S - 1e-9 <= float(capture_age_s) <= MAX_COMMAND_CAPTURE_AGE_S + 1e-9):
+            raise GatewayError("capture_age_s must lie in [%g, %g] s" % (MAX_AGE_S, MAX_COMMAND_CAPTURE_AGE_S))
+        self.capture_age_s = float(capture_age_s)
         self.binding = binding
         self.command_frame_id = command_frame_id
         self.geofence = geofence
@@ -576,7 +584,7 @@ class Px4OffboardGateway:
         if self._command_contract is not None and self._command_contract != contract:
             raise GatewayError("policy command source contract changed")
         for stamp in captures + generated:
-            _fresh(stamp, now_s, MAX_AGE_S, "policy command capture/generation")
+            _fresh(stamp, now_s, self.capture_age_s, "policy command capture/generation")
         encoded = encode_setpoint(command, hold_z_ned_m=self.hold_z_ned_m, timestamp_us=int(round(now_s*1e6)))
         velocity, yaw_rate = _command_values(command)
         signature = tuple(velocity) + (yaw_rate,)
@@ -625,7 +633,7 @@ class Px4OffboardGateway:
                 raise GatewayError("fresh policy command unavailable")
             _fresh(self._command_receipt, now_monotonic_s, MAX_AGE_S, "policy command receipt")
             for stamp in self._capture + self._generated:
-                _fresh(stamp, now_s, MAX_AGE_S, "policy command capture/generation")
+                _fresh(stamp, now_s, self.capture_age_s, "policy command capture/generation")
             self.state = "ACTIVE"
             return self._geofenced(decoded["pos"], now_s)
         except (GatewayError, KeyError, TypeError, ValueError) as exc:

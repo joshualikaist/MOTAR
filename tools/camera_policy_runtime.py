@@ -1158,6 +1158,12 @@ class CameraPolicyRuntime:
         Outdoor profile: PX4's vertical-validity fields in state are ignored here (split_state)."""
         return height_band(state, self.contract)
 
+    @property
+    def capture_age_bound_s(self):
+        """Capture-age bound from the contract's trained action delay (camera_policy_contract.capture_age_bound_s)."""
+        from camera_policy_contract import capture_age_bound_s
+        return capture_age_bound_s(self.contract)
+
     def _validate_timing(self, frame, state, now_s):
         try:
             stamps = np.array([frame['rgb_t'], frame['depth_t'], state['t']], np.float64)
@@ -1167,7 +1173,7 @@ class CameraPolicyRuntime:
         if stamps.shape != (3,) or not np.isfinite(stamps).all() or not math.isfinite(now):
             raise InputError('timestamps must be finite shared-clock seconds')
         ages = now-stamps
-        if np.any(stamps < 0) or np.any(ages < -1e-9) or np.any(ages > MAX_AGE_S+1e-9):
+        if np.any(stamps < 0) or np.any(ages < -1e-9) or np.any(ages > self.capture_age_bound_s+1e-9):
             raise InputError('stale/future RGB-D or estimator sample')
         if np.ptp(stamps) > MAX_SKEW_S+1e-9:
             raise InputError('RGB-D/estimator capture skew exceeds declared bound')

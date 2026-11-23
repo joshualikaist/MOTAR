@@ -26802,3 +26802,31 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Open for the next run:** IR projector state, stereo settings, colour 4:3 option and colour-aligned depth, outdoor
   depth statistics, hover thrust from the ULog, RTL/RC-loss settings before forest flights (RC loss -> Return with
   VIO-only height), ROS 1 on the vehicle versus the ROS 2 runtime.
+
+## 2026-11-23 — Flight runtime: capture-age allowance bound to the policy's trained delay (no flight, CPU only)
+
+- **Why (user, 2026-11-23):** "실기 허용 속도로 하는게 맞지. 최소한의 지연으로 이거 진행하도록만 해줘." The runtime refused any
+  command whose camera capture was older than a fixed 0.15 s in three places (runtime, ROS session, PX4 gateway); with
+  the measured camera-to-Orin latency (35-42 ms at 400p, ~77 ms in the 4:3 aligned profile D) plus processing plus the
+  gateway reusing a 10 Hz command, real captures are ~140-330 ms old, so the gateway would revoke within seconds.
+- **Change:** `tools/camera_policy_contract.py` adds `capture_age_bound_for(steps, dt)` = (steps + 1) x dt + 0.05 s
+  (rounded to 1e-9 s; cap 0.5 s, steps <= 3) and `capture_age_bound_s(contract)`, which reads the trained delay from the
+  training environment key NAVRL_ACTION_DELAY_STEPS_MAX and accepts only 0 until training implements and records an
+  action delay (review r1 P2-1); `validate_contract` reports a bad value. Capture-age checks use the bound in
+  `camera_policy_runtime.py` (property `capture_age_bound_s`), `camera_ros2_session.py` (input selection by ROS stamp,
+  result expiry by stamp, proposal valid_until) and `camera_ros2_px4.py` (command capture/generation age; constructor
+  `capture_age_s` in [0.15, 0.5], default 0.15). Receipt, cadence, clock-pause, inference-time and estimator checks keep
+  0.15 s (review r1 P2-2 reverted the receipt widening). CAM-K2 v3 (no trained delay) keeps exactly 0.15 s.
+  `camera_ros2_px4_node.py` is unchanged (0.15 s); the ROS 1 port (user decision A) must derive the gateway's value
+  from the policy contract in the gateway process (review r1 P2-3, open).
+- **Tests:** `tests/test_camera_timing_budget.py` 11 (bound arithmetic, refusals with positive controls, gateway 0.30 s
+  capture accepted at 0.35 / revoked at 0.15, receipt still 0.15, session selection and valid_until, runtime behaviour);
+  camera/session/gateway/SITL-camera/OAK-D modules 356 OK (expected failures 10, pre-existing).
+- **Review r1 (Claude Opus 5.5, fresh, read-only):** PASS_WITH_LIMITS, P0/P1 0; P2-1 and P2-2 fixed after the review
+  (not re-reviewed), P2-3 open for the port; P3-1 (diagnostics/refuse prime on a session-gateway bound mismatch), P3-2
+  (validate_contract path untested), P3-5 partly (duplicate 0.5 s caps; oakd_camera/sitl_camera keep 0.15 s, refusing),
+  P3-6 (riskcap's 0.1 s reaction assumption versus a delay-trained lineage) open. Copy:
+  `docs/evidence/sitl_2026-11-05/camera_runtime/TIMING_BUDGET_REVIEW_r1.md`.
+- **Note:** any contract JSON generated earlier must be rebuilt (three bound source files changed). Minimum latency plan:
+  stream profile D, early downscale to the policy grid, measure capture-to-command on the Orin after the ROS 1 port and
+  train with the smallest delay step that covers it.

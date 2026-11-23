@@ -67,6 +67,7 @@ from camera_ros2_adapter import (MAX_POSE_BRACKET_S, build_frame, declared_verti
 # PROVISIONAL (outdoor repair r1, defined in the runtime since repair r2 so the replays share it): accepted frames held
 # at zero after a history reset before a nonzero command resumes; 5 frames = 0.5 s at the trained 10 Hz, one interval
 # of the trained 0.5 s observation history.
+from camera_policy_contract import capture_age_bound_s
 from camera_policy_runtime import (FrameRefused, REFUSAL_HOLD_TIMEOUT, REFUSAL_REENTRY_FRAMES, RefusalHoldEpisode,
                                    _is_outdoor, refusal_hold_limit_s)
 
@@ -107,6 +108,9 @@ class RosPolicySession:
     def __init__(self, runtime, binding):
         self.binding = copy.deepcopy(validate_binding(binding))
         self.runtime = runtime
+        # Capture ages (ROS stamps of inputs and of proposals) use the bound derived from the trained action delay;
+        # receipt and cadence checks keep MAX_AGE_S (the 10 Hz stream itself must not stall).
+        self.capture_age_s = capture_age_bound_s(getattr(runtime, 'contract', None))
         self.epoch = 0
         self._busy = False
         self.reset()
@@ -232,7 +236,7 @@ class RosPolicySession:
                 if not self._queues[kind]:
                     self._raise('input stream missing: %s' % kind)
                 stamp, receipt, _ = self._queues[kind][-1]
-                if not 0 <= wall-receipt <= MAX_AGE_S+1e-9 or not 0 <= now-stamp <= MAX_AGE_S+1e-9:
+                if not 0 <= wall-receipt <= MAX_AGE_S+1e-9 or not 0 <= now-stamp <= self.capture_age_s+1e-9:
                     self._raise('stale/future ROS input stream: %s' % kind)
 
     def prepare(self, *, now_ros_s, now_monotonic_s):
@@ -248,7 +252,7 @@ class RosPolicySession:
         candidates = []
         for i, kind in enumerate(KINDS):
             rows = [r for r in self._queues[kind]
-                    if 0 <= now_ros_s-r[0] <= MAX_AGE_S+1e-9
+                    if 0 <= now_ros_s-r[0] <= self.capture_age_s+1e-9
                     and 0 <= now_monotonic_s-r[1] <= MAX_AGE_S+1e-9
                     and (self._last_used is None or r[0] > self._last_used[i])]
             if not rows:
@@ -284,7 +288,7 @@ class RosPolicySession:
         queue, so nothing is extrapolated.
         """
         rows = [r for r in self._queues['odometry']
-                if 0 <= now_ros_s-r[0] <= MAX_AGE_S+1e-9 and 0 <= now_monotonic_s-r[1] <= MAX_AGE_S+1e-9]
+                if 0 <= now_ros_s-r[0] <= self.capture_age_s+1e-9 and 0 <= now_monotonic_s-r[1] <= MAX_AGE_S+1e-9]
         before = max((r for r in rows if r[0] <= rgb_t), key=lambda r: r[0], default=None)
         after = min((r for r in rows if r[0] >= rgb_t), key=lambda r: r[0], default=None)
         if before is None or after is None or after[0]-before[0] > MAX_POSE_BRACKET_S+1e-9:
@@ -319,7 +323,7 @@ class RosPolicySession:
             if self._pending is not item or self.fault or item.epoch != self.epoch:
                 raise SessionFault(self.fault or 'obsolete inference result')
             self.watchdog(now_ros_s=now_ros_s, now_monotonic_s=now_monotonic_s)
-            if (any(not 0 <= now_ros_s-t <= MAX_AGE_S+1e-9 for t in item.stamps)
+            if (any(not 0 <= now_ros_s-t <= self.capture_age_s+1e-9 for t in item.stamps)
                     or any(not 0 <= now_monotonic_s-t <= MAX_AGE_S+1e-9 for t in item.receipts)):
                 raise SessionFault('inference result expired before publication')
             if result.get('waiting_altitude') is True:
@@ -345,7 +349,7 @@ class RosPolicySession:
                     raise SessionFault('malformed frame refusal')
                 # Unit B: a refusal never restarts the hold episode; at the limit nothing is proposed.
                 elapsed = self._hold_tick(item, refusal['reason'])
-                proposal = {'capture_stamp_s': min(item.stamps), 'valid_until_s': min(item.stamps)+MAX_AGE_S,
+                proposal = {'capture_stamp_s': min(item.stamps), 'valid_until_s': min(item.stamps)+self.capture_age_s,
                             'frame_id': self.binding['frames']['world'], 'velocity_enu_mps': [0., 0., 0.],
                             'yaw_rate_enu_rps': 0., 'epoch': item.epoch, 'sequence': item.sequence,
                             'pose_interpolated': result.get('pose_interpolated') is True,
@@ -365,7 +369,7 @@ class RosPolicySession:
                     or np.linalg.norm(velocity[:2]) > math.sqrt(2)*2.5+1e-6
                     or not math.isfinite(rate) or abs(rate) > 3.+1e-6):
                 raise SessionFault('invalid/out-of-contract proposed command')
-            proposal = {'capture_stamp_s': min(item.stamps), 'valid_until_s': min(item.stamps)+MAX_AGE_S,
+            proposal = {'capture_stamp_s': min(item.stamps), 'valid_until_s': min(item.stamps)+self.capture_age_s,
                         'frame_id': self.binding['frames']['world'], 'velocity_enu_mps': velocity.tolist(),
                         'yaw_rate_enu_rps': rate, 'epoch': item.epoch, 'sequence': item.sequence,
                         'pose_interpolated': result.get('pose_interpolated') is True,

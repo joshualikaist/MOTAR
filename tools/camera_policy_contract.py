@@ -182,6 +182,59 @@ SOURCE_PATHS = (
 )
 
 
+# Timing budget (2026-11-23, user: "the real-flight allowance must be what the policy was trained with"). A command is
+# used until the next one arrives, so at publication its camera/estimator capture may be as old as the delay the policy
+# met in training, plus one control period, plus a fixed margin. A lineage records its trained action delay in its
+# training environment (TRAINED_DELAY_ENV, whole control steps); CAM-K2 v3 trained without delay -> 0.15 s, the bound
+# the runtime always used. MAX_CAPTURE_AGE_S caps every lineage.
+TRAINED_DELAY_ENV = "NAVRL_ACTION_DELAY_STEPS_MAX"
+MAX_TRAINED_DELAY_STEPS = 3
+CAPTURE_AGE_MARGIN_S = 0.05
+MAX_CAPTURE_AGE_S = 0.5
+DEFAULT_CONTROL_DT_S = 0.1
+
+
+# Training does not yet implement or record an action delay (review r1 P2-1): runtime_env only echoes the launch
+# environment, so a nonzero value there would widen the flight bound for a policy that never met a delay. Until a
+# training receipt written by the delay code itself is bound here, only 0 is accepted.
+SUPPORTED_TRAINED_DELAY_STEPS = (0,)
+
+
+def capture_age_bound_for(steps, control_dt_s):
+    """(steps + 1) x control period + margin, rounded to 1e-9 s so a zero-delay policy gets exactly 0.15 s."""
+    if isinstance(steps, bool) or not isinstance(steps, int) or not 0 <= steps <= MAX_TRAINED_DELAY_STEPS:
+        raise ValueError("trained delay steps must be an integer in [0, %d]" % MAX_TRAINED_DELAY_STEPS)
+    dt = float(control_dt_s)
+    if not math.isfinite(dt) or dt <= 0.0:
+        raise ValueError("control period must be a positive number of seconds")
+    bound = round((steps + 1) * dt + CAPTURE_AGE_MARGIN_S, 9)
+    if bound > MAX_CAPTURE_AGE_S:
+        raise ValueError("capture age bound %.3f s above %g s" % (bound, MAX_CAPTURE_AGE_S))
+    return bound
+
+
+def trained_action_delay_steps(contract):
+    """The largest action delay, in control steps, that the policy met in training (0 when its record has none)."""
+    env = contract.get("runtime_env") if isinstance(contract, dict) else None
+    raw = env.get(TRAINED_DELAY_ENV, "0") if isinstance(env, dict) else "0"
+    if not isinstance(raw, str) or not (raw.isascii() and raw.isdigit()) or int(raw) > MAX_TRAINED_DELAY_STEPS:
+        raise ValueError("%s must be a whole number of control steps in [0, %d], got %r"
+                         % (TRAINED_DELAY_ENV, MAX_TRAINED_DELAY_STEPS, raw))
+    steps = int(raw)
+    if steps not in SUPPORTED_TRAINED_DELAY_STEPS:
+        raise ValueError("%s=%d is not supported until training records its action delay"
+                         % (TRAINED_DELAY_ENV, steps))
+    return steps
+
+
+def capture_age_bound_s(contract):
+    """Largest accepted capture age when a command is used: (trained delay steps + 1) x control period + margin."""
+    dt = DEFAULT_CONTROL_DT_S
+    if isinstance(contract, dict) and isinstance(contract.get("observation"), dict):
+        dt = contract["observation"].get("control_dt_s", DEFAULT_CONTROL_DT_S)
+    return capture_age_bound_for(trained_action_delay_steps(contract), dt)
+
+
 def sha256_file(path):
     digest = hashlib.sha256()
     with Path(path).open("rb") as stream:
@@ -521,6 +574,10 @@ def validate_contract(contract, verify_files=True, *, root=ROOT):
         problems.append("contract keys differ from the supported schema")
     problems.extend(height_filter_problems(contract))
     problems.extend(outdoor_problems(contract))
+    try:
+        capture_age_bound_s(contract)
+    except (ValueError, TypeError) as exc:
+        problems.append("timing: %s" % exc)
     for key, value in expected.items():
         if key in HEIGHT_FILTER_KEYS:
             continue  # deployment settings, checked structurally above
