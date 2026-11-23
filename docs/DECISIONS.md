@@ -547,3 +547,16 @@ stop remains3GB. All still-authorized CPU work resumes without a new GPU/push/me
 - **Supersedes:** the run scope of `prereg_camonly_s1_scratch_2026-11-23.md` (its single run is used up); D-2026-11-18-1's
   camera-sensor guess.
 
+## D-2026-11-23-3 — CAM-S2a tonight; simulated target is the same quadrotor; capture rule; runtime on ROS 1
+
+- **Source (user, 2026-11-23 night).** "시뮬레이션 할때도 빨간공이 아니라 같은 기체로 실험해야되는거 까먹지 말고";
+  approval of the target, detection, capture and latency rules; "비행 높이는 약 1.5m"; "A안으로 비행 프로그램 수정해야지";
+  "학습 코드를 지금 얼른 짰어야지. 내일 아침에 실행되는거 봐야된다니까".
+- **Decision.**
+  - The simulated target is the quadrotor (supersedes D-2026-11-23-1's "the object stays the analytic proxy").
+  - Capture = centre distance <= 1.0 m, closing speed <= 1.0 m/s, target detected; < 0.40 m is a collision.
+  - Train CAM-S2a tonight with the rules that exist (`docs/plans/prereg_camonly_s2a_2026-11-23.md`); the rest
+    (body-fixed camera, ground, forest, PX4 lag, ego noise, measured invalid depth) follows in CAM-S2b.
+  - The flight runtime is ported to ROS 1 (rospy) + MAVROS (option A).
+- **Supersedes:** D-2026-11-23-1's sentence on the simulated object.
+

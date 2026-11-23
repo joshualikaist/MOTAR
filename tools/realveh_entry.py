@@ -45,6 +45,7 @@ VEH_RAND = ROOT / "aerial_gym/task/navrl_task/navrl_vehicle_rand.py"
 DEPTH = ROOT / "aerial_gym/task/navrl_task/navrl_depth_model.py"
 VALIDITY = ROOT / "aerial_gym/task/navrl_task/navrl_depth_validity.py"     # CAM-K2 v3; hashed only when on
 CAMSAFE = ROOT / "aerial_gym/task/navrl_task/navrl_camsafe.py"     # CAM-S1; hashed only when on
+CAMS2 = ROOT / "aerial_gym/task/navrl_task/navrl_cams2.py"     # CAM-S2a; hashed only when on
 VALIDITY_RULE = "blob_near"
 VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
@@ -168,6 +169,16 @@ def settings(environ=None):
             raise SystemExit("realveh: %s" % exc) from None
         if camsafe is not None:
             out["camsafe"] = camsafe
+    # CAM-S2a only (NAVRL_CAMS2=1, needs NAVRL_CAMSAFE=1): action delay, capture/contact rule, altitude, camera mount.
+    if env.get("NAVRL_CAMS2", "").strip() or any(k.startswith("NAVRL_CAMS2_") and env[k].strip() for k in env):
+        try:
+            cams2 = _load_private("realveh_cams2_settings", CAMS2).settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if cams2 is not None:
+            if out.get("camsafe") is None:
+                raise SystemExit("realveh: NAVRL_CAMS2 needs NAVRL_CAMSAFE=1")
+            out["cams2"] = cams2
     return out
 
 
@@ -240,6 +251,12 @@ def main():
         info["camsafe"] = camsafe.install(s["camsafe"], task_config)
         info["camsafe_module"] = camsafe.__file__
         info["camsafe_sha256"] = sha256(CAMSAFE)
+    if s.get("cams2") is not None:          # 5. CAM-S2a: after camsafe (whose wrappers it wraps)
+        from aerial_gym.task.navrl_task import navrl_cams2 as cams2
+
+        info["cams2"] = cams2.install(s["cams2"], task_config)
+        info["cams2_module"] = cams2.__file__
+        info["cams2_sha256"] = sha256(CAMS2)
     info.update({"overrides_before": before, "overrides_after": after, "script": script,
                  "entry": str(pathlib.Path(__file__).resolve())})
     print("[realveh] " + json.dumps(info, sort_keys=True), flush=True)

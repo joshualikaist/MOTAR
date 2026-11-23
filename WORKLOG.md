@@ -26830,3 +26830,15 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Note:** any contract JSON generated earlier must be rebuilt (three bound source files changed). Minimum latency plan:
   stream profile D, early downscale to the policy grid, measure capture-to-command on the Orin after the ROS 1 port and
   train with the smallest delay step that covers it.
+
+## 2026-11-23 — CAM-S2a preregistered and built: same-drone target, measured vehicle values, delay, capture rule
+
+- **Why:** D-2026-11-23-3; the user wants the run started tonight and inspected in the morning.
+- **Code:** `aerial_gym/task/navrl_task/navrl_cams2.py` (opt-in through `tools/realveh_entry.py` with NAVRL_CAMS2=1,
+  after navrl_camsafe): per-episode action delay U{1,2} steps, the task's swept test at 0.40 m turned into a target
+  collision, capture <= 1.0 m / closing <= 1.0 m/s / detected, flight altitude 1.5 m, camera x 0.08 m;
+  `aerial_gym/rl_training/rl_games/train_navrl_cams2a.sh`, `tools/cams2a_train.py` (from the CAM-S1 versions);
+  `tests/test_cams2.py` (12). Existing switches used: D8 `mesh_flat` quadrotor target, detection 624 x 468, depth
+  model f*B 29.88 / sigma_d 0.125 / MinZ 0.315, blob_near off, T/W 3.5, gain randomisation +-20 %, time-based
+  curriculum, P9.
+- **Next:** smoke, then the run; independent review of the run code in parallel.
