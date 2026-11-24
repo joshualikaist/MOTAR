@@ -11,6 +11,8 @@ Opt-in. Before runner.py builds the task it installs, in this fixed order:
      invalid-depth validity rule, installed just BEFORE the depth model so that its wrapper is the inner one and runs
      on the frame the depth model produced. Unset: the module is not loaded and nothing below changes (the receipt
      has no depth_validity keys);
+  2c/5-7 (opt-in, documented in each module): navrl_camsafe (CAM-S1), navrl_cams2 (CAM-S2a), and for the CAM-S2a
+     evaluation navrl_yawclip (NAVRL_YAWCLIP=1, after cams2) and navrl_cams2diag (NAVRL_CAMS2DIAG=1, outermost);
   3. the camera-only LiDAR ablation (NAVRL_SENSOR_ABLATION must be no_lidar) and the CAM-K1 camera FOV / reward
      overrides, through tools/camtrain_entry.py's `settings` and `apply_overrides`, used unchanged.
 The vehicle stays navrl_quad. Its robot identity (the checkpoint's cfg_robot_* fields), URDF, config and Lee gains
@@ -46,6 +48,8 @@ DEPTH = ROOT / "aerial_gym/task/navrl_task/navrl_depth_model.py"
 VALIDITY = ROOT / "aerial_gym/task/navrl_task/navrl_depth_validity.py"     # CAM-K2 v3; hashed only when on
 CAMSAFE = ROOT / "aerial_gym/task/navrl_task/navrl_camsafe.py"     # CAM-S1; hashed only when on
 CAMS2 = ROOT / "aerial_gym/task/navrl_task/navrl_cams2.py"     # CAM-S2a; hashed only when on
+YAWCLIP = ROOT / "aerial_gym/task/navrl_task/navrl_yawclip.py"     # CAM-S2a eval condition; hashed only when on
+CAMS2DIAG = ROOT / "aerial_gym/task/navrl_task/navrl_cams2diag.py"     # CAM-S2a eval recorder; hashed only when on
 VALIDITY_RULE = "blob_near"
 VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
@@ -179,6 +183,24 @@ def settings(environ=None):
             if out.get("camsafe") is None:
                 raise SystemExit("realveh: NAVRL_CAMS2 needs NAVRL_CAMSAFE=1")
             out["cams2"] = cams2
+    # CAM-S2a evaluation only (NAVRL_YAWCLIP=1): yaw-rate command clip. Off: the module is not loaded, `out` unchanged.
+    if env.get("NAVRL_YAWCLIP", "").strip() or any(k.startswith("NAVRL_YAWCLIP_") and env[k].strip() for k in env):
+        try:
+            yawclip = _load_private("realveh_yawclip_settings", YAWCLIP).settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if yawclip is not None:
+            out["yawclip"] = yawclip
+    # CAM-S2a evaluation only (NAVRL_CAMS2DIAG=1, needs NAVRL_CAMS2=1): per-episode recorder. Off: `out` unchanged.
+    if env.get("NAVRL_CAMS2DIAG", "").strip() or any(k.startswith("NAVRL_CAMS2DIAG_") and env[k].strip() for k in env):
+        try:
+            diag = _load_private("realveh_cams2diag_settings", CAMS2DIAG).settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if diag is not None:
+            if out.get("cams2") is None:
+                raise SystemExit("realveh: NAVRL_CAMS2DIAG needs NAVRL_CAMS2=1")
+            out["cams2diag"] = diag
     return out
 
 
@@ -257,6 +279,18 @@ def main():
         info["cams2"] = cams2.install(s["cams2"], task_config)
         info["cams2_module"] = cams2.__file__
         info["cams2_sha256"] = sha256(CAMS2)
+    if s.get("yawclip") is not None:        # 6. CAM-S2a eval condition: clips the delayed, governed yaw command
+        from aerial_gym.task.navrl_task import navrl_yawclip as yawclip
+
+        info["yawclip"] = yawclip.install(s["yawclip"], task_config)
+        info["yawclip_module"] = yawclip.__file__
+        info["yawclip_sha256"] = sha256(YAWCLIP)
+    if s.get("cams2diag") is not None:      # 7. CAM-S2a eval recorder: outermost, after every rule it records
+        from aerial_gym.task.navrl_task import navrl_cams2diag as cams2diag
+
+        info["cams2diag"] = cams2diag.install(s["cams2diag"], s["camsafe"]["NAVRL_CAMSAFE_BLIND_MPS"])
+        info["cams2diag_module"] = cams2diag.__file__
+        info["cams2diag_sha256"] = sha256(CAMS2DIAG)
     info.update({"overrides_before": before, "overrides_after": after, "script": script,
                  "entry": str(pathlib.Path(__file__).resolve())})
     print("[realveh] " + json.dumps(info, sort_keys=True), flush=True)

@@ -26906,3 +26906,28 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** independent review of the CAM-S2a code (promised in the preregistration, not yet done); an evaluation
   preregistration (checkpoints 1000/3000/6000/12000, fixed densities, crash-cause diagnostics, a yaw-clip-at-1.047
   condition) for the user's approval; the ROS 1 port per `~/motar_tmp/ros1_port_20261124/DESIGN.md`.
+
+## 2026-11-24 — CAM-S2a-E v1 preregistered: evaluation of CAM-S2a checkpoints and a 1.047 rad/s yaw-clip arm (no GPU yet)
+
+- **Why / approval (user, 2026-11-24):** "평가 fable 5.2로 진행해줘". Fable 5.2 is not available in this session; the
+  package was drafted by a Fable 5.1 subagent and reviewed by Claude Opus 5.5.
+- **Design:** `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md`. Every cell reproduces the training receipt's
+  environment (161 keys) except an allowlist (fixed density, seeds 4501-4503, eval keys), checked against both the
+  launcher snapshot and the entry's receipt. Arms S1k/S3k/S6k/S12k (last_gen ep1000/3000/6000/12000, SHA-pinned) and
+  YC12k (ep12000, yaw command clipped at 1.047 rad/s after the delay, action scale 3.0 unchanged). Densities 115/175/205.
+  Stage A (gated) S1k, S12k, YC12k x 3 densities x 3 seeds = 27 cells; stage B S3k/S6k at 175 = 6; stage C optional.
+  Identity stage: repeat, recorder-off, wrong-checkpoint and clip-active cells. Gates L (S12k vs S1k) and Y (YC12k vs
+  S12k), CAM-K2-E labels; quota 8 episodes/env; controls on CAM-K1-E cells
+  (`~/motar_tmp/cams2a_eval_20261124/controls_camk1e_9blocks_r3.json`, analysis SHA 96f42e08…): a crash increase of
+  about 3 pp reads WORSE, under 2 pp cannot.
+- **Code:** `tools/cams2a_eval_run.py`, `tools/cams2a_eval_analyse.py`, `aerial_gym/task/navrl_task/navrl_yawclip.py`,
+  `aerial_gym/task/navrl_task/navrl_cams2diag.py` (per-episode recorder: target contact vs obstacle crash, capture
+  kinematics, behaviour while the target is not detected; answers training review F4/F6/F7), `tools/realveh_entry.py`
+  (hooks after cams2), launcher `aerial_gym/rl_training/rl_games/eval_navrl_cams2a_arms.sh`; tests
+  `tests/test_yawclip.py` 11, `tests/test_cams2diag.py` 11, `tests/test_cams2a_eval.py` 27.
+- **Reviews (Claude Opus 5.5, fresh, read-only; `~/motar_tmp/cams2a_eval_20261124/review_r1/`, `review_r2/`):** r1
+  GO_WITH_FIXES (0 P0, 5 P1, 10 P2, 5 P3) → draft r2; r2 GO_WITH_FIXES (3 P0 introduced by r2's code: result-condition
+  type, float32 yaw comparison, stage-C timeout turning A+B INCOMPLETE; 1 P1 wording; 2 P2; 1 P3) → draft r3 with
+  regression tests on a real result.json and real float32 tensors. r2 asked for no further full review.
+- **Tests:** new and related modules 69 OK in isolation; full PUBLIC_CPU 4,392 run, 0 failures, 0 errors (skipped 10, expected failures 10).
+- **Next:** approval file from `python tools/cams2a_eval_run.py scope`, then the identity stage, then stages A/B(/C).

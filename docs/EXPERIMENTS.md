@@ -811,6 +811,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_s2a_2026-11-23.md` (CAM-S2a: from scratch against the quadrotor-mesh target, measured vehicle values, 1-2 step action delay, capture <= 1.0 m and <= 1.0 m/s and detected, altitude 1.5 m; training only)
   - → `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md` (smoke 1 refused at task build: D8 needs detection = render resolution; both set to 312 x 234, 4:3; 624 x 468 deferred)
   - CAM-S2a run 1 (2026-11-23 22:13 to 2026-11-24 11:20; records outside the repository in ~/motar_tmp/cams2a_20261123/train_s1/): **COMPLETED_PROCESS** at 12,000 epochs, 175 bars → `docs/evidence/camonly_2026-11-04/cams2a/REVIEW_r1.md` (code review r1 PASS_WITH_LIMITS)
+  - → `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md` (CAM-S2a-E v1: ep1000/3000/6000/12000 and a 1.047 rad/s yaw-clip arm in the training environment at 115/175/205 bars, staged A/B/C; gates L and Y; design reviews r1/r2 GO_WITH_FIXES, fixed in r3)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -819,7 +820,8 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_k2_train_v2_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v1_2026-11-08.md`,
   `docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md`, `docs/plans/prereg_camonly_k2_eval_v3_2026-11-10.md`,
   `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`, `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md`,
-  `docs/plans/prereg_camonly_s2a_2026-11-23.md`, `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md`
+  `docs/plans/prereg_camonly_s2a_2026-11-23.md`, `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md`,
+  `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
