@@ -815,6 +815,7 @@ family that is in the test's scope.
   - CAM-S2a-E identity_01 (2026-11-24 13:01-13:19 at `ab03ab0`; records in ~/motar_tmp/cams2a_eval_20261124/raw/identity_01/): **IDENTITY_FAIL**, every cell stopped at the result export (cams2 target contacts carry no crash-cause code); host faults 1 → 1
   - → `docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md` (always-on crash-cause code for cams2 target contacts, GPU smoke stage before identity, new output parent raw_a1/)
   - → `docs/plans/prereg_camonly_s2b_2026-11-24.md` (CAM-S2b: yaw cap 60 deg/s (1.0472 rad/s) for the real vehicle; S2b-FT warm start from CAM-S2a ep12000 for 3,000 epochs at 175 -> 205 bars, then S2b-SCR from scratch for 12,000 epochs with the curriculum fix; review r1 PASS_WITH_LIMITS `docs/evidence/camonly_2026-11-04/cams2b/REVIEW_r1.md`)
+  - → `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md` (CAM-S2b-FT-E: FT vs CAM-S2a with a 60 deg/s clip (G1, reusing CAM-S2a-E's YC12k cells after an exact reproduction) and FT with a 45 deg/s clip (G2), 175/205 bars x 3 seeds; reviews r1 GO_WITH_FIXES, r2 GO)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -825,7 +826,7 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`, `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md`,
   `docs/plans/prereg_camonly_s2a_2026-11-23.md`, `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md`,
   `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md`, `docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md`,
-  `docs/plans/prereg_camonly_s2b_2026-11-24.md`
+  `docs/plans/prereg_camonly_s2b_2026-11-24.md`, `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

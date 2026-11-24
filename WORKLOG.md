@@ -26983,3 +26983,16 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Where:** branch camonly/s2b (worktree MOTAR-camonly-s2b, created 2026-11-24 because MOTAR-camonly is frozen by the
   CAM-S2a-E run); fast-forwarded onto camonly/dev after that run ends, launched from MOTAR-camonly.
 - **Next:** FT smoke, then FT, once CAM-S2a-E's chain reads CHAIN DONE.
+
+## 2026-11-24 — CAM-S2b-FT-E preregistered: short evaluation of S2b-FT (60 deg/s) and a 45 deg/s clip (no GPU yet)
+
+- `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`; runner `tools/cams2b_eval_run.py` (imports CAM-S2a-E's helpers;
+  reuses the committed launcher `eval_navrl_cams2a_arms.sh` at its pin), analysis `tools/cams2b_eval_analyse.py`
+  (SHA 6d15babe…, controls `~/motar_tmp/cams2b_eval_20261124/controls_camk1e_6blocks.json`), tests
+  `tests/test_cams2b_eval.py` (27). Arms FT (final S2b-FT checkpoint, its own environment), FT45 (yaw command clipped at
+  0.7854 rad/s), A60 (CAM-S2a ep12000 clipped at 1.047, reused from CAM-S2a-E's YC12k cells only after an exact
+  reproduction cell; otherwise rerun). 175/205 bars x 4501-4503, quota 8. G1 FT vs A60, G2 FT45 vs FT (gate Y rules).
+  Smoke -> identity -> eval, about 1.6-2.0 h of GPU.
+- Reviews (Claude Opus 5.5, fresh, read-only): r1 GO_WITH_FIXES, r2 GO; copies
+  `docs/evidence/camonly_2026-11-04/cams2b/FT_EVAL_REVIEW_r1.md`, `FT_EVAL_REVIEW_r2.md`. Drafted by an Opus subagent.
+- Next: after S2b-FT reads TRAINED, `check`, approval file, then smoke/identity/eval from MOTAR-camonly on camonly/dev.
