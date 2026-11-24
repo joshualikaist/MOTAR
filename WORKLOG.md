@@ -26962,3 +26962,24 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Tests:** new/changed modules 58 + related 20 OK in isolation; full PUBLIC_CPU 4,401 run, 0 failures, 0 errors (skipped 10, expected failures 10); the smoke acceptance check added after review a1 re-tested in isolation (test_cams2a_eval, test_cams2_contactcode OK).
 - **Next:** regenerate the approval (`cams2a_eval_run.py scope`), then smoke → identity → eval → analysis under
   `~/motar_tmp/cams2a_eval_20261124/raw_a1/`.
+
+## 2026-11-24 — CAM-S2b preregistered: 60 deg/s yaw cap; S2b-FT warm start then S2b-SCR from scratch (no GPU yet)
+
+- **Why:** the real vehicle limits yaw to 60 deg/s (MPC_YAWRAUTO_MAX); CAM-S2a trained at 3.0 rad/s, and the first
+  CAM-S2a-E cells clipped about 58 % of yaw commands at 1.047 rad/s. Vehicle-side request relayed by the user: "CAM-S2b 회전
+  상한은 60 °/s로 해 주세요. 가능하면 처음 비행용으로 45 °/s 버전도 검토해 주세요." User's sequence (2026-11-24 ~16:3x): "위 순서대로
+  진행하고, 평가 나오면 그때 판정하는거로 하자." — S2b-FT warm start + short evaluation, then S2b-SCR overnight; 45 deg/s first
+  as a 0.785 rad/s clip of FT.
+- **Design:** `docs/plans/prereg_camonly_s2b_2026-11-24.md`; driver `tools/cams2b_train.py`, launcher
+  `aerial_gym/rl_training/rl_games/train_navrl_cams2b.sh`, interpreter wrapper `tools/cams2b_python` (train_navrl_v2_search.sh
+  hard-codes NAVRL_YAW_RATE_MAX=3.0; the wrapper sets 1.0472 before aerial_gym is imported), tests
+  `tests/test_cams2b_train.py` (28). Environment = CAM-S2a's receipt except yaw 1.0472 and NAVRL_DENSITY_CHECK_EPS=16 (fixes
+  CAM-S2a review F3); FT also resume keys and LR 7.5e-6 (the checkpoint's rolled-back rate). FT: epochs 12001-15000,
+  density 175 -> 190 -> 205, stop check at 13000 (capture < 0.30), cap 4.5 h (raised from a 4 h draft after review F1).
+  SCR: 12,000 epochs, curriculum to 205 by about epoch 9000, cap 17 h; SCR waits only for the GPU.
+- **Review r1** (Claude Opus 5.5, fresh, read-only; copy `docs/evidence/camonly_2026-11-04/cams2b/REVIEW_r1.md`):
+  PASS_WITH_LIMITS, no P0/P1; F2-F8, F10 fixed before commit, F1 by the cap change, F9 (code-SHA comparison with CAM-S2a's
+  receipt) and F11 (test hygiene) open.
+- **Where:** branch camonly/s2b (worktree MOTAR-camonly-s2b, created 2026-11-24 because MOTAR-camonly is frozen by the
+  CAM-S2a-E run); fast-forwarded onto camonly/dev after that run ends, launched from MOTAR-camonly.
+- **Next:** FT smoke, then FT, once CAM-S2a-E's chain reads CHAIN DONE.
