@@ -198,6 +198,9 @@ DEFAULT_CONTROL_DT_S = 0.1
 # environment, so a nonzero value there would widen the flight bound for a policy that never met a delay. Until a
 # training receipt written by the delay code itself is bound here, only 0 is accepted.
 SUPPORTED_TRAINED_DELAY_STEPS = (0,)
+# Runtime v1 (2026-11-24): contracts of this lineage are built and validated by camera_policy_contract_cams2.py;
+# validate_contract / load_contract / capture_age_bound_s dispatch on contract["lineage"]. CAM-K2 v3 is unchanged.
+CAMS2_LINEAGE = "CAM-S2"
 
 
 def capture_age_bound_for(steps, control_dt_s):
@@ -221,7 +224,12 @@ def trained_action_delay_steps(contract):
         raise ValueError("%s must be a whole number of control steps in [0, %d], got %r"
                          % (TRAINED_DELAY_ENV, MAX_TRAINED_DELAY_STEPS, raw))
     steps = int(raw)
-    if steps not in SUPPORTED_TRAINED_DELAY_STEPS:
+    supported = SUPPORTED_TRAINED_DELAY_STEPS
+    if isinstance(contract, dict) and contract.get("lineage") == CAMS2_LINEAGE:
+        # Runtime v1 (2026-11-24): a CAM-S2 contract is built from a receipt written by the delay code itself
+        # (navrl_cams2 refuses NAVRL_ACTION_DELAY_STEPS_MAX != NAVRL_CAMS2_DELAY_MAX), so only it may widen the bound.
+        from camera_policy_contract_cams2 import SUPPORTED_TRAINED_DELAY_STEPS as supported
+    if steps not in supported:
         raise ValueError("%s=%d is not supported until training records its action delay"
                          % (TRAINED_DELAY_ENV, steps))
     return steps
@@ -563,6 +571,9 @@ def validate_contract(contract, verify_files=True, *, root=ROOT):
     problems = []
     if not isinstance(contract, dict):
         return ["camera policy contract must be a JSON object"]
+    if contract.get("lineage") == CAMS2_LINEAGE:
+        from camera_policy_contract_cams2 import validate_contract as validate_cams2
+        return validate_cams2(contract, verify_files=verify_files, root=root)
     try:
         expected = _metadata(contract.get("seed"), root)
     except (OSError, ValueError, KeyError, TypeError) as exc:

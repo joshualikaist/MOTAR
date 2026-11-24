@@ -77,6 +77,9 @@ def main(argv=None):
     from camera_policy_contract import load_contract
     from oakd_camera import load_config, sdk_inventory
     contract = load_contract(args.check)
+    if contract.get('lineage') == 'CAM-S2':
+        # Runtime v1 (review r1 P3-3): the MAVLink companion is qualified for CAM-K2 v3 only.
+        raise SystemExit('camera companion refused: CAM-S2 contracts are not supported (CAM-K2 v3 only)')
     measured = load_config(args.oak_config) if args.oak_config else None
     print(json.dumps({'policy_contract': 'VALID', 'seed': contract['seed'], **sdk_inventory(),
                       'measured_camera_config': 'VALID' if measured else 'NOT_PROVIDED',

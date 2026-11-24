@@ -72,6 +72,10 @@ def load_node_config(config_path, source_root):
         raise ValueError('policy contract file differs from its binding')
     contract_module = importlib.import_module('camera_policy_contract')
     contract = contract_module.load_contract(path, root=root)
+    if contract.get('lineage') == 'CAM-S2':
+        # Runtime v1 (review r1 P3-3): this ROS 2 node, its adapter bindings and qualification are CAM-K2 v3 only.
+        raise ValueError('UNCONFIGURED: CAM-S2 contracts are not supported by the ROS 2 camera node (CAM-K2 v3 only); '
+                         'CAM-S2 is served through camera_policy_runtime by the ROS 1 port')
     # Repair r1 (F6): an enabled floor/ceiling filter needs the operator's estimator-height assertion;
     # refuse here so the node never starts a session whose every frame would be refused.
     problem = contract_module.height_reference_problem(contract)

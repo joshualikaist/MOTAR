@@ -235,16 +235,29 @@ class Rectifier:
         return {"width": self.width, "height": self.height, "fx": float(self.k[0, 0]),
                 "fy": float(self.k[1, 1]), "cx": float(self.k[0, 2]), "cy": float(self.k[1, 2])}
 
-    def require_training_fov(self):
-        """Check measured delivered K; sensor marketing FOV is never substituted."""
-        fx = 160.0 / (2.0 * math.tan(math.radians(66.0 / 2.0)))
-        fy = 90.0 / (2.0 * math.tan(math.radians(54.0 / 2.0)))
-        uu = [(-79.5 / fx) * self.k[0, 0] + self.k[0, 2],
-              (79.5 / fx) * self.k[0, 0] + self.k[0, 2]]
-        vv = [(-44.5 / fy) * self.k[1, 1] + self.k[1, 2],
-              (44.5 / fy) * self.k[1, 1] + self.k[1, 2]]
+    def require_training_fov(self, camera=None):
+        """Check measured delivered K; sensor marketing FOV is never substituted.
+
+        camera=None checks the CAM-K2 v3 camera (160x90, 66x54 deg) exactly as before. Runtime v1: a policy
+        contract's camera block (width, height, fx, fy, cx, cy; e.g. CAM-S2 312x234 at 66.7x52.6 deg) checks that
+        camera's corner pixel rays instead."""
+        if camera is None:
+            fx = 160.0 / (2.0 * math.tan(math.radians(66.0 / 2.0)))
+            fy = 90.0 / (2.0 * math.tan(math.radians(54.0 / 2.0)))
+            hx, hy, label = 79.5, 44.5, "66x54-degree"
+        else:
+            fx, fy = float(camera["fx"]), float(camera["fy"])
+            hx, hy = float(camera["cx"]), float(camera["cy"])
+            if (abs(hx - (camera["width"] - 1) / 2.0) > 1e-9 or abs(hy - (camera["height"] - 1) / 2.0) > 1e-9
+                    or fx <= 0 or fy <= 0):
+                raise OakDInputError("trained camera block must be centred with positive focal lengths")
+            label = "%dx%d trained" % (camera["width"], camera["height"])
+        uu = [(-hx / fx) * self.k[0, 0] + self.k[0, 2],
+              (hx / fx) * self.k[0, 0] + self.k[0, 2]]
+        vv = [(-hy / fy) * self.k[1, 1] + self.k[1, 2],
+              (hy / fy) * self.k[1, 1] + self.k[1, 2]]
         if min(uu[0], vv[0]) < -0.5 or uu[1] > self.width - 0.5 or vv[1] > self.height - 0.5:
-            raise OakDInputError("measured source intrinsics do not cover the trained 66x54-degree pixel rays")
+            raise OakDInputError("measured source intrinsics do not cover the %s pixel rays" % label)
 
     def provenance(self):
         return {"source": "device.readCalibration2 CAM_A at delivered output size",
@@ -335,7 +348,7 @@ class OakDQueueCapture:
             self.device.close()
 
 
-def connect(config, *, allow_hardware=False, sdk=None, clock=time.monotonic, sleep=time.sleep):
+def connect(config, *, allow_hardware=False, sdk=None, clock=time.monotonic, sleep=time.sleep, training_camera=None):
     """Explicit standalone startup; never enter this during active OFFBOARD control.
 
     Discovery, calibration and startPipeline are SDK blocking calls without a proven
@@ -361,7 +374,7 @@ def connect(config, *, allow_hardware=False, sdk=None, clock=time.monotonic, sle
         distortion = calibration.getDistortionCoefficients(socket)
         lens = calibration.getLensPosition(socket)
         rectifier = Rectifier(k, distortion)
-        rectifier.require_training_fov()
+        rectifier.require_training_fov(training_camera)     # None: CAM-K2 v3 camera, as before
         pipeline = build_pipeline(sdk, lens_position=lens, stereo_mode=config["stereo_mode"])
         binding = measure_host_clock(sdk, clock=clock)
         device.startPipeline(pipeline)

@@ -1,4 +1,9 @@
-"""CPU CAM-K2-v3 inference from measured, aligned RGB-D and estimator state.
+"""CPU CAM-K2-v3 and CAM-S2 inference from measured, aligned RGB-D and estimator state.
+
+Runtime v1 (2026-11-24): a contract with lineage CAM-S2 (camera_policy_contract_cams2.py) takes its own branch:
+min-valid projection with invalid depth = no return (project_rgbd_min_valid), the training's altitude and camera mount
+(navrl_cams2.apply_config), the camsafe blind-direction cap on the published command and the trained delayed
+previous-action channel (_cams2_command). Every other contract runs the code paths it ran before.
 
 No simulator, synthetic depth model, target pose, LiDAR device, or MAVLink sender
 is constructed. The 288 scan slots remain the trained no-return representation;
@@ -59,6 +64,17 @@ EDGE_VETO_MAX_INCIDENCE_DEG = 70.0  # PROVISIONAL: two near edges whose ranges d
 # start or reset, an altitude-gated stretch, a refused frame) before a nonzero command; 5 frames = 0.5 s at the
 # trained 10 Hz, one interval of the trained 0.5 s observation history. Shared by the ROS session and the replays.
 REFUSAL_REENTRY_FRAMES = 5          # PROVISIONAL
+# Runtime v1 (CAM-S2): a near-constant observation slot (trained running variance below the contract's
+# near_constant_var) is reported as outside its trained value beyond this many normalised units.
+NEAR_CONSTANT_TOLERANCE = 1.0
+# Review r1 P3-1: STRUCTURAL slots are those the training fed one constant value on every sample: their running
+# variance is the normaliser's floor (1 + mean^2) / count left by its (mean 0, var 1, count epsilon) initialisation
+# (this relative tolerance), e.g. out-of-FOV scan bins = 1, zero obstacle velocity/height fields. A runtime value off
+# the trained constant by more than STRUCTURAL_SLOT_TOLERANCE can only be a pipeline defect: the step is refused.
+STRUCTURAL_VAR_REL_TOL = 1e-3
+STRUCTURAL_SLOT_TOLERANCE = 1e-6
+# Review r1 P1-1: relative slack on the source-versus-trained focal length comparison (float rounding only).
+SOURCE_RESOLUTION_TOLERANCE = 1e-9
 PROVISIONAL_RUNTIME_CONSTANTS = ('GROUND_SOURCE_PIXELS', 'GROUND_MAX_POINTS', 'GROUND_RANSAC_ITERATIONS',
                                  'GROUND_SEARCH_TILT_DEG', 'GROUND_MIN_SAMPLE_AREA_M2', 'GROUND_MAX_PLANES',
                                  'GROUND_REFINE_ROUNDS', 'GROUND_REMOVE_FACTOR', 'GROUND_SPLIT_MIN_POINTS',
@@ -442,6 +458,183 @@ def project_rgbd(frame, state, contract, *, unimaged=False):
     if unimaged:
         return result + (out_unimaged,)
     return result
+
+
+def _is_cams2(contract):
+    return isinstance(contract, dict) and contract.get('lineage') == 'CAM-S2'
+
+
+def downscale_min_valid_2x2(frame, minz_m=0., maxz_m=math.inf):
+    """Runtime v1 (CAM-S2): a [2H, 2W] aligned RGB-D frame -> [H, W] by 2x2 blocks, nearest valid depth.
+
+    Each output pixel takes the smallest optical z among the block's VALID samples (finite, not flagged, MinZ/MaxZ are
+    applied later by the projection) and the RGB of that sample; a block without a valid sample is invalid (flagged)
+    and takes the RGB of its top-left sample. Valid means finite, not flagged and minz_m <= z <= maxz_m (the real
+    OAK-D reports 0 outside its range, so the defaults only drop zeros). Intrinsics follow the block centres: f/2 and (c - 0.5)/2. coverage, if
+    given, is True where any sample of the block is covered. This is the 'nearest valid depth' reduction the vehicle
+    side proposed for its 624x468 stream; project_rgbd_min_valid applies the same min-over-valid rule after the
+    reprojection into the level trained camera, and the two agree exactly for a level camera whose intrinsics are
+    exactly twice the trained ones (tests/test_camera_runtime_cams2.py). The runtime itself always reprojects from the
+    full-resolution source: the real principal point (cy 246.7 for 624x468) is not the trained one (233.5 after
+    scaling), and a tilted vehicle needs the reprojection; doing the block reduction first would leave reprojection
+    holes, which this lineage reads as free space."""
+    z = np.asarray(frame['depth_z_m'], dtype=np.float64)
+    invalid = np.asarray(frame['invalid'])
+    rgb = np.asarray(frame['rgb'])
+    h2, w2 = z.shape
+    if h2 % 2 or w2 % 2 or rgb.shape != (h2, w2, 3) or invalid.shape != z.shape or invalid.dtype != np.bool_:
+        raise InputError('2x2 reduction needs an even-sized aligned frame')
+    h, w = h2 // 2, w2 // 2
+    with np.errstate(invalid='ignore'):
+        valid = ~invalid & np.isfinite(z) & (z > 0) & (z >= float(minz_m)) & (z <= float(maxz_m))
+    blocks = np.where(valid, z, np.inf).reshape(h, 2, w, 2).transpose(0, 2, 1, 3).reshape(h, w, 4)
+    pick = np.argmin(blocks, axis=2)
+    best = np.take_along_axis(blocks, pick[..., None], axis=2)[..., 0]
+    any_valid = np.isfinite(best)
+    pick = np.where(any_valid, pick, 0)
+    colours = rgb.reshape(h, 2, w, 2, 3).transpose(0, 2, 1, 3, 4).reshape(h, w, 4, 3)
+    out = dict(frame)
+    out['depth_z_m'] = np.where(any_valid, best, 0.).astype(np.float32)
+    out['invalid'] = ~any_valid
+    out['rgb'] = np.take_along_axis(colours, pick[..., None, None], axis=2)[:, :, 0].astype(np.uint8)
+    if frame.get('coverage') is not None:
+        out['coverage'] = np.asarray(frame['coverage']).reshape(h, 2, w, 2).any(axis=(1, 3))
+    k = frame['intrinsics']
+    out['intrinsics'] = {'width': w, 'height': h, 'fx': float(k['fx']) / 2., 'fy': float(k['fy']) / 2.,
+                         'cx': (float(k['cx']) - .5) / 2., 'cy': (float(k['cy']) - .5) / 2.}
+    return out
+
+
+def project_rgbd_min_valid(frame, state, contract):
+    """CAM-S2 projection: calibrated body-mounted RGB-D -> the level trained camera, nearest valid depth per pixel.
+
+    Training semantics (navrl_depth_model.py step 3, no blob_near): a pixel whose depth is invalid (z < MinZ, z > MaxZ,
+    a hole) holds perception.max_camera_range, i.e. NO RETURN for every consumer. Here every valid source sample
+    (finite, not flagged, MinZ <= optical z <= MaxZ, covered) is moved into the level camera by the measured attitude
+    and mount (rotation + translation, as the CAM-K2 z-buffer path) and splatted to its nearest trained pixel; a
+    trained pixel takes the SMALLEST level-camera optical z among the samples that land on it and lie inside
+    [MinZ, MaxZ] of the level camera, and the colour of that sample. A trained pixel without such a sample is
+    no-return: either only sensor-invalid rays landed on it (reported as sensor_invalid, colour of the invalid ray
+    nearest its centre) or nothing did (not imaged: tilt band, disocclusion, uncovered border; colour 0). Both hold
+    MaxZ range. No range is invented and nothing is turned into a near surface. Returns the six outputs of
+    project_rgbd; ranges are ray ranges z / cos clamped to MaxZ (the depth model's far clamp).
+
+    Faster ports (vehicle side, 2026-11-24): the source camera is body-fixed and the trained camera is level, so the
+    source-pixel -> trained-pixel map depends on the current roll and pitch (yaw drops out) and, through the mount
+    offset, slightly on depth. A precomputed lookup table is therefore exact for ONE attitude only. Exact options: a
+    vectorised or GPU version of this same arithmetic (rotation, translation, nearest-pixel splat, min-z per pixel,
+    the same refusals). Approximate option: tables per roll/pitch bin, whose output must then be checked against this
+    function with a stated bound on the pixel-class mismatch. Golden pairs and a checker:
+    ~/motar_tmp/runtime_v1_20261124/golden/ (check_golden.py)."""
+    _, _, body_r, yaw, _, _ = validate_state(state)
+    if frame.get('aligned') is not True or frame.get('rectified') is not True:
+        raise InputError('RGB/depth must be explicitly aligned and rectified')
+    sw, sh, sfx, sfy, scx, scy = _intrinsics(frame['intrinsics'])
+    cam = contract['camera']
+    tw, th, tfx, tfy, tcx, tcy = _intrinsics(cam)
+    # Review r1 P1-1: a source coarser than the trained camera (e.g. the vehicle side's 3x3 decimation to 208x156,
+    # 158 px/rad against the trained 237 px/rad) leaves trained pixels without a sample, which this lineage would read
+    # as free space. Refused; the exact trained resolution (312x234) and finer sources (624x468) are accepted.
+    if sfx < tfx * (1. - SOURCE_RESOLUTION_TOLERANCE) or sfy < tfy * (1. - SOURCE_RESOLUTION_TOLERANCE):
+        raise InputError('source intrinsics fx=%.3f fy=%.3f are coarser than the trained camera fx=%.3f fy=%.3f; '
+                         'feed the aligned stream at (at least) the trained angular resolution' % (sfx, sfy, tfx, tfy))
+    rgb = np.asarray(frame['rgb'])
+    z = np.asarray(frame['depth_z_m'])
+    invalid = np.asarray(frame['invalid'])
+    if rgb.shape != (sh, sw, 3) or rgb.dtype != np.uint8:
+        raise InputError('rgb must be aligned uint8 RGB [H,W,3]')
+    if z.shape != (sh, sw) or not np.issubdtype(z.dtype, np.floating):
+        raise InputError('depth_z_m must be floating optical metres [H,W]')
+    if invalid.shape != z.shape or invalid.dtype != np.bool_:
+        raise InputError('invalid must be a same-frame bool mask [H,W]')
+    mount = _finite(frame['mount_flu_m'], (3,), 'mount_flu_m')
+    optical = _finite(frame['camera_to_body_rotation'], (3, 3), 'camera_to_body_rotation')
+    if not np.allclose(optical.T @ optical, np.eye(3), atol=1e-6) or not np.isclose(np.linalg.det(optical), 1):
+        raise InputError('camera_to_body_rotation must be a proper FLU rotation')
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    yaw_r = np.array([[cy, -sy, 0], [sy, cy, 0], [0, 0, 1.]])
+    rel = yaw_r.T @ body_r
+    rotation = rel @ optical
+    offset = rel @ mount - np.asarray(cam['translation_m'])
+    depth = contract['depth']
+    minz, maxz = float(depth['minz_m']), float(depth['maxz_m'])
+    src_invalid, src_no_return = _source_classes(frame, z, invalid, depth)
+    u, v = np.meshgrid((np.arange(sw)-scx)/sfx, (np.arange(sh)-scy)/sfy)
+    good = ~(src_invalid | src_no_return)
+    zz = z[good].astype(np.float64)
+    points = np.stack([zz, -u[good]*zz, -v[good]*zz], axis=-1) @ rotation.T + offset
+    selected, indices = _splat_index(points, tw, th, tfx, tfy, tcx, tcy)
+    zs, colours = points[selected, 0], rgb[good][selected]
+    level_valid = (zs >= minz) & (zs <= maxz)
+    indices, zs, colours = indices[level_valid], zs[level_valid], colours[level_valid]
+    order = np.lexsort((zs, indices))
+    indices, zs, colours = indices[order], zs[order], colours[order]
+    first = np.r_[True, indices[1:] != indices[:-1]] if len(indices) else np.zeros(0, bool)
+    hit = np.zeros(th*tw, bool)
+    hit[indices[first]] = True
+    hit = hit.reshape(th, tw)
+    out_z = np.zeros((th, tw), np.float64)
+    out_rgb = np.zeros((th, tw, 3), np.uint8)
+    out_z.flat[indices[first]] = zs[first]
+    out_rgb.reshape(-1, 3)[indices[first]] = colours[first]
+    # Sensor-invalid rays (direction only) mark pixels the camera imaged without a valid return.
+    rays = np.stack([np.ones(int(src_invalid.sum())), -u[src_invalid], -v[src_invalid]], axis=-1)
+    ray_selected, ray_indices, ray_offset = _splat_index(rays @ rotation.T, tw, th, tfx, tfy, tcx, tcy, offset=True)
+    rayed = np.zeros(th*tw, bool)
+    rayed[ray_indices] = True
+    # Review r1 P1-1: a trained pixel whose centre ray lies inside the covered source image (one source pixel of
+    # margin), that received no sample at all and lies between sampled pixels in its row or column, is a sampling
+    # hole (a source too coarse for this attitude), not an absence of return. The frame is refused rather than reading
+    # the hole as free space. Measured on a flat 5 m scene: 624x468 has no hole up to 30 deg pitch or 20 deg roll; a
+    # 312x234 source has holes from 2.5 deg pitch (refused) and none when level.
+    tu, tv = np.meshgrid((np.arange(tw)-tcx)/tfx, (np.arange(th)-tcy)/tfy)
+    src = np.stack([np.ones_like(tu), -tu, -tv], axis=-1) @ rotation          # level ray -> source camera FLU
+    ahead = src[..., 0] > 1e-9
+    with np.errstate(divide='ignore', invalid='ignore'):
+        xs = np.where(ahead, -src[..., 1]/np.where(ahead, src[..., 0], 1.)*sfx + scx, -10.)
+        ys = np.where(ahead, -src[..., 2]/np.where(ahead, src[..., 0], 1.)*sfy + scy, -10.)
+    imaged = ahead & (xs >= .5) & (xs <= sw-1.5) & (ys >= .5) & (ys <= sh-1.5)
+    if frame.get('coverage') is not None:
+        cov = np.asarray(frame['coverage'])
+        imaged &= cov[np.clip(np.floor(ys+.5).astype(int), 0, sh-1), np.clip(np.floor(xs+.5).astype(int), 0, sw-1)]
+    # Sampling coverage is measured on ray DIRECTIONS of every covered source pixel (rotation only), so it depends on
+    # the source resolution and the attitude, not on depth: a disocclusion behind a near edge (mount parallax) is
+    # not-imaged no-return, as on the CAM-K2 path, never a refusal.
+    covered = np.ones((sh, sw), bool) if frame.get('coverage') is None else np.asarray(frame['coverage'])
+    dirs = np.stack([np.ones(int(covered.sum())), -u[covered], -v[covered]], axis=-1)
+    _, dir_indices = _splat_index(dirs @ rotation.T, tw, th, tfx, tfy, tcx, tcy)
+    direction_hit = np.zeros(th*tw, bool)
+    direction_hit[dir_indices] = True
+    sampled = direction_hit.reshape(th, tw)
+    # A hole must lie between sampled pixels, above and below in its column OR left and right in its row (an empty
+    # interior row or column counts): a gap at the edge of the imaged region (camera translation parallax, the FOV
+    # boundary) is not a sampling hole.
+    enclosed = ((np.maximum.accumulate(sampled, axis=0) & np.maximum.accumulate(sampled[::-1], axis=0)[::-1])
+                | (np.maximum.accumulate(sampled, axis=1) & np.maximum.accumulate(sampled[:, ::-1], axis=1)[:, ::-1]))
+    holes = imaged & ~sampled & enclosed
+    if holes.any():
+        raise InputError('%d trained pixels inside the source image received no source sample (source too coarse '
+                         'for the trained camera at this attitude); frame refused' % int(holes.sum()))
+    out_invalid = rayed.reshape(th, tw) & ~hit
+    ray_order = np.lexsort((ray_offset, ray_indices))
+    ray_sorted = ray_indices[ray_order]
+    ray_first = np.r_[True, ray_sorted[1:] != ray_sorted[:-1]] if len(ray_sorted) else np.zeros(0, bool)
+    ray_colours = rgb[src_invalid][ray_selected][ray_order][ray_first]
+    take = out_invalid.flat[ray_sorted[ray_first]]
+    out_rgb.reshape(-1, 3)[ray_sorted[ray_first][take]] = ray_colours[take]
+    out_no_return = ~hit & ~out_invalid
+    cosine = 1 / np.sqrt(1+tu*tu+tv*tv)
+    ranges = np.full((th, tw), maxz, np.float64)
+    np.divide(out_z, cosine, out=ranges, where=hit)
+    ranges = np.minimum(ranges, maxz).astype(np.float32)
+    level = bool(np.allclose(rotation, np.eye(3), atol=1e-8) and np.allclose(offset, 0, atol=1e-8))
+    return (out_rgb.transpose(2, 0, 1)[None].astype(np.float32)/255., ranges[None], out_invalid[None],
+            out_no_return[None], cosine.astype(np.float32),
+            {'projection': 'measured-point-min-valid', 'level_camera': level,
+             'sensor_invalid_pixels': int(out_invalid.sum()), 'no_return_pixels': int(out_no_return.sum()),
+             'valid_pixels': int(hit.sum()), 'pixels': th*tw, 'source_pixels': sh*sw,
+             'imaged_pixels': int(imaged.sum()), 'unsampled_imaged_pixels': int(holes.sum()),
+             'coverage_mask': frame.get('coverage') is not None, 'synthetic_noise_applied': False})
 
 
 def height_band(state, contract):
@@ -1054,6 +1247,9 @@ def _load(name, relative):
 
 class CameraPolicyRuntime:
     """One sequential CPU policy/tracker session, without any device or sender."""
+    # Runtime v1: the CAM-S2 branch state (_setup_cams2); None for every other contract, also on instances that tests
+    # build without __init__ (geometry-only runtimes).
+    cams2 = None
 
     def __init__(self, contract):
         from camera_policy_contract import validate_contract
@@ -1089,6 +1285,9 @@ class CameraPolicyRuntime:
         tc = importlib.import_module('aerial_gym.config.task_config.navrl_task_config').task_config
         tc.vision.detector_hfov_deg = contract['camera']['hfov_deg']
         tc.vision.detector_vfov_deg = contract['camera']['vfov_deg']
+        # Runtime v1: a CAM-S2 contract applies the training's own navrl_cams2.apply_config (flight altitude for the
+        # height feature, camera mount) before perception is built; every other contract is unchanged.
+        self.cams2 = self._setup_cams2(tc, contract) if _is_cams2(contract) else None
         self.ablation.install_perception(pm, 'no_lidar')
         if pm.STRUCTURED_OBS_DIM != 898 or (pm.VBEAMS, pm.HBEAMS) != (4, 72):
             raise RuntimeError('camera observation schema differs from trained 898-D')
@@ -1115,6 +1314,13 @@ class CameraPolicyRuntime:
                     if not (k == 'NAVRL_TRUNCATED_DMIN' and schema['cfg_action_policy'] == 'squashed_gaussian')}
         if any(contract['runtime_env'].get(k) != v for k, v in relevant.items()):
             raise RuntimeError('checkpoint schema differs from recorded environment')
+        if self.cams2 is not None:
+            # Review r1 P2-3: the checkpoint's own training snapshot must agree with the contract's receipt.
+            from camera_policy_contract_cams2 import checkpoint_env_problems
+            receipt_env = json.loads(Path(contract['training_record']['path']).read_text())['env_navrl']
+            problems = checkpoint_env_problems(state.get('env_state'), receipt_env)
+            if problems:
+                raise RuntimeError('checkpoint does not belong to the contract receipt: ' + '; '.join(problems))
         del state
         original = torch.load
         def cpu_load(*a, **kw):
@@ -1126,7 +1332,100 @@ class CameraPolicyRuntime:
         finally:
             torch.load = original
         self.audit = audit
+        if self.cams2 is not None:
+            self._check_cams2_build()
         self.reset()
+
+    def _setup_cams2(self, tc, contract):
+        """CAM-S2 only: training settings through the training modules' own parsers (os.environ already holds the
+        contract's flight environment), applied with navrl_cams2.apply_config exactly as tools/realveh_entry.py does."""
+        cams2 = importlib.import_module('aerial_gym.task.navrl_task.navrl_cams2')
+        camsafe = importlib.import_module('aerial_gym.task.navrl_task.navrl_camsafe')
+        settings = cams2.settings_from_env(os.environ)
+        safe = camsafe.settings_from_env(os.environ)
+        if settings is None or safe is None:
+            raise RuntimeError('CAM-S2 contract without NAVRL_CAMS2/NAVRL_CAMSAFE in its environment')
+        applied = cams2.apply_config(tc, settings)
+        obs, action, cam = contract['observation'], contract['action'], contract['camera']
+        if (float(tc.flight_altitude) != float(obs['flight_altitude_m'])
+                or [float(x) for x in tc.vision.camera_translation] != [float(x) for x in cam['translation_m']]
+                or float(tc.yaw_rate_max) != float(action['yaw_rate_max_rps'])
+                or float(tc.max_velocity) != float(action['max_velocity_mps'])
+                or float(safe['NAVRL_CAMSAFE_BLIND_MPS']) != float(action['blind_cap_mps'])
+                or [settings['NAVRL_CAMS2_DELAY_MIN'], settings['NAVRL_CAMS2_DELAY_MAX']] != action['trained_delay_steps']):
+            raise RuntimeError('CAM-S2 task configuration differs from the contract')
+        k_hat = int(action['previous_action_delay_steps'])
+        if not 1 <= k_hat <= int(settings['NAVRL_CAMS2_DELAY_MAX']):
+            raise RuntimeError('previous_action_delay_steps outside the trained delay support')
+        return {'cams2': cams2, 'camsafe': camsafe, 'settings': settings, 'applied': applied,
+                'blind_mps': float(safe['NAVRL_CAMSAFE_BLIND_MPS']), 'k_hat': k_hat,
+                'history': int(settings['NAVRL_CAMS2_DELAY_MAX']) + 1}
+
+    def _check_cams2_build(self):
+        """CAM-S2 only: the built perception is the trained camera, and the checkpoint's own normaliser equals the
+        exported one the contract binds; keeps the near-constant slots for the per-step report."""
+        pm, c = self.perception, self.contract
+        if ((pm.width, pm.height) != (c['camera']['width'], c['camera']['height']) or pm.detect_decoupled
+                or float(pm.max_camera_range) != float(c['depth']['maxz_m'])
+                or abs(float(pm.fx) - float(c['camera']['fx'])) > 1e-9
+                or abs(float(pm.fy) - float(c['camera']['fy'])) > 1e-9
+                or [float(x) for x in pm.camera_offset.reshape(-1).tolist()] != [float(np.float32(x)) for x in c['camera']['translation_m']]):
+            raise RuntimeError('CAM-S2 perception differs from the contract camera')
+        from camera_policy_contract import sha256_file
+        from camera_policy_contract_cams2 import near_constant_slots
+        path = c['checkpoint']['obs_norm_path']
+        if sha256_file(path) != c['checkpoint']['obs_norm_sha256']:
+            raise RuntimeError('observation normaliser differs from the contract')
+        idx, mean, var, eps = near_constant_slots(path, c['checkpoint']['near_constant_var'])
+        with np.load(path, allow_pickle=False) as data:
+            count = float(data['count'])
+        rms = self.audit._running_mean_std(self.player.model)
+        ck_mean = rms.running_mean.detach().double().cpu().numpy()
+        ck_var = rms.running_var.detach().double().cpu().numpy()
+        if not (np.array_equal(ck_mean, mean) and np.array_equal(ck_var, var)):
+            raise RuntimeError("exported observation normaliser differs from the checkpoint's running_mean_std")
+        self.near_constant = {'index': idx, 'mean': mean[idx], 'scale': np.sqrt(var[idx] + eps)}
+        # Review r1 P3-1: structural slots (one constant value on every training sample) are enforced, see step().
+        floor = (1. + mean * mean) / count
+        structural = np.flatnonzero(np.abs(var / floor - 1.) <= STRUCTURAL_VAR_REL_TOL)
+        if len(structural) == 0:
+            raise RuntimeError('no structural observation slot found in the normaliser')
+        self.structural = {'index': structural, 'value': mean[structural]}
+
+    def structural_violations(self, obs):
+        """CAM-S2 only: indices of structural slots whose value is off the trained constant (refused in step())."""
+        st = self.structural
+        x = np.asarray(obs, np.float64)[st['index']]
+        return st['index'][np.abs(x - st['value']) > STRUCTURAL_SLOT_TOLERANCE]
+
+    def latency(self, stamps, now):
+        """CAM-S2 only (review r1 P1-2): the capture-to-proposal age of this step against the trained delay.
+
+        age = now - oldest capture stamp; implied_delay_steps = floor(age / dt + 0.5). The trained support is
+        [DELAY_MIN, DELAY_MAX] control steps (1..2 for CAM-S2a). The runtime sees only the part of the vehicle latency
+        up to the proposal; the gateway, MAVROS and PX4 add to it, so this is a lower bound of the k the vehicle
+        imposes. A step whose implied delay already exceeds DELAY_MAX is refused (before any history advances); that
+        is the same as the capture-age bound one control period later: a proposal accepted here at age <= 0.25 s is
+        used until the next one, i.e. up to the 0.35 s bound."""
+        dt = float(self.contract['observation']['control_dt_s'])
+        age = float(now - float(np.min(stamps)))
+        steps = int(math.floor(age / dt + .5))
+        dmin, dmax = (int(x) for x in self.contract['action']['trained_delay_steps'])
+        return {'capture_age_s': age, 'implied_delay_steps': steps,
+                'previous_action_delay_steps': self.cams2['k_hat'], 'trained_delay_steps': [dmin, dmax],
+                'above_trained_max': steps > dmax, 'equals_k_hat': steps == self.cams2['k_hat']}
+
+    def near_constant_report(self, obs):
+        """CAM-S2 only (report, no refusal): how far the observation sits from the trained value in the slots whose
+        trained running variance is below contract checkpoint.near_constant_var, in normalised units
+        |x - mean| / sqrt(var + eps); a slot beyond 1.0 is out of the trained (constant) distribution."""
+        nc = self.near_constant
+        x = np.asarray(obs, np.float64)[nc['index']]
+        dev = np.abs(x - nc['mean']) / nc['scale']
+        outside = np.flatnonzero(dev > NEAR_CONSTANT_TOLERANCE)
+        return {'slots': int(len(nc['index'])), 'outside': int(len(outside)),
+                'max_normalised_deviation': float(dev.max()) if len(dev) else 0.,
+                'outside_indices': nc['index'][outside][:32].tolist()}
 
     def reset(self):
         # Perception rolls histories during inference, producing inference-mode
@@ -1137,6 +1436,9 @@ class CameraPolicyRuntime:
         # global counter. This standalone reset starts a whole new history clock.
         self.perception.step_count = 0
         self.prev = self.torch.zeros((1, 4), dtype=self.torch.float32)
+        if self.cams2 is not None:
+            # Training zeroes the delayed-command history at every reset (navrl_cams2.reset_idx).
+            self._action_history = self.torch.zeros((self.cams2['history'], 4), dtype=self.torch.float32)
         self._last_stamps = None
         self._last_now = None
         self.failed = False
@@ -1151,6 +1453,15 @@ class CameraPolicyRuntime:
         applied zero command (zero velocity and yaw rate), as in training, where it is the applied governed command."""
         if self.failed:
             raise RuntimeError('runtime failed after state advance; reset required')
+        if self.cams2 is not None:
+            # CAM-S2: the held tick's own action is zero (newest history slot, z and yaw); the xy channel is the
+            # command of k_hat >= 1 steps ago, which the hold does not change.
+            history = self._action_history.clone()
+            history[0] = 0.
+            self._action_history = history
+            self.prev = self.prev.clone()
+            self.prev[:, 2:] = 0.
+            return
         self.prev = self.torch.zeros((1, 4), dtype=self.torch.float32)
 
     def height_band(self, state):
@@ -1212,6 +1523,8 @@ class CameraPolicyRuntime:
         """
         if _is_outdoor(self.contract):
             return self._preprocess_outdoor(frame, state)
+        if self.cams2 is not None:
+            return self._preprocess_cams2(frame, state)
         rgb, ranges, invalid, no_return, cosine, projection = project_rgbd(frame, state, self.contract)
         goal = invalid & self.goal_coloured(rgb, ranges)
         invalid, no_return = invalid & ~goal, no_return | goal
@@ -1232,6 +1545,62 @@ class CameraPolicyRuntime:
                   + bands['ceiling']['removed_invalid_pixels'],
                   'height_filter': bands, 'rgb_blanked_pixels': int(blank.sum())}
         return torch.from_numpy(rgb), depth, counts, projection
+
+    def _preprocess_cams2(self, frame, state):
+        """CAM-S2: min-valid projection -> optional floor/ceiling removal of valid returns -> every pixel without a
+        valid return (sensor-invalid, not imaged, out of range, removed floor/ceiling) holds perception.max_camera_range
+        (= MaxZ), the training's no-return encoding. No blob_near, no goal carve-out (an invalid goal pixel already
+        fails the detector's depth < max_camera_range gate, as in training) and no RGB blanking: training never blanks
+        RGB at invalid depth."""
+        rgb, ranges, invalid, no_return, cosine, projection = project_rgbd_min_valid(frame, state, self.contract)
+        ranges, invalid, no_return, bands = remove_floor_and_ceiling(ranges, invalid, no_return, cosine,
+                                                                     state, self.contract)
+        far = np.float32(self.perception.max_camera_range)
+        absent = invalid | no_return
+        ranges = np.where(absent, far, ranges).astype(np.float32)
+        counts = {'sensor_invalid_pixels': int(invalid.sum()), 'no_return_pixels': int(no_return.sum()),
+                  'near_pixels': 0, 'goal_invalid_pixels': 0,
+                  'ground_removed_pixels': bands['ground']['removed_valid_pixels'],
+                  'ceiling_removed_pixels': bands['ceiling']['removed_valid_pixels'],
+                  'height_filter': bands, 'rgb_blanked_pixels': 0}
+        torch = self.torch
+        return torch.from_numpy(np.ascontiguousarray(rgb)), torch.from_numpy(ranges), counts, projection
+
+    def _govern(self, cmd, perception=None):
+        """The trained no_lidar riskcap governor on a vehicle-frame command [1, 2] m/s (navrl_sensor_ablation
+        install_governor + navrl_task._apply_sensor_speed_governor), on perception's current frame."""
+        torch = self.torch
+        perception = self.perception if perception is None else perception
+        no_lidar = torch.full((1, 288), float(self.tc.lidar_max_range))
+        scan = self.ablation.governor_scan(perception, 'no_lidar', no_lidar.reshape(1, 4, 72),
+                                          float(self.tc.lidar_max_range), self.vfov)
+        half = self.sg.speed_dependent_half_width(self.gov_cfg, cmd.norm(dim=1), open_m=None)
+        clearance = self.sg.directional_lidar_clearance(scan, self.bearings, cmd,
+            max_range_m=float(self.tc.lidar_max_range), path_half_width_m=half,
+            target_return_mask=perception.last_target_like)
+        clearance = torch.where(self.ablation.out_of_fov_commands(perception, cmd),
+                                torch.zeros_like(clearance), clearance)
+        governed, _ = self.sg.apply_speed_governor(cmd, clearance, self.gov_cfg, lateral_clearance_m=None)
+        return governed
+
+    def _cams2_command(self, a, governed, perception=None):
+        """CAM-S2 (review r1 F1): (published xy [1,2], previous action [1,4], new history, blind mask).
+
+        published = camsafe.cap_blind(governed a_t): the current command, the vehicle's latency delays it.
+        previous action as trained: xy = clamp(cap_blind(governor(a_{t-k_hat} xy * v_max)) / v_max) from the history
+        of the runtime's own clamped actions (zero before the first action after a reset), z/yaw = a_t."""
+        torch, c2 = self.torch, self.cams2
+        perception = self.perception if perception is None else perception
+        vmax = float(self.tc.max_velocity)
+        half = float(perception.hfov) * 0.5
+        published, blind = c2['camsafe'].cap_blind(governed, half, c2['blind_mps'])
+        history = torch.roll(self._action_history, 1, dims=0)
+        history[0] = a[0]
+        delayed = c2['cams2'].delayed(history.unsqueeze(0), torch.tensor([c2['k_hat']]))
+        delayed_capped, _ = c2['camsafe'].cap_blind(self._govern(delayed[:, :2].clamp(-1., 1.) * vmax, perception),
+                                                    half, c2['blind_mps'])
+        prev = torch.cat([(delayed_capped / vmax).clamp(-1., 1.), a[:, 2:]], dim=1)
+        return published, prev, history, blind
 
     def _preprocess_outdoor(self, frame, state):
         """Outdoor profile: projection -> ground estimate (refuse the frame with FrameRefused if the plane cannot be
@@ -1278,6 +1647,13 @@ class CameraPolicyRuntime:
         estimator_state, _ = split_state(state, self.contract)
         p, v, _, yaw, rate, _ = validate_state(estimator_state)
         stamps, now = self._validate_timing(frame, estimator_state, now_s)
+        latency = None
+        if self.cams2 is not None:
+            latency = self.latency(stamps, now)
+            if latency['above_trained_max']:
+                raise InputError('capture-to-proposal age %.3f s implies %d control steps of delay, above the trained '
+                                 'maximum %d' % (latency['capture_age_s'], latency['implied_delay_steps'],
+                                                 latency['trained_delay_steps'][1]))
         rgb, depth, counts, projection = self.preprocess(frame, state)
         torch = self.torch
         T = lambda x: torch.as_tensor(x, dtype=torch.float32).reshape(1, -1)
@@ -1293,25 +1669,30 @@ class CameraPolicyRuntime:
                 max_velocity=self.tc.max_velocity, flight_altitude=self.tc.flight_altitude, training=False)
             if tuple(obs.shape) != (1, 898) or not bool(torch.isfinite(obs).all()):
                 raise RuntimeError('nonfinite/wrong-shape actor observation')
+            if self.cams2 is not None:
+                bad = self.structural_violations(obs[0].numpy())
+                if len(bad):
+                    # After observe the perception history has advanced: failed stays True, reset required.
+                    raise RuntimeError('structural observation slots differ from their trained constants: %s'
+                                       % bad[:16].tolist())
             a = self.audit.deterministic_actions(self.player, obs).reshape(1, 4)
             if not bool(torch.isfinite(a).all()) or bool((a.abs() > 1.000001).any()):
                 raise RuntimeError('invalid actor output')
             a = a.clamp(-1., 1.)
             cmd = a[:, :2] * float(self.tc.max_velocity)
-            scan = self.ablation.governor_scan(self.perception, 'no_lidar', no_lidar.reshape(1, 4, 72),
-                                              float(self.tc.lidar_max_range), self.vfov)
-            half = self.sg.speed_dependent_half_width(self.gov_cfg, cmd.norm(dim=1), open_m=None)
-            clearance = self.sg.directional_lidar_clearance(scan, self.bearings, cmd,
-                max_range_m=float(self.tc.lidar_max_range), path_half_width_m=half,
-                target_return_mask=self.perception.last_target_like)
-            clearance = torch.where(self.ablation.out_of_fov_commands(self.perception, cmd),
-                                    torch.zeros_like(clearance), clearance)
-            governed, _ = self.sg.apply_speed_governor(cmd, clearance, self.gov_cfg, lateral_clearance_m=None)
-            prev = torch.cat([(governed/float(self.tc.max_velocity)).clamp(-1., 1.), a[:, 2:]], dim=1)
-            if not bool(torch.isfinite(governed).all()) or not bool(torch.isfinite(prev).all()):
+            governed = self._govern(cmd)
+            history = blind = None
+            if self.cams2 is None:
+                prev = torch.cat([(governed/float(self.tc.max_velocity)).clamp(-1., 1.), a[:, 2:]], dim=1)
+                published = governed
+            else:
+                published, prev, history, blind = self._cams2_command(a, governed)
+            if not bool(torch.isfinite(published).all()) or not bool(torch.isfinite(prev).all()):
                 raise RuntimeError('invalid governed command')
-        vx, vy = governed[0].tolist()
+        vx, vy = published[0].tolist()
         self.prev = prev
+        if history is not None:
+            self._action_history = history
         self._last_stamps, self._last_now, self.failed = stamps, now, False
         result = {'t': now, 'velocity_world_enu_mps': [math.cos(yaw)*vx-math.sin(yaw)*vy,
                                                    math.sin(yaw)*vx+math.cos(yaw)*vy, 0.],
@@ -1330,6 +1711,15 @@ class CameraPolicyRuntime:
                 'goal_invalid_pixels': counts['goal_invalid_pixels'],
                 'projection': projection, 'checkpoint_sha256': self.contract['checkpoint']['sha256'],
                 'command_sent': False}
+        if self.cams2 is not None:
+            result.update(lineage='CAM-S2', variant=self.contract['variant'], blind_capped=bool(blind[0]),
+                          governed_velocity_vehicle_flu_mps=governed[0].tolist(),
+                          previous_action_delay_steps=self.cams2['k_hat'], latency=latency,
+                          # Vehicle interface (ROS 1 design D4): publish velocity_vehicle_flu_mps (level body frame,
+                          # forward/left) with this capture yaw; the gateway rotates once with the LATEST yaw.
+                          # velocity_world_enu_mps (rotated by the capture yaw) is kept for existing readers only.
+                          capture_yaw_rad=yaw, proposal_frame='level_body_flu',
+                          near_constant_slots=self.near_constant_report(result['observation']))
         if 'outdoor' in counts:
             ground = counts['outdoor']['ground']
             result['outdoor'] = {'ground_plane': ground['plane'], 'ground_points': ground['points'],

@@ -26996,3 +26996,29 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - Reviews (Claude Opus 5.5, fresh, read-only): r1 GO_WITH_FIXES, r2 GO; copies
   `docs/evidence/camonly_2026-11-04/cams2b/FT_EVAL_REVIEW_r1.md`, `FT_EVAL_REVIEW_r2.md`. Drafted by an Opus subagent.
 - Next: after S2b-FT reads TRAINED, `check`, approval file, then smoke/identity/eval from MOTAR-camonly on camonly/dev.
+
+## 2026-11-24 — Flight runtime v1: CAM-S2 lineage contract and runtime (no flight, CPU only)
+
+- **Why:** the vehicle-side ROS 1 node imports `tools/camera_policy_runtime.py`, which served only CAM-K2 v3; CAM-S2a
+  review F1/F2 (previous-action channel, 1.5 m height normaliser) and the Jetson documents' mismatches.
+- **Change:** `tools/camera_policy_contract_cams2.py` (new; contract from a training receipt + checkpoint: 312x234 at
+  66.7 x 52.6, invalid = no return, altitude/mount/yaw max/max velocity/blind cap/trained delay from the receipt; refuses
+  training-only keys (P9, depth noise, vehicle/gain randomisation), eval-only wrappers, blob_near, the outdoor profile, a
+  checkpoint whose env_state differs from the receipt); `tools/camera_policy_runtime.py` (reprojection of the real
+  624x468 aligned depth into the trained level camera with min over valid samples; refusal of coarser sources; previous
+  action as trained with an explicit k-hat in [1, 2]; blind cap via navrl_camsafe.cap_blind; latency guard: a step
+  implying more than 2 steps (age >= 0.25 s) is refused; structural constant slots (402) refuse on deviation; proposal
+  in the level body frame plus capture yaw); `tools/camera_policy_contract.py` (dispatch on lineage; CAM-K2 unchanged,
+  0.15 s); `camera_ros2_node.py`, `camera_companion.py` refuse a CAM-S2 contract by name; `oakd_camera.py` takes a trained
+  camera for its FOV check. Tests `tests/test_camera_runtime_cams2.py` (18; CPU parity of the 898-D observation between
+  the training path and the runtime, max 4.8e-7 for k = 1 and 2, with blind-cap and altitude negative controls).
+  Camera-runtime modules 335 OK (10 expected failures, pre-existing). Existing CAM-K2 contract JSONs must be rebuilt
+  (bound source hashes changed).
+- **Review r1** (Claude Opus 5.5, fresh, read-only; copy `docs/evidence/camonly_2026-11-04/runtime_v1/REVIEW_r1.md`):
+  PASS_WITH_LIMITS; P1-1, P1-2, P2-1, P2-3, P3-1, P3-2, P3-3 fixed after the review (not re-reviewed). Open: P1-3 (the
+  training depth was a 40 x 24 render upsampled; real textureless invalid regions read as free space; vehicle side asks
+  to train it into CAM-S2b), P2-2, P2-4, P2-5, P2-6 (GPU parity check specified, not run), P3-4. Notes:
+  `~/motar_tmp/runtime_v1_20261124/NOTES.md`; golden input/output pairs for a faster vehicle-side reprojection:
+  `~/motar_tmp/runtime_v1_20261124/golden/`.
+- **Vehicle-side decision (user-relayed, 2026-11-24):** the policy node publishes the level body-frame velocity and the
+  capture yaw; the PHASE 7 gateway rotates once with the latest yaw.
