@@ -26850,3 +26850,59 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   half of the real 624 x 468; 624 x 468 x 128 envs would need ~3.1 GB extra GPU memory). Launcher sets
   NAVRL_CAMERA_WIDTH/HEIGHT from the same values. Next: smoke again, then the run (detached chain
   `~/motar_tmp/cams2a_20261123/chain_smoke_then_run.sh`).
+
+## 2026-11-24 — CAM-S2a run 1 trained: COMPLETED_PROCESS, 12,000 epochs, final density 175 bars (training only)
+
+- **Run:** `tools/cams2a_train.py --run` at `22ed16f`, 2026-11-23 22:13:27 to 2026-11-24 11:20:30 (13.1 h), cores
+  0-3,8-11,14-23. Verdict **COMPLETED_PROCESS**, exit 0; host faults 1 → 1. Stop check at epoch 3001 (85 bars, last 200
+  epochs): capture 0.734 ≥ 0.05, crash 0.150, timeout 0.117, so the run continued. Records outside the repository:
+  `~/motar_tmp/cams2a_20261123/train_s1/` (`run_report.json` sha256 d2fa97c4…, `receipt.json` e3e9a995…,
+  `launcher.log` a97b244d…, `progress.json`, `stage_summary.json` 57c948ea…, `checkpoint_sha256.txt`).
+- **Checkpoints:** `aerial_gym/rl_training/rl_games/runs/ppo_261123_2213_navrl_v2-cams2a-scratch-camonly-s1/nn/`
+  (49 files, every 250 epochs). Final `last_gen_ppo_ep_12000_rew_104.0523.pth` sha256 9fc9dfb7edfc90db…; ep 1000
+  1bf00899…, 3000 22a20ddd…, 6000 bb956b55…, 9000 ccdf0a5a…, 11750 16d2536c…; all 49 files hashed in
+  `checkpoint_sha256_all.txt` (sha256 8436a9be…).
+  `gen_ppo.pth` is the best-reward (low-density) checkpoint, not the final policy.
+- **Training-log rates by density stage** (episode-weighted, from `stage_summary.json`; training statistics, not an
+  evaluation):
+
+  | bars | epochs | capture | crash | crash / 1000 steps | crash, last 300 epochs of stage |
+  | --- | --- | --- | --- | --- | --- |
+  | 70 | 1-1749 | 0.684 | 0.273 | 1.84 | 0.179 |
+  | 85 | 1750-3453 | 0.698 | 0.200 | 0.94 | 0.195 |
+  | 100 | 3454-5107 | 0.704 | 0.207 | 1.00 | 0.176 |
+  | 115 | 5108-6692 | 0.694 | 0.220 | 1.11 | 0.238 |
+  | 130 | 6693-8309 | 0.687 | 0.227 | 1.12 | 0.218 |
+  | 145 | 8310-9988 | 0.642 | 0.256 | 1.22 | 0.240 |
+  | 160 | 9989-11816 | 0.648 | 0.232 | 1.02 | 0.247 |
+  | 175 | 11817-12000 | 0.617 | 0.257 | 1.11 | — |
+
+  Reading (exploratory): the large learning happened in the first stage (crash 0.35 → 0.18 within 70 bars); after
+  that the per-step crash rate stayed between 0.94 and 1.22 per 1000 steps while density rose 70 → 175, and the
+  crash share never went below ~0.18. Whether this is a camera-only floor is NOT_TESTED; it needs the evaluation.
+- **Deviations from the preregistration (recorded, not repaired):**
+  1. `NAVRL_DENSITY_CHECK_EPS=16384` came from `train_navrl_v2_recover_safe.sh:587`, not the CAM-S2a launcher; each
+     stage took about 32,770 episodes (1,580-1,830 epochs) instead of 1,000 epochs, so the run ended at 175 bars, not
+     205, and spent only 184 epochs at 175.
+  2. The progress reward term is not zeroed on a new (cams2) capture step.
+  3. The launcher's echo line still says "FOV 66x54"; the receipt shows 66.7 x 52.6 (cosmetic).
+  4. The run folders are named `train_s1` (from the CAM-S1 driver).
+- **Known flight mismatches of this policy (no flight use before they are fixed):** previous-action feedback must be
+  the delayed applied command; `NAVRL_P9_*` must be absent from the flight runtime; the altitude normaliser assumes
+  1.0 m; the runtime lacks the 1 m/s blind-direction cap; command rotation by the latest yaw; the contract's
+  `SUPPORTED_TRAINED_DELAY_STEPS` must accept 2; the vehicle's 60 °/s yaw limit (MPC_YAWRAUTO_MAX) versus the trained
+  3.0 rad/s; the detector is the red colour rule (the user will test with a red airframe carried as the target).
+- **Code review r1 (Claude Opus 5.5, fresh context, read-only; copy
+  `docs/evidence/camonly_2026-11-04/cams2a/REVIEW_r1.md`): PASS_WITH_LIMITS**, P0 0. P1: F1 the previous-action
+  observation mixes the delayed applied xy command with the current raw z/yaw, and the flight runtime feeds the current
+  xy; F2 the flight runtime and contract do not load the CAM-S2a settings (height observation z / (3 x altitude) would
+  read 0.5 instead of 0.333; an evaluation without navrl_cams2 counts a 0.40 m contact as a capture). P2: F3 curriculum
+  (deviation 1), F4 the cams2 contact/capture counters are never written out, F5 capture uses the previous step's
+  detection flag, F6 crash-cause and forensics recorders still see a converted contact as a capture, F7 the capture
+  rule limits only the closing speed (a lateral fly-by at 0.8 m qualifies). P3 F8-F13 (progress term, crash-over-capture
+  order, test gaps, labels COMPLETED_PROCESS vs TRAINED, inherited curricula not listed, fixed delay seed, stale
+  comments). All open; F1/F2 block any flight use, F2/F4/F6 shape the evaluation.
+- **Tests:** full PUBLIC_CPU after the run (cores 6,7,12,13, nice 10, 10 GB cap): 4,343 run, 0 failures, 0 errors (skipped 10, expected failures 10), 2026-11-24 11:27-11:43; host faults 1 -> 1.
+- **Next:** independent review of the CAM-S2a code (promised in the preregistration, not yet done); an evaluation
+  preregistration (checkpoints 1000/3000/6000/12000, fixed densities, crash-cause diagnostics, a yaw-clip-at-1.047
+  condition) for the user's approval; the ROS 1 port per `~/motar_tmp/ros1_port_20261124/DESIGN.md`.

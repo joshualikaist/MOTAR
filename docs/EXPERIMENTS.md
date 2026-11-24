@@ -782,6 +782,10 @@ family that is in the test's scope.
     v2 cells under the v2 treatments. Gate D NO_DETECTED_CHANGE: −1.50 / −1.15 pp, below the 2 pp floor despite
     intervals excluding zero. R and T SEEDS_DISAGREE.
     `docs/evidence/camonly_2026-11-04/camk2e/RESULTS_v3e_2026-11-10.md`.
+  - **CAM-S2a run 1 (preregistered 2026-11-23 at `aafcb21`, amendment 1 `22ed16f`; trained 2026-11-23/24):**
+    COMPLETED_PROCESS, 12,000 epochs, final density 175 bars (curriculum slower than preregistered), host faults
+    1 → 1. Code review r1 PASS_WITH_LIMITS (P1 F1 previous-action mix, F2 runtime lacks the CAM-S2a settings).
+    Training statistics only; evaluation NOT_TESTED. `docs/evidence/camonly_2026-11-04/cams2a/REVIEW_r1.md`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)
@@ -806,6 +810,7 @@ family that is in the test's scope.
   - CAM-S1 run 1 (2026-11-23 19:16-20:04; records outside the repository in ~/motar_tmp/cams1_20261123/train_s1/): **ABORTED_BY_USER** at epoch 849 of 12,000 (70 bars) after the vehicle-side measurements showed the training's depth and camera assumptions do not match the real OAK-D-PRO-FF stream (D-2026-11-23-2); no result, the next run waits for the full vehicle information
   - → `docs/plans/prereg_camonly_s2a_2026-11-23.md` (CAM-S2a: from scratch against the quadrotor-mesh target, measured vehicle values, 1-2 step action delay, capture <= 1.0 m and <= 1.0 m/s and detected, altitude 1.5 m; training only)
   - → `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md` (smoke 1 refused at task build: D8 needs detection = render resolution; both set to 312 x 234, 4:3; 624 x 468 deferred)
+  - CAM-S2a run 1 (2026-11-23 22:13 to 2026-11-24 11:20; records outside the repository in ~/motar_tmp/cams2a_20261123/train_s1/): **COMPLETED_PROCESS** at 12,000 epochs, 175 bars → `docs/evidence/camonly_2026-11-04/cams2a/REVIEW_r1.md` (code review r1 PASS_WITH_LIMITS)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
