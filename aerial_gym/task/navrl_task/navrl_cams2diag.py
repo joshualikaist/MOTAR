@@ -9,9 +9,11 @@ episode ledger: the same (env_index, env_episode_index) because both count the s
 (navrl_task.py:5076-5083 derives successes = captured_now, crashes = crashed_now, timeouts from the step limit; the
 ledger records them at :5150). Fields:
   outcome          capture | crash | timeout, as the ledger will record them;
-  crash_class      target_contact_swept  the cams2 wrapper's conversion of the task's swept test at the contact radius
-                                         (its _crash_cause_code stays -1, review F6);
-                   contact               the task's cause 0: bar contact (and a PhysX contact with the target mesh);
+  crash_class      target_contact_swept  the cams2 wrapper's conversion of the task's swept test at the contact radius,
+                                         recognised from navrl_cams2_contactcode's mask self._cams2_contact_now
+                                         (amendment 1; the code itself is 0 there so the strata validator holds);
+                   contact               the task's cause 0 for a non-converted crash: bar contact (and a PhysX contact
+                                         with the target mesh);
                    below | above | out_of_bounds   the task's causes 1-3;   none for a non-crash;
   delay_k          the episode's action delay (navrl_cams2);
   episode_steps    control steps of the episode;
@@ -46,7 +48,7 @@ YAW_TOL = 1e-5                      # review r2 P0-2: a float32 clip at 1.047 re
 REPORT_AT_CALLS = (32, 320)
 REPORT_EVERY_CALLS = 320          # review r1 P2-10: summary lines are running totals through their step count
 LOG_PREFIX = "[cams2diag]"
-CAUSES = {-1: "target_contact_swept", 0: "contact", 1: "below", 2: "above", 3: "out_of_bounds"}
+CAUSES = {-1: "uncoded", 0: "contact", 1: "below", 2: "above", 3: "out_of_bounds"}
 _INSTALLED = {}
 
 
@@ -86,12 +88,15 @@ def capture_kinematics(rel, vel_rel):
     return dist, closing, rel_speed, lateral
 
 
-def classify(crashed, captured, cause_code):
-    """Per env: 'capture', 'crash:<class>' or '' (not finished here); the cams2 contact keeps cause -1."""
+def classify(crashed, captured, cause_code, contact_mask):
+    """Per env: 'capture', 'crash:<class>' or '' (not finished here). A cams2 converted contact is recognised from the mask
+    navrl_cams2_contactcode exposes (self._cams2_contact_now), not from a cause code (amendment 1: the code is 0 there)."""
     out = []
-    for cr, ca, code in zip(crashed.tolist(), captured.tolist(), cause_code.tolist()):
+    for cr, ca, code, tc in zip(crashed.tolist(), captured.tolist(), cause_code.tolist(), contact_mask.tolist()):
         if ca:
             out.append("capture")
+        elif cr and tc:
+            out.append("crash:target_contact_swept")
         elif cr:
             out.append("crash:" + CAUSES.get(int(code), "unknown"))
         else:
@@ -106,6 +111,8 @@ def install_task(task_cls, s, blind_mps):
         raise RuntimeError("cams2diag already installed on %r" % task_cls)
     if getattr(task_cls, "_cams2_settings", None) is None:
         raise RuntimeError("cams2diag must be installed after navrl_cams2")
+    if getattr(task_cls, "_cams2_contactcode_settings", None) is None:
+        raise RuntimeError("cams2diag needs navrl_cams2_contactcode (the contact mask; amendment 1)")
     path = s[PATH_ENV]
     yaw_ref = float(s[YAW_REF_ENV])
     orig_transform = task_cls.transform_action_to_command
@@ -184,7 +191,7 @@ def install_task(task_cls, s, blind_mps):
         rel = self.obs_dict["robot_position"] - self.target_position
         vel_rel = self.obs_dict["robot_linvel"] - self.target_vel_w
         dist, closing, rel_speed, lateral = capture_kinematics(rel.to(torch.float64), vel_rel.to(torch.float64))
-        classes = classify(crashed, captured, self._crash_cause_code)
+        classes = classify(crashed, captured, self._crash_cause_code, self._cams2_contact_now.bool())
         delay = getattr(self, "_cams2_delay", None)
         acc = st["acc"].tolist()
         ep_steps = st["ep_steps"].tolist()

@@ -30,8 +30,9 @@ Gated (stage A arms only: S1k, S12k, YC12k on the 9 blocks):
         S12k cells too (the same quantity where the clip is absent), with the whole-cell [yawclip] clipped share.
 Reported, not gated: S3k - S1k and S6k - S3k on the 175-bar blocks only (stage B; 3 blocks, no interval) and, when
 stage C ran, on every block they share; pooled and per-density rates per arm; crash split (recorder rows:
-target_contact_swept / contact / below / above / out_of_bounds; result.json's crash_causes are reported as "excludes
-target contacts", training review F6); crash per 1,000 steps from the ledger's episode lengths (completion_step
+target_contact_swept / contact / below / above / out_of_bounds; result.json's crash_causes are reported as "contact
+includes target contacts (0.40 m swept)", amendment 1: navrl_cams2_contactcode codes them 0 and adds them to the task's
+tallies, training review F6); crash per 1,000 steps from the ledger's episode lengths (completion_step
 differences per env, in-quota episodes); capture kinematics (relative speed, closing, lateral: mean, p50, p90, share
 above 1.0 m/s; training review F7); blind behaviour; [camsafe] and [yawclip] telemetry (last line = running total through
 its call count); the speed-governor summary; the delay distribution.
@@ -298,7 +299,7 @@ def cell_diagnostics(cell_dir):
     return {"quota_episodes": len(quota), "steps_in_quota": steps, "crashes": crashes,
             "crash_per_1000_steps": 1000.0 * crashes / steps if steps else None,
             "recorder_lengths_equal_ledger": lengths_match, "crash_classes": classes,
-            "crash_causes_result_json_excludes_target_contacts": res.get("crash_causes"),
+            "crash_causes_result_json_contact_includes_target_contacts_0p40m_swept": res.get("crash_causes"),   # amendment 1
             "yaw": {"request_over_ref_steps": yaw["request_over_ref"], "exec_over_ref_steps": yaw["exec_over_ref"],
                     "steps": yaw["steps"], "request_over_ref_share": yaw["request_over_ref"] / max(1, yaw["steps"])},
             "capture_kinematics": {"n": len(kin["rel_speed"]),

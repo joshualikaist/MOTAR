@@ -1,6 +1,13 @@
 """Runner of CAM-S2a-E, the evaluation of the CAM-S2a camera-only from-scratch policy in its own training environment
-(docs/plans/prereg_camonly_s2a_eval_2026-11-24.md; design reviews r1/r2 of the draft applied:
+(docs/plans/prereg_camonly_s2a_eval_2026-11-24.md and its amendment 1; design reviews r1/r2 of the draft applied:
 ~/motar_tmp/cams2a_eval_20261124/review_r1/REVIEW_r1.md, review_r2/REVIEW_r2.md).
+
+Amendment 1 (2026-11-24, after identity_01 read IDENTITY_FAIL with every cell aborting at the result export): every cell
+also installs navrl_cams2_contactcode (NAVRL_CAMS2_CONTACTCODE=1, between camsafe and cams2), which gives the cams2
+converted target contacts the crash-cause code 0 so the task's strata validator holds; the recorder classifies them
+from the exposed mask. The P9 module seed's CONFIG MISMATCH line (the per-cell seed, by design) joins the allowlist.
+A mandatory GPU smoke (`smoke`: one S12k cell, quota 1, 205 bars, never counted) precedes the identity stage; the rerun
+writes under a new parent (raw_a1/{smoke,identity_01,eval_01}); raw/identity_01 stays as recorded.
 
 The environment of every cell is the TRAINING environment: the NAVRL_* keys of ~/motar_tmp/cams2a_20261123/train_s1/
 receipt.json (env_navrl, 161 keys), minus the keys this runner replaces (REMOVED_FROM_RECEIPT: the launcher sets them per
@@ -43,7 +50,7 @@ Fail-closed preflight: approval naming SCOPE (and its SHA-256) and HEAD; clean t
 launcher at its pinned SHA; `git diff --name-only TRAIN_HEAD HEAD` inside DIFF_ALLOWLIST (P1-3); training run
 COMPLETED_PROCESS with faults unchanged and its receipt at the recorded SHA; checkpoints at their pins; one RTX 3070; no
 other GPU compute; import origins inside the tree; free disk >= 1 GB; new output folder.
-usage: tools/cams2a_eval_run.py {identity,eval} --approved-commit SHA --out DIR
+usage: tools/cams2a_eval_run.py {smoke,identity,eval} --approved-commit SHA --out DIR
        tools/cams2a_eval_run.py scope          (prints SCOPE and its SHA-256 for the approval file)
 """
 import argparse
@@ -65,6 +72,7 @@ import kroc2027_eval as K                                   # noqa: E402  (base_
 import camk1e_run as R1                                     # noqa: E402  (approval format, ENV_ALLOW)
 
 PREREG = "docs/plans/prereg_camonly_s2a_eval_2026-11-24.md"
+AMENDMENT = "docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md"
 UNIT = "CAM-S2a-E"
 SCOPE = ("CAM-S2a-E v1: GPU evaluation of the CAM-S2a camera-only from-scratch checkpoints ep1000, ep3000, ep6000 and "
          "ep12000 in the CAM-S2a training environment (training receipt env_navrl: no_lidar, 312 x 234 camera at "
@@ -74,7 +82,8 @@ SCOPE = ("CAM-S2a-E v1: GPU evaluation of the CAM-S2a camera-only from-scratch c
          "(1,024 episodes per cell), plus ep12000 with the yaw-rate command clipped at 1.047 rad/s; 5 identity cells, then "
          "stage A (ep1000, ep12000, clipped ep12000 on all 9 blocks, 27 cells), stage B (ep3000, ep6000 at 175 bars, 6 "
          "cells) and optional stage C (ep3000, ep6000 at 115 and 205 bars, 12 cells, only within the cap); caps 1.0 h + "
-         "5.0 h with a rate gate, idle host; tools/cams2a_eval_run.py")
+         "5.0 h with a rate gate, idle host; tools/cams2a_eval_run.py; amendment 1: navrl_cams2_contactcode in every cell, "
+         "one GPU smoke cell (quota 1) before the identity stage, output under raw_a1/")
 UNIT_DIR = pathlib.Path.home() / "motar_tmp" / "cams2a_eval_20261124"
 TRAIN_DIR = pathlib.Path.home() / "motar_tmp" / "cams2a_20261123" / "train_s1"
 TRAIN_RECEIPT = TRAIN_DIR / "receipt.json"
@@ -93,7 +102,7 @@ CKPT = {"S1k": ("last_gen_ppo_ep_1000_rew_139.00893.pth",
         "S12k": ("last_gen_ppo_ep_12000_rew_104.0523.pth",
                  "9fc9dfb7edfc90db0b9a86432eb8cfb172a6e708a6d58eb1d40f15b6ed548996")}
 ARM_BASE = {"S12k_identity": "S12k", "S12k_repeat": "S12k", "S12k_nodiag": "S12k", "S1k_smoke": "S1k",
-            "YC12k_negative": "S12k", "YC12k": "S12k"}
+            "YC12k_negative": "S12k", "YC12k": "S12k", "S12k_smoke": "S12k"}
 YAWCLIP_ARMS = ("YC12k", "YC12k_negative")
 NODIAG_ARMS = ("S12k_nodiag",)                            # review r1 P1-1: the recorder-OFF passivity control
 YAWCLIP_RADPS = "1.047"                                   # 60 deg/s, the real vehicle's yaw-rate limit
@@ -116,15 +125,16 @@ BRANCH = "camonly/dev"
 ARM_LABEL = "S2A_trained"
 CELL = ARM_LABEL + "__%dbars__seed%d"
 LAUNCHER = "aerial_gym/rl_training/rl_games/eval_navrl_cams2a_arms.sh"
-LAUNCHER_SHA = "6c1760b235a1bd364a5278efbce6b762bc4e72f0ab8c1116a517722d19b17759"                           # the committed copy's SHA-256; a placeholder refuses
+LAUNCHER_SHA = "0ad30292a584a9d95a03021bc771b5baf3d939634fcf3100ce9811668794e309"                           # amendment 1 changes the launcher; fill from the committed copy; a placeholder refuses
 ENTRY = "tools/realveh_entry.py"
 WRAPPER = ROOT / "tools/realveh_python"
 REAL_PYTHON = "/home/fair/miniconda3/envs/aerialgym/bin/python"
 SIM_NAME = "base_sim"
 YAWCLIP_REL = "aerial_gym/task/navrl_task/navrl_yawclip.py"
 CAMS2DIAG_REL = "aerial_gym/task/navrl_task/navrl_cams2diag.py"
-NEW_FILES = ("tools/cams2a_eval_run.py", "tools/cams2a_eval_analyse.py", LAUNCHER, YAWCLIP_REL, CAMS2DIAG_REL)
-COMMITTED_FILES = (PREREG, ENTRY, "tools/realveh_python", TRAIN_PREREG, "aerial_gym/task/navrl_task/navrl_cams2.py",
+CONTACTCODE_REL = "aerial_gym/task/navrl_task/navrl_cams2_contactcode.py"     # amendment 1
+NEW_FILES = ("tools/cams2a_eval_run.py", "tools/cams2a_eval_analyse.py", LAUNCHER, YAWCLIP_REL, CAMS2DIAG_REL, CONTACTCODE_REL)
+COMMITTED_FILES = (PREREG, AMENDMENT, ENTRY, "tools/realveh_python", TRAIN_PREREG, "aerial_gym/task/navrl_task/navrl_cams2.py",
                    "aerial_gym/task/navrl_task/navrl_camsafe.py") + NEW_FILES
 # Review r1 P1-3: between the training commit and the eval commit only these paths may differ; everything else that the
 # cells execute (runner.py, target_motion.py, the yaml, the ledger, configs, assets) is thereby bound to TRAIN_HEAD.
@@ -132,7 +142,8 @@ DIFF_ALLOWLIST = ("docs/*", "WORKLOG.md", "tests/*", ENTRY) + NEW_FILES
 # Review r1 P1-4: the checkpoint's own contract warnings. Expected: the training seed (1 vs 4501-4503); the density
 # curriculum keys (curriculum 0, START = FINAL = N against the checkpoint's 70 / 205). Anything else fails the cell.
 MISMATCH_ALLOWLIST = (r"TRAINING SEED MISMATCH \|",
-                      r"CURRICULUM CONFIG MISMATCH \| (NAVRL_DENSITY_\w+|cfg_density_\w+|n_bars\w*|density\w*)[: ]")
+                      r"CURRICULUM CONFIG MISMATCH \| (NAVRL_DENSITY_\w+|cfg_density_\w+|n_bars\w*|density\w*)[: ]",
+                      r"CONFIG MISMATCH \| NAVRL_P9_SEED:")       # amendment 1: the per-cell module seed (10 x seed + 3), by design
 DIAG_FILE = "cams2diag_episodes.jsonl"
 # Environment construction (see the module docstring).
 REMOVED_FROM_RECEIPT = ("NAVRL_REALVEH_RECEIPT", "NAVRL_SEED", "NAVRL_DENSITY_START", "NAVRL_DENSITY_FINAL")
@@ -148,11 +159,13 @@ CAMS2_PARAMETERS = ("NAVRL_CAMS2_DELAY_MIN", "NAVRL_CAMS2_DELAY_MAX", "NAVRL_CAM
 LAUNCHER_SETS = {"NAVRL_BULK_EVAL", "NAVRL_BULK_EVAL_JSON", "NAVRL_EVAL_CHECKPOINT", "NAVRL_EVAL_RUN_NONCE", "NAVRL_NUM_BARS",
                  "NAVRL_REALVEH_RECEIPT", "NAVRL_SEED", "NAVRL_DENSITY_START", "NAVRL_DENSITY_FINAL", "NAVRL_CAMS2DIAG_JSONL"}
 RUNNER_SETS = ({"NAVRL_EPISODE_LEDGER", "NAVRL_EPISODE_QUOTA_PER_ENV", "NAVRL_PLAYER_GAMES_CAP", "NAVRL_CAMS2DIAG",
-                "NAVRL_CAMS2DIAG_YAW_REF_RADPS", "NAVRL_YAWCLIP", "NAVRL_YAWCLIP_RADPS"} | set(EVAL_OVERRIDES) | set(MODULE_SEED_KEYS))
+                "NAVRL_CAMS2DIAG_YAW_REF_RADPS", "NAVRL_YAWCLIP", "NAVRL_YAWCLIP_RADPS", "NAVRL_CAMS2_CONTACTCODE"}
+               | set(EVAL_OVERRIDES) | set(MODULE_SEED_KEYS))
 SNAPSHOT_EXPECTED = LAUNCHER_SETS | RUNNER_SETS
 UNCONSTRAINED_IN_SNAPSHOT = {"NAVRL_EVAL_RUN_NONCE"}       # every other expected key has a required value (P2-1)
 RECEIPT_SHA_MAY_DIFFER = ("realveh_entry",)
-CAMSAFE_PREFIX, YAWCLIP_PREFIX, DIAG_PREFIX = "[camsafe]", "[yawclip]", "[cams2diag]"
+CAMSAFE_PREFIX, YAWCLIP_PREFIX, DIAG_PREFIX, CONTACT_PREFIX = "[camsafe]", "[yawclip]", "[cams2diag]", "[cams2contact]"
+SMOKE = {"arm": "S12k_smoke", "density": 205, "seed": 4501, "quota": 1, "max_hours": 0.5}   # amendment 1: never counted
 CONDITION_EXPECTED = {"goal_dist_min_m": 6.0, "goal_dist_max_m": 28.0, "full_goal_distribution": True,
                       "fov_curriculum_saturated": True, "speed_governor_mode": "riskcap", "speed_governor_free_mps": 2.5,
                       "p9_empirical_error_enabled": True, "episode_len_steps": 600, "num_envs": 128,
@@ -206,7 +219,8 @@ def cell_navrl_env(train_env, seed, arm, quota=QUOTA, player_games_cap=None):
     env.update(EVAL_OVERRIDES)
     env.update(module_seeds(seed))
     env.update(NAVRL_EPISODE_LEDGER="1", NAVRL_EPISODE_QUOTA_PER_ENV=str(int(quota)),
-               NAVRL_PLAYER_GAMES_CAP=str(int(player_games_cap if player_games_cap is not None else 10 ** 9)))
+               NAVRL_PLAYER_GAMES_CAP=str(int(player_games_cap if player_games_cap is not None else 10 ** 9)),
+               NAVRL_CAMS2_CONTACTCODE="1")                                                 # amendment 1: every cell
     if diag(arm):
         env.update(NAVRL_CAMS2DIAG="1", NAVRL_CAMS2DIAG_YAW_REF_RADPS=YAWCLIP_RADPS)
     if yawclip(arm):
@@ -214,22 +228,22 @@ def cell_navrl_env(train_env, seed, arm, quota=QUOTA, player_games_cap=None):
     return env
 
 
-def cell_env(root, out_dir, arm, density, seed, ckpt, ckpt_sha, train_env, train_receipt_sha, protocol):
+def cell_env(root, out_dir, arm, density, seed, ckpt, ckpt_sha, train_env, train_receipt_sha, protocol, quota=QUOTA):
     inherited = {k: v for k, v in os.environ.items() if not k.startswith("NAVRL_") and k != "GPU4GB"}
     env = K.base_env(root=root, inherited=inherited)
     cap = protocol["evaluation"]["player_games_cap"]
-    env.update(cell_navrl_env(train_env, seed, arm, QUOTA, cap))
-    env.update(ARMS=ARM_LABEL, DENSITIES=str(int(density)), SEEDS=str(int(seed)), GAMES=str(QUOTA * NUM_ENVS),
+    env.update(cell_navrl_env(train_env, seed, arm, quota, cap))
+    env.update(ARMS=ARM_LABEL, DENSITIES=str(int(density)), SEEDS=str(int(seed)), GAMES=str(quota * NUM_ENVS),
                NUM_ENVS=str(NUM_ENVS), OUT_ROOT=str(out_dir), CAMEVAL_PY=str(WRAPPER), CAMS2A_CKPT=str(ckpt),
                CAMS2A_CKPT_SHA=ckpt_sha, CAMS2A_TRAIN_RECEIPT_SHA256=train_receipt_sha,
                AERIAL_GYM_SIM_NAME=SIM_NAME, PYTHON=REAL_PYTHON)                        # P2-2: pinned, not inherited
     return env
 
 
-def expected_snapshot_values(arm, density, seed, cell_dir, ckpt_sha):
+def expected_snapshot_values(arm, density, seed, cell_dir, ckpt_sha, quota=QUOTA):
     want = {"NAVRL_DENSITY_CURRICULUM": "0", "NAVRL_NUM_BARS": str(density), "NAVRL_DENSITY_START": str(density),
             "NAVRL_DENSITY_FINAL": str(density), "NAVRL_SEED": str(seed), "NAVRL_BULK_EVAL": "1", "NAVRL_EPISODE_LEDGER": "1",
-            "NAVRL_EPISODE_QUOTA_PER_ENV": str(QUOTA), "NAVRL_PLAYER_GAMES_CAP": str(10 ** 9),
+            "NAVRL_EPISODE_QUOTA_PER_ENV": str(quota), "NAVRL_PLAYER_GAMES_CAP": str(10 ** 9), "NAVRL_CAMS2_CONTACTCODE": "1",
             "NAVRL_EVAL_CHECKPOINT": ckpt_sha, "NAVRL_BULK_EVAL_JSON": str(cell_dir / "result.json"),
             "NAVRL_REALVEH_RECEIPT": str(cell_dir / "realveh_receipt.json"), **module_seeds(seed)}
     if diag(arm):
@@ -239,7 +253,7 @@ def expected_snapshot_values(arm, density, seed, cell_dir, ckpt_sha):
     return want
 
 
-def snapshot_problems(snap, train_env, arm, density, seed, cell_dir, ckpt_sha, label="snapshot"):
+def snapshot_problems(snap, train_env, arm, density, seed, cell_dir, ckpt_sha, label="snapshot", quota=QUOTA):
     """`snap` equals the training environment except SNAPSHOT_EXPECTED; every expected key present has the cell's value
     and no expected key that the arm does not use is present (P2-1)."""
     p = []
@@ -247,7 +261,7 @@ def snapshot_problems(snap, train_env, arm, density, seed, cell_dir, ckpt_sha, l
     extra = sorted(diff - SNAPSHOT_EXPECTED)
     if extra:
         p.append("%s differs from the training environment in %s" % (label, extra))
-    want = expected_snapshot_values(arm, density, seed, cell_dir, ckpt_sha)
+    want = expected_snapshot_values(arm, density, seed, cell_dir, ckpt_sha, quota)
     for k, v in want.items():
         if snap.get(k) != v:
             p.append("%s %s is %r, expected %r" % (label, k, snap.get(k), v))
@@ -340,9 +354,9 @@ def diag_rows_problems(cell_dir):
     return p
 
 
-def receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckpt_sha):
+def receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckpt_sha, quota=QUOTA):
     """The realveh receipt, both NAVRL snapshots and the telemetry of one cell against the training receipt.
-    `committed` maps realveh_entry / yawclip / cams2diag to their SHA-256 at HEAD."""
+    `committed` maps realveh_entry / yawclip / cams2diag / contactcode to their SHA-256 at HEAD."""
     try:
         rec = json.loads((cell_dir / "realveh_receipt.json").read_text())
         receipt = json.loads((cell_dir / "receipt.json").read_text())
@@ -382,6 +396,9 @@ def receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckp
                                   or (rec.get("yawclip") or {}).get("limit_radps") != float(YAWCLIP_RADPS)
                                   or (rec.get("yawclip") or {}).get("scale_radps") != 3.0))):
         p.append("yaw-clip receipt state %r / %r does not match arm %s" % (s.get("yawclip"), rec.get("yawclip"), arm))
+    if ((rec.get("cams2_contactcode") or {}).get("contact_code") != 0 or s.get("cams2_contactcode") != {}
+            or rec.get("cams2_contactcode_sha256") != committed.get("contactcode")):          # amendment 1: every cell
+        p.append("cams2 contact-code install record missing or not the committed module (amendment 1)")
     if diag(arm):
         if ((rec.get("cams2diag") or {}).get("jsonl") != str(cell_dir / DIAG_FILE)
                 or (rec.get("cams2diag") or {}).get("yaw_ref_radps") != float(YAWCLIP_RADPS)
@@ -390,15 +407,17 @@ def receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckp
     elif "cams2diag" in rec or "cams2diag" in s or (cell_dir / DIAG_FILE).exists():
         p.append("recorder OFF, but a cams2diag record or file exists")
     p += snapshot_problems(receipt.get("env_snapshot_navrl", {}), train_receipt.get("env_navrl") or {}, arm, density, seed,
-                           cell_dir, ckpt_sha, label="launcher snapshot")
+                           cell_dir, ckpt_sha, label="launcher snapshot", quota=quota)
     p += snapshot_problems(rec.get("env_navrl") or {}, train_receipt.get("env_navrl") or {}, arm, density, seed, cell_dir,
-                           ckpt_sha, label="entry env_navrl")                                              # P2-1
+                           ckpt_sha, label="entry env_navrl", quota=quota)                                 # P2-1
     if receipt.get("train_receipt_sha256") != sha(TRAIN_RECEIPT):
         p.append("cell receipt does not name the training receipt's SHA")
     log = cell_dir / "cell.log"
     text = log.read_text(errors="replace") if log.is_file() else ""
     if parse_kv_line(text, CAMSAFE_PREFIX) is None:
         p.append("no [camsafe] telemetry line")
+    if CONTACT_PREFIX + " {" not in text:
+        p.append("no [cams2contact] telemetry line (amendment 1)")
     yline = parse_kv_line(text, YAWCLIP_PREFIX)
     if yawclip(arm):
         if yline is None or yline.get("limit_radps") != float(YAWCLIP_RADPS) or yline.get("scale_radps") != 3.0:
@@ -417,7 +436,7 @@ def receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckp
     return p
 
 
-def check_cell(cell_dir, root, head, start_host, ckpt_sha, train_receipt_sha, train_env):
+def check_cell(cell_dir, root, head, start_host, ckpt_sha, train_receipt_sha, train_env, quota=QUOTA):
     """gr_run.check_cell without the gain-randomisation and recorder checks (the training environment keeps gains ON
     and the KROC2027 recorder is off), with the training-receipt, pinned-runtime and condition bindings."""
     problems = []
@@ -442,7 +461,7 @@ def check_cell(cell_dir, root, head, start_host, ckpt_sha, train_receipt_sha, tr
         problems.append("receipt runtime pins (sim %r, python %r, gpu4gb %r) are not the preregistered ones" % (
             receipt.get("sim_name"), receipt.get("python"), receipt.get("gpu4gb")))
     problems.extend(condition_problems(result.get("condition") or {}, train_env))
-    problems.extend(K.ledger_problems(summary, rows, NUM_ENVS, QUOTA))
+    problems.extend(K.ledger_problems(summary, rows, NUM_ENVS, quota))
     if K.git("status", "--porcelain", root=root).strip():
         problems.append("tree became dirty")
     quota_rows = [r for r in rows if r.get("in_quota")]
@@ -452,26 +471,26 @@ def check_cell(cell_dir, root, head, start_host, ckpt_sha, train_receipt_sha, tr
 
 
 def run_cell(protocol, out_root, arm, density, seed, head, start, records, ckpts, train_receipt, train_receipt_sha,
-             committed, timeout_s, stage=None):
+             committed, timeout_s, stage=None, quota=QUOTA):
     ckpt, ckpt_sha = arm_ckpt(arm, ckpts)
     out_dir = out_root / arm
     out_dir.mkdir(parents=True, exist_ok=True)
     cell_id = CELL % (density, seed)
     env = cell_env(ROOT, out_dir, arm, density, seed, ckpt, ckpt_sha, train_receipt["env_navrl"], train_receipt_sha,
-                   protocol)
+                   protocol, quota)
     print("==", arm, cell_id, G.now(), "timeout %.0fs" % timeout_s, flush=True)
     t0 = time.time()
     rc = G.run_launcher(ROOT, protocol, env, max(1.0, timeout_s), LAUNCHER)
     cell_dir = out_dir / cell_id
-    problems, h, stats = check_cell(cell_dir, ROOT, head, start, ckpt_sha, train_receipt_sha, train_receipt["env_navrl"])
+    problems, h, stats = check_cell(cell_dir, ROOT, head, start, ckpt_sha, train_receipt_sha, train_receipt["env_navrl"], quota)
     if rc != 0:
         problems.insert(0, "launcher exit %d" % rc)
     if not problems:
-        problems += receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckpt_sha)
+        problems += receipt_problems(cell_dir, arm, density, seed, train_receipt, committed, ckpt_sha, quota)
     log = cell_dir / "cell.log"
     text = log.read_text(errors="replace") if log.is_file() else ""
     rec = {"arm": arm, "stage": stage, "cell_id": cell_id, "tree": str(ROOT), "commit": head, "seed": seed, "density": density,
-           "quota": QUOTA, "checkpoint": ckpt, "checkpoint_sha256": ckpt_sha, "yawclip": yawclip(arm), "recorder": diag(arm),
+           "quota": quota, "checkpoint": ckpt, "checkpoint_sha256": ckpt_sha, "yawclip": yawclip(arm), "recorder": diag(arm),
            "module_seeds": module_seeds(seed), "exit": rc, "wall_s": time.time() - t0, "timeout_s": timeout_s,
            "host_after": h, "stats": stats,
            "yawclip_telemetry_last_line": parse_kv_line(text, YAWCLIP_PREFIX),
@@ -592,7 +611,8 @@ def training_problems(train_receipt, train_report):
 
 
 def committed_sha256(root=ROOT):
-    return {"realveh_entry": sha(root / ENTRY), "yawclip": sha(root / YAWCLIP_REL), "cams2diag": sha(root / CAMS2DIAG_REL)}
+    return {"realveh_entry": sha(root / ENTRY), "yawclip": sha(root / YAWCLIP_REL), "cams2diag": sha(root / CAMS2DIAG_REL),
+            "contactcode": sha(root / CONTACTCODE_REL)}
 
 
 def changed_since_training(root=ROOT):
@@ -663,7 +683,7 @@ def main(argv=None):
         print(json.dumps({"scope": SCOPE, "scope_sha256": scope_digest()}, indent=1))
         return 0
     ap = argparse.ArgumentParser()
-    ap.add_argument("stage", choices=("identity", "eval"))
+    ap.add_argument("stage", choices=("smoke", "identity", "eval"))
     ap.add_argument("--approved-commit", required=True)
     ap.add_argument("--out", required=True)
     args = ap.parse_args(argv)
@@ -689,8 +709,19 @@ def main(argv=None):
               "train_env_keys": len(train_receipt.get("env_navrl") or {}), "checkpoints": ckpts, "committed_sha256": committed,
               "quota": QUOTA, "num_envs": NUM_ENVS, "densities": list(DENSITIES), "seeds": list(SEEDS),
               "yawclip_radps": YAWCLIP_RADPS, "sim_name": SIM_NAME, "python": REAL_PYTHON, "preflight_problems": problems,
-              "max_hours": MAX_HOURS[args.stage], "cell_timeout_s": CELL_TIMEOUT_S,
+              "max_hours": MAX_HOURS.get(args.stage, SMOKE["max_hours"]), "cell_timeout_s": CELL_TIMEOUT_S,
+              "amendment": AMENDMENT,
               "env_allowlisted": {k: os.environ[k] for k in sorted(os.environ) if R1.ENV_ALLOW.match(k)}}
+    if args.stage in ("identity", "eval"):                       # amendment 1: one SMOKE_OK on this commit in the same parent
+        smokes = sorted(out_root.parent.glob("*/smoke_report.json"))
+        if len(smokes) != 1 or json.loads(smokes[0].read_text()).get("verdict") != "SMOKE_OK" \
+                or json.loads(smokes[0].read_text()).get("commit") != head:
+            problems.append("%s needs exactly one SMOKE_OK smoke_report.json on this commit in %s, found %d"
+                            % (args.stage, out_root.parent, len(smokes)))
+        else:
+            report["smoke_report"] = str(smokes[0])
+    if args.stage == "identity" and list(out_root.parent.glob("*/identity_report.json")):
+        problems.append("an identity_report.json already exists in %s (the rerun needs a new parent folder)" % out_root.parent)
     if args.stage == "eval":
         idents = sorted(out_root.parent.glob("*/identity_report.json"))
         ident = None
@@ -718,13 +749,37 @@ def main(argv=None):
         print(json.dumps(report, indent=1, default=str))
         return 2
     out_root.mkdir(parents=True)
-    budget = K.GpuBudget(MAX_HOURS[args.stage])
+    budget = K.GpuBudget(MAX_HOURS.get(args.stage, SMOKE["max_hours"]))
     records, void = [], False
 
     def timeout():
         return min(float(CELL_TIMEOUT_S), max(0.0, budget.remaining_s()))
 
-    if args.stage == "identity":
+    if args.stage == "smoke":
+        # Amendment 1: one short cell through every changed runner path (contact code, recorder, launcher, checks); it is
+        # never counted in any rate or result. SMOKE_OK needs the cell OK, a result.json and >= 1 crash-cause-coded row.
+        rec = run_cell(protocol, out_root, SMOKE["arm"], SMOKE["density"], SMOKE["seed"], head, start, records, ckpts,
+                       train_receipt, train_receipt_sha, committed, timeout(), "SMOKE", SMOKE["quota"])
+        cell_dir = out_root / SMOKE["arm"] / rec["cell_id"]
+        rows = K.read_jsonl(cell_dir / DIAG_FILE) if (cell_dir / DIAG_FILE).is_file() else []
+        report["smoke_rows"] = len(rows)
+        report["smoke_crash_classes"] = sorted({r.get("crash_class") for r in rows})
+        report["smoke_outcomes"] = sorted({r.get("outcome") for r in rows})
+        # Review a1 P2-1: the smoke must show the fix acting, not only a cell that ran: >= 1 converted target contact
+        # (recorder class target_contact_swept), >= 1 capture row, and a [cams2contact] running count > 0 in cell.log.
+        log_text = (cell_dir / "cell.log").read_text(errors="replace") if (cell_dir / "cell.log").is_file() else ""
+        contact_lines = [json.loads(line.split(CONTACT_PREFIX, 1)[1]) for line in log_text.splitlines()
+                         if CONTACT_PREFIX + " {" in line]
+        report["smoke_cams2contact_last"] = contact_lines[-1] if contact_lines else None
+        acted = (any(r.get("crash_class") == "target_contact_swept" for r in rows)
+                 and any(r.get("outcome") == "capture" for r in rows)
+                 and bool(contact_lines) and int(contact_lines[-1].get("contacts", 0)) > 0)
+        report["smoke_fix_acted"] = acted
+        report["quota"] = SMOKE["quota"]                                                      # review a1 P3-5
+        ok = rec["verdict"] == "OK" and (cell_dir / "result.json").is_file() and len(rows) > 0 and acted
+        report["verdict"] = "VOID_HOST_FAULT" if rec["verdict"] == "VOID_HOST_FAULT" else ("SMOKE_OK" if ok else "SMOKE_FAIL")
+        name = "smoke_report.json"
+    elif args.stage == "identity":
         comp = {}
         for arm, density, seed in IDENTITY_PLAN:
             if budget.exhausted():
@@ -773,7 +828,7 @@ def main(argv=None):
     report["finished"] = G.now()
     (out_root / name).write_text(json.dumps(report, indent=1, default=str) + "\n")
     print(json.dumps({k: report[k] for k in ("stage", "verdict", "commit")}, indent=1))
-    return 0 if report["verdict"] in ("IDENTITY_PASS", "COMPLETE") else 1
+    return 0 if report["verdict"] in ("SMOKE_OK", "IDENTITY_PASS", "COMPLETE") else 1
 
 
 if __name__ == "__main__":

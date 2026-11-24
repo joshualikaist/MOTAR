@@ -26931,3 +26931,34 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   regression tests on a real result.json and real float32 tensors. r2 asked for no further full review.
 - **Tests:** new and related modules 69 OK in isolation; full PUBLIC_CPU 4,392 run, 0 failures, 0 errors (skipped 10, expected failures 10).
 - **Next:** approval file from `python tools/cams2a_eval_run.py scope`, then the identity stage, then stages A/B(/C).
+
+## 2026-11-24 — CAM-S2a-E identity_01 IDENTITY_FAIL at the result export; amendment 1 (crash-cause code for cams2 contacts, GPU smoke)
+
+- **identity_01** (`ab03ab0`, 2026-11-24 13:01-13:19, `~/motar_tmp/cams2a_eval_20261124/raw/identity_01/`, kept as
+  recorded): **IDENTITY_FAIL**. All five cells ran their episodes (188-229 s each at quota 8) and stopped in
+  `_export_bulk_eval_result` with `RuntimeError: NavRL bulk eval speed crash-cause mismatch: 286 != 372`
+  (`navrl_task.py:9048`): cams2's converted target contacts are crashes whose `_crash_cause_code` stays -1 (training
+  review F6). No result.json. Host faults 1 → 1. Training never exported a bulk result, so the run itself is unaffected.
+  Lesson (again): every changed runner path needs a GPU smoke before the commit; the package had none.
+- **Observation (not a result):** the YC12k_negative cell's last `[yawclip]` line read clipped share 0.5788, so the policy
+  commands more than 1.047 rad/s of yaw rate on most steps; the first S12k cell's progress line at 205 bars read capture
+  0.554, crash 0.363 (n = 1,024; includes target contacts; not an evaluation number).
+- **Amendment 1** (`docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md`): always-on eval-only wrapper
+  `aerial_gym/task/navrl_task/navrl_cams2_contactcode.py` (installed between camsafe and cams2, required in every cell
+  including the recorder-off one) sets code 0 ("contact") for cams2's converted target contacts and exposes the mask;
+  `navrl_cams2diag.py` classifies `target_contact_swept` from the mask; runner/launcher/entry install and check it; new
+  `smoke` stage (S12k, 205 bars, quota 1) that must read SMOKE_OK on the same commit before identity/eval, and must show
+  the fix acting; new output parent `raw_a1/`; MISMATCH allowlist + the per-cell P9 seed line; analysis label only (SHA
+  7b54007b…, controls regenerated `controls_camk1e_9blocks_a1.json`, values unchanged). navrl_cams2.py, navrl_camsafe.py,
+  navrl_task.py and navrl_perception.py unchanged. Gates, labels, thresholds, arms, densities, seeds, quota and caps
+  unchanged.
+- **Who:** drafted by the Fable 5.1 subagent, which then stopped at its usage limit (provider message "You've hit your
+  5-hour limit · resets 2pm (Asia/Seoul)", about 13:3x KST; a signal for that model only); placed, reviewed and committed
+  under Claude Opus 5.5 at the user's request ("오퍼스로 낮춰서 진행하자").
+- **Review a1** (Claude Opus 5.5, fresh, read-only; `~/motar_tmp/cams2a_eval_20261124/review_a1/REVIEW_a1.md`):
+  GO_WITH_FIXES, no P0/P1; no other export-time validator found that the cams2 conversion could trip. P2-1 (smoke must
+  show the fix acting), P2-2 (order), P2-3 (old approval kept as `execution_approval_ab03ab0.json`, sha256 414e96d7…),
+  P2-4 (this entry), P3-1/2/5 fixed; P3-3/4/6 open, descriptive.
+- **Tests:** new/changed modules 58 + related 20 OK in isolation; full PUBLIC_CPU 4,401 run, 0 failures, 0 errors (skipped 10, expected failures 10); the smoke acceptance check added after review a1 re-tested in isolation (test_cams2a_eval, test_cams2_contactcode OK).
+- **Next:** regenerate the approval (`cams2a_eval_run.py scope`), then smoke → identity → eval → analysis under
+  `~/motar_tmp/cams2a_eval_20261124/raw_a1/`.

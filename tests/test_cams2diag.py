@@ -25,6 +25,7 @@ def _load(name, path):
 
 
 D = _load("cams2diag_under_test", ROOT / "aerial_gym/task/navrl_task/navrl_cams2diag.py")
+CC = _load("cams2diag_test_contactcode", ROOT / "aerial_gym/task/navrl_task/navrl_cams2_contactcode.py")
 C2 = _load("cams2diag_test_cams2", ROOT / "aerial_gym/task/navrl_task/navrl_cams2.py")
 E = _load("cams2diag_test_realveh_entry", ROOT / "tools/realveh_entry.py")
 
@@ -66,6 +67,10 @@ def _fake_task_cls():
             self.crashed_now = torch.zeros(n, dtype=torch.bool)
             self._visible_now = torch.ones(n, dtype=torch.bool)
             self._crash_cause_code = torch.full((n,), -1, dtype=torch.int8)
+            self._crash_diag = True                                                   # the contact code updates these tallies
+            self._diag = {k: 0 for k in ("contact", "below", "above", "oob")}
+            self._diag_steps = {"contact": 0.0, "oob": 0.0, "below": 0.0}
+            self._diag_x_sum = 0.0
             self.target_position = torch.zeros(n, 3)
             self.target_vel_w = torch.zeros(n, 3)
             self.obs_dict = {"robot_position": torch.zeros(n, 3), "robot_linvel": torch.zeros(n, 3)}
@@ -125,12 +130,13 @@ class Pure(unittest.TestCase):
         self.assertAlmostEqual(lateral[1].item(), 2.5)
         self.assertAlmostEqual(speed[1].item(), 2.5)
 
-    def test_classify(self):
-        crashed = torch.tensor([True, True, False, False, True])
-        captured = torch.tensor([False, False, True, False, False])
-        code = torch.tensor([-1, 0, -1, -1, 3])
-        self.assertEqual(D.classify(crashed, captured, code),
-                         ["crash:target_contact_swept", "crash:contact", "capture", "", "crash:out_of_bounds"])
+    def test_classify_from_the_contact_mask(self):                                            # amendment 1
+        crashed = torch.tensor([True, True, False, False, True, True])
+        captured = torch.tensor([False, False, True, False, False, False])
+        code = torch.tensor([0, 0, -1, -1, 3, -1])
+        mask = torch.tensor([True, False, False, False, False, False])
+        self.assertEqual(D.classify(crashed, captured, code, mask),
+                         ["crash:target_contact_swept", "crash:contact", "capture", "", "crash:out_of_bounds", "crash:uncoded"])
 
     def test_telemetry_lines(self):
         text = "x\n[cams2diag] {\"event\": \"summary\", \"rows\": 3}\n[camsafe] calls=1\n[cams2diag] not json\n"
@@ -145,6 +151,7 @@ class Install(unittest.TestCase):
     def tearDown(self):
         D.uninstall()
         C2.uninstall()
+        CC.uninstall()
         self.tmp.cleanup()
 
     SETTINGS_KEY = "NAVRL_CAMS2DIAG_YAW_REF_RADPS"
@@ -154,6 +161,7 @@ class Install(unittest.TestCase):
 
     def _install(self):
         Task = _fake_task_cls()
+        CC.install_task(Task)                                                             # amendment 1: inside cams2
         C2.install_task(Task, C2.settings_from_env(CAMS2_ON), Task.task_config)
         info = D.install_task(Task, self._settings(), 1.0)
         return Task, info
@@ -161,7 +169,12 @@ class Install(unittest.TestCase):
     def test_refuses_without_cams2_and_twice(self):
         Task = _fake_task_cls()
         with self.assertRaises(RuntimeError):
-            D.install_task(Task, self._settings(), 1.0)
+            D.install_task(Task, self._settings(), 1.0)                                  # no cams2
+        C2.install_task(Task, C2.settings_from_env(CAMS2_ON), Task.task_config)
+        with self.assertRaises(RuntimeError):
+            D.install_task(Task, self._settings(), 1.0)                                  # cams2 but no contact code (amendment 1)
+        C2.uninstall()
+        CC.install_task(Task)
         C2.install_task(Task, C2.settings_from_env(CAMS2_ON), Task.task_config)
         info = D.install_task(Task, self._settings(), 1.0)                              # positive control
         self.assertEqual(info["yaw_ref_radps"], 1.047)
@@ -290,6 +303,7 @@ class Install(unittest.TestCase):
         def run(with_recorder, path):
             torch.manual_seed(7)
             Task = _fake_task_cls()
+            CC.install_task(Task)
             C2.install_task(Task, C2.settings_from_env(CAMS2_ON), Task.task_config)
             if with_recorder:
                 D.install_task(Task, self._settings(path), 1.0)
@@ -312,6 +326,7 @@ class Install(unittest.TestCase):
             stats = copy.deepcopy(Task._cams2_stats)
             D.uninstall()
             C2.uninstall()
+            CC.uninstall()
             return out, stats
 
         with tempfile.TemporaryDirectory() as tmp:
@@ -339,10 +354,12 @@ class Float32Integration(unittest.TestCase):
         D.uninstall()
         self.Y.uninstall()
         C2.uninstall()
+        CC.uninstall()
         self.tmp.cleanup()
 
     def test_clipped_float32_command_counts_zero_executed_over_limit(self):
         Task = _fake_task_cls()
+        CC.install_task(Task)
         C2.install_task(Task, C2.settings_from_env(CAMS2_ON), Task.task_config)
         self.Y.install_task(Task, self.Y.settings_from_env({"NAVRL_YAWCLIP": "1", "NAVRL_YAWCLIP_RADPS": "1.047"}), Task.task_config)
         path = str(pathlib.Path(self.tmp.name) / "rows.jsonl")

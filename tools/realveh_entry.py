@@ -11,8 +11,9 @@ Opt-in. Before runner.py builds the task it installs, in this fixed order:
      invalid-depth validity rule, installed just BEFORE the depth model so that its wrapper is the inner one and runs
      on the frame the depth model produced. Unset: the module is not loaded and nothing below changes (the receipt
      has no depth_validity keys);
-  2c/5-7 (opt-in, documented in each module): navrl_camsafe (CAM-S1), navrl_cams2 (CAM-S2a), and for the CAM-S2a
-     evaluation navrl_yawclip (NAVRL_YAWCLIP=1, after cams2) and navrl_cams2diag (NAVRL_CAMS2DIAG=1, outermost);
+  2c/4b/5-7 (opt-in, documented in each module): navrl_camsafe (CAM-S1), navrl_cams2_contactcode (CAM-S2a-E amendment 1,
+     between camsafe and cams2), navrl_cams2 (CAM-S2a), and for the CAM-S2a evaluation navrl_yawclip (NAVRL_YAWCLIP=1,
+     after cams2) and navrl_cams2diag (NAVRL_CAMS2DIAG=1, outermost);
   3. the camera-only LiDAR ablation (NAVRL_SENSOR_ABLATION must be no_lidar) and the CAM-K1 camera FOV / reward
      overrides, through tools/camtrain_entry.py's `settings` and `apply_overrides`, used unchanged.
 The vehicle stays navrl_quad. Its robot identity (the checkpoint's cfg_robot_* fields), URDF, config and Lee gains
@@ -50,6 +51,7 @@ CAMSAFE = ROOT / "aerial_gym/task/navrl_task/navrl_camsafe.py"     # CAM-S1; has
 CAMS2 = ROOT / "aerial_gym/task/navrl_task/navrl_cams2.py"     # CAM-S2a; hashed only when on
 YAWCLIP = ROOT / "aerial_gym/task/navrl_task/navrl_yawclip.py"     # CAM-S2a eval condition; hashed only when on
 CAMS2DIAG = ROOT / "aerial_gym/task/navrl_task/navrl_cams2diag.py"     # CAM-S2a eval recorder; hashed only when on
+CONTACTCODE = ROOT / "aerial_gym/task/navrl_task/navrl_cams2_contactcode.py"     # CAM-S2a-E amendment 1; hashed only when on
 VALIDITY_RULE = "blob_near"
 VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
@@ -183,6 +185,17 @@ def settings(environ=None):
             if out.get("camsafe") is None:
                 raise SystemExit("realveh: NAVRL_CAMS2 needs NAVRL_CAMSAFE=1")
             out["cams2"] = cams2
+    # CAM-S2a-E amendment 1 (NAVRL_CAMS2_CONTACTCODE=1, needs NAVRL_CAMS2=1): the eval-only crash-cause code for the cams2
+    # target contacts, installed between camsafe and cams2. Off: `out` unchanged.
+    if env.get("NAVRL_CAMS2_CONTACTCODE", "").strip():
+        try:
+            contactcode = _load_private("realveh_contactcode_settings", CONTACTCODE).settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if contactcode is not None:
+            if out.get("cams2") is None:
+                raise SystemExit("realveh: NAVRL_CAMS2_CONTACTCODE needs NAVRL_CAMS2=1")
+            out["cams2_contactcode"] = contactcode
     # CAM-S2a evaluation only (NAVRL_YAWCLIP=1): yaw-rate command clip. Off: the module is not loaded, `out` unchanged.
     if env.get("NAVRL_YAWCLIP", "").strip() or any(k.startswith("NAVRL_YAWCLIP_") and env[k].strip() for k in env):
         try:
@@ -273,6 +286,12 @@ def main():
         info["camsafe"] = camsafe.install(s["camsafe"], task_config)
         info["camsafe_module"] = camsafe.__file__
         info["camsafe_sha256"] = sha256(CAMSAFE)
+    if s.get("cams2_contactcode") is not None:   # 4b. CAM-S2a-E amendment 1: inside cams2's wrapper (installed before it)
+        from aerial_gym.task.navrl_task import navrl_cams2_contactcode as contactcode
+
+        info["cams2_contactcode"] = contactcode.install(s["cams2_contactcode"])
+        info["cams2_contactcode_module"] = contactcode.__file__
+        info["cams2_contactcode_sha256"] = sha256(CONTACTCODE)
     if s.get("cams2") is not None:          # 5. CAM-S2a: after camsafe (whose wrappers it wraps)
         from aerial_gym.task.navrl_task import navrl_cams2 as cams2
 

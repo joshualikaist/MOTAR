@@ -154,7 +154,8 @@ class RealvehEntryHook(unittest.TestCase):
         """ablation -> camsafe -> cams2 -> yawclip -> cams2diag (the clip acts on the delayed command; the recorder sees the
         clipped command)."""
         src = (ROOT / "tools/realveh_entry.py").read_text()
-        order = [src.index(m) for m in ("ablation.install(", "camsafe.install(", "cams2.install(", "yawclip.install(", "cams2diag.install(")]
+        order = [src.index(m) for m in ("ablation.install(", "camsafe.install(", "contactcode.install(", "cams2.install(",
+                                        "yawclip.install(", "cams2diag.install(")]
         self.assertEqual(order, sorted(order))
 
     def test_report_every_320_calls(self):

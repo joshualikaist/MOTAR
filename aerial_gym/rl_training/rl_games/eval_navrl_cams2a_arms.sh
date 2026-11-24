@@ -11,7 +11,9 @@
 #   2. CAMS2A_CKPT / CAMS2A_CKPT_SHA name the checkpoint (a last_gen_ppo_ep_*.pth, never gen_ppo.pth);
 #   3. CAMS2A_TRAIN_RECEIPT_SHA256 is recorded in every cell receipt (the environment's provenance);
 #   4. per cell: NAVRL_REALVEH_RECEIPT and NAVRL_CAMS2DIAG_JSONL inside the cell directory;
-#   5. the yaw-clip condition (NAVRL_YAWCLIP*) and the recorder switch come from the caller unchanged.
+#   5. the yaw-clip condition (NAVRL_YAWCLIP*) and the recorder switch come from the caller unchanged;
+#   6. [amendment 1] NAVRL_CAMS2_CONTACTCODE=1 is required in every cell (the eval-only crash-cause code for the cams2
+#      target contacts; without it the task's strata validator aborts the export, identity_01 of 2026-11-24).
 # Everything else (checkpoint SHA check, cell loop, receipt writer, resume rule) is CAM-K2-E's launcher after its header.
 # This script evaluates a frozen checkpoint. It never trains.
 set -euo pipefail
@@ -35,11 +37,11 @@ for K in NAVRL_VISION NAVRL_PERCEPTION NAVRL_SENSOR_ABLATION NAVRL_CAMSAFE NAVRL
          NAVRL_CAMTRAIN_HFOV_DEG NAVRL_CAMTRAIN_VFOV_DEG NAVRL_SPEED_GOVERNOR NAVRL_SPEED_GOVERNOR_FREE_MPS NAVRL_MAX_VELOCITY \
          NAVRL_YAW_RATE_MAX NAVRL_TARGET_DYNAMICS NAVRL_TARGET_PATTERN NAVRL_PLACEMENT_MODE NAVRL_EPISODE_LEN_STEPS \
          NAVRL_GAIN_RAND NAVRL_EPISODE_LEDGER NAVRL_EPISODE_QUOTA_PER_ENV NAVRL_PLAYER_GAMES_CAP \
-         CAMS2A_TRAIN_RECEIPT_SHA256 AERIAL_GYM_SIM_NAME PYTHON; do
+         NAVRL_CAMS2_CONTACTCODE CAMS2A_TRAIN_RECEIPT_SHA256 AERIAL_GYM_SIM_NAME PYTHON; do
     [[ -n "${!K:-}" ]] || { echo "[cams2a] ${K} is required (the training environment is exported by tools/cams2a_eval_run.py)" >&2; exit 2; }
 done
-[[ "${NAVRL_CAMS2}" == "1" && "${NAVRL_CAMSAFE}" == "1" && "${NAVRL_SENSOR_ABLATION}" == "no_lidar" ]] \
-    || { echo "[cams2a] NAVRL_CAMS2=1, NAVRL_CAMSAFE=1 and NAVRL_SENSOR_ABLATION=no_lidar are required" >&2; exit 2; }
+[[ "${NAVRL_CAMS2}" == "1" && "${NAVRL_CAMSAFE}" == "1" && "${NAVRL_SENSOR_ABLATION}" == "no_lidar" && "${NAVRL_CAMS2_CONTACTCODE}" == "1" ]] \
+    || { echo "[cams2a] NAVRL_CAMS2=1, NAVRL_CAMSAFE=1, NAVRL_SENSOR_ABLATION=no_lidar and NAVRL_CAMS2_CONTACTCODE=1 (amendment 1) are required" >&2; exit 2; }
 # [cams2a] the recorder is ON in every cell except the identity stage's recorder-OFF control (review r1 P1-1)
 [[ "${NAVRL_CAMS2DIAG:-}" == "1" || -z "${NAVRL_CAMS2DIAG:-}" ]] || { echo "[cams2a] NAVRL_CAMS2DIAG must be 1 or unset" >&2; exit 2; }
 # [cams2a] review r1 P2-2: the simulator and interpreter are pinned by the caller, never inherited from a shell

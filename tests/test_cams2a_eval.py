@@ -61,7 +61,9 @@ class CellEnvironment(unittest.TestCase):
         self.assertEqual(env["NAVRL_CAMS2_DELAY_SEED"], "45024")
         self.assertNotIn("NAVRL_YAWCLIP", env)
         self.assertEqual((env["NAVRL_EPISODE_LEDGER"], env["NAVRL_EPISODE_QUOTA_PER_ENV"], env["NAVRL_CAMS2DIAG"],
-                          env["NAVRL_CAMS2DIAG_YAW_REF_RADPS"]), ("1", "8", "1", "1.047"))
+                          env["NAVRL_CAMS2DIAG_YAW_REF_RADPS"], env["NAVRL_CAMS2_CONTACTCODE"]), ("1", "8", "1", "1.047", "1"))
+        self.assertEqual(V.cell_navrl_env(TENV, 4501, "S12k_nodiag")["NAVRL_CAMS2_CONTACTCODE"], "1")   # amendment 1: every cell
+        self.assertEqual(V.cell_navrl_env(TENV, 4501, "S12k_smoke", quota=1)["NAVRL_EPISODE_QUOTA_PER_ENV"], "1")
         self.assertEqual(env["NAVRL_CAMS2_CONTACT_RADIUS_M"], "0.40")
         self.assertEqual(env["NAVRL_SPEED_GOVERNOR_FREE_MPS"], "2.5")
         self.assertEqual(env["NAVRL_GAIN_RAND"], "1")
@@ -131,6 +133,23 @@ class Plan(unittest.TestCase):
         self.assertEqual(len(V.mismatch_problems(bad)), 1)
         self.assertEqual(len(V.mismatch_problems(text + "NavRL ACTION STD MISMATCH | checkpoint=a running=b.\n")), 1)
         self.assertEqual(V.mismatch_problems("no warnings here\n"), [])
+        # amendment 1: the per-cell P9 module seed line, exactly as identity_01 logged it (with the colour codes)
+        real = ("\x1b[33;20m[13006 ms][navrl_task] - WARNING : NavRL CONFIG MISMATCH | NAVRL_P9_SEED: checkpoint trained with "
+                "4952.000, running with 45013.000. This changes policy inputs -- results are NOT comparable unless intentional. "
+                "(navrl_task.py:4498)\x1b[0m\n")
+        self.assertEqual(V.mismatch_problems(real), [])
+        self.assertEqual(len(V.mismatch_problems(real.replace("NAVRL_P9_SEED", "NAVRL_DEPTH_SEED"))), 1)   # not allow-listed
+
+    def test_smoke_plan_and_quota_parameter(self):                                           # amendment 1
+        self.assertEqual((V.SMOKE["arm"], V.SMOKE["density"], V.SMOKE["seed"], V.SMOKE["quota"]), ("S12k_smoke", 205, 4501, 1))
+        self.assertEqual(V.ARM_BASE["S12k_smoke"], "S12k")
+        self.assertNotIn("S12k_smoke", [a for a, _, _ in V.IDENTITY_PLAN])
+        self.assertNotIn("S12k_smoke", [a for a, _, _, _ in V.eval_plan()])
+        want = V.expected_snapshot_values("S12k_smoke", 205, 4501, pathlib.Path("/tmp/c"), "c" * 64, quota=1)
+        self.assertEqual((want["NAVRL_EPISODE_QUOTA_PER_ENV"], want["NAVRL_CAMS2_CONTACTCODE"]), ("1", "1"))
+        self.assertIn("NAVRL_CAMS2_CONTACTCODE", V.SNAPSHOT_EXPECTED)
+        self.assertIn(V.CONTACTCODE_REL, V.DIFF_ALLOWLIST)
+        self.assertIn(V.AMENDMENT, V.COMMITTED_FILES)
 
     REAL_RESULT = pathlib.Path.home() / "motar_tmp/camk2v3e_20261110/raw/eval_01/V3s1/E2_obstacle_aware__115bars__seed4501/result.json"
 
@@ -248,6 +267,9 @@ def _write_cell(cell_dir, arm, density, seed, committed, ckpt_sha, n_env=4, quot
     rec["settings"]["vehicle_rand"]["NAVRL_VEH_RAND_SEED"] = int(seeds["NAVRL_VEH_RAND_SEED"])
     rec["settings"]["depth_model"]["NAVRL_DEPTH_SEED"] = int(seeds["NAVRL_DEPTH_SEED"])
     rec["sha256"]["realveh_entry"] = committed["realveh_entry"]
+    rec["settings"]["cams2_contactcode"] = {}                                                   # amendment 1: every cell
+    rec["cams2_contactcode"] = {"contact_code": 0}
+    rec["cams2_contactcode_sha256"] = committed["contactcode"]
     if V.diag(arm):
         rec["settings"]["cams2diag"] = {"NAVRL_CAMS2DIAG_JSONL": str(cell_dir / V.DIAG_FILE), "NAVRL_CAMS2DIAG_YAW_REF_RADPS": 1.047}
         rec["cams2diag"] = {"jsonl": str(cell_dir / V.DIAG_FILE), "yaw_ref_radps": 1.047}
@@ -295,6 +317,8 @@ def _write_cell(cell_dir, arm, density, seed, committed, ckpt_sha, n_env=4, quot
                                                       "condition": dict(V.CONDITION_EXPECTED, p9_empirical_error_sha256=TENV["NAVRL_P9_EXPECTED_SHA256"])}))
     log = "WARNING NavRL TRAINING SEED MISMATCH | checkpoint=1 running=%d. x\n" % seed
     log += "[camsafe] calls=320 capped_frac=0.0100 penalised_frac=0.0200 mean_penalty=0.00100 mean_r_ss_clip=-0.5 blind_mps=1 weight=0.5 rss_clip_m=4\n"
+    if not tweaks.get("drop_contact_line"):
+        log += "[cams2contact] {\"event\": \"summary\", \"steps\": 320, \"contacts\": 4, \"contact_steps\": 4}\n"
     if V.diag(arm):
         log += "[cams2diag] {\"event\": \"summary\", \"rows\": %d}\n" % len(rows)
     if V.yawclip(arm) and not tweaks.get("drop_yawclip_line"):
@@ -306,7 +330,7 @@ def _write_cell(cell_dir, arm, density, seed, committed, ckpt_sha, n_env=4, quot
 
 @needs_train
 class ReceiptChecks(unittest.TestCase):
-    COMMITTED = {"realveh_entry": "e" * 64, "yawclip": "y" * 64, "cams2diag": "d" * 64}
+    COMMITTED = {"realveh_entry": "e" * 64, "yawclip": "y" * 64, "cams2diag": "d" * 64, "contactcode": "k" * 64}
     CK = "c" * 64
 
     def setUp(self):
@@ -346,6 +370,13 @@ class ReceiptChecks(unittest.TestCase):
         self.assertTrue(any("same outcome" in x for x in V.diag_rows_problems(d3)))
         d4 = self._cell("S3k", receipt={"cams2_sha256": "0" * 64})                                 # another cams2 module
         self.assertTrue(any("cams2_sha256" in x for x in V.receipt_problems(d4, "S3k", 175, 4502, TRAIN, self.COMMITTED, self.CK)))
+        d10 = self._cell("S12k", tag="_nocontactcode")
+        rec = json.loads((d10 / "realveh_receipt.json").read_text())
+        del rec["cams2_contactcode"]                                                             # amendment 1: record required
+        (d10 / "realveh_receipt.json").write_text(json.dumps(rec))
+        self.assertTrue(any("contact-code" in x for x in V.receipt_problems(d10, "S12k", 175, 4502, TRAIN, self.COMMITTED, self.CK)))
+        d11 = self._cell("S12k_nodiag", tag="_nocontactline", drop_contact_line=True)
+        self.assertTrue(any("[cams2contact]" in x for x in V.receipt_problems(d11, "S12k_nodiag", 175, 4502, TRAIN, self.COMMITTED, self.CK)))
         d8 = self._cell("YC12k", tag="_execover")
         rows = [json.loads(l) for l in (d8 / V.DIAG_FILE).read_text().splitlines()]
         rows[0]["yaw_exec_over_ref_steps"] = 1                                                   # the r2 P0-2 defect, as the runner sees it
