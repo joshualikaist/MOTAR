@@ -27150,3 +27150,39 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** repeat the chain into `~/motar_tmp/camdx1_20261125/raw_a1/` with a new approval file naming the amendment
   commit. Expected: 624 arms NOT_RUN_OOM, six 312 cells (R312, V312), DET NOT_RUN; START and START_6_12 answered.
   Whether 624 x 468 detection raises capture needs a separate design on this GPU.
+
+## 2026-11-25 — CAM-DX1 result: the start condition explains the capture gap; crash stays 28 % with the target near and in view
+
+- **Runs** (`f8cffc4`, amendment 1; host faults 1 → 1 throughout): smoke `~/motar_tmp/camdx1_20261125/a1/raw/`
+  SMOKE_OK (20:47; V624 CUDA out-of-memory at 128 envs, cuDNN internal error at 64 envs → 624 arms NOT_RUN_OOM;
+  visible-start control 2,448/2,448 rendered step-0 bearings within ±28.33°, 1,454 of 1,765 R312 bearings outside
+  ±33.35°); identity `a1/identity/` IDENTITY_PASS (21:00); eval `a1/eval/` COMPLETE_624_NOT_RUN_OOM (21:35).
+  Analysis `a1/analysis.json` (sha256 f6da06b9141045f9…, copy `docs/evidence/camonly_2026-11-04/camdx1/analysis_a1.json`),
+  controls `a1/analysis_controls.json` (8a491f4300ef8683…), all controls as required, no binding problems.
+- **Deviations (recorded, no effect on the cells):** amendment 1 named the output parent `raw_a1/`; the runner refuses
+  a parent that already holds a smoke report, so the smoke went to `a1/raw/`. My chain script first passed the same
+  `--out` to every stage, so the identity stage read PREFLIGHT_FAIL ("output already exists") without running; it was
+  relaunched with one folder per stage (`a1/identity`, `a1/eval`) by `chain_a1b.sh`. A shell edit briefly changed the
+  committed amendment file; it was reverted with `git checkout` before any run (tree clean at every launch).
+- **Pooled results, 205 bars, S2b-FT, 3 × 1,024 episodes:**
+
+  | arm | capture | crash | timeout | never detected | detected at step 0 | target contacts (of episodes) |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | R312 (random start, 6-28 m) | 0.506 | 0.416 | 0.078 | 0.303 | 0.027 | 0.050 |
+  | V312 (visible start, 6-12 m) | 0.704 | 0.285 | 0.011 | 0.086 | 0.437 | 0.060 |
+
+  R312 by start class (reported only): in view 6-12 m n = 84: 0.655 / 0.321; out of view 6-12 m n = 627: 0.651 / 0.332;
+  beyond 12 m n = 2,361: 0.462 / 0.442 / timeout 0.096.
+- **Readings (preregistered):** START (visible start + shorter range) capture +19.8 pp [17.4, 22.2] MATERIAL_GAIN,
+  crash −13.1 pp [−15.5, −10.7] MATERIAL_GAIN. START_6_12 (V312 against R312 episodes that started 6-12 m away) capture
+  +5.2 pp [1.3, 9.0] MATERIAL_GAIN, crash −4.5 pp [−8.3, −0.7] SMALL. DET and the interaction NOT_RUN_OOM.
+  Use of result (preregistered): the next training's evaluation and design target the visible-start case; search is
+  reported separately.
+- **Reading in words:** most of the capture gap of the random start comes from targets that start beyond 12 m (46 %
+  capture against 65 % within 12 m); the bearing at start adds about 5 pp. With the target near and in view, crash is
+  still 28.5 % (78 % bar contacts, 21 % target contacts) — far above the user's 20 %: the obstacle-avoidance problem is
+  not explained by search. Hypothesis "the CAM-S2 crash rate is mainly a search artefact" rejected: measured 0.285 with
+  visible starts.
+- **Not answered:** whether 624 × 468 detection raises capture (does not fit the 8 GB GPU at 64-128 envs).
+- **Next:** revise the CAM-M1 design draft with these numbers (crash is the binding constraint; competence-gated
+  curriculum; visible-start evaluation as the flight case), then review and the user's decision.
