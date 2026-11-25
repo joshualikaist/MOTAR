@@ -27244,3 +27244,25 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Tests:** test_camref + test_realveh 87 OK; full PUBLIC_CPU 4,552 run, failures/errors = the baseline set (9 + 8) plus test_experiment_index x2, which needs this commit (prereg untracked at run time).
 - **Side effect (accepted):** new tracked files on camonly/s2b close CAM-DX1's runner allowlist (DX1 complete).
 - **Next:** commit, approval file, then smoke -> identity -> eval (cap 2.5 h, idle host, host faults checked).
+
+## 2026-11-26 — CAM-REF stage 1 result: camera-only bar crash ~21 % at every protocol point; F (360 deg) 9 % bar crash under CAM-S2 task rules but 22.6 % once delay/randomisation/yaw clip/altitude are added (zero-shot)
+- **Run:** commit 358c363, `~/motar_tmp/camref_20261126/gpu1/` (smoke OK 06:39, identity PASS 06:47 — F0ID/K1ID/S0ID per-episode identical — eval COMPLETE 21/21 cells), host faults 1 -> 1. Analysis `docs/evidence/camonly_2026-11-04/camref/analysis_gpu1.json` (verdict READ, controls OK); review r1 copied as `REVIEW_r1.md`.
+
+| cell | capture | crash | bar crash | target-contact crash | timeout |
+| --- | --- | --- | --- | --- | --- |
+| F0 (F, P_K, GR-0 S00) | 91.2 | 8.8 | NOT_RECORDED | NOT_RECORDED | 0.0 |
+| F3 (F, P_K + start/motion/capture rule) | 25.7 | 73.7 | 9.1 | 64.4 | 0.5 |
+| F4 (F, P_T: + D8 target) | 23.6 | 75.4 | 9.0 | 66.0 | 1.0 |
+| F8 (F, P_S: + delay, veh/gain rand, yaw clip 60, FREE 2.5, alt 1.5) | 31.5 | 67.9 | 22.6 | 45.1 | 0.6 |
+| K1 at P_K (K1-E K1s1) | 73.4 | 26.6 | NOT_RECORDED | NOT_RECORDED | 0.0 |
+| K1T (K1, P_T) | 11.1 | 88.9 | 44.3 | 44.5 | 0.0 |
+| K1S (K1, P_S) | 12.7 | 87.3 | 55.8 | 31.4 | 0.0 |
+| S6 (S2b-FT, P_K) | 78.4 | 21.3 | 21.0 | 0.0 | 0.4 |
+| S3 (S2b-FT, P_T) | 72.9 | 25.7 | 21.0 | 4.5 | 1.4 |
+| S0 (S2b-FT, P_S = DX1 V312) | 70.4 | 28.5 | 22.3 | 6.0 | 1.1 |
+
+- **Readings (preregistered labels):** R1 S0-S6 crash +7.2 pp MATERIAL (S0-S3 +2.8 SMALL, S3-S6 +4.5 SMALL), capture -7.9 pp MATERIAL; S2b-FT's bar crash is flat (+1.3 pp, CI includes 0) — the protocol share is the 0.40 m target-contact rule and the start, not bar avoidance. R3: F8 all crashes 67.9 % and bar crashes 22.6 % [UCB 23.9] -> ABOVE_20 (both); F4 bar crashes 9.0 % [UCB 9.9] -> BELOW_20.
+- **Preregistered use:** "R3(ii) ABOVE_20 at F8 -> the next design revisits the task rules, the obstacle field or trains a 360-deg reference under P_S first."
+- **Interpretation (not preregistered, limits):** zero-shot F does not know the slow-approach capture rule (target contacts 45-66 %); its bar crash rises 9.0 -> 22.6 % between P_T and P_S, i.e. from delay, vehicle/gain randomisation, the 60 deg/s yaw clip and altitude together (stage 2 rungs F5-F7 would separate them). Camera-only S2b-FT, trained for P_S, has ~21 % bar crash at every point. K1 (never trained for D8/new rules) collapses.
+- **Jetson 11-26 latency (shadow mode, runtime v1, CAM-S2a):** capture -> result 337 ms p50 / 357 p95 with 1 thread (898/1095 with 8 threads); reprojection 207 ms = 88 % of a step; 100 % of steps exceed the 0.25 s guard. Requests: 1-thread runtime (agreed), cut reprojection (planned: reproject only the 40x24 + target the policy reads, then GPU or body-fixed camera), yaw 90 deg/s from scratch if measured p95 <= 0.19 s after the fix (conditional).
+- **Next:** user decision on stage 2 (F5-F7 separate delay / randomisation / yaw clip for F) and on the next training design.
