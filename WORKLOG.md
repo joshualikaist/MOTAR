@@ -27186,3 +27186,43 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Not answered:** whether 624 × 468 detection raises capture (does not fit the 8 GB GPU at 64-128 envs).
 - **Next:** revise the CAM-M1 design draft with these numbers (crash is the binding constraint; competence-gated
   curriculum; visible-start evaluation as the flight case), then review and the user's decision.
+
+## 2026-11-26 — GitHub branches reduced to main only (12 deleted, tips kept as archive tags); claims audit; literature survey
+- **User request:** "git도 올라가있는거 브랜치 줄여서 최대한 줄여줘", then the choice "태그로 보관 후 12개 삭제". No new
+  local branches are to be created for tidy-ups (user, 2026-11-26).
+- **Remote cleanup (push approved by the user for this scope):**
+  - Step 0: the 12 non-main remote tips were pushed as tags `refs/tags/archive/2026-11-26/<branch>` (atomic; SHAs
+    verified equal to the branch tips).
+  - Step 1: atomic delete of the 12 branches with per-ref `--force-with-lease`: camonly/dev, camonly/t1,
+    cplanner/dev, gainrand/dev, codex/{distractor-envelope, global-target-route-planner, mt-p1,
+    recovery-braking-probe, recovery-v2-evaluator, route-safety-blockers, status-target-motion,
+    two-envelope-recovery}. After: `git ls-remote --heads origin` = `a32932f refs/heads/main` only.
+  - Independent review r1 (Claude Opus 5.5): GO_WITH_FIXES; every tip is a local commit reachable from a local branch
+    or `refs/archive/2026-10-31/*`; no tracked link depends on the branch names; fixes F1-F4 applied.
+  - The push removed the 12 local `refs/remotes/origin/*` tracking refs. The 2026-08-30 recovery line
+    "origin/codex/<name>" is replaced by `git fetch origin tag archive/2026-11-26/<branch>`, or
+    `git branch <name> refs/archive/2026-10-31/codex/<name>`, or the SHAs in the record below.
+  - Local branches and worktrees are unchanged (all 11 are checked out in worktrees; 4 locked).
+  - Records: `~/motar_tmp/git_remote_cleanup_20261126/` (PLAN.md, REVIEW_r1.md, ls_remote_before.txt,
+    ls_remote_tags_after.txt, ls_remote_after.txt).
+- **Claims audit (read-only):** 45 claims from 2026-11-25/26 checked by an independent reviewer (Claude Opus 5.5):
+  14 correct, 22 partly correct, 4 wrong, 4 unsupported, 1 not checked
+  (`~/motar_tmp/review_20261126/audit_opus/AUDIT.md`). Corrections that change the picture:
+  - F's and CAM-K1's quoted numbers were measured with the KROC2027 A3 start (target 10 m, visible, clear line of
+    sight), the old 0.5 m capture rule and pooled 70-205 bars; at 205 bars F 8.8 %, K1 26.5-27.7 %, S2b-FT V312
+    28.5 %. "F 4.5 % under the same conditions" was wrong.
+  - Every `contact` crash in the CAM-S2 configuration is a bar (no ground plane; legacy target has no physics body);
+    the earlier 78 % / 21 % split stands.
+  - At contact the struck bar was token-represented in 23-31 % (barprobe v2, DX1 V312 logs); obstacle depth reaches the
+    policy through 13 single-column samples, far plane 10 m.
+  - "Bar-collision hazard is constant per metre" rejected: V312 1.4-1.6 per 100 m in the first 10 m, 0.9-1.0 after.
+  - CAM-M1's premise (crashes mainly from motion into unseen directions) is unsupported.
+- **Literature survey:** `~/motar_tmp/research_20261126/reports/고밀도 장애물 드론 비행 연구.md`. 205 bars =
+  0.128 /m^2 is ordinary by count (Korean NFI 1,129 stems/ha) but ~10-30x real forests by blocked area (4.8 % vs
+  0.16-0.46 %). Closest published system: YOPOv2-Tracker (map-free RGB-D, 90 deg, 8.2 ms on Orin NX, privileged map
+  only in training). NavRL reads 360-deg ray casts from a map.
+- **Disk:** free 0.66 -> 5.2 GB (old VS Code extension versions, VSIX cache, Slack cache, journal vacuum by the user;
+  `~/motar_tmp/disk_cleanup_20261126/deleted_group1.txt`).
+- **Next:** CAM-REF matched-protocol evaluation (F, K1, S2b-FT on a factor ladder;
+  `~/motar_tmp/camref_20261126/FEASIBILITY.md`): preregistration, new entry/rule module, Opus review, then the user's
+  GPU approval.
