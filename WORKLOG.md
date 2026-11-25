@@ -27048,3 +27048,43 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 
 - **Decision:** CAM-S2a with the vehicle's 60 deg/s limit is not a flight candidate; CAM-S2b (trained at 60 deg/s) next,
   as planned. Crash at 175-205 bars stays 30-37 % for the best arm.
+
+## 2026-11-25 — CAM-S2b-FT TRAINED (60 deg/s warm start, 175 → 205 bars); CAM-S2 line not a flight candidate; CAM-M1 draft
+
+- **S2b-FT run:** chain `~/motar_tmp/cams2b_20261124/chain_ft.sh` at `335a1fa` (MOTAR-camonly, camonly/dev), smoke
+  SMOKE_COMPLETED 13:44, run 13:44:30-17:08:45, exit 0, `max_epochs`, verdict **TRAINED**; host faults 1 → 1. Stop
+  check at epoch 13,000: last-200 capture 0.492 (≥ 0.30). Promotions as preregistered: 175 → 190 after 13,000,
+  190 → 205 after 14,001. Run folder `aerial_gym/rl_training/rl_games/runs/ppo_261125_1344_navrl_v2-cams2b-ft-yaw60-camonly-s1/`;
+  final `last_gen_ppo_ep_15000_rew_51.018074.pth` sha256 f2c80fcc2b2e…; 13,000 c96e423b…, 14,000 7bd3821f….
+  `~/motar_tmp/cams2b_20261124/train_ft/run_report.json` (sha256 eb3949d6db81b20a…), receipt 3411d59cc1656a2b….
+- **Training rollouts (episode-weighted per 100 epochs; exploration noise, detection dropout 0.3; not an
+  evaluation)** — parser `~/motar_tmp/cams2b_20261124/parse_ep_20261125.py`:
+
+  | epochs | bars | capture | crash |
+  | --- | --- | --- | --- |
+  | 12,000-12,099 | 175 | 0.331 | 0.630 |
+  | 12,900-12,999 | 175 | 0.496 | 0.421 |
+  | 13,100-13,199 | 190 | 0.436 | 0.478 |
+  | 13,800-13,899 | 190 | 0.519 | 0.404 |
+  | 14,800-14,899 | 205 | 0.518 | 0.397 |
+
+  The start (0.33 / 0.63) was below CAM-S2a-E's YC12k clip arm at 175 bars (0.507 / 0.432): the 3.0 → 1.0472 change
+  rescales both the yaw action and the yaw-rate observation (×2.86), which a clip does not. Reference CAM-S2a-E
+  (descriptive, evaluation): S12k 205 bars 0.521 / 0.363, YC12k 205 bars 0.410 / 0.524. CAM-S2a's own training rollout
+  at 175 bars was 0.617 / 0.25, close to its evaluation (0.613 / 0.285). S2b-FT-E was NOT run (rollouts are not
+  evaluations).
+- **Decision (user, 2026-11-25):** crash 30-40 % is far from flyable; the user's bar for simulated crash is ≤ 20 %.
+  S2b-SCR and S2b-FT-E are not run for now. Hypothesis "the yaw cap is the main reason the CAM-S2 line is not
+  flyable" rejected: CAM-S2a without any cap already crashed 18.9 / 28.5 / 36.3 % at 115 / 175 / 205 bars.
+- **Why the camera-only line crashes (CPU re-aggregation of CAM-S2a-E records, exploratory, post hoc; script
+  `~/motar_tmp/cams2b_20261124/crashan_s2ae_20261125.py`):** no target detection in 77-86 % of steps (67-74 % even in
+  captured episodes); 35-39 % of crash episodes never detected the target (55-64 % with the 60 deg/s clip); median
+  crash step 112-120; while undetected the crash episodes fly 1.8 m/s and turn 73-84 deg/s. Horizontal commands
+  outside the camera FOV in 26-28 % of training steps (`[camsafe] capped_frac`). Random-bar free path (ASSUMED
+  swept width 1.26 m): 11.0 m at 115 bars, 6.2 m at 205 bars; ≤ 20 % crash allows ≤ 2.5 / 1.4 m of travel into unseen
+  space per episode.
+- **Next:** CAM-M1 draft `~/motar_tmp/camm1_20261125/draft/prereg_camonly_m1_memscan_2026-11-25.md`, kept
+  outside the repository until reviewed because committed preregistrations are immutable (pose-compensated 360° memory scan in
+  the existing scan rows, known-clearance speed rule replacing the 1 m/s blind cap, in-view start 0.8, VIO error
+  model; gate G1 crash ≤ 20 % at 205 bars with S2b-FT as the known-bad control). DRAFT: implementation (M1-0, CPU),
+  independent Opus design review, then user approval before any GPU.
