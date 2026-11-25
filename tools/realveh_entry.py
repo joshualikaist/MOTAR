@@ -14,6 +14,8 @@ Opt-in. Before runner.py builds the task it installs, in this fixed order:
   2c/4b/5-7 (opt-in, documented in each module): navrl_camsafe (CAM-S1), navrl_cams2_contactcode (CAM-S2a-E amendment 1,
      between camsafe and cams2), navrl_cams2 (CAM-S2a), and for the CAM-S2a evaluation navrl_yawclip (NAVRL_YAWCLIP=1,
      after cams2) and navrl_cams2diag (NAVRL_CAMS2DIAG=1, outermost);
+  8 (opt-in, CAM-DX1 evaluation only): navrl_inview_start (NAVRL_INVIEW_START=1 visible start, NAVRL_INVIEW_DIAG=1
+     start/pixel recorder), installed after navrl_cams2diag, so its wrappers are the outermost;
   3. the camera-only LiDAR ablation (NAVRL_SENSOR_ABLATION must be no_lidar) and the CAM-K1 camera FOV / reward
      overrides, through tools/camtrain_entry.py's `settings` and `apply_overrides`, used unchanged.
 The vehicle stays navrl_quad. Its robot identity (the checkpoint's cfg_robot_* fields), URDF, config and Lee gains
@@ -52,6 +54,7 @@ CAMS2 = ROOT / "aerial_gym/task/navrl_task/navrl_cams2.py"     # CAM-S2a; hashed
 YAWCLIP = ROOT / "aerial_gym/task/navrl_task/navrl_yawclip.py"     # CAM-S2a eval condition; hashed only when on
 CAMS2DIAG = ROOT / "aerial_gym/task/navrl_task/navrl_cams2diag.py"     # CAM-S2a eval recorder; hashed only when on
 CONTACTCODE = ROOT / "aerial_gym/task/navrl_task/navrl_cams2_contactcode.py"     # CAM-S2a-E amendment 1; hashed only when on
+INVIEW = ROOT / "aerial_gym/task/navrl_task/navrl_inview_start.py"     # CAM-DX1 eval condition + recorder; hashed only when on
 VALIDITY_RULE = "blob_near"
 VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
@@ -214,6 +217,18 @@ def settings(environ=None):
             if out.get("cams2") is None:
                 raise SystemExit("realveh: NAVRL_CAMS2DIAG needs NAVRL_CAMS2=1")
             out["cams2diag"] = diag
+    # CAM-DX1 evaluation only (NAVRL_INVIEW_START=1: visible start; NAVRL_INVIEW_DIAG=1: start/pixel recorder). Off (no
+    # NAVRL_INVIEW_* variable set): the module is not loaded and `out` is unchanged.
+    if any(k.startswith("NAVRL_INVIEW_") and env[k].strip() for k in env):
+        inview = _load_private("realveh_inview_settings", INVIEW)
+        try:
+            start, record = inview.start_settings_from_env(env), inview.diag_settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if start is not None:
+            out["inview_start"] = start
+        if record is not None:
+            out["inview_diag"] = record
     return out
 
 
@@ -310,6 +325,15 @@ def main():
         info["cams2diag"] = cams2diag.install(s["cams2diag"], s["camsafe"]["NAVRL_CAMSAFE_BLIND_MPS"])
         info["cams2diag_module"] = cams2diag.__file__
         info["cams2diag_sha256"] = sha256(CAMS2DIAG)
+    if s.get("inview_start") is not None or s.get("inview_diag") is not None:   # 8. CAM-DX1 eval: outermost
+        from aerial_gym.task.navrl_task import navrl_inview_start as inview
+
+        if s.get("inview_start") is not None:
+            info["inview_start"] = inview.install_start(s["inview_start"], task_config)
+        if s.get("inview_diag") is not None:
+            info["inview_diag"] = inview.install_diag(s["inview_diag"])
+        info["inview_module"] = inview.__file__
+        info["inview_sha256"] = sha256(INVIEW)
     info.update({"overrides_before": before, "overrides_after": after, "script": script,
                  "entry": str(pathlib.Path(__file__).resolve())})
     print("[realveh] " + json.dumps(info, sort_keys=True), flush=True)

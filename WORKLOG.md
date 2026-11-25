@@ -27088,3 +27088,49 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   the existing scan rows, known-clearance speed rule replacing the 1 m/s blind cap, in-view start 0.8, VIO error
   model; gate G1 crash ≤ 20 % at 205 bars with S2b-FT as the known-bad control). DRAFT: implementation (M1-0, CPU),
   independent Opus design review, then user approval before any GPU.
+
+## 2026-11-25 — CAM-DX1 preregistered (start random vs visible x detection 312 vs 624, S2b-FT, 205 bars); CPU package, review r1 fixes applied, not run
+
+- **Preregistration:** `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25.md`, from the draft
+  `~/motar_tmp/camdx1_20261125/draft/` plus an "Implementation notes" section, then revised (before any run and before
+  its first commit) after the independent design review r1 (Claude Opus 5.5, GO_WITH_FIXES,
+  `~/motar_tmp/camdx1_20261125/review_r1/REVIEW.md`). Thresholds, factors and the label rule are unchanged. GPU
+  approved by the user for this diagnostic ("오케이 그 확인용 평가는 진행하자", 2026-11-25); it runs only after the
+  commit and the approval file.
+- **Review r1 changes (listed at the end of the preregistration):** P1-1 the visible-start control reads the RENDERED
+  step-0 pose (`robot_vehicle_orientation` at `_process_obs_perception`) and SMOKE_OK adds V step-0 detected share
+  > 0 and ≥ 2 × R312's; P1-2 the 624 smoke control falls back to own-distance bins and fails with no match, and DET is
+  labelled only if the 6-12 m pixel-area ratio is ≥ 3 for R624/R312 and V624/V312 (else NOT_INTERPRETABLE); P1-3
+  START_6_12 (V against the R episodes that started 6-12 m away) is the primary evidence for "visible start", the full
+  START reads "visible start + shorter range", and the R start classes are reported; P2-1 the 624 wording; P2-2 under
+  the memory fallback only the 624 arms move to 64 envs (all arms at 64 would exceed 3.5 h), stated as a limit; P2-3
+  out-of-memory versus host fault (`cell_verdict`); P2-4 budget projection, BUDGET_EXHAUSTED, INCOMPLETE read on
+  complete seed blocks (`projected_cell_s`, `complete_blocks`); P2-5 identity covers R312 only; P2-6 synthetic DET
+  control; P2-7 per-frame distance bins at the frame's render; P2-8 the full suite below.
+- **Package (CPU only, nothing run on the GPU):** `aerial_gym/task/navrl_task/navrl_inview_start.py` (evaluation-only
+  visible start wrapping `_align_general_spawn_yaw_to_target` with its own seeded generator, and a per-episode
+  recorder of the reset-time and rendered step-0 pose, step-0 detection, rendered target pixels per detected frame and
+  executed speed); additive OFF-identical hook in `tools/realveh_entry.py` (installed after `navrl_cams2diag`); runner
+  `tools/camdx1_eval_run.py` (check / scope / smoke / identity / eval, the pinned CAM-S2a-E launcher, CUDA OOM fallback
+  64 envs x quota 16 for the 624 arms); analysis `tools/camdx1_eval_analyse.py`; tests `tests/test_camdx1.py`.
+- **Analysis controls (CPU, before any eval):** synthetic identical → NO_DETECTED_CHANGE; +8 pp → MATERIAL_GAIN;
+  +2 pp at 20,000 episodes per cell → SMALL; −8 pp → MATERIAL_LOSS; +8 pp in both 624 arms → DET MATERIAL_GAIN, START
+  NO_DETECTED_CHANGE; recorded CAM-S2a-E YC12k − S12k at 205 bars → capture −11.13 pp [−13.54, −8.56] MATERIAL_LOSS,
+  crash +16.11 pp [+13.67, +18.55] MATERIAL_LOSS. All required labels read as preregistered.
+- **Tests:** `tests/test_camdx1.py` 40 OK (0 skipped); `test_experiment_index` 9 OK with the new preregistration in a
+  temporary git index (its two failures in the real index come only from the file being untracked before the commit).
+  Full PUBLIC_CPU suite (`tools/run_tests.py`, cores 6,7,12,13, nice 10, 2026-11-25): 4,514 tests, 10 failures,
+  13 errors, 19 skipped, 10 expected failures; `test_camdx1` passed inside it. Not 0/0. Failures from this unit:
+  `test_experiment_index` ×2 (the preregistration is untracked until the commit). The other 21 come from this
+  worktree, the host or the environment, not from this unit (diagnosed from the tracebacks, not rerun at HEAD):
+  free disk below the 3 GB floor (`test_boia_planner` ×2); Policy F's checkpoint copy absent from this worktree's
+  `runs/` (`test_boia_shadow_runner` ×7, `test_sitl_s3a_policy_precision` ×3); `results/` paths absent in this
+  worktree (`test_result_manifest` ×2, `test_navrl_stopcap_screen_contract` ×1); receipts written in MOTAR-camonly,
+  so their entry lies outside this tree (`test_camk1e` ×1, `test_cams2a_eval` ×1); OMP/MKL_NUM_THREADS not 1 in the
+  test environment (`test_sitl_agq_geometry_diag` ×2, `test_sitl_s3b_dev08_prefix` ×1); a preregistration command
+  text naming MOTAR-camonly (`test_sitl_s4r1` ×1).
+- **`check`** (`tools/camdx1_eval_run.py check --out ~/motar_tmp/camdx1_20261125/raw_check`, CPU, writes nothing): only
+  the tree-not-clean / not-committed problems of this uncommitted package; FT checkpoint f2c80fcc2b2e… at its pin; no
+  approval file yet.
+- **Next:** the user reviews and commits; then the approval file and `smoke` → `identity` → `eval`. Open risk: GPU
+  memory at 624 x 468 x 128 envs (fallback preregistered) and wall time under the fallback.

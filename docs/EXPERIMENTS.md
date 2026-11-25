@@ -819,6 +819,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md` (CAM-S2b-FT-E: FT vs CAM-S2a with a 60 deg/s clip (G1, reusing CAM-S2a-E's YC12k cells after an exact reproduction) and FT with a 45 deg/s clip (G2), 175/205 bars x 3 seeds; reviews r1 GO_WITH_FIXES, r2 GO)
   - CAM-S2b-FT run (2026-11-25 13:44-17:08 at `335a1fa`; records ~/motar_tmp/cams2b_20261124/train_ft/): **TRAINED**, 15,000 epochs, 205 bars, host faults 1 → 1; final training rollout about 0.51 capture / 0.40 crash (not an evaluation). S2b-FT-E and S2b-SCR not run (user 2026-11-25: 30-40 % crash is not flyable; bar ≤ 20 %)
   - CAM-M1 DRAFT (2026-11-25, outside the repository until reviewed: ~/motar_tmp/camm1_20261125/draft/prereg_camonly_m1_memscan_2026-11-25.md): pose-compensated 360° memory scan ("virtual LiDAR"), known-clearance speed rule, in-view start; gate crash ≤ 20 % at 205 bars; not approved, no GPU
+  - → `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25.md` (CAM-DX1: 2 x 2 diagnostic of S2b-FT at 205 bars x 3 seeds, start random vs visible (6-12 m, bearing within ±28.35°) x detection 312 x 234 vs 624 x 468; readings START / DET / interaction, descriptive, not a gate; package tools/camdx1_eval_run.py, tools/camdx1_eval_analyse.py and navrl_inview_start.py; records ~/motar_tmp/camdx1_20261125/; not run)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -829,7 +830,8 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_s1_scratch_2026-11-23.md`, `docs/plans/prereg_camonly_s1_scratch_2026-11-23_amendment1.md`,
   `docs/plans/prereg_camonly_s2a_2026-11-23.md`, `docs/plans/prereg_camonly_s2a_2026-11-23_amendment1.md`,
   `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md`, `docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md`,
-  `docs/plans/prereg_camonly_s2b_2026-11-24.md`, `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`
+  `docs/plans/prereg_camonly_s2b_2026-11-24.md`, `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`,
+  `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
