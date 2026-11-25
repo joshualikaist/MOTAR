@@ -27022,3 +27022,29 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `~/motar_tmp/runtime_v1_20261124/golden/`.
 - **Vehicle-side decision (user-relayed, 2026-11-24):** the policy node publishes the level body-frame velocity and the
   capture yaw; the PHASE 7 gateway rotates once with the latest yaw.
+
+## 2026-11-24 — CAM-S2a-E result: LEARNING_SUPPORTED, YAWCLIP_SENSITIVE (60 deg/s clip hurts)
+
+- **Run:** amended chain at `3a453e6` (smoke SMOKE_OK 15:56, identity IDENTITY_PASS 16:35, eval COMPLETE 21:18 with stages
+  A, B and C; host faults 1 → 1). Records `~/motar_tmp/cams2a_eval_20261124/raw_a1/`; analysis
+  `~/motar_tmp/cams2a_eval_20261124/analysis_a1_01.json` (sha256 7874ba93…). Every analysis binding is true.
+- **Analysis exit code 1:** the script wrote the complete analysis JSON and then failed in its final console summary line
+  (`KeyError: 'label'` at `tools/cams2a_eval_analyse.py:506`, a dict comprehension over the controls block that meets
+  non-label entries). The written JSON is the preregistered result; the script is SHA-bound to the controls, so it is
+  not edited; the console line is cosmetic (found 2026-11-25).
+- **Gate L (S12k − S1k): LEARNING_SUPPORTED.** Crash −22.96 pp (bootstrap [−24.05, −21.91], t95 [−24.62, −21.30]) =
+  MATERIAL_REDUCTION; capture HIGHER; timeout LOWER.
+- **Gate Y (YC12k − S12k, yaw command clipped at 1.047 rad/s): YAWCLIP_SENSITIVE.** Crash +13.75 pp (bootstrap
+  [+13.05, +14.54], t95 [+12.58, +14.92]) = WORSE; capture LOWER.
+- **Episode-weighted rates per density (descriptive, from the cells' result.json):**
+
+  | arm | 115 bars capture / crash | 175 bars | 205 bars |
+  | --- | --- | --- | --- |
+  | S1k | 0.494 / 0.416 | 0.324 / 0.564 | 0.268 / 0.606 |
+  | S3k | 0.668 / 0.240 | 0.547 / 0.316 | 0.470 / 0.390 |
+  | S6k | 0.726 / 0.217 | 0.572 / 0.344 | 0.481 / 0.421 |
+  | S12k | 0.756 / 0.191 | 0.621 / 0.303 | 0.541 / 0.370 |
+  | YC12k | 0.660 / 0.301 | 0.514 / 0.443 | 0.405 / 0.549 |
+
+- **Decision:** CAM-S2a with the vehicle's 60 deg/s limit is not a flight candidate; CAM-S2b (trained at 60 deg/s) next,
+  as planned. Crash at 175-205 bars stays 30-37 % for the best arm.
