@@ -823,6 +823,7 @@ family that is in the test's scope.
   - CAM-DX1 smoke 1 (2026-11-25 20:26-20:33 at `b759b47`; ~/motar_tmp/camdx1_20261125/raw/): **SMOKE_FAIL**, R312 OK, V624 CUDA out-of-memory at 128 envs then cuDNN CUDNN_STATUS_INTERNAL_ERROR at 64 envs; host faults 1 → 1
   - → `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md` (a cuDNN internal/alloc error at the 64-env fallback counts as the second out-of-memory, so the 624 arms read NOT_RUN_OOM as prereg lines 40-41 intend; smoke repeated in raw_a1/)
   - CAM-DX1 under amendment 1 (`f8cffc4`, 2026-11-25 20:35-21:35; records ~/motar_tmp/camdx1_20261125/a1/{raw,identity,eval}, analysis `docs/evidence/camonly_2026-11-04/camdx1/analysis_a1.json`): smoke SMOKE_OK (624 NOT_RUN_OOM), identity IDENTITY_PASS, eval **COMPLETE_624_NOT_RUN_OOM**, host faults 1 → 1. START (visible start + 6-12 m) capture **+19.8 pp** [17.4, 22.2] MATERIAL_GAIN, crash −13.1 pp MATERIAL_GAIN; START_6_12 capture +5.2 pp [1.3, 9.0] MATERIAL_GAIN, crash −4.5 pp SMALL; DET NOT_RUN_OOM. V312: capture 0.704 / crash 0.285 / timeout 0.011 (user bar: capture met, crash not)
+  - → `docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md` (CAM-REF: F, CAM-K1 and S2b-FT on one protocol ladder at 205 bars; stage 1 = identities F0ID/K1ID/S0ID + F3, F4, F8, S3, S6, K1T, K1S x 3 seeds; readings R1 protocol share, R2 policy gap at P_K/P_T/P_S, R3 crash vs 20 % with 360-deg ranging; package tools/camref_*.py, navrl_camref_rules.py; records ~/motar_tmp/camref_20261126/; not run)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -835,7 +836,7 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md`, `docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md`,
   `docs/plans/prereg_camonly_s2b_2026-11-24.md`, `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`,
   `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25.md`,
-  `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md`
+  `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md`, `docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 

@@ -27226,3 +27226,21 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** CAM-REF matched-protocol evaluation (F, K1, S2b-FT on a factor ladder;
   `~/motar_tmp/camref_20261126/FEASIBILITY.md`): preregistration, new entry/rule module, Opus review, then the user's
   GPU approval.
+
+## 2026-11-26 — CAM-REF preregistered: F, CAM-K1, S2b-FT on one protocol ladder (stage 1 package, not run)
+- **Why:** the claims audit showed F (8.8 % at 205 bars), K1 (26.5-27.7 %) and S2b-FT (28.5 %) were measured under
+  different protocols. Stage 1 answers (a) how much of S2b-FT's crash is protocol and (b) whether 360-deg ranging reaches
+  crash <= 20 % under the CAM-S2 task rules (bar-contact crash co-primary).
+- **Prereg:** `docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md`. User approvals: preparation ("1,2번 하고")
+  and stage-1 GPU run ("4번까지 구현 승인.", 2026-11-26); stage 2 separate.
+- **Package (new files only):** `navrl_camref_rules.py` (switchable CAM-S2 capture/contact, delay, altitude/mount; equal
+  to navrl_cams2 + contactcode when on, inert when off), `tools/camref_entry.py`, `tools/camref_python`,
+  `eval_navrl_camref_arms.sh` (pinned copy), `tools/camref_eval_run.py`, `tools/camref_eval_analyse.py`,
+  `tests/test_camref.py` (38). One tracked edit: `tests/test_realveh.py` isolation allowlist admits
+  `tools/camref_entry.py` (coordinator option (a); F8 keeps vehicle randomisation).
+- **Review r1 (Claude Opus 5.5):** GO_WITH_FIXES, `~/motar_tmp/camref_20261126/review_r1/REVIEW.md`. P1-1 (EXPERIMENTS
+  entry, prereg status line, WORKLOG in the same commit) and P1-2 (no complete seed block -> NOT_RUN, never fall back to
+  all seeds; test added) fixed; P2-1 / P2-2 recorded in the prereg limits.
+- **Tests:** test_camref + test_realveh 87 OK; full PUBLIC_CPU 4,552 run, failures/errors = the baseline set (9 + 8) plus test_experiment_index x2, which needs this commit (prereg untracked at run time).
+- **Side effect (accepted):** new tracked files on camonly/s2b close CAM-DX1's runner allowlist (DX1 complete).
+- **Next:** commit, approval file, then smoke -> identity -> eval (cap 2.5 h, idle host, host faults checked).

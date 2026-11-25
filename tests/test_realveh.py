@@ -1253,7 +1253,8 @@ class TestIsolation(unittest.TestCase):
         return sorted(hits)
 
     def test_only_the_entry_imports_the_new_modules(self):
-        self.assertEqual(self._importers("navrl_vehicle_rand"), ["tools/realveh_entry.py"])
+        # CAM-REF (2026-11-26): tools/camref_entry.py installs vehicle randomisation for Policy F (realveh_entry refuses the LiDAR)
+        self.assertEqual(self._importers("navrl_vehicle_rand"), ["tools/camref_entry.py", "tools/realveh_entry.py"])
         self.assertEqual(self._importers("navrl_depth_model"), ["tools/realveh_entry.py"])
 
     def test_ablation_importers_are_the_four_explicit_entries(self):
