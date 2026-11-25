@@ -27134,3 +27134,19 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   approval file yet.
 - **Next:** the user reviews and commits; then the approval file and `smoke` → `identity` → `eval`. Open risk: GPU
   memory at 624 x 468 x 128 envs (fallback preregistered) and wall time under the fallback.
+
+## 2026-11-25 — CAM-DX1 smoke 1 SMOKE_FAIL (624 x 468 does not fit the 8 GB GPU); amendment 1
+
+- **Smoke 1** (`~/motar_tmp/camdx1_20261125/raw/`, chain `~/motar_tmp/camdx1_20261125/chain.sh`, `b759b47`, 20:26-20:33,
+  host faults 1 → 1): R312_smoke OK; V624_smoke at 128 envs `torch.OutOfMemoryError` (6.67 GiB in use, 7.66 GiB total,
+  about 0.7 GiB held by the desktop and a remote-desktop server); V624_smoke_e64 at 64 envs
+  `RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR` in the target segmenter's convolution on the first 624 x 468
+  frame. The runner classified the second failure FAIL (no out-of-memory text) and stopped: SMOKE_FAIL.
+- **Amendment 1** (`docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md`): the preregistration said both
+  "if 64 envs also fail, the 624 arms read NOT_RUN_OOM" (lines 40-41) and "only CUDA out-of-memory text counts"
+  (review r1 P2-3); at the 64-env fallback only, a cuDNN internal/alloc error now counts as the second out-of-memory
+  (`tools/camdx1_eval_run.py` OOM_FALLBACK_RE; memory pressure as its cause is INFERRED). Tests: test_camdx1 OK with a
+  positive and a negative control for the new rule.
+- **Next:** repeat the chain into `~/motar_tmp/camdx1_20261125/raw_a1/` with a new approval file naming the amendment
+  commit. Expected: 624 arms NOT_RUN_OOM, six 312 cells (R312, V312), DET NOT_RUN; START and START_6_12 answered.
+  Whether 624 x 468 detection raises capture needs a separate design on this GPU.

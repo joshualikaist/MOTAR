@@ -158,6 +158,9 @@ MISMATCH_624 = (r"CONFIG MISMATCH \| NAVRL_DETECT_WIDTH: checkpoint trained with
                 r"CONFIG MISMATCH \| NAVRL_DETECT_HEIGHT: checkpoint trained with 234\.000, running with 468\.000\.")
 MISMATCH_V = (r"TASK-DISTRIBUTION MISMATCH \| NAVRL_GENERAL_GOAL_DIST_MAX: checkpoint used 28\.000, running with 12\.000\.",)
 OOM_RE = re.compile(r"out of memory|OutOfMemoryError|cudaErrorMemoryAllocation|CUDA_ERROR_OUT_OF_MEMORY", re.I)
+# Amendment 1 (2026-11-25, after smoke raw/): at the 64-env fallback only, after a recorded out-of-memory at 128 envs,
+# a cuDNN allocation/internal failure counts as the second out-of-memory (prereg lines 40-41: "if 64 envs also fail").
+OOM_FALLBACK_RE = re.compile(r"CUDNN_STATUS_INTERNAL_ERROR|CUDNN_STATUS_ALLOC_FAILED", re.I)
 STEP0_BIN_M = 1.0                      # the 624 control's step-0 distance bins (1 m, fixed before any run)
 PIXEL_RATIO_MIN = 3.0
 STEP0_DETECT_FACTOR = 2.0              # review r1 P1-1: V step-0 detected share >= 2 x R312's (and > 0)
@@ -330,15 +333,17 @@ def condition_problems(cond, train_env, arm, num_envs):
     return p
 
 
-def is_oom(cell_dir):
-    """The launcher's FAILED receipt and a CUDA out-of-memory message in the cell log."""
+def is_oom(cell_dir, fallback=False):
+    """The launcher's FAILED receipt and a CUDA out-of-memory message in the cell log; at the 64-env fallback
+    (fallback=True, amendment 1) a cuDNN allocation/internal failure also counts."""
     try:
         receipt = json.loads((cell_dir / "receipt.json").read_text())
     except (OSError, ValueError):
         receipt = {}
     log = cell_dir / "cell.log"
     text = log.read_text(errors="replace") if log.is_file() else ""
-    return receipt.get("status") != "OK" and bool(OOM_RE.search(text))
+    hit = OOM_RE.search(text) or (fallback and OOM_FALLBACK_RE.search(text))
+    return receipt.get("status") != "OK" and bool(hit)
 
 
 def output_problems(cell_dir, arm, commit, ckpt_sha, train_receipt_sha, train_env, num_envs, quota):
@@ -710,7 +715,7 @@ def run_cell(ctx, out_root, arm, density, seed, records, timeout_s, stage, num_e
     print("==", arm, cid, "envs %d quota %d" % (num_envs, quota), G.now(), "timeout %.0fs" % timeout_s, flush=True)
     t0 = time.time()
     rc = G.run_launcher(ROOT, ctx["protocol"], env, max(1.0, timeout_s), LAUNCHER) if not pre else None
-    oom = (not pre) and is_oom(cell_dir)
+    oom = (not pre) and is_oom(cell_dir, fallback=(res(arm) == 624 and num_envs != NUM_ENVS))
     problems, h, stats = check_cell(cell_dir, arm, ctx["head"], ctx["start"], ckpt_sha, train_receipt_sha,
                                     train_receipt["env_navrl"], num_envs, quota)
     problems = pre + problems

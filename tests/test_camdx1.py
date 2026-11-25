@@ -468,6 +468,13 @@ class Plans(unittest.TestCase):
             (d / "receipt.json").write_text(json.dumps({"status": "OK"}))
             (d / "cell.log").write_text("warn: out of memory once\n")
             self.assertFalse(X.is_oom(d))
+            # amendment 1: cuDNN internal error counts only at the 64-env fallback
+            (d / "receipt.json").write_text(json.dumps({"status": "FAILED"}))
+            (d / "cell.log").write_text("RuntimeError: cuDNN error: CUDNN_STATUS_INTERNAL_ERROR\n")
+            self.assertFalse(X.is_oom(d))
+            self.assertTrue(X.is_oom(d, fallback=True))
+            (d / "cell.log").write_text("RuntimeError: something else\n")
+            self.assertFalse(X.is_oom(d, fallback=True))
 
 
 @needs_ft
