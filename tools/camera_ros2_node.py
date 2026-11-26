@@ -237,7 +237,7 @@ def main(ros_args=None, *, config_path, source_root, check_only=False):
         return 0
     # Policy restore happens before creating ROS entities or any offboard stream.
     from camera_policy_runtime import CameraPolicyRuntime
-    runtime = CameraPolicyRuntime(contract)
+    runtime = CameraPolicyRuntime(contract, torch_threads=1)   # 1 thread: measured faster on the Orin NX (2026-11-26)
     import rclpy
     node = None
     try:

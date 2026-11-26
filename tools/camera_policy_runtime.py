@@ -19,6 +19,7 @@ import importlib
 import importlib.util
 import inspect
 import json
+import functools
 import math
 import os
 from pathlib import Path
@@ -505,7 +506,7 @@ def downscale_min_valid_2x2(frame, minz_m=0., maxz_m=math.inf):
     return out
 
 
-def project_rgbd_min_valid(frame, state, contract):
+def project_rgbd_min_valid_reference(frame, state, contract):
     """CAM-S2 projection: calibrated body-mounted RGB-D -> the level trained camera, nearest valid depth per pixel.
 
     Training semantics (navrl_depth_model.py step 3, no blob_near): a pixel whose depth is invalid (z < MinZ, z > MaxZ,
@@ -636,6 +637,137 @@ def project_rgbd_min_valid(frame, state, contract):
              'imaged_pixels': int(imaged.sum()), 'unsampled_imaged_pixels': int(holes.sum()),
              'coverage_mask': frame.get('coverage') is not None, 'synthetic_noise_applied': False})
 
+
+
+@functools.lru_cache(maxsize=8)
+def _pixel_rays(w, h, fx, fy, cx, cy):
+    """Normalised optical ray coordinates (u, v) of every pixel, flattened row-major (read only; cached per intrinsics)."""
+    u, v = np.meshgrid((np.arange(w)-cx)/fx, (np.arange(h)-cy)/fy)
+    u, v = u.reshape(-1), v.reshape(-1)
+    u.flags.writeable = False
+    v.flags.writeable = False
+    return u, v
+
+
+def _first_min_per_pixel(indices, keys, size):
+    """Per pixel, the position in `indices` of the sample with the smallest key; ties -> the smallest position.
+
+    Exactly the first entry of each index run after np.lexsort((keys, indices)) (lexsort is stable), without the
+    O(N log N) two-key sort: two np.minimum.at passes (keys are finite). Returns (pixels ascending, positions)."""
+    n = len(indices)
+    if not n:
+        return np.zeros(0, np.int64), np.zeros(0, np.int64)
+    best = np.full(size, np.inf)
+    np.minimum.at(best, indices, keys)
+    candidates = np.flatnonzero(keys == best[indices])
+    first = np.full(size, n, np.int64)
+    np.minimum.at(first, indices[candidates], candidates)
+    pixels = np.flatnonzero(first < n)
+    return pixels, first[pixels]
+
+
+def project_rgbd_min_valid(frame, state, contract):
+    """CAM-S2 projection, latency port (2026-11-26) of project_rgbd_min_valid_reference: the same arithmetic and the
+    same refusals with identical outputs (tests/test_camera_runtime_cams2.py compares every output array exactly on
+    level, tilted, translated, covered and random frames). Changes: the per-pixel nearest-sample selections use
+    _first_min_per_pixel instead of a two-key lexsort; pixel ray grids are cached per intrinsics; colours are gathered
+    only for the selected samples. See project_rgbd_min_valid_reference for the semantics."""
+    _, _, body_r, yaw, _, _ = validate_state(state)
+    if frame.get('aligned') is not True or frame.get('rectified') is not True:
+        raise InputError('RGB/depth must be explicitly aligned and rectified')
+    sw, sh, sfx, sfy, scx, scy = _intrinsics(frame['intrinsics'])
+    cam = contract['camera']
+    tw, th, tfx, tfy, tcx, tcy = _intrinsics(cam)
+    if sfx < tfx * (1. - SOURCE_RESOLUTION_TOLERANCE) or sfy < tfy * (1. - SOURCE_RESOLUTION_TOLERANCE):
+        raise InputError('source intrinsics fx=%.3f fy=%.3f are coarser than the trained camera fx=%.3f fy=%.3f; '
+                         'feed the aligned stream at (at least) the trained angular resolution' % (sfx, sfy, tfx, tfy))
+    rgb = np.asarray(frame['rgb'])
+    z = np.asarray(frame['depth_z_m'])
+    invalid = np.asarray(frame['invalid'])
+    if rgb.shape != (sh, sw, 3) or rgb.dtype != np.uint8:
+        raise InputError('rgb must be aligned uint8 RGB [H,W,3]')
+    if z.shape != (sh, sw) or not np.issubdtype(z.dtype, np.floating):
+        raise InputError('depth_z_m must be floating optical metres [H,W]')
+    if invalid.shape != z.shape or invalid.dtype != np.bool_:
+        raise InputError('invalid must be a same-frame bool mask [H,W]')
+    mount = _finite(frame['mount_flu_m'], (3,), 'mount_flu_m')
+    optical = _finite(frame['camera_to_body_rotation'], (3, 3), 'camera_to_body_rotation')
+    if not np.allclose(optical.T @ optical, np.eye(3), atol=1e-6) or not np.isclose(np.linalg.det(optical), 1):
+        raise InputError('camera_to_body_rotation must be a proper FLU rotation')
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    yaw_r = np.array([[cy, -sy, 0], [sy, cy, 0], [0, 0, 1.]])
+    rel = yaw_r.T @ body_r
+    rotation = rel @ optical
+    offset = rel @ mount - np.asarray(cam['translation_m'])
+    depth = contract['depth']
+    minz, maxz = float(depth['minz_m']), float(depth['maxz_m'])
+    src_invalid, src_no_return = _source_classes(frame, z, invalid, depth)
+    u, v = _pixel_rays(sw, sh, sfx, sfy, scx, scy)
+    rgb_flat = rgb.reshape(-1, 3)
+    good = np.flatnonzero(~(src_invalid | src_no_return))
+    zz = z.reshape(-1)[good].astype(np.float64)
+    points = np.stack([zz, -u[good]*zz, -v[good]*zz], axis=-1) @ rotation.T + offset
+    selected, indices = _splat_index(points, tw, th, tfx, tfy, tcx, tcy)
+    zs = points[selected, 0]
+    level_valid = np.flatnonzero((zs >= minz) & (zs <= maxz))
+    indices, zs = indices[level_valid], zs[level_valid]
+    pixels, pos = _first_min_per_pixel(indices, zs, th*tw)
+    hit = np.zeros(th*tw, bool)
+    hit[pixels] = True
+    hit = hit.reshape(th, tw)
+    out_z = np.zeros((th, tw), np.float64)
+    out_rgb = np.zeros((th, tw, 3), np.uint8)
+    out_z.flat[pixels] = zs[pos]
+    out_rgb.reshape(-1, 3)[pixels] = rgb_flat[good[selected[level_valid[pos]]]]
+    invalid_src = np.flatnonzero(src_invalid)
+    rays = np.stack([np.ones(len(invalid_src)), -u[invalid_src], -v[invalid_src]], axis=-1)
+    ray_selected, ray_indices, ray_offset = _splat_index(rays @ rotation.T, tw, th, tfx, tfy, tcx, tcy, offset=True)
+    rayed = np.zeros(th*tw, bool)
+    rayed[ray_indices] = True
+    tu, tv = _pixel_rays(tw, th, tfx, tfy, tcx, tcy)
+    tu, tv = tu.reshape(th, tw), tv.reshape(th, tw)
+    src = np.stack([np.ones_like(tu), -tu, -tv], axis=-1) @ rotation
+    ahead = src[..., 0] > 1e-9
+    with np.errstate(divide='ignore', invalid='ignore'):
+        xs = np.where(ahead, -src[..., 1]/np.where(ahead, src[..., 0], 1.)*sfx + scx, -10.)
+        ys = np.where(ahead, -src[..., 2]/np.where(ahead, src[..., 0], 1.)*sfy + scy, -10.)
+    imaged = ahead & (xs >= .5) & (xs <= sw-1.5) & (ys >= .5) & (ys <= sh-1.5)
+    if frame.get('coverage') is not None:
+        cov = np.asarray(frame['coverage'])
+        imaged &= cov[np.clip(np.floor(ys+.5).astype(int), 0, sh-1), np.clip(np.floor(xs+.5).astype(int), 0, sw-1)]
+        covered = np.flatnonzero(cov)
+        dirs = np.stack([np.ones(len(covered)), -u[covered], -v[covered]], axis=-1)
+    else:
+        dirs = np.stack([np.ones(sh*sw), -u, -v], axis=-1)
+    _, dir_indices = _splat_index(dirs @ rotation.T, tw, th, tfx, tfy, tcx, tcy)
+    direction_hit = np.zeros(th*tw, bool)
+    direction_hit[dir_indices] = True
+    sampled = direction_hit.reshape(th, tw)
+    enclosed = ((np.maximum.accumulate(sampled, axis=0) & np.maximum.accumulate(sampled[::-1], axis=0)[::-1])
+                | (np.maximum.accumulate(sampled, axis=1) & np.maximum.accumulate(sampled[:, ::-1], axis=1)[:, ::-1]))
+    holes = imaged & ~sampled & enclosed
+    if holes.any():
+        raise InputError('%d trained pixels inside the source image received no source sample (source too coarse '
+                         'for the trained camera at this attitude); frame refused' % int(holes.sum()))
+    out_invalid = rayed.reshape(th, tw) & ~hit
+    # Only sensor-invalid trained pixels take an invalid ray's colour: select among their rays only (every ray of
+    # such a pixel is kept in order, so the per-pixel choice is unchanged).
+    need = np.flatnonzero(out_invalid.flat[ray_indices])
+    ray_pixels, ray_pos = _first_min_per_pixel(ray_indices[need], ray_offset[need], th*tw)
+    out_rgb.reshape(-1, 3)[ray_pixels] = rgb_flat[invalid_src[ray_selected[need[ray_pos]]]]
+    out_no_return = ~hit & ~out_invalid
+    cosine = 1 / np.sqrt(1+tu*tu+tv*tv)
+    ranges = np.full((th, tw), maxz, np.float64)
+    np.divide(out_z, cosine, out=ranges, where=hit)
+    ranges = np.minimum(ranges, maxz).astype(np.float32)
+    level = bool(np.allclose(rotation, np.eye(3), atol=1e-8) and np.allclose(offset, 0, atol=1e-8))
+    return (out_rgb.transpose(2, 0, 1)[None].astype(np.float32)/255., ranges[None], out_invalid[None],
+            out_no_return[None], cosine.astype(np.float32),
+            {'projection': 'measured-point-min-valid', 'level_camera': level,
+             'sensor_invalid_pixels': int(out_invalid.sum()), 'no_return_pixels': int(out_no_return.sum()),
+             'valid_pixels': int(hit.sum()), 'pixels': th*tw, 'source_pixels': sh*sw,
+             'imaged_pixels': int(imaged.sum()), 'unsampled_imaged_pixels': int(holes.sum()),
+             'coverage_mask': frame.get('coverage') is not None, 'synthetic_noise_applied': False})
 
 def height_band(state, contract):
     """Whether the camera height lies inside the enabled floor/ceiling filter band; pure, no history.
@@ -1245,13 +1377,39 @@ def _load(name, relative):
     return module
 
 
+THREAD_ENV = ('OMP_NUM_THREADS', 'MKL_NUM_THREADS', 'OPENBLAS_NUM_THREADS')
+
+
+def pin_cpu_threads(torch, n):
+    """Pin torch CPU threads to n (None: leave them); return what the process runs with. The BLAS / OpenMP pools of
+    numpy are fixed at import from THREAD_ENV, so a flight launcher exports those (=1) before Python starts; their
+    values are reported, not changed."""
+    report = {'requested': n, 'env': {k: os.environ.get(k) for k in THREAD_ENV}}
+    if n is not None:
+        if type(n) is not int or n < 1:
+            raise ValueError('torch_threads must be a positive int or None')
+        torch.set_num_threads(n)
+        try:
+            torch.set_num_interop_threads(n)
+            report['interop_pinned'] = True
+        except RuntimeError:                    # torch allows it only before the first parallel work
+            report['interop_pinned'] = False
+    report['torch_num_threads'] = torch.get_num_threads()
+    report['torch_num_interop_threads'] = torch.get_num_interop_threads()
+    return report
+
+
 class CameraPolicyRuntime:
     """One sequential CPU policy/tracker session, without any device or sender."""
     # Runtime v1: the CAM-S2 branch state (_setup_cams2); None for every other contract, also on instances that tests
     # build without __init__ (geometry-only runtimes).
     cams2 = None
+    threads = None            # set by __init__ (pin_cpu_threads)
 
-    def __init__(self, contract):
+    def __init__(self, contract, torch_threads=None):
+        """torch_threads: None keeps the process's torch thread settings (tests share one process); an int pins torch
+        intra-op threads (and inter-op threads where torch still allows it) for a flight / replay process. The vehicle
+        side measured 337 ms capture -> result with 1 thread against 898 ms with 8 on the Orin NX (2026-11-26)."""
         from camera_policy_contract import validate_contract
         # Callers cannot change the checked geometry/environment after loading.
         contract = json.loads(json.dumps(contract, allow_nan=False))
@@ -1269,6 +1427,7 @@ class CameraPolicyRuntime:
         self.contract = contract
         import torch
         self.torch = torch
+        self.threads = pin_cpu_threads(torch, torch_threads)
         # Bare packages expose only simulator-free leaf modules, without Warp.
         for name, rel in (('aerial_gym', 'aerial_gym'), ('aerial_gym.task', 'aerial_gym/task'),
                           ('aerial_gym.task.navrl_task', 'aerial_gym/task/navrl_task'),
@@ -1804,13 +1963,16 @@ def main(argv=None):
     ap.add_argument('--contract', required=True)
     ap.add_argument('--replay', required=True, help='aligned measured input NPZ, allow_pickle=False')
     ap.add_argument('--output', required=True, help='new JSONL path for proposed commands, never sent')
+    ap.add_argument('--torch-threads', type=int, default=1, help='torch CPU threads (default 1, the measured faster '
+                    'setting on the Orin NX); export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 before starting Python')
     args = ap.parse_args(argv)
     from camera_policy_contract import load_contract
     if Path(args.output).exists():
         raise ValueError('output exists; choose a fresh path')
-    runtime = CameraPolicyRuntime(load_contract(args.contract))
+    runtime = CameraPolicyRuntime(load_contract(args.contract), torch_threads=args.torch_threads)
     with np.load(args.replay, allow_pickle=False) as data:
         report = replay(runtime, data, args.output)
+    report['threads'] = runtime.threads
     print(json.dumps(report, allow_nan=False))
     return 0
 

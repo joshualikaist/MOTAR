@@ -728,3 +728,143 @@ class RuntimeIntegration(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+def _quat(roll, pitch, yaw):
+    cr, sr, cp, sp = math.cos(roll / 2), math.sin(roll / 2), math.cos(pitch / 2), math.sin(pitch / 2)
+    cy, sy = math.cos(yaw / 2), math.sin(yaw / 2)
+    return [sr * cp * cy - cr * sp * sy, cr * sp * cy + sr * cp * sy, cr * cp * sy - sr * sp * cy, cr * cp * cy + sr * sp * sy]
+
+
+class LatencyPortEquivalence(unittest.TestCase):
+    """2026-11-26 latency port: project_rgbd_min_valid must equal project_rgbd_min_valid_reference (the committed v1
+    arithmetic) array for array, bit for bit, including refusals and ties (quantised depths)."""
+
+    @staticmethod
+    def _run(fn, f, s, c):
+        try:
+            return 'ok', fn(f, s, c)
+        except R.InputError as e:
+            return 'refused', str(e)
+
+    def _assert_same(self, a, b):
+        self.assertEqual(a[0], b[0])
+        if a[0] == 'refused':
+            self.assertEqual(a[1], b[1])
+            return
+        for x, y in zip(a[1][:5], b[1][:5]):
+            x, y = np.asarray(x), np.asarray(y)
+            self.assertEqual((x.shape, x.dtype), (y.shape, y.dtype))
+            self.assertTrue(np.array_equal(x, y))
+        self.assertEqual(a[1][5], b[1][5])
+
+    def test_random_scenes_attitudes_coverage_and_refusals(self):
+        c = geometry_contract()
+        cam = c['camera']
+        rng = np.random.default_rng(20261126)
+        kinds = {'ok': 0, 'refused': 0, 'ties': 0, 'tilted_ok': 0}
+        for i in range(36):
+            h, w = 468, 624
+            if i % 3 == 0:                                    # quantised depths: many equal z per trained pixel
+                z = rng.choice([.2, .5, 1., 2., 3.3, 5., 9.9, 25.], size=(h, w))
+                kinds['ties'] += 1
+            else:
+                z = rng.uniform(0., 25., (h, w))
+            z[rng.random((h, w)) < .05] = np.nan
+            f = frame(z, rng.random((h, w)) < rng.uniform(0, .5), rng.integers(0, 256, (h, w, 3), dtype=np.uint8),
+                      full_res_intrinsics(cam, cy=246.7 if i % 2 else None), mount=(.08, 0., .03) if i % 2 else (.08, 0., .03))
+            if i % 4 == 1:
+                cov = np.ones((h, w), bool)
+                cov[:int(rng.integers(1, 40))] = False
+                f['coverage'] = cov
+                f['depth_z_m'] = np.where(cov, f['depth_z_m'], np.nan).astype(np.float32)
+            if i % 6 == 2:                                     # a source at the trained resolution: tilted -> refused
+                f = dict(f, intrinsics={'width': 312, 'height': 234, 'fx': cam['fx'], 'fy': cam['fy'],
+                                        'cx': cam['cx'], 'cy': cam['cy']},
+                         depth_z_m=f['depth_z_m'][::2, ::2].copy(), invalid=f['invalid'][::2, ::2].copy(),
+                         rgb=f['rgb'][::2, ::2].copy())
+                f.pop('coverage', None)
+            roll, pitch = (0., 0.) if i % 7 == 0 else (rng.normal(0, .15), rng.normal(0, .15))
+            s = dict(STATE, quat_xyzw=_quat(roll, pitch, rng.uniform(-3, 3)))
+            a = self._run(R.project_rgbd_min_valid_reference, f, s, c)
+            b = self._run(R.project_rgbd_min_valid, f, s, c)
+            self._assert_same(a, b)
+            kinds[a[0]] += 1
+            kinds['tilted_ok'] += a[0] == 'ok' and (roll, pitch) != (0., 0.)
+        # Non-vacuous: accepted tilted frames, refusals and tie-heavy frames all occurred.
+        self.assertGreater(kinds['tilted_ok'], 10)
+        self.assertGreater(kinds['refused'], 0)
+        self.assertGreater(kinds['ties'], 5)
+
+    def test_first_min_per_pixel_equals_the_lexsort_rule(self):
+        rng = np.random.default_rng(7)
+        for n, size, levels in ((0, 5, 3), (1, 5, 3), (5000, 300, 4), (20000, 50, 2)):
+            idx = rng.integers(0, size, n)
+            keys = rng.integers(0, levels, n).astype(np.float64)      # few levels: ties everywhere
+            pixels, pos = R._first_min_per_pixel(idx, keys, size)
+            order = np.lexsort((keys, idx))
+            first = np.r_[True, idx[order][1:] != idx[order][:-1]] if n else np.zeros(0, bool)
+            self.assertEqual(pixels.tolist(), idx[order][first].tolist())
+            self.assertEqual(pos.tolist(), order[first].tolist())
+
+    def test_mutant_with_last_tie_differs(self):
+        """Negative control: picking the LAST of equal keys changes colours on a tie-heavy frame."""
+        c = geometry_contract()
+        cam = c['camera']
+        rng = np.random.default_rng(11)
+        z = np.full((468, 624), 3.0)
+        f = frame(z, np.zeros((468, 624), bool), rng.integers(0, 256, (468, 624, 3), dtype=np.uint8),
+                  full_res_intrinsics(cam), mount=(0., 0., 0.))
+        f['mount_flu_m'] = [.08, 0., .03]
+        good = R.project_rgbd_min_valid(f, STATE, c)
+        original = R._first_min_per_pixel
+
+        def last_tie(indices, keys, size):
+            rev = np.arange(len(indices))[::-1]
+            pixels, pos = original(indices[rev], keys[rev], size)
+            return pixels, rev[pos]
+        R._first_min_per_pixel = last_tie
+        try:
+            bad = R.project_rgbd_min_valid(f, STATE, c)
+        finally:
+            R._first_min_per_pixel = original
+        self.assertTrue(np.array_equal(good[1], bad[1]))
+        self.assertFalse(np.array_equal(good[0], bad[0]))
+
+
+class ThreadPinning(unittest.TestCase):
+    class FakeTorch:
+        def __init__(self, interop_ok=True):
+            self.n, self.i, self.ok = 4, 4, interop_ok
+
+        def set_num_threads(self, n):
+            self.n = n
+
+        def set_num_interop_threads(self, n):
+            if not self.ok:
+                raise RuntimeError('too late')
+            self.i = n
+
+        def get_num_threads(self):
+            return self.n
+
+        def get_num_interop_threads(self):
+            return self.i
+
+    def test_pins_when_asked_and_leaves_alone_otherwise(self):
+        t = self.FakeTorch()
+        r = R.pin_cpu_threads(t, 1)
+        self.assertEqual((r['torch_num_threads'], r['torch_num_interop_threads'], r['interop_pinned']), (1, 1, True))
+        t = self.FakeTorch()
+        r = R.pin_cpu_threads(t, None)
+        self.assertEqual((r['torch_num_threads'], r['torch_num_interop_threads']), (4, 4))
+        t = self.FakeTorch(interop_ok=False)
+        r = R.pin_cpu_threads(t, 1)
+        self.assertEqual((r['torch_num_threads'], r['interop_pinned']), (1, False))
+        for bad in (0, -1, 1.0, '1'):
+            with self.assertRaises(ValueError):
+                R.pin_cpu_threads(self.FakeTorch(), bad)
+
+    def test_ros2_node_pins_one_thread(self):
+        text = (ROOT / 'tools' / 'camera_ros2_node.py').read_text()
+        self.assertIn('CameraPolicyRuntime(contract, torch_threads=1)', text)
