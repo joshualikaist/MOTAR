@@ -666,7 +666,7 @@ def _first_min_per_pixel(indices, keys, size):
     return pixels, first[pixels]
 
 
-def project_rgbd_min_valid(frame, state, contract):
+def project_rgbd_min_valid_v1_fast(frame, state, contract):
     """CAM-S2 projection, latency port (2026-11-26) of project_rgbd_min_valid_reference: the same arithmetic and the
     same refusals with identical outputs (tests/test_camera_runtime_cams2.py compares every output array exactly on
     level, tilted, translated, covered and random frames). Changes: the per-pixel nearest-sample selections use
@@ -768,6 +768,307 @@ def project_rgbd_min_valid(frame, state, contract):
              'valid_pixels': int(hit.sum()), 'pixels': th*tw, 'source_pixels': sh*sw,
              'imaged_pixels': int(imaged.sum()), 'unsampled_imaged_pixels': int(holes.sum()),
              'coverage_mask': frame.get('coverage') is not None, 'synthetic_noise_applied': False})
+
+
+# ---------------------------------------------------------------- canonical v2 (CPU numpy == GPU torch, bit for bit)
+# Runtime v2 projection (2026-11-26, user-approved GPU port). v1 rotates with a BLAS matrix product, whose rounding
+# depends on the library and device (x86 vs ARM BLAS, cuBLAS FMA), so a point that falls on a trained-pixel border can
+# change pixel between machines. v2 fixes every float64 operation and its order as plain IEEE-754 elementwise products,
+# sums, quotients and floors (no matrix product, no fused multiply-add, no pow), which numpy and torch (CPU or CUDA,
+# float64) both round identically; the pixel grids, rotation and cosine are computed once on the CPU and shared.
+# So CPU and GPU agree bit for bit ON THE SAME HOST. Across hosts the attitude rotation (validate_state, cos / sin and
+# the 3x3 products, host libm / BLAS) may still differ in the last bit (review r1 P3-1).
+# Semantics are v1's; it may differ from v1 only where a sample lies within rounding of a pixel border.
+
+def _projection_inputs(frame, state, contract):
+    """Validation, attitude and source classes shared by every v2 backend (CPU numpy)."""
+    _, _, body_r, yaw, _, _ = validate_state(state)
+    if frame.get('aligned') is not True or frame.get('rectified') is not True:
+        raise InputError('RGB/depth must be explicitly aligned and rectified')
+    sw, sh, sfx, sfy, scx, scy = _intrinsics(frame['intrinsics'])
+    cam = contract['camera']
+    tw, th, tfx, tfy, tcx, tcy = _intrinsics(cam)
+    if sfx < tfx * (1. - SOURCE_RESOLUTION_TOLERANCE) or sfy < tfy * (1. - SOURCE_RESOLUTION_TOLERANCE):
+        raise InputError('source intrinsics fx=%.3f fy=%.3f are coarser than the trained camera fx=%.3f fy=%.3f; '
+                         'feed the aligned stream at (at least) the trained angular resolution' % (sfx, sfy, tfx, tfy))
+    rgb = np.asarray(frame['rgb'])
+    z = np.asarray(frame['depth_z_m'])
+    invalid = np.asarray(frame['invalid'])
+    if rgb.shape != (sh, sw, 3) or rgb.dtype != np.uint8:
+        raise InputError('rgb must be aligned uint8 RGB [H,W,3]')
+    if z.shape != (sh, sw) or not np.issubdtype(z.dtype, np.floating):
+        raise InputError('depth_z_m must be floating optical metres [H,W]')
+    if invalid.shape != z.shape or invalid.dtype != np.bool_:
+        raise InputError('invalid must be a same-frame bool mask [H,W]')
+    mount = _finite(frame['mount_flu_m'], (3,), 'mount_flu_m')
+    optical = _finite(frame['camera_to_body_rotation'], (3, 3), 'camera_to_body_rotation')
+    if not np.allclose(optical.T @ optical, np.eye(3), atol=1e-6) or not np.isclose(np.linalg.det(optical), 1):
+        raise InputError('camera_to_body_rotation must be a proper FLU rotation')
+    cy, sy = math.cos(yaw), math.sin(yaw)
+    yaw_r = np.array([[cy, -sy, 0], [sy, cy, 0], [0, 0, 1.]])
+    rel = yaw_r.T @ body_r
+    rotation = rel @ optical                   # 3x3 on the CPU, shared by every backend
+    offset = rel @ mount - np.asarray(cam['translation_m'])
+    depth = contract['depth']
+    src_invalid, src_no_return = _source_classes(frame, z, invalid, depth)
+    coverage = frame.get('coverage')
+    return {'src': (sw, sh, sfx, sfy, scx, scy), 'dst': (tw, th, tfx, tfy, tcx, tcy), 'rgb': rgb, 'z': z,
+            'R': [[float(rotation[i, j]) for j in range(3)] for i in range(3)],
+            'offset': [float(x) for x in offset], 'minz': float(depth['minz_m']), 'maxz': float(depth['maxz_m']),
+            'src_invalid': src_invalid, 'src_no_return': src_no_return,
+            'coverage': None if coverage is None else np.asarray(coverage),
+            'level': bool(np.allclose(rotation, np.eye(3), atol=1e-8) and np.allclose(offset, 0, atol=1e-8))}
+
+
+@functools.lru_cache(maxsize=8)
+def _trained_grid(w, h, fx, fy, cx, cy):
+    """(tu, tv, cosine float64 [H, W]) of the trained camera, computed once on the CPU (read only)."""
+    tu, tv = np.meshgrid((np.arange(w)-cx)/fx, (np.arange(h)-cy)/fy)
+    cosine = 1 / np.sqrt(1+tu*tu+tv*tv)
+    for a in (tu, tv, cosine):
+        a.flags.writeable = False
+    return tu, tv, cosine
+
+
+def _v2_rows(R, a, b, c, out=None):
+    """[(R[i][0]*a + R[i][1]*b) + R[i][2]*c (+ out[i])] for i = 0..2: the fixed v2 order (numpy and torch alike)."""
+    rows = []
+    for i in range(3):
+        r = (R[i][0]*a + R[i][1]*b) + R[i][2]*c
+        rows.append(r if out is None else r + out[i])
+    return rows
+
+
+def _v2_cols(R, a, b, c):
+    """[(a*R[0][j] + b*R[1][j]) + c*R[2][j]] for j = 0..2: a level ray -> the source camera, fixed order."""
+    return [(a*R[0][j] + b*R[1][j]) + c*R[2][j] for j in range(3)]
+
+
+def _v2_finish(P, out_rgb, out_z, hit, out_invalid, imaged, holes_count, device='cpu'):
+    tw, th = P['dst'][:2]
+    _, _, cosine = _trained_grid(*P['dst'])
+    out_no_return = ~hit & ~out_invalid
+    ranges = np.full((th, tw), P['maxz'], np.float64)
+    np.divide(out_z, cosine, out=ranges, where=hit)
+    ranges = np.minimum(ranges, P['maxz']).astype(np.float32)
+    sw, sh = P['src'][:2]
+    return (out_rgb.transpose(2, 0, 1)[None].astype(np.float32)/255., ranges[None], out_invalid[None],
+            out_no_return[None], cosine.astype(np.float32),
+            {'projection': 'measured-point-min-valid', 'arithmetic': 'v2-fixed-order-float64', 'device': device,
+             'level_camera': P['level'],
+             'sensor_invalid_pixels': int(out_invalid.sum()), 'no_return_pixels': int(out_no_return.sum()),
+             'valid_pixels': int(hit.sum()), 'pixels': th*tw, 'source_pixels': sh*sw,
+             'imaged_pixels': int(imaged.sum()), 'unsampled_imaged_pixels': int(holes_count),
+             'coverage_mask': P['coverage'] is not None, 'synthetic_noise_applied': False})
+
+
+def _holes_error(n):
+    return InputError('%d trained pixels inside the source image received no source sample (source too coarse '
+                      'for the trained camera at this attitude); frame refused' % int(n))
+
+
+def _v2_splat_np(d0, d1, d2, dst, offset=False):
+    tw, th, tfx, tfy, tcx, tcy = dst
+    sel = np.flatnonzero(d0 > 1e-6)
+    a0, a1, a2 = d0[sel], d1[sel], d2[sel]
+    xf = -a1/a0*tfx + tcx
+    yf = -a2/a0*tfy + tcy
+    xx = np.floor(xf + .5)
+    yy = np.floor(yf + .5)
+    keep = (xx >= 0) & (xx < tw) & (yy >= 0) & (yy < th)
+    xi, yi = xx[keep].astype(np.int64), yy[keep].astype(np.int64)
+    if offset:
+        dx, dy = xf[keep] - xx[keep], yf[keep] - yy[keep]
+        return sel[keep], yi*tw + xi, dx*dx + dy*dy
+    return sel[keep], yi*tw + xi
+
+
+def project_rgbd_min_valid(frame, state, contract):
+    """CAM-S2 projection, runtime v2 canonical arithmetic on the CPU (numpy float64). project_rgbd_min_valid_cuda is
+    bit-identical (tests/test_camera_runtime_cams2.py). Semantics: project_rgbd_min_valid_reference (v1)."""
+    P = _projection_inputs(frame, state, contract)
+    sw, sh, sfx, sfy, scx, scy = P['src']
+    tw, th = P['dst'][:2]
+    R, rgb_flat = P['R'], P['rgb'].reshape(-1, 3)
+    u, v = _pixel_rays(sw, sh, sfx, sfy, scx, scy)
+    good = np.flatnonzero(~(P['src_invalid'] | P['src_no_return']))
+    zz = P['z'].reshape(-1)[good].astype(np.float64)
+    p0, p1, p2 = _v2_rows(R, zz, -u[good]*zz, -v[good]*zz, P['offset'])
+    selected, indices = _v2_splat_np(p0, p1, p2, P['dst'])
+    zs = p0[selected]
+    level_valid = np.flatnonzero((zs >= P['minz']) & (zs <= P['maxz']))
+    indices, zs = indices[level_valid], zs[level_valid]
+    pixels, pos = _first_min_per_pixel(indices, zs, th*tw)
+    hit = np.zeros(th*tw, bool)
+    hit[pixels] = True
+    hit = hit.reshape(th, tw)
+    out_z = np.zeros((th, tw), np.float64)
+    out_rgb = np.zeros((th, tw, 3), np.uint8)
+    out_z.flat[pixels] = zs[pos]
+    out_rgb.reshape(-1, 3)[pixels] = rgb_flat[good[selected[level_valid[pos]]]]
+    invalid_src = np.flatnonzero(P['src_invalid'])
+    ui, vi = -u[invalid_src], -v[invalid_src]
+    r0, r1, r2 = _v2_rows(R, np.ones(len(invalid_src)), ui, vi)
+    ray_selected, ray_indices, ray_offset = _v2_splat_np(r0, r1, r2, P['dst'], offset=True)
+    rayed = np.zeros(th*tw, bool)
+    rayed[ray_indices] = True
+    tu, tv, _ = _trained_grid(*P['dst'])
+    s0, s1, s2 = _v2_cols(R, np.ones((th, tw)), -tu, -tv)
+    ahead = s0 > 1e-9
+    with np.errstate(divide='ignore', invalid='ignore'):
+        den = np.where(ahead, s0, 1.)
+        xs = np.where(ahead, -s1/den*sfx + scx, -10.)
+        ys = np.where(ahead, -s2/den*sfy + scy, -10.)
+    imaged = ahead & (xs >= .5) & (xs <= sw-1.5) & (ys >= .5) & (ys <= sh-1.5)
+    cov = P['coverage']
+    if cov is not None:
+        imaged &= cov[np.clip(np.floor(ys+.5).astype(int), 0, sh-1), np.clip(np.floor(xs+.5).astype(int), 0, sw-1)]
+        covered = np.flatnonzero(cov)
+        c0, c1, c2 = _v2_rows(R, np.ones(len(covered)), -u[covered], -v[covered])
+    else:
+        c0, c1, c2 = _v2_rows(R, np.ones(sh*sw), -u, -v)
+    _, dir_indices = _v2_splat_np(c0, c1, c2, P['dst'])
+    direction_hit = np.zeros(th*tw, bool)
+    direction_hit[dir_indices] = True
+    sampled = direction_hit.reshape(th, tw)
+    enclosed = ((np.maximum.accumulate(sampled, axis=0) & np.maximum.accumulate(sampled[::-1], axis=0)[::-1])
+                | (np.maximum.accumulate(sampled, axis=1) & np.maximum.accumulate(sampled[:, ::-1], axis=1)[:, ::-1]))
+    holes = imaged & ~sampled & enclosed
+    if holes.any():
+        raise _holes_error(holes.sum())
+    out_invalid = rayed.reshape(th, tw) & ~hit
+    need = np.flatnonzero(out_invalid.flat[ray_indices])
+    ray_pixels, ray_pos = _first_min_per_pixel(ray_indices[need], ray_offset[need], th*tw)
+    out_rgb.reshape(-1, 3)[ray_pixels] = rgb_flat[invalid_src[ray_selected[need[ray_pos]]]]
+    return _v2_finish(P, out_rgb, out_z, hit, out_invalid, imaged, 0)
+
+
+class CudaProjector:
+    """Runtime v2 projection on a CUDA device (torch float64), bit-identical to project_rgbd_min_valid.
+
+    Grids and the cosine come from the CPU functions above (uploaded once per intrinsics); every per-frame float64
+    operation is a plain elementwise torch op in v2 order (no addcmul / alpha / matmul / pow), so no fused multiply-add
+    is formed. warm_up() runs the first-call initialisation (1.2-1.9 s measured on the Orin NX) before flight."""
+
+    def __init__(self, torch, device='cuda'):
+        if not torch.cuda.is_available():
+            raise RuntimeError('CUDA is not available for the v2 projector')
+        self.torch, self.device = torch, torch.device(device)
+        self._grids = {}
+
+    def _grid(self, key, make):
+        if key not in self._grids:
+            self._grids[key] = tuple(self.torch.from_numpy(np.array(a)).to(self.device) for a in make())   # writable copy
+        return self._grids[key]
+
+    def _splat(self, d0, d1, d2, dst, offset=False):
+        torch = self.torch
+        tw, th, tfx, tfy, tcx, tcy = dst
+        sel = torch.nonzero(d0 > 1e-6).squeeze(1)
+        a0, a1, a2 = d0[sel], d1[sel], d2[sel]
+        xf = -a1/a0*tfx + tcx
+        yf = -a2/a0*tfy + tcy
+        xx = torch.floor(xf + .5)
+        yy = torch.floor(yf + .5)
+        keep = (xx >= 0) & (xx < tw) & (yy >= 0) & (yy < th)
+        xi, yi = xx[keep].to(torch.int64), yy[keep].to(torch.int64)
+        if offset:
+            dx, dy = xf[keep] - xx[keep], yf[keep] - yy[keep]
+            return sel[keep], yi*tw + xi, dx*dx + dy*dy
+        return sel[keep], yi*tw + xi
+
+    def _first_min(self, indices, keys, size):
+        torch = self.torch
+        n = int(indices.numel())
+        if not n:
+            empty = torch.zeros(0, dtype=torch.int64, device=self.device)
+            return empty, empty
+        best = torch.full((size,), math.inf, dtype=keys.dtype, device=self.device)
+        best = best.scatter_reduce(0, indices, keys, reduce='amin', include_self=True)
+        candidates = torch.nonzero(keys == best[indices]).squeeze(1)
+        first = torch.full((size,), n, dtype=torch.int64, device=self.device)
+        first = first.scatter_reduce(0, indices[candidates], candidates, reduce='amin', include_self=True)
+        pixels = torch.nonzero(first < n).squeeze(1)
+        return pixels, first[pixels]
+
+    def __call__(self, frame, state, contract):
+        torch, dev = self.torch, self.device
+        P = _projection_inputs(frame, state, contract)
+        sw, sh, sfx, sfy, scx, scy = P['src']
+        tw, th = P['dst'][:2]
+        R = P['R']
+        u, v = self._grid(('src',) + P['src'], lambda: _pixel_rays(sw, sh, sfx, sfy, scx, scy))
+        tu, tv = self._grid(('dst',) + P['dst'], lambda: _trained_grid(*P['dst'])[:2])
+        to = lambda a: torch.from_numpy(np.ascontiguousarray(a)).to(dev)    # noqa: E731
+        rgb_flat = to(P['rgb'].reshape(-1, 3))
+        src_invalid = to(P['src_invalid'].reshape(-1))
+        good = torch.nonzero(~(src_invalid | to(P['src_no_return'].reshape(-1)))).squeeze(1)
+        zz = to(P['z'].reshape(-1))[good].to(torch.float64)
+        p0, p1, p2 = _v2_rows(R, zz, -u[good]*zz, -v[good]*zz, P['offset'])
+        selected, indices = self._splat(p0, p1, p2, P['dst'])
+        zs = p0[selected]
+        level_valid = torch.nonzero((zs >= P['minz']) & (zs <= P['maxz'])).squeeze(1)
+        indices, zs = indices[level_valid], zs[level_valid]
+        pixels, pos = self._first_min(indices, zs, th*tw)
+        hit = torch.zeros(th*tw, dtype=torch.bool, device=dev)
+        hit[pixels] = True
+        out_z = torch.zeros(th*tw, dtype=torch.float64, device=dev)
+        out_rgb = torch.zeros((th*tw, 3), dtype=torch.uint8, device=dev)
+        out_z[pixels] = zs[pos]
+        out_rgb[pixels] = rgb_flat[good[selected[level_valid[pos]]]]
+        invalid_src = torch.nonzero(src_invalid).squeeze(1)
+        r0, r1, r2 = _v2_rows(R, torch.ones(int(invalid_src.numel()), dtype=torch.float64, device=dev),
+                              -u[invalid_src], -v[invalid_src])
+        ray_selected, ray_indices, ray_offset = self._splat(r0, r1, r2, P['dst'], offset=True)
+        rayed = torch.zeros(th*tw, dtype=torch.bool, device=dev)
+        rayed[ray_indices] = True
+        s0, s1, s2 = _v2_cols(R, torch.ones((th, tw), dtype=torch.float64, device=dev), -tu, -tv)
+        ahead = s0 > 1e-9
+        one = torch.ones_like(s0)
+        den = torch.where(ahead, s0, one)
+        xs = torch.where(ahead, -s1/den*sfx + scx, one*-10.)
+        ys = torch.where(ahead, -s2/den*sfy + scy, one*-10.)
+        imaged = ahead & (xs >= .5) & (xs <= sw-1.5) & (ys >= .5) & (ys <= sh-1.5)
+        if P['coverage'] is not None:
+            cov = to(P['coverage'])
+            imaged &= cov[torch.clamp(torch.floor(ys+.5).to(torch.int64), 0, sh-1),
+                          torch.clamp(torch.floor(xs+.5).to(torch.int64), 0, sw-1)]
+            covered = torch.nonzero(cov.reshape(-1)).squeeze(1)
+            c0, c1, c2 = _v2_rows(R, torch.ones(int(covered.numel()), dtype=torch.float64, device=dev),
+                                  -u[covered], -v[covered])
+        else:
+            c0, c1, c2 = _v2_rows(R, torch.ones(sh*sw, dtype=torch.float64, device=dev), -u, -v)
+        _, dir_indices = self._splat(c0, c1, c2, P['dst'])
+        sampled = torch.zeros(th*tw, dtype=torch.bool, device=dev)
+        sampled[dir_indices] = True
+        sampled = sampled.reshape(th, tw)
+        s8 = sampled.to(torch.uint8)
+
+        def acc(x, dim):
+            return torch.cummax(x, dim=dim).values.bool()
+        enclosed = ((acc(s8, 0) & torch.flip(acc(torch.flip(s8, (0,)), 0), (0,)))
+                    | (acc(s8, 1) & torch.flip(acc(torch.flip(s8, (1,)), 1), (1,))))
+        holes = int((imaged & ~sampled & enclosed).sum().item())
+        if holes:
+            raise _holes_error(holes)
+        out_invalid = rayed & ~hit
+        need = torch.nonzero(out_invalid[ray_indices]).squeeze(1)
+        ray_pixels, ray_pos = self._first_min(ray_indices[need], ray_offset[need], th*tw)
+        out_rgb[ray_pixels] = rgb_flat[invalid_src[ray_selected[need[ray_pos]]]]
+        return _v2_finish(P, out_rgb.reshape(th, tw, 3).cpu().numpy(), out_z.reshape(th, tw).cpu().numpy(),
+                          hit.reshape(th, tw).cpu().numpy(), out_invalid.reshape(th, tw).cpu().numpy(),
+                          imaged.cpu().numpy(), 0, device='cuda')
+
+    def warm_up(self, frame, state, contract, repeats=3):
+        """First-call CUDA initialisation before flight; returns the wall time of each call (s)."""
+        import time
+        times = []
+        for _ in range(repeats):
+            t = time.perf_counter()
+            self(frame, state, contract)
+            self.torch.cuda.synchronize(self.device)
+            times.append(time.perf_counter() - t)
+        return times
 
 def height_band(state, contract):
     """Whether the camera height lies inside the enabled floor/ceiling filter band; pure, no history.
@@ -1406,10 +1707,12 @@ class CameraPolicyRuntime:
     cams2 = None
     threads = None            # set by __init__ (pin_cpu_threads)
 
-    def __init__(self, contract, torch_threads=None):
+    def __init__(self, contract, torch_threads=None, projection_device=None):
         """torch_threads: None keeps the process's torch thread settings (tests share one process); an int pins torch
         intra-op threads (and inter-op threads where torch still allows it) for a flight / replay process. The vehicle
-        side measured 337 ms capture -> result with 1 thread against 898 ms with 8 on the Orin NX (2026-11-26)."""
+        side measured 337 ms capture -> result with 1 thread against 898 ms with 8 on the Orin NX (2026-11-26).
+        projection_device: None or 'cpu' -> the CAM-S2 v2 projection in numpy; 'cuda' -> CudaProjector (bit-identical,
+        float64); call warm_up_projection() before flight (first CUDA call 1.2-1.9 s on the Orin NX)."""
         from camera_policy_contract import validate_contract
         # Callers cannot change the checked geometry/environment after loading.
         contract = json.loads(json.dumps(contract, allow_nan=False))
@@ -1427,7 +1730,11 @@ class CameraPolicyRuntime:
         self.contract = contract
         import torch
         self.torch = torch
+        if projection_device not in (None, 'cpu', 'cuda'):            # review r1 P3-4: before any thread change
+            raise ValueError("projection_device must be None, 'cpu' or 'cuda'")
         self.threads = pin_cpu_threads(torch, torch_threads)
+        self.projection_device = projection_device or 'cpu'
+        self._project = CudaProjector(torch) if projection_device == 'cuda' else project_rgbd_min_valid
         # Bare packages expose only simulator-free leaf modules, without Warp.
         for name, rel in (('aerial_gym', 'aerial_gym'), ('aerial_gym.task', 'aerial_gym/task'),
                           ('aerial_gym.task.navrl_task', 'aerial_gym/task/navrl_task'),
@@ -1711,7 +2018,8 @@ class CameraPolicyRuntime:
         (= MaxZ), the training's no-return encoding. No blob_near, no goal carve-out (an invalid goal pixel already
         fails the detector's depth < max_camera_range gate, as in training) and no RGB blanking: training never blanks
         RGB at invalid depth."""
-        rgb, ranges, invalid, no_return, cosine, projection = project_rgbd_min_valid(frame, state, self.contract)
+        project = getattr(self, '_project', project_rgbd_min_valid)       # instances built without __init__: CPU
+        rgb, ranges, invalid, no_return, cosine, projection = project(frame, state, self.contract)
         ranges, invalid, no_return, bands = remove_floor_and_ceiling(ranges, invalid, no_return, cosine,
                                                                      state, self.contract)
         far = np.float32(self.perception.max_camera_range)
@@ -1724,6 +2032,18 @@ class CameraPolicyRuntime:
                   'height_filter': bands, 'rgb_blanked_pixels': 0}
         torch = self.torch
         return torch.from_numpy(np.ascontiguousarray(rgb)), torch.from_numpy(ranges), counts, projection
+
+    def warm_up_projection(self, frame, state, repeats=3):
+        """Run the CAM-S2 projection `repeats` times on a real frame before flight; returns the wall times (s)."""
+        if isinstance(self._project, CudaProjector):
+            return self._project.warm_up(frame, state, self.contract, repeats)
+        import time
+        out = []
+        for _ in range(repeats):
+            t = time.perf_counter()
+            self._project(frame, state, self.contract)
+            out.append(time.perf_counter() - t)
+        return out
 
     def _govern(self, cmd, perception=None):
         """The trained no_lidar riskcap governor on a vehicle-frame command [1, 2] m/s (navrl_sensor_ablation
@@ -1973,6 +2293,7 @@ def main(argv=None):
     with np.load(args.replay, allow_pickle=False) as data:
         report = replay(runtime, data, args.output)
     report['threads'] = runtime.threads
+    report['projection_device'] = runtime.projection_device
     print(json.dumps(report, allow_nan=False))
     return 0
 

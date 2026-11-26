@@ -29,6 +29,8 @@ TESTS = ROOT / "tests"
 # Test ids (module, module.Class or module.Class.test) that cannot run without a CUDA device,
 # with the reason. Keep this list exact: every entry must match a discovered test.
 GPU_REQUIRED = {
+    "test_camera_runtime_cams2.CudaV2Equivalence":
+        "compares the CUDA (torch float64) CAM-S2 projection with the CPU one; needs a CUDA device",
     "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement":
         "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
     "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch":

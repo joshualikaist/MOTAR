@@ -726,9 +726,6 @@ class RuntimeIntegration(unittest.TestCase):
         self.assertGreater(rep['no_return'] + rep['sensor_invalid'], 0)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
 
 def _quat(roll, pitch, yaw):
     cr, sr, cp, sp = math.cos(roll / 2), math.sin(roll / 2), math.cos(pitch / 2), math.sin(pitch / 2)
@@ -737,7 +734,7 @@ def _quat(roll, pitch, yaw):
 
 
 class LatencyPortEquivalence(unittest.TestCase):
-    """2026-11-26 latency port: project_rgbd_min_valid must equal project_rgbd_min_valid_reference (the committed v1
+    """2026-11-26 latency port: project_rgbd_min_valid_v1_fast must equal project_rgbd_min_valid_reference (the committed v1
     arithmetic) array for array, bit for bit, including refusals and ties (quantised depths)."""
 
     @staticmethod
@@ -787,7 +784,7 @@ class LatencyPortEquivalence(unittest.TestCase):
             roll, pitch = (0., 0.) if i % 7 == 0 else (rng.normal(0, .15), rng.normal(0, .15))
             s = dict(STATE, quat_xyzw=_quat(roll, pitch, rng.uniform(-3, 3)))
             a = self._run(R.project_rgbd_min_valid_reference, f, s, c)
-            b = self._run(R.project_rgbd_min_valid, f, s, c)
+            b = self._run(R.project_rgbd_min_valid_v1_fast, f, s, c)
             self._assert_same(a, b)
             kinds[a[0]] += 1
             kinds['tilted_ok'] += a[0] == 'ok' and (roll, pitch) != (0., 0.)
@@ -816,7 +813,7 @@ class LatencyPortEquivalence(unittest.TestCase):
         f = frame(z, np.zeros((468, 624), bool), rng.integers(0, 256, (468, 624, 3), dtype=np.uint8),
                   full_res_intrinsics(cam), mount=(0., 0., 0.))
         f['mount_flu_m'] = [.08, 0., .03]
-        good = R.project_rgbd_min_valid(f, STATE, c)
+        good = R.project_rgbd_min_valid_v1_fast(f, STATE, c)
         original = R._first_min_per_pixel
 
         def last_tie(indices, keys, size):
@@ -825,7 +822,7 @@ class LatencyPortEquivalence(unittest.TestCase):
             return pixels, rev[pos]
         R._first_min_per_pixel = last_tie
         try:
-            bad = R.project_rgbd_min_valid(f, STATE, c)
+            bad = R.project_rgbd_min_valid_v1_fast(f, STATE, c)
         finally:
             R._first_min_per_pixel = original
         self.assertTrue(np.array_equal(good[1], bad[1]))
@@ -868,3 +865,147 @@ class ThreadPinning(unittest.TestCase):
     def test_ros2_node_pins_one_thread(self):
         text = (ROOT / 'tools' / 'camera_ros2_node.py').read_text()
         self.assertIn('CameraPolicyRuntime(contract, torch_threads=1)', text)
+
+
+def _random_frames(seed, count, cam):
+    """Random CAM-S2 frames and states: tilted and level, coverage masks, tie-heavy depths, trained-resolution sources
+    (refused when tilted)."""
+    rng = np.random.default_rng(seed)
+    out = []
+    for i in range(count):
+        h, w = 468, 624
+        z = (rng.choice([.2, .5, 1., 2., 3.3, 5., 9.9, 25.], size=(h, w)) if i % 3 == 0
+             else rng.uniform(0., 25., (h, w)))
+        z[rng.random((h, w)) < .05] = np.nan
+        f = frame(z, rng.random((h, w)) < rng.uniform(0, .5), rng.integers(0, 256, (h, w, 3), dtype=np.uint8),
+                  full_res_intrinsics(cam, cy=246.7 if i % 2 else None))
+        if i % 4 == 1:
+            cov = np.ones((h, w), bool)
+            cov[:int(rng.integers(1, 40))] = False
+            f['coverage'] = cov
+            f['depth_z_m'] = np.where(cov, f['depth_z_m'], np.nan).astype(np.float32)
+        if i % 6 == 2:
+            f = dict(f, intrinsics={'width': 312, 'height': 234, 'fx': cam['fx'], 'fy': cam['fy'], 'cx': cam['cx'],
+                                    'cy': cam['cy']}, depth_z_m=f['depth_z_m'][::2, ::2].copy(),
+                     invalid=f['invalid'][::2, ::2].copy(), rgb=f['rgb'][::2, ::2].copy())
+            f.pop('coverage', None)
+        roll, pitch = (0., 0.) if i % 7 == 0 else (rng.normal(0, .15), rng.normal(0, .15))
+        out.append((f, dict(STATE, quat_xyzw=_quat(roll, pitch, rng.uniform(-3, 3)))))
+    return out
+
+
+class CanonicalV2(unittest.TestCase):
+    """Runtime v2 (fixed-order float64, no matrix product) against v1: the same semantics; on any machine they may differ
+    only where a sample lies within rounding of a trained-pixel border, so a frame may differ in at most a few pixels
+    (on the maintainer's x86 workstation: none, 2026-11-26)."""
+
+    def test_v2_matches_v1_up_to_border_rounding(self):
+        c = geometry_contract()
+        n_ok = n_px = 0
+        for f, s in _random_frames(5, 24, c['camera']):
+            a = LatencyPortEquivalence._run(R.project_rgbd_min_valid_reference, f, s, c)
+            b = LatencyPortEquivalence._run(R.project_rgbd_min_valid, f, s, c)
+            self.assertEqual(a[0], b[0])
+            if a[0] == 'refused':
+                continue
+            n_ok += 1
+            differ = np.zeros(a[1][1].shape[1:], bool)
+            for x, y in zip(a[1][:4], b[1][:4]):
+                x, y = np.asarray(x)[0], np.asarray(y)[0]
+                differ |= (x != y).any(axis=0) if x.ndim == 3 else (x != y)
+            n_px = max(n_px, int(differ.sum()))
+        self.assertGreater(n_ok, 10)
+        self.assertLessEqual(n_px, 4)
+
+    def test_rows_and_cols_follow_the_fixed_order(self):
+        R3 = [[.1, .2, .3], [.4, .5, .6], [.7, .8, .9]]
+        a, b, c = np.array([1.5]), np.array([-2.25]), np.array([3.125])
+        rows = R._v2_rows(R3, a, b, c, [1., 2., 3.])
+        for i in range(3):
+            self.assertEqual(rows[i][0], ((R3[i][0]*1.5 + R3[i][1]*-2.25) + R3[i][2]*3.125) + (i + 1.))
+        cols = R._v2_cols(R3, a, b, c)
+        for j in range(3):
+            self.assertEqual(cols[j][0], (1.5*R3[0][j] + -2.25*R3[1][j]) + 3.125*R3[2][j])
+
+
+class CudaV2Equivalence(unittest.TestCase):
+    """GPU_REQUIRED (tools/run_tests.py): CudaProjector equals the CPU v2 projection bit for bit, refusals included."""
+
+    @classmethod
+    def setUpClass(cls):
+        import torch
+        if not torch.cuda.is_available():
+            raise RuntimeError('CudaV2Equivalence needs a CUDA device (GPU_REQUIRED profile)')
+        cls.cuda = R.CudaProjector(torch)
+
+    def test_bit_identical_to_cpu_v2(self):
+        c = geometry_contract()
+        kinds = {'ok': 0, 'refused': 0}
+        for f, s in _random_frames(9, 24, c['camera']):
+            a = LatencyPortEquivalence._run(R.project_rgbd_min_valid, f, s, c)
+            b = LatencyPortEquivalence._run(self.cuda, f, s, c)
+            if a[0] == 'ok':                                   # the report names the device; everything else equal
+                self.assertEqual((a[1][5]['device'], b[1][5]['device']), ('cpu', 'cuda'))
+                a = ('ok', a[1][:5] + (dict(a[1][5], device=None),))
+                b = ('ok', b[1][:5] + (dict(b[1][5], device=None),))
+            LatencyPortEquivalence._assert_same(self, a, b)
+            kinds[a[0]] += 1
+        self.assertGreater(kinds['ok'], 10)
+        self.assertGreater(kinds['refused'], 0)
+
+    def test_warm_up_returns_call_times(self):
+        c = geometry_contract()
+        f, s = _random_frames(1, 1, c['camera'])[0]
+        times = self.cuda.warm_up(f, s, c, repeats=2)
+        self.assertEqual(len(times), 2)
+        self.assertTrue(all(t > 0 for t in times))
+
+    def _intermediates(self, cuda):
+        """Review r1 P2-1: the v2 row and splat arithmetic, bitwise, on 200k random points (CPU numpy vs `cuda`)."""
+        import torch
+        rng = np.random.default_rng(31)
+        n = 200000
+        q, _ = np.linalg.qr(rng.normal(size=(3, 3)))
+        Rm = [[float(q[i, j]) for j in range(3)] for i in range(3)]
+        off = [float(x) for x in rng.normal(0, .1, 3)]
+        a, b, c = rng.uniform(.3, 12, n), rng.normal(0, 3, n), rng.normal(0, 3, n)
+        dst = (312, 234, 237.04, 236.73, 155.5, 116.5)
+        rows_np = R._v2_rows(Rm, a, b, c, off)
+        g = [torch.from_numpy(x).cuda() for x in (a, b, c)]
+        rows_t = R._v2_rows(Rm, g[0], g[1], g[2], off)
+        same_rows = all(np.array_equal(x, y.cpu().numpy()) for x, y in zip(rows_np, rows_t))
+        sp_np = R._v2_splat_np(*rows_np, dst, offset=True)
+        sp_t = cuda._splat(*rows_t, dst, offset=True)
+        same_splat = all(np.array_equal(x, y.cpu().numpy()) for x, y in zip(sp_np, sp_t))
+        return same_rows, same_splat, len(sp_np[0])
+
+    def test_intermediate_arithmetic_is_bitwise_identical(self):
+        same_rows, same_splat, kept = self._intermediates(self.cuda)
+        self.assertTrue(same_rows)
+        self.assertTrue(same_splat)
+        self.assertGreater(kept, 1000)
+
+    def test_reciprocal_division_mutant_is_caught(self):
+        """Negative control: a GPU splat that divides via a reciprocal (as torch does for tensor / scalar) differs."""
+        import torch
+
+        class Mutant(R.CudaProjector):
+            def _splat(self, d0, d1, d2, dst, offset=False):
+                tw, th, tfx, tfy, tcx, tcy = dst
+                sel = torch.nonzero(d0 > 1e-6).squeeze(1)
+                inv = 1. / d0[sel]
+                xf = -d1[sel]*inv*tfx + tcx
+                yf = -d2[sel]*inv*tfy + tcy
+                xx, yy = torch.floor(xf + .5), torch.floor(yf + .5)
+                keep = (xx >= 0) & (xx < tw) & (yy >= 0) & (yy < th)
+                xi, yi = xx[keep].to(torch.int64), yy[keep].to(torch.int64)
+                if offset:
+                    dx, dy = xf[keep] - xx[keep], yf[keep] - yy[keep]
+                    return sel[keep], yi*tw + xi, dx*dx + dy*dy
+                return sel[keep], yi*tw + xi
+        _, same_splat, _ = self._intermediates(Mutant(torch))
+        self.assertFalse(same_splat)
+
+
+if __name__ == '__main__':
+    unittest.main()
