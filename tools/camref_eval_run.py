@@ -1,4 +1,5 @@
-"""Runner of CAM-REF stage 1: Policy F, CAM-K1 (seed 1) and CAM-S2b-FT on one protocol ladder at 205 bars
+"""Runner of CAM-REF stage 1 (stage 2, docs/plans/prereg_camonly_ref_stage2_2026-11-26.md, runs this module through
+tools/camref_stage2_run.py, which replaces the unit constants; its rungs F4D..F4A come from the factor table F_FACTORS): Policy F, CAM-K1 (seed 1) and CAM-S2b-FT on one protocol ladder at 205 bars
 (preregistration docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md, draft in ~/motar_tmp/camref_20261126/draft/).
 
 Protocol points: P_K (CAM-K1-E / GR-0: A3 start, E2 target, 0.5 m swept capture, no delay, nominal vehicle and gains,
@@ -191,12 +192,45 @@ def f_task_rules(seed):
     return d
 
 
-def f8_extra(seed):
-    d = dict(DELAY, NAVRL_CAMREF_DELAY_SEED=module_seed("NAVRL_CAMS2_DELAY_SEED", seed), **VEH_RAND,
-             NAVRL_VEH_RAND_SEED=module_seed("NAVRL_VEH_RAND_SEED", seed), **GAIN_RAND,
-             NAVRL_GAIN_RAND_SEED=module_seed("NAVRL_GAIN_RAND_SEED", seed), **YAWCLIP, **GEOMETRY)
-    d["NAVRL_SPEED_GOVERNOR_FREE_MPS"] = "2.5"
+# The P_T -> P_S factors of Policy F (stage 2 adds each one alone to F4; F8 has all five):
+#   delay = U{1,2} steps; rand = vehicle + gain randomisation; yaw = clip 1.047 rad/s (scale kept 3.0);
+#   free = governor FREE 2.5 m/s; geom = altitude 1.5 m / camera mount 0.08 m.
+F_FACTOR_KEYS = ("delay", "rand", "yaw", "free", "geom")
+F_FACTORS = {"F4": (), "F4D": ("delay",), "F4R": ("rand",), "F4Y": ("yaw",), "F4V": ("free",), "F4A": ("geom",),
+             "F8": F_FACTOR_KEYS}
+
+
+def f_factor_delta(factors, seed):
+    """The keys of the named P_T -> P_S factors (key order as F8 had it in stage 1)."""
+    unknown = set(factors) - set(F_FACTOR_KEYS)
+    if unknown:
+        raise ValueError("unknown factor(s) %s" % sorted(unknown))
+    d = {}
+    if "delay" in factors:
+        d.update(DELAY, NAVRL_CAMREF_DELAY_SEED=module_seed("NAVRL_CAMS2_DELAY_SEED", seed))
+    if "rand" in factors:
+        d.update(VEH_RAND, NAVRL_VEH_RAND_SEED=module_seed("NAVRL_VEH_RAND_SEED", seed), **GAIN_RAND)
+        d["NAVRL_GAIN_RAND_SEED"] = module_seed("NAVRL_GAIN_RAND_SEED", seed)
+    if "yaw" in factors:
+        d.update(YAWCLIP)
+    if "geom" in factors:
+        d.update(GEOMETRY)
+    if "free" in factors:
+        d["NAVRL_SPEED_GOVERNOR_FREE_MPS"] = "2.5"
     return d
+
+
+def f8_extra(seed):
+    return f_factor_delta(F_FACTOR_KEYS, seed)
+
+
+S2_FACTOR_RUNGS = ("F4D", "F4R", "F4Y", "F4V", "F4A")
+
+
+def factors(arm_or_rung):
+    """The P_T -> P_S factors of a rung (K1S has F8's; every other rung none)."""
+    r = arm_or_rung if arm_or_rung in F_FACTORS or arm_or_rung in RUNG_PROTOCOL else rung(arm_or_rung)
+    return F_FACTOR_KEYS if r == "K1S" else F_FACTORS.get(r, ())
 
 
 def rung_delta(rung, seed):
@@ -207,10 +241,8 @@ def rung_delta(rung, seed):
         return dict(A3_VIEW, **RECORD, **K1_PERCEPTION)
     if rung in ("F3", "K1T"):
         d = f_task_rules(seed)
-    elif rung in ("F4",):
-        d = dict(f_task_rules(seed), NAVRL_DYNAMIC_MESH_TREATMENT="mesh_flat")
-    elif rung in ("F8",):
-        d = dict(f_task_rules(seed), NAVRL_DYNAMIC_MESH_TREATMENT="mesh_flat", **f8_extra(seed))
+    elif rung in F_FACTORS:                                      # F4, the stage-2 single-factor rungs, F8
+        d = dict(f_task_rules(seed), NAVRL_DYNAMIC_MESH_TREATMENT="mesh_flat", **f_factor_delta(F_FACTORS[rung], seed))
     elif rung == "K1S":
         d = dict(f_task_rules(seed), NAVRL_DYNAMIC_MESH_TREATMENT="mesh_flat", **f8_extra(seed))
     elif rung == "S0":
@@ -268,8 +300,17 @@ ARMS = {"F0ID": {"policy": "F", "rung": "F0", "label": "CAMREF_F0ID"},
         "S6": {"policy": "S2B", "rung": "S6", "label": "CAMREF_S6"},
         "K1ID": {"policy": "K1", "rung": "K1PK", "label": "CAMREF_K1ID"},
         "K1T": {"policy": "K1", "rung": "K1T", "label": "CAMREF_K1T"},
-        "K1S": {"policy": "K1", "rung": "K1S", "label": "CAMREF_K1S"}}
-ARM_BASE = {"F8_smoke": "F8", "K1S_smoke": "K1S", "S6_smoke": "S6"}
+        "K1S": {"policy": "K1", "rung": "K1S", "label": "CAMREF_K1S"},
+        # stage 2 (docs/plans/prereg_camonly_ref_stage2_2026-11-26.md): F4 plus one factor; F4 / F8 identity reruns
+        "F4D": {"policy": "F", "rung": "F4D", "label": "CAMREF_F4D"},
+        "F4R": {"policy": "F", "rung": "F4R", "label": "CAMREF_F4R"},
+        "F4Y": {"policy": "F", "rung": "F4Y", "label": "CAMREF_F4Y"},
+        "F4V": {"policy": "F", "rung": "F4V", "label": "CAMREF_F4V"},
+        "F4A": {"policy": "F", "rung": "F4A", "label": "CAMREF_F4A"},
+        "F4ID": {"policy": "F", "rung": "F4", "label": "CAMREF_F4ID"},
+        "F8ID": {"policy": "F", "rung": "F8", "label": "CAMREF_F8ID"}}
+ARM_BASE = {"F8_smoke": "F8", "K1S_smoke": "K1S", "S6_smoke": "S6", "F4D_smoke": "F4D", "F4R_smoke": "F4R",
+            "F4Y_smoke": "F4Y", "F4V_smoke": "F4V", "F4A_smoke": "F4A"}
 DENSITY = 205
 SEEDS = (4501, 4502, 4503)
 NUM_ENVS, QUOTA, SMOKE_QUOTA = 128, 8, 1
@@ -337,8 +378,13 @@ def rung(arm):
     return cfg(arm)["rung"]
 
 
+def camref_rules_on(arm):
+    """The CAM-REF rule module (capture / contact, and any delay / geometry) is installed: F and K1 at P_T / P_S."""
+    return rung(arm) in ("F3", "K1T", "K1S") or rung(arm) in F_FACTORS
+
+
 def visible_start(arm):
-    return rung(arm) in ("F3", "F4", "F8", "K1T", "K1S", "S0", "S3")
+    return camref_rules_on(arm) or rung(arm) in ("S0", "S3")
 
 
 def cams2_on(arm):
@@ -416,6 +462,11 @@ RUNG_PROTOCOL = {
     "F3": dict(P_T, target="analytic", **F_STACK),
     "F4": dict(P_T, **F_STACK),
     "F8": dict(P_S, **dict(F_STACK, yaw="clip_1.047", free_mps=2.5)),
+    "F4D": dict(P_T, **dict(F_STACK, delay=(1, 2))),                 # stage 2: F4 plus one factor each
+    "F4R": dict(P_T, **dict(F_STACK, veh_rand=True, gain_rand=True)),
+    "F4Y": dict(P_T, **dict(F_STACK, yaw="clip_1.047")),
+    "F4V": dict(P_T, **dict(F_STACK, free_mps=2.5)),
+    "F4A": dict(P_T, **dict(F_STACK, altitude_mount=(1.5, 0.08))),
     "K1PK": dict(P_K, target="analytic", **K1_STACK),
     "K1T": dict(P_T, **K1_STACK),
     "K1S": dict(P_S, **dict(K1_STACK, yaw="clip_1.047", free_mps=2.5)),
@@ -632,7 +683,7 @@ def condition_problems(cond, arm, train_env):
     want = {"num_envs": NUM_ENVS, "episode_len_steps": 600, "full_goal_distribution": True,
             "fov_curriculum_saturated": True, "speed_governor_mode": "riskcap",
             "goal_dist_max_m": 12.0 if visible_start(arm) else 28.0,
-            "speed_governor_free_mps": 2.5 if (policy(arm) == "S2B" or rung(arm) in ("F8", "K1S")) else 3.53553390593,
+            "speed_governor_free_mps": 2.5 if (policy(arm) == "S2B" or "free" in factors(arm)) else 3.53553390593,
             "p9_empirical_error_enabled": policy(arm) == "S2B",
             "d8_dynamic_mesh_treatment": rung(arm) not in ("F0", "F3", "K1PK")}
     p = ["result condition %s is %r, expected %r" % (k, cond.get(k), v) for k, v in want.items() if cond.get(k) != v]
@@ -730,17 +781,28 @@ def expected_installed(arm):
     """What camref_entry itself installs for the arm (the delegate's installs are in realveh_receipt.json)."""
     r, pol = rung(arm), policy(arm)
     out = []
-    if pol == "F" and r == "F8":
+    if pol == "F" and "rand" in factors(arm):
         out.append("vehicle_rand")
-    if r in ("F3", "F4", "F8", "K1T", "K1S"):
+    if camref_rules_on(arm):
         out.append("camref_rules")
     if camref_record(arm):
         out.append("camref_record")
-    if pol == "F" and r == "F8":
+    if pol == "F" and "yaw" in factors(arm):
         out.append("yawclip")
     if pol == "F" and visible_start(arm):
         out += ["inview_start", "inview_diag"]
     return out
+
+
+def geometry_problems(rec, arm):
+    """Stage-2 review r1 P2-1: the rule module's own record of the geometry it applied (camref_receipt camref_rules
+    config_after): altitude 1.5 m / camera x 0.08 m with the geometry factor, the task's 1.0 m / 0.10 m without."""
+    if not camref_rules_on(arm):
+        return []
+    after = ((rec.get("camref_rules") or {}).get("config_after")) or {}
+    want = (1.5, 0.08) if "geom" in factors(arm) else (1.0, 0.10)
+    got = (after.get("flight_altitude"), (after.get("camera_translation") or [None])[0])
+    return [] if got == want else ["camref rules applied altitude / camera x %r, rung %s needs %r" % (got, rung(arm), want)]
 
 
 def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, train_env, root=ROOT):
@@ -767,6 +829,7 @@ def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, t
                            "launcher snapshot")
     p += snapshot_problems(rec.get("env_navrl"), arm, density, seed, cell_dir, ckpt_sha, quota, train_env,
                            "entry env_navrl")
+    p += geometry_problems(rec, arm)
     if policy(arm) != "F":
         try:
             rv = json.loads((cell_dir / "realveh_receipt.json").read_text())
@@ -794,8 +857,8 @@ def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, t
             p.append("realveh receipt names another realveh_entry")
     log = cell_dir / "cell.log"
     text = log.read_text(errors="replace") if log.is_file() else ""
-    have = {"[camref] {": camref_record(arm) or rung(arm) in ("F3", "F4", "F8", "K1T", "K1S"),
-            "[veh-rand] ": rung(arm) in ("F8", "K1S", "S0"), "[yawclip] ": rung(arm) in ("F8", "K1S"),
+    have = {"[camref] {": camref_record(arm) or camref_rules_on(arm),
+            "[veh-rand] ": "rand" in factors(arm) or rung(arm) == "S0", "[yawclip] ": "yaw" in factors(arm),
             "[inview] ": visible_start(arm), "[inviewdiag] {": "NAVRL_INVIEW_DIAG" in (rec.get("env_navrl") or {}),
             "[camsafe] ": policy(arm) == "S2B", "[cams2contact] {": cams2_on(arm), "[cams2diag] {": cams2_on(arm)}
     for prefix, want in have.items():
@@ -846,14 +909,28 @@ def smoke_cell_controls(cell_dir, arm):
     text = log.read_text(errors="replace") if log.is_file() else ""
     line = camref_line(text) or {}
     out = {}
-    if rung(arm) in ("F8", "K1S"):
+    f = factors(arm)
+    if camref_rules_on(arm) and rung(arm) not in ("F3", "F4", "K1T"):   # stage 1: F8 / K1S; stage 2: F4D .. F4A
         rules = line.get("rules") or {}
         draws = rules.get("delay_draws") or {}
-        out["delay_draws_1_and_2"] = draws.get("1", 0) > 0 and draws.get("2", 0) > 0 and set(draws) <= {"1", "2"}
+        if "delay" in f:
+            out["delay_draws_1_and_2"] = draws.get("1", 0) > 0 and draws.get("2", 0) > 0 and set(draws) <= {"1", "2"}
+        else:
+            out["no_delay_draws"] = not any(v for k, v in draws.items() if k != "0")
         out["capture_rule_acted"] = (rules.get("captures", 0) + rules.get("contacts", 0)) > 0
-        out["veh_rand_init"] = any(line.startswith("[veh-rand] {") and '"event": "init"' in line for line in text.splitlines())
+        veh_init = any(x.startswith("[veh-rand] {") and '"event": "init"' in x for x in text.splitlines())
+        out["veh_rand_init" if "rand" in f else "no_veh_rand"] = veh_init if "rand" in f else not veh_init
         clip = S2A.parse_kv_line(text, S2A.YAWCLIP_PREFIX)
-        out["yawclip_commands"] = bool(clip) and clip.get("commands", 0) > 0
+        if "yaw" in f:
+            out["yawclip_commands"] = bool(clip) and clip.get("commands", 0) > 0
+        else:
+            out["no_yawclip"] = not clip
+        if rung(arm) in S2_FACTOR_RUNGS:                     # stage 2 only (stage-1 F8 / K1S controls unchanged)
+            try:
+                rec = json.loads((cell_dir / "camref_receipt.json").read_text())
+            except (OSError, ValueError):
+                rec = {}
+            out["geometry_applied" if "geom" in f else "no_geometry"] = not geometry_problems(rec, arm)
     if rung(arm) == "S6":
         out["no_cams2_telemetry"] = "[cams2diag] {" not in text and "[cams2contact] {" not in text
         out["camref_recorder_line"] = bool(line)
@@ -1182,7 +1259,7 @@ def main(argv=None):
     out_root = pathlib.Path(args.out).resolve()
     protocol = json.loads(K.PROTOCOL.read_text())
     approved = args.approved_commit or K.git("rev-parse", "HEAD", root=ROOT).strip()
-    head, problems, origins, gpu_state = preflight(protocol, approved, out_root, args.stage)
+    head, problems, origins, gpu_state = preflight(protocol, approved, out_root, args.stage, UNIT_DIR)
     ckpts, ft_receipt, cp = checkpoints()
     problems += cp
     changed = changed_since(FT_TRAIN_HEAD)
@@ -1197,7 +1274,7 @@ def main(argv=None):
     problems += link
     budget_h, used_h = stage_budget_h(args.stage if args.stage != "check" else "smoke", found)
     if args.stage != "check" and budget_h <= 0:
-        problems.append("no wall time left of the %.1f h stage-1 cap (%.2f h used)" % (MAX_HOURS_TOTAL, used_h))
+        problems.append("no wall time left of the %.1f h %s cap (%.2f h used)" % (MAX_HOURS_TOTAL, UNIT, used_h))
     if args.stage == "check":                      # CPU only, read only: nothing is written
         print(json.dumps({"stage": "check", "unit": UNIT, "commit": head, "preflight_problems": problems,
                           "gpu_stage_state": gpu_state, "checkpoints": ckpts, "changed_since_ft_training": changed,
