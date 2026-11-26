@@ -943,12 +943,21 @@ def project_rgbd_min_valid(frame, state, contract):
     return _v2_finish(P, out_rgb, out_z, hit, out_invalid, imaged, 0)
 
 
+WARM_UP_WARN_S = 5.0      # a first CUDA call above this suggests a cold kernel cache (Orin: 49.5 s without, 1.47 s with)
+
+
+class ProjectionNotReady(InputError):
+    """A CUDA projection runtime refuses every step until warm_up_projection() has run (vehicle side, 2026-11-26)."""
+
+
 class CudaProjector:
     """Runtime v2 projection on a CUDA device (torch float64), bit-identical to project_rgbd_min_valid.
 
     Grids and the cosine come from the CPU functions above (uploaded once per intrinsics); every per-frame float64
     operation is a plain elementwise torch op in v2 order (no addcmul / alpha / matmul / pow), so no fused multiply-add
-    is formed. warm_up() runs the first-call initialisation (1.2-1.9 s measured on the Orin NX) before flight."""
+    is formed. warm_up() runs the first-call initialisation before flight: 1.47 s on the Orin NX with a persistent
+    CUDA_CACHE_PATH, 49.5 s without (kernel JIT for the device; a container started with --rm and HOME=/tmp loses the
+    cache every time), measured by the vehicle side 2026-11-26."""
 
     def __init__(self, torch, device='cuda'):
         if not torch.cuda.is_available():
@@ -1735,6 +1744,8 @@ class CameraPolicyRuntime:
         self.threads = pin_cpu_threads(torch, torch_threads)
         self.projection_device = projection_device or 'cpu'
         self._project = CudaProjector(torch) if projection_device == 'cuda' else project_rgbd_min_valid
+        self.projection_ready = projection_device != 'cuda'      # CUDA: refused until warm_up_projection()
+        self.projection_warm_up = None
         # Bare packages expose only simulator-free leaf modules, without Warp.
         for name, rel in (('aerial_gym', 'aerial_gym'), ('aerial_gym.task', 'aerial_gym/task'),
                           ('aerial_gym.task.navrl_task', 'aerial_gym/task/navrl_task'),
@@ -2034,15 +2045,26 @@ class CameraPolicyRuntime:
         return torch.from_numpy(np.ascontiguousarray(rgb)), torch.from_numpy(ranges), counts, projection
 
     def warm_up_projection(self, frame, state, repeats=3):
-        """Run the CAM-S2 projection `repeats` times on a real frame before flight; returns the wall times (s)."""
+        """Run the CAM-S2 projection `repeats` times on a real frame before flight; returns the wall times (s).
+        A CUDA runtime refuses step() (ProjectionNotReady) until this has completed. A first call above WARM_UP_WARN_S
+        is recorded (projection_warm_up['slow_first_call']) and warned: set a persistent CUDA_CACHE_PATH."""
         if isinstance(self._project, CudaProjector):
-            return self._project.warm_up(frame, state, self.contract, repeats)
-        import time
-        out = []
-        for _ in range(repeats):
-            t = time.perf_counter()
-            self._project(frame, state, self.contract)
-            out.append(time.perf_counter() - t)
+            out = list(self._project.warm_up(frame, state, self.contract, repeats))
+        else:
+            import time
+            out = []
+            for _ in range(repeats):
+                t = time.perf_counter()
+                self._project(frame, state, self.contract)
+                out.append(time.perf_counter() - t)
+        slow = bool(out) and out[0] > WARM_UP_WARN_S
+        self.projection_warm_up = {'times_s': out, 'warn_s': WARM_UP_WARN_S, 'slow_first_call': slow,
+                                   'device': getattr(self, 'projection_device', 'cpu')}
+        if slow:
+            import warnings
+            warnings.warn('first projection call took %.1f s (> %.0f s): the CUDA kernel cache is probably cold; set a '
+                          'persistent CUDA_CACHE_PATH' % (out[0], WARM_UP_WARN_S), RuntimeWarning)
+        self.projection_ready = True
         return out
 
     def _govern(self, cmd, perception=None):
@@ -2122,6 +2144,9 @@ class CameraPolicyRuntime:
     def step(self, frame, state, *, now_s):
         if self.failed:
             raise RuntimeError('runtime failed after state advance; reset required')
+        if not getattr(self, 'projection_ready', True):
+            raise ProjectionNotReady('CUDA projection not warmed up: call warm_up_projection() on a real frame before '
+                                     'stepping')
         # Outdoor profile only: PX4's vertical-validity fields travel beside the estimator state (split_state).
         estimator_state, _ = split_state(state, self.contract)
         p, v, _, yaw, rate, _ = validate_state(estimator_state)

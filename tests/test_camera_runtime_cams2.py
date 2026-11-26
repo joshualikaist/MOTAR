@@ -1007,5 +1007,45 @@ class CudaV2Equivalence(unittest.TestCase):
         self.assertFalse(same_splat)
 
 
+
+class ProjectionReadiness(unittest.TestCase):
+    """Vehicle-side request 2026-11-26: a CUDA runtime refuses steps until warmed up; a slow first call is flagged."""
+
+    class FakeCuda(R.CudaProjector):
+        def __init__(self, times):                       # no device: the readiness logic only
+            self.times = times
+
+        def warm_up(self, frame, state, contract, repeats=3):
+            return self.times[:repeats]
+
+    def _runtime(self, times):
+        rt = R.CameraPolicyRuntime.__new__(R.CameraPolicyRuntime)
+        rt.failed, rt.contract, rt.projection_device = False, {}, 'cuda'
+        rt._project, rt.projection_ready, rt.projection_warm_up = self.FakeCuda(times), False, None
+        return rt
+
+    def test_step_refused_before_warm_up_and_not_after(self):
+        rt = self._runtime([1.4, .03, .03])
+        with self.assertRaises(R.ProjectionNotReady):
+            rt.step({}, {}, now_s=0.)
+        rt.warm_up_projection({}, {})
+        self.assertTrue(rt.projection_ready)
+        self.assertFalse(rt.projection_warm_up['slow_first_call'])
+        with self.assertRaises(Exception) as ctx:            # past the gate: fails later on the empty state
+            rt.step({}, {}, now_s=0.)
+        self.assertNotIsInstance(ctx.exception, R.ProjectionNotReady)
+
+    def test_slow_first_call_is_flagged_and_warned(self):
+        rt = self._runtime([49.5, .03, .03])
+        with self.assertWarns(RuntimeWarning):
+            rt.warm_up_projection({}, {})
+        self.assertTrue(rt.projection_warm_up['slow_first_call'])
+        self.assertTrue(rt.projection_ready)
+
+    def test_cpu_runtime_needs_no_warm_up(self):
+        rt = R.CameraPolicyRuntime.__new__(R.CameraPolicyRuntime)
+        self.assertTrue(getattr(rt, 'projection_ready', True))
+
+
 if __name__ == '__main__':
     unittest.main()
