@@ -27320,3 +27320,48 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Change (vehicle-side request):** a CUDA-projection runtime refuses `step()` with `ProjectionNotReady` (an InputError) until `warm_up_projection()` has run; a first call above `WARM_UP_WARN_S` = 5 s is recorded (`projection_warm_up['slow_first_call']`) and warned (cold `CUDA_CACHE_PATH`). Tests `ProjectionReadiness` (gate both ways, slow-call warning, CPU runtime needs no warm-up).
 - **Tests:** camera + oakd + canonical-docs modules 398 OK except `CudaV2Equivalence` (CUDA hidden; GPU_REQUIRED), which passes on the GPU (4 OK).
 - **Next:** next-training plan (delay range, yaw 90°/s, depth model, target detection) for the user.
+
+## 2026-11-27 — CAM-S3 stage 0: measured depth, sector reduction, thin bars, 90 deg/s; S3-W preregistered (conditional GPU approval)
+
+- **Approval:** plan "CAM-S3" approved ("추천하는 방식대로 진행하자"); conditional GPU approval for S3-W ("오케이 너가 말하는대로
+  할게", ~02:40): start only if the preregistration is committed, an Opus review leaves no open P1, the full suite and
+  the smoke pass, and the host check passes; GPU at most 6 h incl. evaluation; S3-M GPU, push, merge not approved.
+  Record `~/motar_tmp/cams3_20261127/user_conditional_approval.json`.
+- **Finding (CPU, `~/motar_tmp/cams3_20261127/column_gap.py`):** the camera-only obstacle scan reads one pixel column
+  per 5-degree bin (13 of 312; `navrl_perception.py:1909-1921`). In-FOV obstacles seen: bars 0.4-0.8 m 100 / 99.4 / 83 %
+  at 0-3 / 3-6 / 6-10 m; 0.25 m trunks 99.7 / 65.1 / 36.7 %.
+- **Constraint found:** `navrl_perception.py` and `navrl_depth_model.py` are byte-pinned by the CAM-S2 flight-runtime
+  contract (`camera_policy_contract_cams2.py` TRAINING_SOURCE_PINS); editing them would make S2b-FT's runtime refuse.
+  Both new rules therefore live in a new run-time-installed module, `aerial_gym/task/navrl_task/navrl_cams3.py`.
+- **Code:** rule 1 measured depth (recorded masks via `tools/cams3_build_mask_library.py` -> mask_library_v1.npz,
+  1,849 of 1,984 frames, SHA-256 55c78113…; 10-row top band; false near P40/P20 at 1/2/3 m implemented but OFF in
+  S3-W, see review) replacing the 2 % holes;
+  rule 2 sector reduction (24th-smallest range over every pixel of each in-FOV bin); `bars_h3_thin` pool (40 bars_h3 +
+  14 bars 0.20-0.30 m); `tools/realveh_entry.py` installs; driver `tools/cams3_train.py`, launcher
+  `train_navrl_cams3.sh`, wrapper `tools/cams3_python`; `tests/test_cams3.py` (20 tests: thin bar between sampled
+  columns invisible natively and seen with k = 1 / 24; a 1-pixel speckle seen only with k = 1; target carve kept, grey
+  control seen; masks/top band/no-hit; false-near shares vs model; pointer; install order; settings; driver checks).
+- **Preregistration:** `docs/plans/prereg_camonly_s3w_2026-11-27.md` (S3-W: S2b-FT ep15000 f2c80fcc… + 3,000 epochs,
+  stop rule capture < 0.30 at 16,000, wall cap 4.5 h, launch only if the smoke projects ≤ 4.3 h). The S3-W evaluation
+  needs its own preregistration.
+- **Review r1** (Opus 5.5, `~/motar_tmp/cams3_20261127/review_r1/REVIEW.md`): **NO_GO**, P1-1: the iid false-near model
+  on every surface shortens every bar inside 7 m to 0.33-0.61 of its range even after k = 24 (1/2/3/5/7 m read
+  0.33/0.75/1.35/2.70/4.27 m) — the policy would learn the unsafe mapping. Hypothesis "k = 24 makes the reduction robust
+  to the measured false near" rejected. Response: false near OFF in S3-W (real false near then only makes obstacles look
+  nearer than trained); k rationale corrected (0.20 m bar within 7 m); launch rule on smoke speed; index tensors cached;
+  limits added (slits ~0.5/layout ≤ 0.07 m with thin bars, runtime contract, receipt-only settings).
+- **Host:** machine-check/segfault count 0 this boot; no CPU offline; disk 6.9 GB free.
+- **Review r2** (Opus 5.5, `~/motar_tmp/cams3_20261127/review_r2/REVIEW.md`): **NO_GO** on authorization only (P1-A):
+  the approval names false near (R5b), so training without it needs the user's explicit acceptance (AGENTS.md: what an
+  approval does not name needs a new one). No technical P1; fixes verified (false near off on every path; with it off a
+  0.20-0.25 m bar is read within +0.009 m whenever a render ray hits it, while the native single column reads 6.05 /
+  7.18 / 8.31 m for true 3 / 5 / 7 m off-axis; cached indices exact, no per-step syncs; launch rule 4.016 s -> 3.708 h
+  on S2b-FT's smoke). P2/P3 wording, nvidia-smi timeout fixed. Reviews copied to
+  `docs/evidence/camonly_2026-11-04/cams3/REVIEW_r1.md`, `REVIEW_r2.md`; library summary `mask_library_v1.json`.
+- **Decision:** no GPU run tonight. The driver's preflight now refuses without
+  `~/motar_tmp/cams3_20261127/user_acceptance_false_near_off.json` (the user's words). Full suite before the r1 fixes:
+  4,597 tests, 11 failures / 10 errors; versus the 2026-11-26 baseline the only new ones were the two experiment-index
+  checks (prereg not yet tracked; pass once committed) and two test_boia_planner errors from `/tmp/codex_occ` missing
+  after the reboot (pass with the folder present).
+- **Next:** the user accepts (or rejects) S3-W without false near; on acceptance: record the file, host check, smoke,
+  launch rule, run. S3-W evaluation preregistration; runtime unit for rule 2 (P3-3/P3-4).

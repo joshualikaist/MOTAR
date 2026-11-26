@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# PYTHON for train_navrl_cams3.sh (CAM-S3 S3-W, docs/plans/prereg_camonly_s3w_2026-11-27.md): sets the trained yaw-rate
+# ceiling and the bar pool, then runs tools/realveh_python (tools/realveh_entry.py -> runner.py) unchanged.
+#
+# Why a wrapper: train_navrl_v2_search.sh pins `export NAVRL_YAW_RATE_MAX=3.0` and `export NAVRL_BAR_POOL=bars_h3`
+# after every child launcher setting, and train_navrl.sh calls PYTHON exactly once, for runner.py, before aerial_gym is
+# imported (navrl_task_config / lee_controller_config_navrl read NAVRL_YAW_RATE_MAX, env_object_config reads
+# NAVRL_BAR_POOL, all at import). tools/realveh_entry.py then records both in the receipt's env_navrl.
+#
+# Fail-closed: CAMS3_YAW_RATE_MAX must be a positive decimal and CAMS3_BAR_POOL one of bars_h3 / bars_h3_thin; the
+# inherited values must be the search launcher's 3.0 and bars_h3 (so this wrapper replaces only what it was written to
+# replace); the evaluation-only switches must be unset (tools/realveh_entry.py installs them whenever they are set).
+set -euo pipefail
+: "${CAMS3_YAW_RATE_MAX:?CAMS3_YAW_RATE_MAX is required (train_navrl_cams3.sh sets it)}"
+: "${CAMS3_BAR_POOL:?CAMS3_BAR_POOL is required (train_navrl_cams3.sh sets it)}"
+if [[ ! "${CAMS3_YAW_RATE_MAX}" =~ ^[0-9]+(\.[0-9]+)?$ ]] || [[ "${CAMS3_YAW_RATE_MAX}" =~ ^0+(\.0+)?$ ]]; then
+    echo "[cams3-python] CAMS3_YAW_RATE_MAX must be a positive decimal, got '${CAMS3_YAW_RATE_MAX}'" >&2
+    exit 2
+fi
+case "${CAMS3_BAR_POOL}" in
+    bars_h3|bars_h3_thin) ;;
+    *) echo "[cams3-python] CAMS3_BAR_POOL must be bars_h3 or bars_h3_thin, got '${CAMS3_BAR_POOL}'" >&2; exit 2 ;;
+esac
+if [[ "${NAVRL_YAW_RATE_MAX:-}" != "3.0" ]]; then
+    echo "[cams3-python] expected the search launcher's NAVRL_YAW_RATE_MAX=3.0, got '${NAVRL_YAW_RATE_MAX:-<unset>}'" >&2
+    exit 2
+fi
+if [[ "${NAVRL_BAR_POOL:-}" != "bars_h3" ]]; then
+    echo "[cams3-python] expected the search launcher's NAVRL_BAR_POOL=bars_h3, got '${NAVRL_BAR_POOL:-<unset>}'" >&2
+    exit 2
+fi
+for name in $(compgen -e); do
+    case "${name}" in
+        NAVRL_YAWCLIP*|NAVRL_CAMS2DIAG*|NAVRL_CAMS2_CONTACTCODE*|NAVRL_INVIEW_*)
+            echo "[cams3-python] evaluation-only switch ${name} is set; training refuses it" >&2
+            exit 2 ;;
+    esac
+done
+export NAVRL_YAW_RATE_MAX="${CAMS3_YAW_RATE_MAX}"
+export NAVRL_BAR_POOL="${CAMS3_BAR_POOL}"
+echo "[cams3-python] NAVRL_YAW_RATE_MAX 3.0 -> ${NAVRL_YAW_RATE_MAX} rad/s (action scale and Lee yaw clamp); NAVRL_BAR_POOL bars_h3 -> ${NAVRL_BAR_POOL}"
+exec "$(dirname "$(readlink -f "$0")")/realveh_python" "$@"

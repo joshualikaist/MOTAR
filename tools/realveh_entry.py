@@ -14,6 +14,9 @@ Opt-in. Before runner.py builds the task it installs, in this fixed order:
   2c/4b/5-7 (opt-in, documented in each module): navrl_camsafe (CAM-S1), navrl_cams2_contactcode (CAM-S2a-E amendment 1,
      between camsafe and cams2), navrl_cams2 (CAM-S2a), and for the CAM-S2a evaluation navrl_yawclip (NAVRL_YAWCLIP=1,
      after cams2) and navrl_cams2diag (NAVRL_CAMS2DIAG=1, outermost);
+  2a (opt-in, CAM-S3): navrl_cams3 measured depth (NAVRL_DEPTH_MEAS=1, needs the depth model; installed before it, so
+     its wrapper is the innermost and runs on the modelled frame) and the camera sector reduction
+     (NAVRL_CAMS3_SECTOR_K=k, replaces navrl_perception.camera_no_return_to_lidar_range; installed after the ablation);
   8 (opt-in, CAM-DX1 evaluation only): navrl_inview_start (NAVRL_INVIEW_START=1 visible start, NAVRL_INVIEW_DIAG=1
      start/pixel recorder), installed after navrl_cams2diag, so its wrappers are the outermost;
   3. the camera-only LiDAR ablation (NAVRL_SENSOR_ABLATION must be no_lidar) and the CAM-K1 camera FOV / reward
@@ -55,6 +58,7 @@ YAWCLIP = ROOT / "aerial_gym/task/navrl_task/navrl_yawclip.py"     # CAM-S2a eva
 CAMS2DIAG = ROOT / "aerial_gym/task/navrl_task/navrl_cams2diag.py"     # CAM-S2a eval recorder; hashed only when on
 CONTACTCODE = ROOT / "aerial_gym/task/navrl_task/navrl_cams2_contactcode.py"     # CAM-S2a-E amendment 1; hashed only when on
 INVIEW = ROOT / "aerial_gym/task/navrl_task/navrl_inview_start.py"     # CAM-DX1 eval condition + recorder; hashed only when on
+CAMS3 = ROOT / "aerial_gym/task/navrl_task/navrl_cams3.py"     # CAM-S3 measured depth + sector rule; hashed only when on
 VALIDITY_RULE = "blob_near"
 VALIDITY_PARAMETERS = ("NAVRL_DEPTH_VALIDITY_WINDOW", "NAVRL_DEPTH_VALIDITY_DENSITY")   # navrl_depth_validity.REQUIRED
 # Hashed into the receipt (all of them, whether or not their switch is on).
@@ -169,6 +173,21 @@ def settings(environ=None):
         stray = sorted(k for k in VALIDITY_PARAMETERS if env.get(k, "").strip())
         if stray:
             raise SystemExit("realveh: %s set while NAVRL_DEPTH_VALIDITY is off" % ", ".join(stray))
+    # CAM-S3 only (NAVRL_DEPTH_MEAS=1 and/or NAVRL_CAMS3_SECTOR_K). Off: the module is not loaded, `out` unchanged.
+    if env.get("NAVRL_CAMS3_SECTOR_K", "").strip() or any(k.startswith("NAVRL_DEPTH_MEAS") and env[k].strip() for k in env):
+        cams3 = _load_private("realveh_cams3_settings", CAMS3)
+        try:
+            meas, sector = cams3.meas_settings_from_env(env), cams3.sector_settings_from_env(env)
+        except ValueError as exc:
+            raise SystemExit("realveh: %s" % exc) from None
+        if meas is not None:
+            if out["depth_model"] is None:
+                raise SystemExit("realveh: NAVRL_DEPTH_MEAS needs NAVRL_DEPTH_MODEL=%s" % DEPTH_MODEL)
+            if validity:
+                raise SystemExit("realveh: NAVRL_DEPTH_MEAS and NAVRL_DEPTH_VALIDITY are not defined together")
+            out["cams3_meas"] = meas
+        if sector is not None:
+            out["cams3_sector"] = sector
     # CAM-S1 only (NAVRL_CAMSAFE=1): blind-direction speed cap and reward terms. Off: the module is not loaded and
     # `out` is exactly as before (no camsafe key), so CAM-K2 receipts are unchanged.
     if env.get("NAVRL_CAMSAFE", "").strip() or any(k.startswith("NAVRL_CAMSAFE_") and env[k].strip() for k in env):
@@ -284,6 +303,12 @@ def main():
         info["depth_validity"] = validity.install(s["depth_validity"])
         info["depth_validity_module"] = validity.__file__
         info["depth_validity_sha256"] = sha256(VALIDITY)
+    if s.get("cams3_meas") is not None:          # 2a: innermost, so installed before the depth model
+        from aerial_gym.task.navrl_task import navrl_cams3 as cams3
+        from aerial_gym.task.navrl_task import navrl_perception as perception_module
+
+        info["cams3_meas"] = cams3.install_measured(perception_module, s["cams3_meas"])
+        info["cams3_sha256"] = sha256(CAMS3)
     if s["depth_model"] is not None:
         from aerial_gym.task.navrl_task import navrl_depth_model as depth
 
@@ -295,6 +320,12 @@ def main():
 
     info["ablation"] = ablation.install(ablation.condition_from_env())
     before, after = camtrain.apply_overrides(task_config, s["camtrain"])
+    if s.get("cams3_sector") is not None:        # 2a: module-global replacement, after the ablation
+        from aerial_gym.task.navrl_task import navrl_cams3 as cams3
+        from aerial_gym.task.navrl_task import navrl_perception as perception_module
+
+        info["cams3_sector"] = cams3.install_sector(perception_module, s["cams3_sector"])
+        info["cams3_sha256"] = sha256(CAMS3)
     if s.get("camsafe") is not None:        # 4. CAM-S1: after the ablation, whose governor wrapper must be inner
         from aerial_gym.task.navrl_task import navrl_camsafe as camsafe
 
