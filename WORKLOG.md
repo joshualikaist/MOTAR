@@ -27274,3 +27274,23 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Checks:** test_camref_stage2 + test_camref + test_realveh 102 OK; CPU `check` stage: every planned cell environment passes, remaining problems only uncommitted files / no approval file (`~/motar_tmp/camref2_20261126/check_precommit.json`).
 - **Review r1** (Claude Opus 5.5 subagent, fresh context, read-only; `docs/evidence/camonly_2026-11-04/camref/REVIEW_stage2_r1.md`): GO_WITH_FIXES, no P1. Fixed: P2-1 the applied geometry is now read from the rule module's `config_after` record on every CAM-REF-rules cell (`geometry_problems`; stage-1's 27 cells pass; F4A smoke control both ways); gain randomisation has no telemetry → preregistered limit; P3-1 `load_eval` restores stage-1 constants; P3-2 no temp file left; P3-3 F4Y/F4D consequence lines in `use_of_result`; P3-4 identity seed limit; P3-5 docstring. Targeted tests 104 OK after the fixes.
 - **Full CPU suite** (pre-commit, before the review fixes; `~/motar_tmp/camref2_20261126/work/full_suite_precommit.log`): failures = the 2026-11-26 baseline plus test_experiment_index (pre-commit only) and three SITL errors from the suite's environment lacking `OMP_NUM_THREADS=1` / `MKL_NUM_THREADS=1` (those two modules: 40 OK with them set).
+
+## 2026-11-26 — CAM-REF stage 2 result: delay (+9.9 pp) and the 60°/s yaw clip (+5.2 pp) carry F's bar-crash loss from P_T to P_S
+- **Run** (`f2fa049`, chain `~/motar_tmp/camref2_20261126/gpu1/chain.{sh,log}`): smoke SMOKE_OK 14:37-14:44; identity IDENTITY_PASS 14:44-14:51 (F4ID, F8ID per-episode equal to stage-1 F4 / F8 205/4501); eval COMPLETE 15/15 14:51-15:45; host faults 1 → 1. Analysis `docs/evidence/camonly_2026-11-04/camref/analysis_stage2_gpu1.json`: READ, binding ok, blocks 4501-4503, controls ok.
+- **Cells** (pooled %, 3,072 episodes each; F4 / F8 = stage-1 cells):
+
+| Cell | Capture | Crash | Bar crash | Target contact |
+| --- | --- | --- | --- | --- |
+| F4 (P_T) | 23.6 | 75.4 | 9.0 | 66.0 |
+| F4D delay U{1,2} | 30.4 | 69.2 | 18.9 | 49.9 |
+| F4R vehicle + gain rand | 23.5 | 75.6 | 9.4 | 65.9 |
+| F4Y yaw clip 60°/s | 21.8 | 77.4 | 14.2 | 63.1 |
+| F4V FREE 2.5 | 30.2 | 68.2 | 8.8 | 58.7 |
+| F4A altitude 1.5 / mount 0.08 | 22.4 | 76.4 | 8.7 | 67.4 |
+| F8 (P_S) | 31.5 | 67.9 | 22.6 | 45.1 |
+
+- **Q1 bar crash X − F4 (pp, bootstrap 95 %):** F4D +9.9 [8.2, 11.7] MATERIAL; F4Y +5.2 [3.6, 6.8] MATERIAL; F4R +0.4, F4V −0.2, F4A −0.4 NO_DETECTED_CHANGE. (Crash-all / capture MATERIAL for F4D and F4V move through target contacts, not bars.)
+- **Q2:** F8 − F4 bar +13.6 [11.8, 15.4] MATERIAL; interaction remainder −1.3 [−6.3, 3.8] (sum of single effects +14.9: approximately additive).
+- **Preregistered use:** carriers F4D, F4Y. "F4Y: the 60°/s cap is a measured contributor for a policy with 360° ranging; supports testing a higher cap in the next training, not a camera-only gain. F4D: latency reduction (sparse reprojection, 1-thread pinning) prioritised before training."
+- **Interpretation (not preregistered, limits):** 0.1-0.2 s of action delay alone doubles F's bar crash (9.0 → 18.9 %); the real runtime measured 0.34 s capture → result, beyond the simulated delay. Vehicle / gain randomisation, FREE 2.5 and altitude / mount do not move F's bar crash. Policy F only, zero-shot; not a camera-only measurement.
+- **Next:** user decisions — runtime latency work (1-thread, sparse reprojection) first; next-training yaw cap (90°/s test) and delay range matched to the measured runtime latency.
