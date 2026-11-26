@@ -838,7 +838,7 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_s2a_eval_2026-11-24.md`, `docs/plans/prereg_camonly_s2a_eval_2026-11-24_amendment1.md`,
   `docs/plans/prereg_camonly_s2b_2026-11-24.md`, `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`,
   `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25.md`,
-  `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md`, `docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md`
+  `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md`, `docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md`, `docs/plans/prereg_camonly_ref_stage2_2026-11-26.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
