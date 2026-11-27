@@ -53,7 +53,7 @@ Machine-readable status:
 - [`results/MANIFEST.json`](../results/MANIFEST.json): every result directory.
 
 Paper working documents:
-- [paper draft](../paper/MOTAR_draft_2026-09-26.md) (Word copy alongside), its [checklist](../paper/PAPER_TODO_2026-09-26.md) and the [overview deck](../presentations/MOTAR_overview_2026-09-26.pptx) ([how to rebuild](../presentations/README.md))
+- [paper draft](../paper/MOTAR_draft_2026-09-26.md) and its [checklist](../paper/PAPER_TODO_2026-09-26.md); the Word copy and the overview deck are kept locally, not published ([how to rebuild the deck](../presentations/README.md))
 - [spine](paper_evidence_spine_2026-09-19.md)
 - [outline](paper_outline_2026-09-19.md)
 - [claim/evidence matrix](paper_claim_evidence_matrix_2026-09-19.md)

@@ -23,11 +23,16 @@
   "w_minus_s0_crash_pp": -3.125,
   "w_minus_s0_crash_ci_lo_pp": -5.338541666666667,
   "w_minus_s0_crash_ci_hi_pp": -0.9440104166666667,
+  "w_minus_s0_crash_seedblock_ci_lo_pp": -9.247734498911909,
+  "w_minus_s0_crash_seedblock_ci_hi_pp": 2.9977344989119086,
   "outdoor_ground_near_pct_at_1p5m": 38.690000000000005,
   "outdoor_ground_near_pct_at_1p3m": 18.47,
   "outdoor_ground_near_pct_at_1p7m": 54.779999999999994,
   "outdoor_sky_phantom_pct": 2.67,
-  "outdoor_frame_bins": 2380
+  "outdoor_ground_near_pct_at_1p5m_sector": 36.82,
+  "outdoor_sky_phantom_pct_sector": 2.9000000000000004,
+  "outdoor_frame_bins": 3107,
+  "outdoor_frames": 239
  },
  "display": {
   "c2_total": "+39.95 pp",
@@ -43,9 +48,13 @@
   "s0_target_contact": "6.0 %",
   "w_minus_s0_crash": "−3.1 pp",
   "w_minus_s0_crash_ci": "[−5.3, −0.9]",
+  "w_minus_s0_crash_seedblock_ci": "[−9.2, +3.0]",
   "outdoor_ground_1p5": "38.7 %",
   "outdoor_ground_range": "18.5–54.8 %",
-  "outdoor_sky_phantom": "2.67 %"
+  "outdoor_sky_phantom": "2.67 %",
+  "outdoor_ground_1p5_sector": "36.8 %",
+  "outdoor_sky_phantom_sector": "2.90 %",
+  "outdoor_frame_bins": "3,107"
  },
  "labels": {
   "c2_reading": "REPORTED",

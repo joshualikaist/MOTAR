@@ -20,7 +20,8 @@ STATUS = ROOT / "docs/status/data/camonly-status.json"
 SURFACES = ("README.md", "docs/status/index.html", "docs/status/evidence.html", "docs/EVIDENCE.md")
 # Display keys every surface must carry (the core reading of CAM-S3-E and the outdoor limits).
 CORE = ("w_crash", "w_capture", "s0_crash", "w_crash_wilson", "w_minus_s0_crash", "w_minus_s0_crash_ci",
-        "c2_total", "outdoor_ground_1p5", "outdoor_sky_phantom")
+        "c2_total", "outdoor_ground_1p5", "outdoor_sky_phantom", "w_minus_s0_crash_seedblock_ci",
+        "outdoor_ground_1p5_sector", "outdoor_sky_phantom_sector", "outdoor_frame_bins")
 LABELS = ("q1_label", "pointer", "results_review")
 
 
@@ -57,6 +58,18 @@ class CamonlyStatusTest(unittest.TestCase):
             for key in LABELS:
                 self.assertIn(self.data["labels"][key], text, (name, key))
             self.assertRegex(text, r"shadow test", name)
+            # Review r1 P3-4/5/6/12: the rule, sky mask, interval types, parity scope and earlier FAIL are named.
+            for phrase in ("S2b native column rule", "S3-W sector rule", "heuristic sky mask", "episode bootstrap",
+                           "seed-block", "7 analytic CPU scenes", "review r3 FAIL"):
+                self.assertIn(phrase, text, (name, phrase))
+
+    def test_frame_bins_is_the_frame_bin_count(self):
+        # Review r1 P3-3: 239 frames x 13 bins, distinct from the T5 near count.
+        v = self.data["values"]
+        self.assertEqual(v["outdoor_frame_bins"], v["outdoor_frames"] * 13)
+        record = json.loads((ROOT / build.SOURCES["outdoor"]).read_text())
+        near = record["q1_sky"]["G1.5"]["overall"]["native"]["T5"]["near_count"]
+        self.assertNotEqual(v["outdoor_frame_bins"], near)
 
     def test_altered_record_is_detected(self):
         # Negative control: a changed record value no longer matches the committed status, and a shifted

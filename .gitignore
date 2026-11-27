@@ -103,3 +103,9 @@ results/kroc2027_*/**/obs_dump.npz
 # OCC-G0/OCC-P1 raw cells stay on disk; RAW_MANIFEST.json binds them (2026-10-17)
 results/occlusion_pilot_v1/**/*__*bars__seed*/
 results/occlusion_pilot_v1/**/obs_dump.npz
+
+# Unpublished drafts kept locally, untracked since 2026-11-28 (user decision PUB-2026-11-28; they remain in
+# earlier commits of the history, which is not rewritten).
+/paper/MOTAR_draft_2026-09-26.docx
+/presentations/MOTAR_overview_2026-09-26.pptx
+/docs/paper_draft_camonly_sim2real_2026-11-23.md

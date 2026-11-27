@@ -21,7 +21,7 @@ carries no LiDAR.
 | --- | --- | --- |
 | Sensor contract | RGB-D camera + LiDAR governs Policy F and the historical records; the real-vehicle line is camera-only by user decision (D-2026-11-04-3, D-2026-11-06-1) | [`SENSOR_CONTRACT.md`](SENSOR_CONTRACT.md), [`DECISIONS.md`](DECISIONS.md) |
 | Camera-only line, simulation | CAM-S3-E: S3-W crash 25.4 %, BAR_NOT_MET_POINT; W − S0 NO_IMPROVEMENT; pointer STRUCTURAL_NEXT; results review PASS_WITH_LIMITS | [`evidence/camonly_2026-11-04/cams3/`](evidence/camonly_2026-11-04/cams3/REVIEW_E_results_r1.md) |
-| Camera-only line, vehicle runtime | RT-S3W: S3-W observation and action reproduced; review GO for a desk / hand-held shadow test only; no flight approved | [`evidence/camonly_2026-11-04/rt_s3w/`](evidence/camonly_2026-11-04/rt_s3w/REVIEW_r1.md) |
+| Camera-only line, vehicle runtime | RT-S3W: S3-W observation and action match the training-side functions on 7 analytic CPU scenes (built from the runtime's own configuration); review GO for a desk / hand-held shadow test only; no flight approved | [`evidence/camonly_2026-11-04/rt_s3w/`](evidence/camonly_2026-11-04/rt_s3w/REVIEW_r1.md) |
 | Outdoor depth (hand-held, 2026-11-26) | Ground read as near obstacles depends strongly on the assumed camera height; sky false-near returns are a few percent of frame-bins | [`evidence/camonly_2026-11-04/outdoor_1126/`](evidence/camonly_2026-11-04/outdoor_1126/README.md) |
 | Target-motion replication (historical) | REPLICATED, 7 seeds | [`../results/target_motion_replication_7seed/`](../results/target_motion_replication_7seed/README.md) |
 | Classical baselines B1-R (historical) | Policy F above both reactive baselines; C1/C2 SUPERIOR | [`evidence/b1r_v1/`](evidence/b1r_v1/analysis_summary.json) |
@@ -49,8 +49,9 @@ All families, with what to read first and what compares, are in [`EXPERIMENTS.md
   training; Orin NX step time is not measured.
 - **Review findings open before any CAM-S3-E rerun:** package review r2 P2-1 (output root must lie under the
   unit folder) and P3-1..8.
-- **PUBLIC_CPU baseline:** 9 failures and 8 errors on `camonly/s2b`, all pre-existing and listed in the
-  WORKLOG; none is new to the camera-only work.
+- **PUBLIC_CPU on `main` (2026-11-28):** 4,664 tests, 4 failures, 0 errors, all pre-existing: the CAM-S2a-E and
+  CAM-K1-E receipt checks, the SITL S4R1 prereg command check, and the CAM-S3-E launch-allowlist guard (failing since
+  RT-S3W `4f6b709`; Beads `motar-7zc`).
 - **Host faults:** cpu4/5 machine-check history; check the kernel crash count before and after long runs.
 - **No external backup.** Raw results are local only (BACKUP_DECLINED_BY_USER).
 

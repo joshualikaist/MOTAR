@@ -65,11 +65,18 @@ def build(root=ROOT):
         "w_minus_s0_crash_pp": ws0["crash"]["mean_pp"],
         "w_minus_s0_crash_ci_lo_pp": ws0["crash"]["ci95_pp"][0],
         "w_minus_s0_crash_ci_hi_pp": ws0["crash"]["ci95_pp"][1],
+        "w_minus_s0_crash_seedblock_ci_lo_pp": ws0["crash"]["seed_block_ci95_pp"][0],
+        "w_minus_s0_crash_seedblock_ci_hi_pp": ws0["crash"]["seed_block_ci95_pp"][1],
         "outdoor_ground_near_pct_at_1p5m": 100 * g15["G1.5"]["native"]["T5_near_not_in_Gm0.5_rate"],
         "outdoor_ground_near_pct_at_1p3m": 100 * g15["G1.3"]["native"]["T5_near_not_in_Gm0.5_rate"],
         "outdoor_ground_near_pct_at_1p7m": 100 * g15["G1.7"]["native"]["T5_near_not_in_Gm0.5_rate"],
         "outdoor_sky_phantom_pct": 100 * sky["native"]["T5"]["sky_phantom_rate"],
-        "outdoor_frame_bins": out["q1_sky"]["G1.5"]["overall"]["native"]["T5"]["near_count"],
+        # Review P3-4: the S3-W sector rule (k 24), which the vehicle runtime now runs.
+        "outdoor_ground_near_pct_at_1p5m_sector": 100 * g15["G1.5"]["sector"]["T5_near_not_in_Gm0.5_rate"],
+        "outdoor_sky_phantom_pct_sector": 100 * sky["sector"]["T5"]["sky_phantom_rate"],
+        # Review P3-3: frame-bin count (239 frames x 13 bins), not the T5 near count.
+        "outdoor_frame_bins": sky["native"]["frame_bins"],
+        "outdoor_frames": sky["native"]["frames"],
     }
     v = values
     display = {
@@ -86,9 +93,14 @@ def build(root=ROOT):
         "s0_target_contact": pct(v["s0_target_contact_pct"]),
         "w_minus_s0_crash": signed(v["w_minus_s0_crash_pp"]),
         "w_minus_s0_crash_ci": interval(v["w_minus_s0_crash_ci_lo_pp"], v["w_minus_s0_crash_ci_hi_pp"]),
+        "w_minus_s0_crash_seedblock_ci": interval(v["w_minus_s0_crash_seedblock_ci_lo_pp"],
+                                                  v["w_minus_s0_crash_seedblock_ci_hi_pp"]),
         "outdoor_ground_1p5": pct(v["outdoor_ground_near_pct_at_1p5m"]),
         "outdoor_ground_range": f"{v['outdoor_ground_near_pct_at_1p3m']:.1f}–{v['outdoor_ground_near_pct_at_1p7m']:.1f} %",
         "outdoor_sky_phantom": pct(v["outdoor_sky_phantom_pct"], 2),
+        "outdoor_ground_1p5_sector": pct(v["outdoor_ground_near_pct_at_1p5m_sector"]),
+        "outdoor_sky_phantom_sector": pct(v["outdoor_sky_phantom_pct_sector"], 2),
+        "outdoor_frame_bins": f"{v['outdoor_frame_bins']:,}",
     }
     labels = {
         "c2_reading": c2.get("reading", {}).get("label") if isinstance(c2.get("reading"), dict) else c2.get("reading"),

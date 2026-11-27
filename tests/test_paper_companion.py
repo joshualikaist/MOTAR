@@ -3,6 +3,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 import sys
 import unittest
 import xml.etree.ElementTree as ET
@@ -15,6 +16,12 @@ import check_public_docs as public_docs
 PAPER = ROOT / "paper/MOTAR_draft_2026-09-26.md"
 PPTX = ROOT / "presentations/MOTAR_overview_2026-09-26.pptx"
 DOCX = ROOT / "paper/MOTAR_draft_2026-09-26.docx"
+# The Word copy and the deck are unpublished drafts, kept locally and untracked since 2026-11-28 (user decision,
+# unit PUB-2026-11-28). Their content checks run where the local files exist; a fresh clone skips them, and
+# test_unpublished_drafts_are_untracked asserts they stay out of the index.
+UNPUBLISHED = ("paper/MOTAR_draft_2026-09-26.docx", "presentations/MOTAR_overview_2026-09-26.pptx",
+               "docs/paper_draft_camonly_sim2real_2026-11-23.md")
+LOCAL_ONLY = {"presentations/MOTAR_overview_2026-09-26.pptx", "paper/MOTAR_draft_2026-09-26.docx"}
 NS = {"a": "http://schemas.openxmlformats.org/drawingml/2006/main",
       "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
       "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
@@ -33,6 +40,8 @@ class PaperCompanionTest(unittest.TestCase):
     def test_source_and_output_integrity(self):
         for group in ("sources", "files"):
             for path, expected in self.manifest[group].items():
+                if path in LOCAL_ONLY and not (ROOT / path).is_file():
+                    continue
                 self.assertEqual(hashlib.sha256((ROOT / path).read_bytes()).hexdigest(), expected, path)
         self.assertEqual(len(self.paper.split()), self.manifest["paper_word_count"])
         for slide in self.manifest["slides"]:
@@ -48,6 +57,7 @@ class PaperCompanionTest(unittest.TestCase):
             self.assertTrue(Path(path).name.startswith("fig" + str(n) + "-"))
             self.assertTrue((PAPER.parent / path).is_file())
 
+    @unittest.skipUnless(PPTX.is_file(), "overview deck kept locally, not published")
     def test_current_effects_bound_to_canonical_records(self):
         with zipfile.ZipFile(PPTX) as archive:
             slide = ET.fromstring(archive.read("ppt/slides/slide7.xml"))
@@ -67,6 +77,7 @@ class PaperCompanionTest(unittest.TestCase):
                                    ("safety", "pooled_pp", 4), ("d8b", "primary_pp", 3)):
             self.assertIn(pp(self.values[key][field], digits), self.paper)
 
+    @unittest.skipUnless(PPTX.is_file(), "overview deck kept locally, not published")
     def test_deck_is_editable_with_complete_notes_and_limits(self):
         with zipfile.ZipFile(PPTX) as archive:
             slides = [p for p in archive.namelist() if re.fullmatch(r"ppt/slides/slide\d+\.xml", p)]
@@ -89,6 +100,7 @@ class PaperCompanionTest(unittest.TestCase):
                           "Class A matched external comparisons = 0", "Simulation only", "resolution boundary"):
                 self.assertIn(limit, text)
 
+    @unittest.skipUnless(DOCX.is_file(), "Word copy kept locally, not published")
     def test_word_has_native_text_figures_and_clean_metadata(self):
         with zipfile.ZipFile(DOCX) as archive:
             body = ET.fromstring(archive.read("word/document.xml"))
@@ -110,10 +122,22 @@ class PaperCompanionTest(unittest.TestCase):
     def test_readme_and_site_expose_current_review_artifacts(self):
         for path in (ROOT / "README.md", ROOT / "docs/status/index.html", ROOT / "docs/status/evidence.html"):
             text = path.read_text()
-            for artifact in (PAPER, PPTX):
-                self.assertIn(artifact.relative_to(ROOT).as_posix(), text)
+            self.assertIn(PAPER.relative_to(ROOT).as_posix(), text)
+            # Unpublished drafts are named as local-only, never linked.
+            self.assertIn("kept locally", text)
+            self.assertNotIn('href="../../presentations/MOTAR_overview', text)
+            self.assertNotIn("](presentations/MOTAR_overview", text)
         for limit in ("INCONCLUSIVE", "NOT_TESTED", "resolution boundary", "WITHHELD_SEMANTIC_MISMATCH"):
             self.assertIn(limit, self.paper)
+
+    def test_unpublished_drafts_are_untracked(self):
+        tracked = subprocess.run(["git", "ls-files", "--", *UNPUBLISHED], cwd=ROOT, capture_output=True,
+                                 text=True, check=True).stdout.split()
+        self.assertEqual(tracked, [])
+        # Positive control: the published Markdown draft is still tracked.
+        published = subprocess.run(["git", "ls-files", "--", PAPER.relative_to(ROOT).as_posix()], cwd=ROOT,
+                                   capture_output=True, text=True, check=True).stdout.split()
+        self.assertEqual(published, [PAPER.relative_to(ROOT).as_posix()])
 
 
 if __name__ == "__main__":

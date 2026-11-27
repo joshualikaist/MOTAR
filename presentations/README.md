@@ -1,6 +1,6 @@
 # MOTAR paper companion
 
-The current overview is [MOTAR_overview_2026-09-26.pptx](MOTAR_overview_2026-09-26.pptx): 12 widescreen slides with Korean main sentences, English diagrams and complete Korean speaker notes. All slide text, plots and diagrams are native editable PowerPoint objects. The [paper Markdown](../paper/MOTAR_draft_2026-09-26.md) is the source for the [Word review draft](../paper/MOTAR_draft_2026-09-26.docx).
+The current overview is `MOTAR_overview_2026-09-26.pptx` (kept locally, not published in this repository since 2026-11-28; rebuild it with the steps below): 12 widescreen slides with Korean main sentences, English diagrams and complete Korean speaker notes. All slide text, plots and diagrams are native editable PowerPoint objects. The [paper Markdown](../paper/MOTAR_draft_2026-09-26.md) is the source for the [Word review draft](../paper/MOTAR_draft_2026-09-26.docx).
 
 The original Word and 25-slide PowerPoint are preserved outside this repository. The new documents replace their research story with the independent n=7 replication and its limits. The filename date identifies the requested evidence edition, not the time of the latest authoring pass.
 

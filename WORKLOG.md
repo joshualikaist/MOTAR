@@ -27753,3 +27753,42 @@ the authorized remote push.
   Post-merge, pre-rewrite run: `tests_full_postmerge.log` (7 failures, 0 errors).
 - **Next:** independent review of the merge and the public surfaces, then push of main and the new archive tag
   (user-approved, after review).
+
+## 2026-11-28 — PUB review r1 fixes: drafts untracked, public numbers scoped, record corrections
+
+- **Review r1** (Claude Opus 5.5, read-only; `~/motar_tmp/pub_20261128/review_r1/REVIEW_r1.md`) of `fa671c1`:
+  PUSH_GO_WITH_FIXES, no P1. Its P2 items were the user's decisions; P3-1..12 fixed below.
+- **User decisions** (`~/motar_tmp/pub_20261128/user_decisions.json`):
+  - "초고 세 개 빼고 push": `paper/MOTAR_draft_2026-09-26.docx`, `presentations/MOTAR_overview_2026-09-26.pptx` and
+    `docs/paper_draft_camonly_sim2real_2026-11-23.md` are untracked at this commit (`git rm --cached`; the local files
+    are kept and listed in `.gitignore`). **They remain in earlier commits of the history**, which is not rewritten,
+    so they stay reachable there once main is pushed. README, site, `docs/README.md` and `presentations/README.md`
+    now name them as kept locally. `tests/test_paper_companion.py` skips the deck/Word content checks when the files
+    are absent and gains `test_unpublished_drafts_are_untracked` (positive control: the Markdown draft is tracked).
+  - "그대로 두기": the field-site wording and the workstation paths stay.
+- **Record corrections to the PUB entry above (that text stays as written):**
+  - P3-1: the `test_cams3_eval` allowlist failure is not new on main. It already fails at `564fd91` (RT-S3W
+    `4f6b709` changed `tools/camera_policy_contract_cams2.py` and added `tools/camera_policy_export_obs_norm.py`),
+    so RT-S3W's "same 9 F / 8 E set" no longer held once committed. Benign: a fail-closed launch guard pinned to
+    `335a1fa` for a finished evaluation. Beads `motar-7zc` scopes it to the launch commit.
+  - P3-2: the tag is `archive/2026-11-28/codex/mt-p1` (renamed from `codex-mt-p1` to the existing slash form).
+  - P3-9: merge `78b456a` dropped origin's expired KROC2027 temporary exception from AGENTS.md without saying so;
+    dropping it is correct (expired exceptions live in history).
+- **Public text (P3-3..8, 10..12):**
+  - `camonly-status.json`: `outdoor_frame_bins` is now 3,107 (239 frames × 13 bins), not the T5 near count 2,380;
+    new values for the S3-W sector rule (36.8 %, 2.90 %), the seed-block interval [−9.2, +3.0] and `outdoor_frames`.
+  - README, `index.html`, `evidence.html`, `EVIDENCE.md`: outdoor numbers name the rule (S2b native column rule
+    38.7 % / 2.67 %; S3-W sector rule 36.8 % / 2.90 %), the heuristic sky mask and the 2026-11-18 outdoor profile
+    review r3 FAIL; the −3.1 pp interval is named (episode bootstrap) with the seed-block interval; runtime parity
+    is scoped to 7 analytic CPU scenes built from the runtime's own configuration. `tests/test_camonly_public_status.py`
+    requires these phrases and values on every surface and checks the frame-bin count.
+  - `PROJECT_STATE.md`: parity scope; PUBLIC_CPU state on main. AGENTS.md "Branches": research lands on
+    `camonly/s2b` and reaches main by approved merges. `evidence.html` TOC and `figures.html` nav gain
+    "Camera-only". The filter is named "implemented arc-clearance speed filter" on the site.
+- **Checks:** `check_public_docs` PASS; `build_paper_figures --check` PASS (problems []);
+  `build_camonly_public_status --check` PASS; both node site tests PASS; related unittests OK. Full PUBLIC_CPU
+  (`~/motar_tmp/pub_20261128/tests_full_fixes.log`): 4,664 tests, 5 F / 0 E, of which the README length guard
+  (1,925 > 1,900 words) was then fixed by trimming the README (1,889 words; `test_canonical_docs` OK). The remaining
+  4 F equal the set at `fa671c1`: camk1e receipt, cams2a_eval receipt, cams3_eval allowlist, sitl_s4r1 prereg
+  commands.
+- **Next:** push main and the tag `archive/2026-11-28/codex/mt-p1` (user-approved, main session).

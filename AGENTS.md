@@ -128,8 +128,9 @@ or a host fault.
     prerequisites are verified against the intended HEAD.
   - Local commits are not visible on GitHub until an authorized push succeeds.
 - **Branches.** `main` is the publishing branch: GitHub Pages serves `/docs` from it. Research
-  commits currently land on `codex/mt-p1` (worktree `src/MOTAR-mt-p1`) and reach `main` only by an
-  approved merge. Record the branch and base SHA before editing. The frozen `CLAUDE.md` and root
+  commits currently land on `camonly/s2b` (worktree `src/MOTAR-camonly-s2b`, the active camera-only line)
+  and reach `main` only by an approved merge (the latest: PUB-2026-11-28). `codex/mt-p1` is historical. Record the branch and base SHA
+  before editing. The frozen `CLAUDE.md` and root
   `OPERATIONS.md` §0 still name `main` as the working branch; `tests/test_branch_policy.py` pins
   that text. This conflict is known. Do not stop on root `OPERATIONS.md` §0's session-start
   `## main...origin/main` check; confirm the branch that `docs/PROJECT_STATE.md` names instead, and

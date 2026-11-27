@@ -41,14 +41,17 @@ Policy F and the RGB-D + LiDAR contract still govern the historical results
 | S3-W | 72.6 % | 25.4 % | 15.7 % | 9.4 % |
 
   S3-W misses the ≤ 20 % crash bar: crash 25.4 %, one-sided Wilson 95 % [24.1, 26.7],
-  **BAR_NOT_MET_POINT**. Against S2b-FT, crash changed by **−3.1 pp** [−5.3, −0.9] (SMALL): fewer bar
+  **BAR_NOT_MET_POINT**. Against S2b-FT, crash changed by **−3.1 pp** (episode bootstrap 95 % [−5.3, −0.9];
+  seed-block 95 % [−9.2, +3.0], 3 seeds) (SMALL): fewer bar
   contacts, more contacts with the target, status NO_IMPROVEMENT. The preregistered pointer is
   **STRUCTURAL_NEXT**: fine-tuning this lineage stops. Independent results review: PASS_WITH_LIMITS.
-- **Vehicle runtime.** The onboard runtime reproduces S3-W's observation and action; its independent review
-  reads GO for a desk or hand-held shadow test only. No autonomous flight has been run or approved.
-- **Outdoor hand-held depth recordings.** With an assumed camera height of 150 cm, the ground alone makes
-  38.7 % of frame-bins read an obstacle nearer than 5 m (18.5–54.8 % for 130–170 cm); sky false-near
-  returns affect 2.67 %. Ground handling is the open blocker before any flight.
+- **Vehicle runtime.** On 7 analytic CPU scenes, built from the runtime's own configuration, its observation and
+  action match the training-side functions; review GO for a desk or hand-held shadow test only. No autonomous
+  flight has been run or approved.
+- **Outdoor hand-held depth** (one day, 3,107 frame-bins, offline). At an assumed 150 cm camera height, S2b native
+  column rule: ground makes 38.7 % of frame-bins read nearer than 5 m (18.5–54.8 % for 130–170 cm); sky false-near
+  2.67 % (heuristic sky mask). S3-W sector rule: 36.8 % and 2.90 %. Ground handling blocks any flight; an earlier
+  synthetic outdoor profile got review r3 FAIL (2026-11-18), no outdoor GO.
 
 All numbers above are read from [`docs/status/data/camonly-status.json`](docs/status/data/camonly-status.json),
 which `tools/build_camonly_public_status.py` builds from the committed records.
@@ -143,8 +146,8 @@ cross-machine bitwise reproducibility has not been established.
 Every result, its interval, its record and its limit: [**`docs/EVIDENCE.md`**](docs/EVIDENCE.md). Experiment
 families and their lineage: [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md). The public site is in
 [`docs/status/`](docs/status/index.html); historical figures are in the
-[figure overview](docs/results_overview_2026-09-12.md). Paper draft and overview deck (historical line):
-`paper/MOTAR_draft_2026-09-26.md`, `presentations/MOTAR_overview_2026-09-26.pptx`.
+[figure overview](docs/results_overview_2026-09-12.md). Paper draft (historical line):
+`paper/MOTAR_draft_2026-09-26.md`; its Word copy and the overview deck are kept locally and not published.
 
 ## Documentation
 
