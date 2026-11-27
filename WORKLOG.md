@@ -27629,3 +27629,26 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   1. Review the RT-S3W diff.
   2. Then, on the Jetson, a desk / hand-held shadow test: proposals logged, nothing sent to PX4.
   3. Flight needs a separate user approval.
+
+## 2026-11-28 — RT-S3W review r1 GO (shadow test only); handoff README v1
+
+- **Review r1** (Claude Opus 5.5, fresh context, read-only; copy `docs/evidence/camonly_2026-11-04/rt_s3w/REVIEW_r1.md`,
+  probes `~/motar_tmp/runtime_s3w_20261128/review_r1/`) of `4f6b709`: **GO for a Jetson desk / hand-held shadow
+  test, no flight.** No P1, no P2.
+  - Own parity probe: 7 independent scenes x 12 steps (FOV-edge target, target in front of a bar, < MinZ bar,
+    beyond-MaxZ wall, speckle, empty sky; top band + 5 % holes). All 898 elements within 4.3e-7; previous action and
+    yaw exact; sector rule equal to an independent numpy rule on 982 bins; the S2b column rule differs in 6/6 non-empty
+    scenes (negative control).
+  - Fail-closed: 6 refused mutations against an accepted control. Pins: navrl_cams3.py 96012f0a = receipt; 31 bound
+    sources match HEAD. Bundle .pth / npz / receipt match the checkpoint and training run. S2b path unchanged
+    (1.0472 rad/s, no sector rule). Related tests OK; full-suite 9 F / 8 E set identical to the baseline.
+- **P3, handled in the handoff README v1** (`~/motar_tmp/jetson_handoff_s3w_20261128/00_README_KO.md`, SHA-256
+  4a3ee9b4…; copy `handoff_README_KO_v1.md`; v0 copy unchanged):
+  - P3-1: training always saw the top 10 rows invalid; the shadow test must log the top-10-row and total invalid
+    shares, since measured depth is off on the vehicle.
+  - P3-2: `cams3_sector_ranges_m` ≥ 10 m means no return (20 m invalid, 12 m target removed).
+  - P3-3: CAM-S2b contracts built before 4f6b709 must be rebuilt.
+  - Open, not fixed: P3-4 (unreachable duplicate measured-depth check, harmless); P3-5 (realveh_entry camtrain config
+    vs runtime config not proven equal; already open as CAM-S2 P2-6).
+- **Next:** the Jetson side runs the desk / hand-held shadow test with README v1 (Orin NX step time, sector ranges
+  against real distances, invalid shares). No flight approved; push / merge not done.
