@@ -791,7 +791,10 @@ family that is in the test's scope.
     - W crash 25.4 % (Wilson ABOVE_20; bar contacts 15.7 %, BELOW_20), capture 72.6 %: BAR_NOT_MET_POINT.
     - W − S0 and W − S0M NO_IMPROVEMENT (crash −3.1 / −3.7 pp SMALL; bar contacts −6.6 / −7.9 pp MATERIAL, offset
       by target contacts +3.4 / +4.3 pp). WT − S0T IMPROVES (crash −5.5 pp, capture +5.1 pp, both MATERIAL).
-    - Results review NOT_RUN. `docs/evidence/camonly_2026-11-04/cams3/eval_analysis.json`.
+    - Results review r1 (Opus 5.5) PASS_WITH_LIMITS: numbers, labels and pointer recomputed from the episodes; P2-1
+      the W − S0 capture label depends on the interpreter's numpy (SMALL system python, NO_DETECTED_CHANGE aerialgym;
+      no status or pointer change). `docs/evidence/camonly_2026-11-04/cams3/eval_analysis.json`,
+      `eval_analysis_aerialgym.json`, `REVIEW_E_results_r1.md`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)

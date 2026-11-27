@@ -27535,3 +27535,32 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   `~/motar_tmp/cams3e_20261127/gpu1/`, analysis `~/motar_tmp/cams3e_20261127/analysis/` (controls 9 OK).
 - **Next (user):** a structural design (S3-M memory, target-approach terms / capture geometry, or the learning rate);
   no runtime unit from this result. Push / merge not done.
+
+## 2026-11-28 — CAM-S3-E results review r1 PASS_WITH_LIMITS; record corrections
+
+- **Review** (Claude Opus 5.5, fresh context, read-only; copy `docs/evidence/camonly_2026-11-04/cams3/REVIEW_E_results_r1.md`,
+  probes `~/motar_tmp/cams3e_20261127/review_results_r1/`): PASS_WITH_LIMITS, no P1. Provenance, identity (1,024/1,024
+  episodes), host faults, GPU wall, arm liveness and every rate, Wilson bound, Q2 difference, status and the pointer
+  STRUCTURAL_NEXT were recomputed from the per-episode files and match. The reading of the previous entry is no
+  longer CONDITIONAL.
+- **P2-1, interpreter.** The committed `eval_analysis.json` was produced with `/home/fair/miniconda3/bin/python3`
+  (numpy 2.5.1), not the aerialgym environment. Rerun with `/home/fair/miniconda3/envs/aerialgym/bin/python`
+  (numpy 1.24.4 measured here; the review states 1.23.0): `eval_analysis_aerialgym.json`, identical to the
+  reviewer's `rerun_aerialgym.json`. The bootstrap draws differ by numpy version; one label changes:
+  W − S0 capture +2.2 pp, CI [−0.03, +4.43] NO_DETECTED_CHANGE (aerialgym) vs [+0.03, +4.39] SMALL (system
+  python). Every other label, all three statuses, the pointer and the 9 analysis controls are the same. Both files
+  stay; the aerialgym one is the project-environment reading.
+- **P3 corrections to the previous entry (that text stays as written):**
+  - Not "half of the gain went to target contacts": the episodes are not paired; the target-contact rise
+    (+3.4 pp) offsets about half of the bar-contact fall (−6.6 pp).
+  - Not "the 90 deg/s policy": S3-W, whose yaw, masks, sector rule, thin-bar training and 3,000 epochs are
+    confounded.
+  - S0M − S0 crash +0.6 pp carries no label; its interval [−1.7, +2.9] pp includes 0.
+  - WT − S0T IMPROVES compares S3-W on its own training arena with S2b-FT off its training arena.
+  - Intervention shares are running shares from the last log line of each cell.
+  - "Target-approach terms / capture geometry" is my suggestion, not part of the fixed pointer (S3-M or learning
+    rate).
+  - P3-5 (procedural): the user approved the scope as shown at 22:40, before e73c573 and its scope SHA existed; the
+    shown scope matched the committed one and the re-review preceded launch.
+- **Open:** package review r2 P2-1 (out root under the unit folder) and P3-1..8, before any rerun. Next design for the
+  user.
