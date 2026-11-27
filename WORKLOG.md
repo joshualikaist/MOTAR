@@ -27365,3 +27365,48 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   after the reboot (pass with the folder present).
 - **Next:** the user accepts (or rejects) S3-W without false near; on acceptance: record the file, host check, smoke,
   launch rule, run. S3-W evaluation preregistration; runtime unit for rule 2 (P3-3/P3-4).
+
+## 2026-11-27 — CAM-S3 S3-W TRAINED (90 deg/s, thin bars, measured masks, sector k = 24); training rates flat, evaluation NOT_TESTED
+
+- **Approval:** the user accepted the departure of review r2 P1-A ("오측정 없이 S3-W 진행", 13:45); record
+  `~/motar_tmp/cams3_20261127/user_acceptance_false_near_off.json` (copy in `docs/evidence/camonly_2026-11-04/cams3/`).
+  Run at cf11845, tree frozen 17:46-21:18.
+- **Smoke 1 (13:45) SMOKE_FAIL:** CUDA OOM in Triton autotuning at the first update (process 6.49 GiB; display
+  processes 918 MiB, of which Chrome's GPU process 575 MiB). Not a code fault. The user turned off Chrome's hardware
+  acceleration (display 337 MiB). **Smoke 2 (17:43) SMOKE_COMPLETED:** every check passed; median step 3.99 s ->
+  projected 3.68 h ≤ 4.3 h (launch rule met); polled GPU peak 7,389 MiB of 8,192.
+- **Run:** `~/motar_tmp/cams3_20261127/train_w/` (launcher.log SHA-256 e2552f6c…, receipt.json 3ae14489…), run folder
+  `MOTAR-camonly-s2b/aerial_gym/rl_training/rl_games/runs/ppo_261127_1746_navrl_v2-cams3w-yaw90-camonly-s1/`.
+  **TRAINED**: max_epochs 18,000 reached, exit 0, 3.53 h wall, median step 3.84 s, polled GPU peak 7,500 MiB,
+  host faults 0 -> 0, receipt and start checks empty (warm start task_steps 480000, 70->205 bars, k 20-28; the two
+  expected mismatch lines), stop check at 16,006 capture 0.606 ≥ 0.30, no promotions (205 throughout), as
+  preregistered. Final checkpoint `last_gen_ppo_ep_18000_rew_93.111465.pth` SHA-256
+  2626a4b24eb29b11c469904ac1a4e06de0349a04e9c83164b23a1e6308fa98ee (16,000 bab74a10…, 17,000 e306b7ec…).
+  `[cams3]` rule statistics (200 calls): mask-invalid share 0.110, advance 0.502, jump 0.011, false near 0.
+- **Training-rollout rates** (stochastic policy, 128 envs, 205 bars of bars_h3_thin; not evaluation; `train_w_windows.json`):
+
+  | Epochs | Episodes | Capture | Crash | Timeout |
+  | --- | --- | --- | --- | --- |
+  | 15,001-15,500 | 8,860 | 0.612 | 0.283 | 0.105 |
+  | 15,501-16,000 | 9,081 | 0.609 | 0.299 | 0.092 |
+  | 16,001-16,500 | 9,408 | 0.610 | 0.301 | 0.089 |
+  | 16,501-17,000 | 9,313 | 0.610 | 0.294 | 0.096 |
+  | 17,001-17,500 | 9,480 | 0.607 | 0.300 | 0.093 |
+  | 17,501-18,000 | 9,358 | 0.614 | 0.292 | 0.094 |
+
+  S2b-FT's last window (14,501-15,000, bars_h3 205, 60 deg/s, iid holes, column sampling): 0.510 / 0.399 / 0.092.
+  The step from 0.40 to 0.28 crash appears in the first S3-W window, before any learning, so it reflects the changed
+  arena and observation (thin bars block fewer metres; sector rule; 90 deg/s), not training; the six windows show no
+  trend. Weight change vs ep15000 (relative L2 over float parameters, CPU): 0.0116 / 0.0154 / 0.0192 at
+  16k / 17k / 18k; S2b-FT's own 3,000 epochs moved 0.0216 (LR 7.5e-6 both). Hypothesis "3,000 epochs at LR 7.5e-6
+  improve the training-rollout crash under the new conditions" not supported by the rollout rates (no trend); whether
+  the final policy differs from S2b-FT under one protocol is what the evaluation measures.
+- **Not claimed:** no evaluation, no comparison with the 20 % / 70 % bars; the S3-W policy is not flyable until the
+  runtime installs rule 2 and accepts 1.5708 rad/s (prereg Limits).
+- **Jetson-side note (user, 2026-11-27):** the 11-26 handheld package was indoor only ("숲·실외 깊이 NOT_MEASURED",
+  rotation 48 / 70 deg/s mean / max); the user will ask the vehicle side for the 11-26 outdoor recordings in the same
+  format (masks.npz, stats, ≤ 30 raw colour + uint16 depth pairs per scene, scene notes) for mask library v2.
+- **Next:** S3-W evaluation preregistration (S3-W ep18000 vs S2b-FT ep15000 at 205 bars, bars_h3 and bars_h3_thin,
+  90 deg/s, delay U{1,2}; remaining approved GPU about 2.4 h of the 6 h; needs the user's approval of the
+  preregistration); runtime unit for rule 2 + 90 deg/s (pin `navrl_cams3.py`, P3-3/P3-4) and an Orin timing of the
+  sector rule (p95 margin 4.8 ms); outdoor masks when they arrive.
