@@ -1,0 +1,41 @@
+{
+  "scope": "isolated documentation publishing candidate",
+  "remote_base_sha": "2da5b12c1954ee768fcba59d1fb1fb9c78f7d536",
+  "source_snapshot_sha": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+  "source_branch": "codex/mt-p1",
+  "protected_main_before_reference": {
+    "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+    "main_branch": "main",
+    "main_status_sha256": "41110951bfd2f8813b408eb2008f868f49433bc7d507a716a63341babb0cf7e3",
+    "main_status_entries": 82,
+    "main_diff_sha256": "56ac3c06bbb6ae68d9dcc91b5890558081ccfedf0bf0b13d6ec43ee95551efb6",
+    "main_index_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stash_sha256": "a2c52e52362b46f3e59204f342b7df7c05258ee991d14f63758e678829a1a146",
+    "main_wip": {
+      ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+      "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+      "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+    },
+    "research_head": "363303bc83e24c5df91a703fa3df13ce56c130ed",
+    "research_status_sha256": "376c89294fb6d232b91213f3fff1a79e16922ab45b909af53c6aa4855cf3066c"
+  },
+  "protected_main_observed_after_candidate_preparation": {
+    "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+    "main_branch": "main",
+    "main_status_sha256": "41110951bfd2f8813b408eb2008f868f49433bc7d507a716a63341babb0cf7e3",
+    "main_status_entries": 82,
+    "main_diff_sha256": "56ac3c06bbb6ae68d9dcc91b5890558081ccfedf0bf0b13d6ec43ee95551efb6",
+    "main_index_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "stash_sha256": "a2c52e52362b46f3e59204f342b7df7c05258ee991d14f63758e678829a1a146",
+    "main_wip": {
+      ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+      "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+      "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+    },
+    "research_head": "fde21cdf969a7df380aa1c4deddc1824cb524506",
+    "research_status_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "protected_main_unchanged": true,
+  "research_access": "read-only; only pinned Git objects read",
+  "remote_push_at_receipt_time": "PENDING"
+}

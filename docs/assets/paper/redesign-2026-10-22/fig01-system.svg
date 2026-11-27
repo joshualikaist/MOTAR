@@ -1,0 +1,281 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg role="img" aria-labelledby="figure-title figure-desc" xmlns:xlink="http://www.w3.org/1999/xlink" width="518.4pt" height="309.6pt" viewBox="0 0 518.4 309.6" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<title id="figure-title">Verified sensor-to-action architecture</title>
+<desc id="figure-desc">Historical Policy F closed loop. Sensor models and own state feed perception; 898 flat values precede tokenization. PI altitude hold replaces actor z. Baseline riskcap and experimental arc-clearance are alternatives.</desc>
+ <title>Verified sensor-to-action architecture</title>
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:title>Verified sensor-to-action architecture</dc:title>
+    <dc:description>Historical Policy F closed loop. Sensor models and own state feed perception; 898 flat values precede tokenization. PI altitude hold replaces actor z. Baseline riskcap and experimental arc-clearance are alternatives.</dc:description>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>MOTAR reproducible publication figure builder</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 309.6
+L 518.4 309.6
+L 518.4 0
+L 0 0
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 36.190189 49.2264
+L 133.756981 49.2264
+L 133.756981 102.0132
+L 36.190189 102.0132
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 36.190189 121.2084
+L 133.756981 121.2084
+L 133.756981 173.9952
+L 36.190189 173.9952
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 36.190189 193.1904
+L 133.756981 193.1904
+L 133.756981 245.9772
+L 36.190189 245.9772
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #f2f6f8; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 166.279245 49.2264
+L 305.660377 49.2264
+L 305.660377 173.9952
+L 166.279245 173.9952
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 338.182642 49.2264
+L 500.793962 49.2264
+L 500.793962 173.9952
+L 338.182642 173.9952
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 135.753893 73.2204
+Q 150.016074 73.2204 163.272024 73.2204
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 160.072024 71.6204
+L 163.272024 73.2204
+L 160.072024 74.8204
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 135.753893 145.2024
+Q 150.016074 145.2024 163.272024 145.2024
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 160.072024 143.6024
+L 163.272024 145.2024
+L 160.072024 146.8024
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 149.695976 164.3976
+Q 156.989618 164.3976 163.27703 164.3976
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 160.07703 162.7976
+L 163.27703 164.3976
+L 160.07703 165.9976
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_10">
+    <path d="M 307.657289 111.6108
+Q 321.91947 111.6108 335.17542 111.6108
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 331.97542 110.0108
+L 335.17542 111.6108
+L 331.97542 113.2108
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 338.182642 202.788
+L 500.793962 202.788
+L 500.793962 260.3736
+L 338.182642 260.3736
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_12">
+    <path d="M 166.279245 202.788
+L 305.660377 202.788
+L 305.660377 260.3736
+L 166.279245 260.3736
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #ffffff; stroke: #bac7cf; stroke-width: 0.85; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_13">
+    <path d="M 417.165283 175.995091
+Q 417.165283 188.392371 417.165283 199.783421
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 418.765283 196.583421
+L 417.165283 199.783421
+L 415.565283 196.583421
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_14">
+    <path d="M 336.18573 231.5808
+Q 321.923549 231.5808 308.667598 231.5808
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 311.867598 233.1808
+L 308.667598 231.5808
+L 311.867598 229.9808
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_15">
+    <path d="M 321.599372 221.9832
+Q 328.893015 221.9832 335.180427 221.9832
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #28648d; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 331.980427 220.3832
+L 335.180427 221.9832
+L 331.980427 223.5832
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #28648d; stroke: #28648d; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 22.252075 277.569422
+Q 22.252075 176.394268 22.252075 75.219114
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 24.249554 73.2204
+Q 29.218502 73.2204 33.18122 73.2204
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 29.98122 71.6204
+L 33.18122 73.2204
+L 29.98122 74.8204
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_18">
+    <path d="M 24.249554 145.2024
+Q 29.218502 145.2024 33.18122 145.2024
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 29.98122 143.6024
+L 33.18122 145.2024
+L 29.98122 146.8024
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="patch_19">
+    <path d="M 24.249554 217.1844
+Q 29.218502 217.1844 33.18122 217.1844
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+    <path d="M 29.98122 215.5844
+L 33.18122 217.1844
+L 29.98122 218.7844
+z
+" clip-path="url(#pfed83de8fa)" style="fill: #546675; stroke: #546675; stroke-width: 0.9; stroke-linecap: round"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 133.756981 217.1844
+L 147.695094 217.1844
+L 147.695094 164.3976
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 91.942642 173.9952
+L 91.942642 183.5928
+L 319.598491 183.5928
+L 319.598491 221.9832
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #28648d; stroke-width: 0.9; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_3">
+    <path d="M 235.969811 260.3736
+L 235.969811 279.5688
+L 22.252075 279.5688
+" clip-path="url(#pfed83de8fa)" style="fill: none; stroke: #546675; stroke-width: 0.9; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <text style="fill: #172b3a; font: 700 10px 'Liberation Sans'; text-anchor: start" x="36.190189" y="20.620137" transform="rotate(-0 36.190189 20.620137)">(a) Sensor-to-action loop</text>
+   </g>
+   <g id="text_2">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: end" x="500.793962" y="20.10295" transform="rotate(-0 500.793962 20.10295)">SCHEMATIC · FROZEN POLICY F</text>
+   </g>
+   <g id="text_3">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="43.159245" y="67.817945" transform="rotate(-0 43.159245 67.817945)">RGB-D camera</text>
+   </g>
+   <g id="text_4">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="43.159245" y="86.134438" transform="rotate(-0 43.159245 86.134438)">Synthetic RGB + range</text>
+   </g>
+   <g id="text_5">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="43.159245" y="139.799945" transform="rotate(-0 43.159245 139.799945)">LiDAR</text>
+   </g>
+   <g id="text_6">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="43.159245" y="158.116438" transform="rotate(-0 43.159245 158.116438)">4 × 72 ray returns</text>
+   </g>
+   <g id="text_7">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="43.159245" y="211.781945" transform="rotate(-0 43.159245 211.781945)">Own vehicle state</text>
+   </g>
+   <g id="text_8">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="43.159245" y="230.098438" transform="rotate(-0 43.159245 230.098438)">Pose, velocity; simulator</text>
+   </g>
+   <g id="text_9">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="173.248302" y="67.798695" transform="rotate(-0 173.248302 67.798695)">Perception + tracking</text>
+   </g>
+   <g id="text_10">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(173.248302 123.866058)">Camera measurement + LiDAR aid</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(173.248302 133.642558)">6-D target state, 6 × 6 covariance</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(173.248302 143.419058)">Obstacle features + sampled history</text>
+   </g>
+   <g id="text_11">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="345.151698" y="67.817945" transform="rotate(-0 345.151698 67.817945)">Frozen Transformer PPO</text>
+   </g>
+   <g id="text_12">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(345.151698 123.866058)">898-D observation → 17 tokens</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(345.151698 133.642558)">Actor outputs 4 components</text>
+    <text style="fill: #546675; font: 8px 'Liberation Sans'" transform="translate(345.151698 143.419058)">Task replaces z with altitude hold</text>
+   </g>
+   <g id="text_13">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="345.151698" y="221.360295" transform="rotate(-0 345.151698 221.360295)">XY speed governor</text>
+   </g>
+   <g id="text_14">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="345.151698" y="242.863246" transform="rotate(-0 345.151698 242.863246)">Policy F: riskcap magnitude cap</text>
+   </g>
+   <g id="text_15">
+    <text style="fill: #172b3a; font: 700 8.8px 'Liberation Sans'; text-anchor: start" x="173.248302" y="221.379545" transform="rotate(-0 173.248302 221.379545)">Lee velocity control + PhysX</text>
+   </g>
+   <g id="text_16">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="173.248302" y="242.863246" transform="rotate(-0 173.248302 242.863246)">Velocity/yaw → thrust + torques</text>
+   </g>
+   <g id="text_17">
+    <text style="fill: #546675; font: 8px 'Liberation Sans'; text-anchor: start" x="82.650566" y="290.27539" transform="rotate(-0 82.650566 290.27539)">Vehicle / scene state → next sensor delivery</text>
+   </g>
+   <g id="text_18">
+    <text style="fill: #546675; font: 7.8px 'Liberation Sans'; text-anchor: start" x="338.182642" y="290.223671" transform="rotate(-0 338.182642 290.223671)">Arc-clearance: separate experimental mode</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pfed83de8fa">
+   <rect x="12.96" y="10.836" width="492.48" height="287.928"/>
+  </clipPath>
+ </defs>
+</svg>

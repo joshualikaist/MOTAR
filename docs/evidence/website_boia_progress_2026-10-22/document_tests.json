@@ -1,0 +1,16 @@
+{
+  "scope": "documentation tests only; no research tests or simulator",
+  "tests": 58,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "elapsed_s": 0.15,
+  "modules": [
+    "test_canonical_docs",
+    "test_public_docs_consistency",
+    "test_site_quantitative_positioning",
+    "test_site_comparison_evidence",
+    "test_boia_progress_docs"
+  ],
+  "status": "PASS"
+}

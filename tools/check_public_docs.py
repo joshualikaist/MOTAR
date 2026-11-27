@@ -110,11 +110,13 @@ def local_link_errors(text, path, root=ROOT):
     return errors
 
 
-# The README is a short landing page (user decision, 2026-09-24): ten fixed sections, headline
+# The README is a short landing page: the original sections plus the user-approved October 2026
+# BOIA progress extension. Headline
 # numbers only in the opening block, Key Results and the replication section. Every decimal
 # must match a canonical machine-readable record (landing_number_errors). The quick start may
 # report the required CPU validation outcome; detailed execution logs stay in WORKLOG.
-LANDING_HEADINGS = ("Why MOTAR?", "Key Results", "System", "Target-motion replication", "Repository Structure", "Quick Start",
+LANDING_HEADINGS = ("Why MOTAR?", "Key Results", "System", "Target-motion replication",
+                    "Current Research Extension — BOIA (October 2026)", "Repository Structure", "Quick Start",
                     "Research Evidence", "Documentation", "Limitations", "Citation and license")
 NUMBER_SECTIONS = ("", "Key Results", "Target-motion replication")
 

@@ -1,0 +1,161 @@
+{
+  "status": "PASS",
+  "scope": "CPU software browser; no simulator or policy",
+  "pages": [
+    {
+      "width": 1360,
+      "scrollWidth": 1345,
+      "h1": 1,
+      "images": 6,
+      "broken": 0,
+      "canvas": true,
+      "nav": 6,
+      "figures": 6,
+      "statusUnavailable": false,
+      "page": "index.html",
+      "viewport": "desktop"
+    },
+    {
+      "width": 1360,
+      "scrollWidth": 1345,
+      "h1": 1,
+      "images": 0,
+      "broken": 0,
+      "canvas": false,
+      "nav": 6,
+      "figures": 0,
+      "statusUnavailable": false,
+      "page": "evidence.html",
+      "viewport": "desktop"
+    },
+    {
+      "width": 1360,
+      "scrollWidth": 1345,
+      "h1": 1,
+      "images": 6,
+      "broken": 0,
+      "canvas": false,
+      "nav": 6,
+      "figures": 6,
+      "statusUnavailable": false,
+      "page": "figures.html",
+      "viewport": "desktop"
+    },
+    {
+      "width": 800,
+      "scrollWidth": 785,
+      "h1": 1,
+      "images": 6,
+      "broken": 0,
+      "canvas": true,
+      "nav": 6,
+      "figures": 6,
+      "statusUnavailable": false,
+      "page": "index.html",
+      "viewport": "tablet"
+    },
+    {
+      "width": 800,
+      "scrollWidth": 785,
+      "h1": 1,
+      "images": 0,
+      "broken": 0,
+      "canvas": false,
+      "nav": 6,
+      "figures": 0,
+      "statusUnavailable": false,
+      "page": "evidence.html",
+      "viewport": "tablet"
+    },
+    {
+      "width": 800,
+      "scrollWidth": 785,
+      "h1": 1,
+      "images": 6,
+      "broken": 0,
+      "canvas": false,
+      "nav": 6,
+      "figures": 6,
+      "statusUnavailable": false,
+      "page": "figures.html",
+      "viewport": "tablet"
+    },
+    {
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "images": 6,
+      "broken": 0,
+      "canvas": true,
+      "nav": 6,
+      "figures": 6,
+      "statusUnavailable": false,
+      "page": "index.html",
+      "viewport": "mobile"
+    },
+    {
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "images": 0,
+      "broken": 0,
+      "canvas": false,
+      "nav": 6,
+      "figures": 0,
+      "statusUnavailable": false,
+      "page": "evidence.html",
+      "viewport": "mobile"
+    },
+    {
+      "width": 390,
+      "scrollWidth": 390,
+      "h1": 1,
+      "images": 6,
+      "broken": 0,
+      "canvas": false,
+      "nav": 6,
+      "figures": 6,
+      "statusUnavailable": false,
+      "page": "figures.html",
+      "viewport": "mobile"
+    }
+  ],
+  "svg_text_geometry": [
+    {
+      "figure": "fig01-system",
+      "texts": 22,
+      "clipped": [],
+      "overlaps": []
+    },
+    {
+      "figure": "fig02-observation",
+      "texts": 23,
+      "clipped": [],
+      "overlaps": []
+    },
+    {
+      "figure": "fig03-motion",
+      "texts": 27,
+      "clipped": [],
+      "overlaps": []
+    },
+    {
+      "figure": "fig04-density",
+      "texts": 32,
+      "clipped": [],
+      "overlaps": []
+    },
+    {
+      "figure": "fig05-sensitivities",
+      "texts": 48,
+      "clipped": [],
+      "overlaps": []
+    },
+    {
+      "figure": "fig06-boia",
+      "texts": 19,
+      "clipped": [],
+      "overlaps": []
+    }
+  ]
+}

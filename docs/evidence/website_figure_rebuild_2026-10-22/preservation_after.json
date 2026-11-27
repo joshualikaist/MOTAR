@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "checks": {
+    "main_head": true,
+    "main_status": true,
+    "stash": true,
+    "main_wip": true,
+    "research_head": true,
+    "research_status": true,
+    "historical_assets": true
+  },
+  "main_changes": 82,
+  "historical_assets_verified": 108,
+  "raw_checkpoint": "No write/move/delete operation; full raw and checkpoint rehash not repeated"
+}

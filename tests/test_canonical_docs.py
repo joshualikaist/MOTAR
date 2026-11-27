@@ -82,8 +82,9 @@ class ReadmeGuardTest(unittest.TestCase):
 
     def test_length_is_bounded(self):
         prose = re.sub(r"```.*?```", "", self.text, flags=re.S)
-        self.assertLessEqual(len(self.text.splitlines()), 150)
-        self.assertLessEqual(len(re.findall(r"\w+", prose)), 1500)
+        # User-approved BOIA extension; retain a bounded landing page and every old result.
+        self.assertLessEqual(len(self.text.splitlines()), 200)
+        self.assertLessEqual(len(re.findall(r"\w+", prose)), 1900)
 
     def test_no_experiment_log_patterns(self):
         prose = re.sub(r"```.*?```", "", self.text, flags=re.S)

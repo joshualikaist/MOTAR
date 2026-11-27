@@ -13,8 +13,10 @@ import re
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
-INDEX = ROOT / "docs/status/evidence.html"   # detailed tables moved here 2026-09-24
-PAGES = (INDEX, ROOT / "docs/status/index.html")
+# The old external-context table is preserved, with a superseded notice. Current
+# pages now link the source ledger instead; test_project_page checks their new figures.
+INDEX = ROOT / "docs/status/evidence-archive-2026-10-22.html"
+PAGES = (ROOT / "docs/status/evidence.html", ROOT / "docs/status/index.html")
 LEDGER = ROOT / "docs/literature_quantitative_ledger_2026-09-18.json"
 REGISTRY = ROOT / "docs/quantitative_positioning_registry.json"
 FIGURE = ROOT / "docs/assets/paper/quantitative-positioning-2026-09-18.svg"

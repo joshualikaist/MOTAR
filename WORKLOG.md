@@ -20242,3 +20242,52 @@ worktree `/home/fair/workspaces/aerial_gym_ws/.codex_worktrees/kroc2027-phase1`,
 - Same narrow unit is deployed to the five active worktrees only; locked historical worktrees, raw results and checkpoints are untouched. Workspace entrypoints route a new account to its actual worktree and latest handoff. Local commits only, no push/merge.
 - Validation: final helper tests cover earlier-deadline tightening, closed-clock preservation, restart/subdirectory reuse and interrupted-close recovery without changing immutable handoff bytes. Independent source review r2 PASS_WITH_LIMITS; helper remains on-demand, with no guaranteed idle wakeup. Root clocks also remain binding across worktree switches.
 - Final validation: session10/10 and branch-policy4/4 PASS in this worktree; canonical-docs checks PASS (26 on research branches,25 on main). Final section/helper/test/skill/Cursor hashes match across all5 active worktrees. Independent reviews: ~/motar_tmp/session_policy_20261105/REVIEW.md and REVIEW_r2.md; review r2 PASS_WITH_LIMITS. No experiment or GPU launch.
+## 2026-10-22 — BOIA website update prepared for Pages review
+
+Prepared a documentation-only publishing commit on top of remote main 2da5b12. This branch
+does not carry the 20 local-only main commits. The BOIA progress snapshot is pinned to the
+local research review commit fde21cd: Q02-B/Q03 remain HOLD after the independent review
+reproduced two unfixed P1 findings. The README and both site pages now state that result.
+No research source, Raw output, checkpoint, Policy F, simulator or PPO file is included.
+
+The preview compares remote main with the candidate in software-rendered Chrome at desktop,
+tablet and mobile sizes. The 58 documentation tests, public-doc checker, site JavaScript
+checks and 12 browser layout checks pass. Existing result figures and viewer behavior are
+preserved. This records the reviewed candidate; GitHub Pages publication is verified after
+the authorized remote push.
+
+## 2026-10-23 — Complete publication-page rebuild and source-verified figure family
+
+- User clarified that the complete page and erroneous diagrams must be recreated. Rebuilt
+  the project page, evidence ledger and a new figure atlas on the isolated docs branch,
+  with six new SVG/PDF/300 dpi PNG figures and a source/output SHA manifest. Earlier
+  measurements and the 108 historical assets/preview sources remain byte-identical.
+- Independent read-only source checks corrected flat898→17×64 order, fused static scan,
+  altitude-hold ownership, previous-action semantics, riskcap/arc alternatives, cross-modal
+  sensor paths and the passive BOIA boundary. Seed-t safety inference now uses its own
+  seed mean, with pooled historical inference reported separately. No new experiment.
+- Validation: 158 documentation/page/figure tests, zero failures/errors/skips; public-doc
+  checker and two browser-contract commands PASS; 9 browser page/viewport checks and 6
+  SVG text-geometry checks PASS; 20 artifacts regenerate byte-identically. All 112 density
+  rates match primary counts. Historical figure generator remains byte-exact PASS.
+- Evidence: `docs/evidence/website_figure_rebuild_2026-10-22/REPORT.md`; source corrections
+  `docs/research/figure-redesign-2026-10-22.md`; assets
+  `docs/assets/paper/redesign-2026-10-22/`. Historical layout assertions remain attached
+  to a visibly superseded evidence snapshot; current tests verify the new surface.
+- Main WIP/stash preserved (82 changes), local main HEAD f74390a, research fde21cd clean.
+  No raw/checkpoint/runtime/PPO modifications. No GPU experiment. The prior website
+  deployment authorization continues for publishing this corrective redesign; research
+  main merge and research-code publication are outside this work. Q02-B/Q03 and G5 HOLD.
+
+
+## 2026-10-23 — Correct publication-figure path contract in public CI
+
+- Pages successfully published f9c1772; HTTPS checks matched all twenty figure artifacts.
+  The separate public CPU workflow failed because one README test still allowed only
+  the pre-redesign `final/` figure directory.
+- Updated only that test to require the new approved family AND its manifest SHA-256.
+  Historical nine-figure preservation and the two-image README limit remain enforced.
+- Pinned Python 3.8.20: nineteen public tests and expanded 177-test documentation/figure
+  suite PASS, zero failures/errors. No page, figure, runtime or measurement changed.
+- Evidence: `docs/evidence/website_figure_rebuild_2026-10-22/CI_FOLLOWUP.md` and
+  `ci_followup_tests.json`. Main WIP/stash and research source remain preserved.

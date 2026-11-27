@@ -51,12 +51,19 @@ class PublicDocsTest(unittest.TestCase):
         import re
         landing = (ROOT / "README.md").read_text()
         overview = (ROOT / "docs/results_overview_2026-09-12.md").read_text()
-        # The landing page shows the graphical abstract and the system figure (2026-09-24 layout),
-        # both from the generated, source-bound figure family; the nine track figures stay off it.
+        # The complete October redesign uses the verified system + data-structure
+        # figures. Bind their paths AND bytes to the new manifest, while preserving
+        # all nine historical track figures off the landing page.
+        import hashlib
+        family = ROOT / "docs/assets/paper/redesign-2026-10-22"
+        manifest = json.loads((family / "manifest.json").read_text())
         images = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", landing)
         self.assertLessEqual(len(images), 2)
         for image in images:
-            self.assertTrue(image.startswith("docs/assets/paper/final/"), image)
+            self.assertEqual((ROOT / image).parent, family, image)
+            self.assertIn(Path(image).name, manifest["files"])
+            self.assertEqual(hashlib.sha256((ROOT / image).read_bytes()).hexdigest(),
+                             manifest["files"][Path(image).name])
         self.assertEqual(len(re.findall(r"!\[", overview)), 9)
         self.assertTrue((ROOT / "docs/archive/readme_9732d12_2026-09-12.md").is_file())
 
