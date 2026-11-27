@@ -4,6 +4,9 @@ Runtime v1 (2026-11-24): a contract with lineage CAM-S2 (camera_policy_contract_
 min-valid projection with invalid depth = no return (project_rgbd_min_valid), the training's altitude and camera mount
 (navrl_cams2.apply_config), the camsafe blind-direction cap on the published command and the trained delayed
 previous-action channel (_cams2_command). Every other contract runs the code paths it ran before.
+RT-S3W (2026-11-28): a CAM-S2 contract with the cams3 block (variant CAM-S3W, camera_policy_contract_cams2._cams3_block)
+also installs the trained camera sector reduction (navrl_cams3.install_sector, after the no_lidar ablation, as
+tools/realveh_entry.py does) and reports the sector ranges per step; the measured-depth model stays off on the vehicle.
 
 No simulator, synthetic depth model, target pose, LiDAR device, or MAVLink sender
 is constructed. The 288 scan slots remain the trained no-return representation;
@@ -1714,6 +1717,7 @@ class CameraPolicyRuntime:
     # Runtime v1: the CAM-S2 branch state (_setup_cams2); None for every other contract, also on instances that tests
     # build without __init__ (geometry-only runtimes).
     cams2 = None
+    cams3 = None              # RT-S3W: the installed sector rule (_setup_cams3); None for every other contract
     threads = None            # set by __init__ (pin_cpu_threads)
 
     def __init__(self, contract, torch_threads=None, projection_device=None):
@@ -1766,6 +1770,10 @@ class CameraPolicyRuntime:
         # height feature, camera mount) before perception is built; every other contract is unchanged.
         self.cams2 = self._setup_cams2(tc, contract) if _is_cams2(contract) else None
         self.ablation.install_perception(pm, 'no_lidar')
+        # RT-S3W: a contract with the cams3 block (variant CAM-S3W) installs the trained camera sector reduction
+        # exactly as tools/realveh_entry.py does: after the ablation, as a module-global replacement. Every other
+        # contract leaves navrl_perception's own camera_no_return_to_lidar_range in place.
+        self.cams3 = self._setup_cams3(pm, contract) if 'cams3' in contract else None
         if pm.STRUCTURED_OBS_DIM != 898 or (pm.VBEAMS, pm.HBEAMS) != (4, 72):
             raise RuntimeError('camera observation schema differs from trained 898-D')
         self.tc = tc
@@ -1837,6 +1845,25 @@ class CameraPolicyRuntime:
         return {'cams2': cams2, 'camsafe': camsafe, 'settings': settings, 'applied': applied,
                 'blind_mps': float(safe['NAVRL_CAMSAFE_BLIND_MPS']), 'k_hat': k_hat,
                 'history': int(settings['NAVRL_CAMS2_DELAY_MAX']) + 1}
+
+    def _setup_cams3(self, pm, contract):
+        """RT-S3W only (CAM-S2 lineage, variant CAM-S3W): the sector rule from the flight environment through the
+        training module's own parser, checked against the contract; the measured-depth model must be off."""
+        if not _is_cams2(contract):
+            raise RuntimeError('the cams3 block is defined for the CAM-S2 lineage only')
+        cams3 = importlib.import_module('aerial_gym.task.navrl_task.navrl_cams3')
+        block = contract['cams3']
+        sector = cams3.sector_settings_from_env(os.environ)
+        if (sector is None or int(sector[cams3.SECTOR_ENV]) != int(block['sector_k'])
+                or block['measured_depth_on_vehicle'] is not False):
+            raise RuntimeError('cams3 sector settings differ from the contract')
+        if cams3.meas_settings_from_env(os.environ) is not None or any(
+                k.startswith(cams3.MEAS_ENV) for k in os.environ):
+            raise RuntimeError('the measured-depth model is training only; it must not run on the vehicle')
+        info = cams3.install_sector(pm, sector)
+        if getattr(pm.camera_no_return_to_lidar_range, 'cams3_sector_k', None) != int(block['sector_k']):
+            raise RuntimeError('cams3 sector rule did not install')
+        return {'module': cams3, 'sector_k': int(block['sector_k']), 'install': info}
 
     def _check_cams2_build(self):
         """CAM-S2 only: the built perception is the trained camera, and the checkpoint's own normaliser equals the
@@ -2224,6 +2251,11 @@ class CameraPolicyRuntime:
                           # velocity_world_enu_mps (rotated by the capture yaw) is kept for existing readers only.
                           capture_yaw_rad=yaw, proposal_frame='level_body_flu',
                           near_constant_slots=self.near_constant_report(result['observation']))
+            if self.cams3 is not None:
+                # RT-S3W: the sector ranges the policy saw this step (k-th smallest per in-FOV bin, metres).
+                last = getattr(self.perception, '_cams3_sector_last', None)
+                result.update(cams3_sector_k=self.cams3['sector_k'],
+                              cams3_sector_ranges_m=None if last is None else [float(x) for x in last[0].tolist()])
         if 'outdoor' in counts:
             ground = counts['outdoor']['ground']
             result['outdoor'] = {'ground_plane': ground['plane'], 'ground_points': ground['points'],

@@ -27564,3 +27564,68 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
     shown scope matched the committed one and the re-review preceded launch.
 - **Open:** package review r2 P2-1 (out root under the unit folder) and P3-1..8, before any rerun. Next design for the
   user.
+
+## 2026-11-28 — RT-S3W: camera flight runtime runs S3-W (variant CAM-S3W); CPU parity OK; review pending, no flight
+
+- **Approval:** user "두번째거 승인." (2026-11-28; `docs/evidence/camonly_2026-11-04/rt_s3w/user_approval.json`):
+  runtime support for S3-W, CPU only. Not approved: GPU, flight, push, merge. Base `ab39d18`, branch camonly/s2b.
+- **Why:** the runtime (`tools/camera_policy_runtime.py`) served S2b-FT only. S3-W was trained with the CAM-S3
+  sector reduction (k 24) and a 90 deg/s yaw scale, so S3-W in the old runtime would see a different observation.
+- **What changed:**
+  - `tools/camera_policy_contract_cams2.py`:
+    - New variant CAM-S3W (receipt NAVRL_YAW_RATE_MAX 1.5708), still lineage CAM-S2, with a `cams3` block read from
+      the receipt: sector_k from NAVRL_CAMS3_SECTOR_K through navrl_cams3's own parser, cross-checked with the
+      receipt's cams3_sector record.
+    - `measured_depth_on_vehicle: false`. The NAVRL_DEPTH_MEAS* keys are training-only (NAVRL_DEPTH_ prefix); a
+      runtime_env carrying any of them is refused.
+    - A YAW_LIMIT_NOTE: PX4 limits only by MC_YAWRATE_MAX 200 deg/s, so 90 deg/s is our scaling.
+    - navrl_cams3.py is pinned to the receipt's cams3_sha256 and bound as a runtime source (CAMS3_SOURCE_PATHS).
+    - Refused: a CAM-S3W receipt without the sector rule; the sector rule on an S2a/S2b receipt; a mismatched record.
+    - Receipts without the sector rule build the same contract as before (no block, the old source set); only the
+      source hashes change, because the bound sources were edited.
+  - `tools/camera_policy_runtime.py` `_setup_cams3`:
+    - Installs `navrl_cams3.install_sector` after the no_lidar ablation, exactly as tools/realveh_entry.py does.
+    - Checks k against the contract and refuses any measured-depth setting.
+    - Reports `cams3_sector_k` and `cams3_sector_ranges_m` per step.
+    - Every other contract runs the old code paths.
+  - New `tools/camera_policy_export_obs_norm.py`: npz from the checkpoint's running_mean_std. It reproduces the
+    CAM-S2a handoff npz byte for byte (77478ece…).
+- **Handoff bundle** `~/motar_tmp/jetson_handoff_s3w_20261128/` (manifest and README copied to the evidence folder):
+  - `s3w_ep18000.pth` 2626a4b2…
+  - `s3w_ep18000_obs_norm.npz` 08dc318c…
+  - `s3w_training_receipt.json` 3ae14489…
+  - SHA256SUMS
+  - 00_README_KO.md (desk / hand-held shadow test only)
+- **Contract on this host:** `rt_s3w/contract_s3w_host.json` → CONTRACT_VALID, CAM-S3W, k 24, 1.5708 rad/s. This
+  example was built with the floor filter off; the vehicle contract keeps the default floor filter and its height
+  assertion.
+- **Tests:**
+  - `tests/test_camera_runtime_cams3w.py`, 15 OK. Parity child `rt_s3w/parity_host.json`:
+    - the runtime 624x468 frame against the training path: max |Δobs| 5.07e-7 over 14 steps, previous-action
+      mismatches 0;
+    - sector ranges against a numpy re-implementation: 0 difference on 167 target-free bins; runtime against
+      training: ≤ 4.8e-7 on 101 bins with a return;
+    - negative control: the S2b-FT column rule differs on 14/14 steps (max 1.0 normalised);
+    - full yaw action: 1.5708 rad/s (S3W) and 1.0472 rad/s (S2b-FT runtime, no sector installed);
+    - refusals with positive controls.
+  - Regression OK:
+    - test_camera_policy_runtime 7, test_camera_policy_contract 8;
+    - test_camera_runtime_cams2 27 + the GPU_REQUIRED class CudaV2Equivalence (refuses without CUDA, excluded
+      from PUBLIC_CPU);
+    - fixes 20, fixes_r2 22, outdoor_r1 86 (10 expected failures), repair_r1 31, unit_b 28;
+    - test_realveh 49, test_cams3 20.
+  - Full PUBLIC_CPU (`~/motar_tmp/runtime_s3w_20261128/tests_full.log`): 4,648 tests, 9 F / 8 E, the same failing set
+    as the baseline `~/motar_tmp/cams3e_20261127/tests_full_amend1.log` (4,633; +15 new tests).
+- **Host timing:** this workstation, one torch thread, cores 6,7,12,13: median 47.0 ms per step (max 48.8 ms). This
+  is not Orin NX timing, which is NOT_MEASURED; the vehicle reported 337 ms capture → result for S2b at one thread
+  (2026-11-26).
+- **Open:**
+  - Independent review: NOT_RUN at this commit.
+  - Training/runtime parity is CPU and analytic only (no GPU recorder, as for CAM-S2 P2-6).
+  - The outdoor profile is still refused for the CAM-S2 lineage.
+  - Ground and sky issues from the 11-26 outdoor recordings are unchanged.
+  - S3-W missed the bar in simulation (CAM-S3-E crash 25.4 %).
+- **Next:**
+  1. Review the RT-S3W diff.
+  2. Then, on the Jetson, a desk / hand-held shadow test: proposals logged, nothing sent to PX4.
+  3. Flight needs a separate user approval.

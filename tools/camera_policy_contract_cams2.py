@@ -53,6 +53,21 @@ Open items (review r1; also ~/motar_tmp/runtime_v1_20261124/NOTES.md), not fixed
     TF32-aware tolerance and include non-identity attitude before it is preregistered;
   * P3-4: training-time byte pins omit navrl_task.py, the task config, speed_governor.py and navrl_detector.py
     (identical to the training head 22ed16f on 2026-11-24, verified by the reviewer).
+RT-S3W (2026-11-28): the CAM-S3 S3-W checkpoint (S2b-FT continued, docs/plans/prereg_camonly_s3w_2026-11-27.md) is
+variant CAM-S3W of this lineage (receipt NAVRL_YAW_RATE_MAX 1.5708, i.e. a 90 deg/s yaw-rate action scale). Its
+contract adds one block, "cams3", read from the receipt:
+  * the camera sector reduction NAVRL_CAMS3_SECTOR_K (k-th smallest range over every pixel of each 5-degree bin,
+    aerial_gym/task/navrl_task/navrl_cams3.py), which the runtime installs exactly as tools/realveh_entry.py does
+    (module-global replacement of navrl_perception.camera_no_return_to_lidar_range, after the no_lidar ablation);
+    navrl_cams3.py is then byte-pinned to the receipt's cams3_sha256 and bound as a runtime source;
+  * the measured-depth model (NAVRL_DEPTH_MEAS*: recorded OAK-D invalid masks + top band) is TRAINING ONLY: it imitates
+    the real sensor's holes in simulation, and the real sensor supplies them. Its keys are dropped from the flight
+    environment (NAVRL_DEPTH_ prefix) and the block records measured_depth_on_vehicle false; a contract or environment
+    that turns it on is refused;
+  * yaw: the 90 deg/s ceiling is this policy's own action scale (action.yaw_rate_max_rps); the PX4 v1.17 vehicle only
+    limits offboard yaw rate by MC_YAWRATE_MAX 200 deg/s, so 90 deg/s is enforced by our command scaling, not by PX4.
+A receipt without the sector rule never gets the block, so CAM-S2a / CAM-S2b contracts are unchanged; variant CAM-S3W
+without the sector rule, and the sector rule without the receipt's own cams3_sector record, are refused.
 The deployment floor/ceiling filters and the operator estimator-height assertion are the CAM-K2 ones
 (camera_policy_contract.GROUND_DEFAULT etc.; default: floor removal ON, refusing every frame until asserted). The outdoor
 profile is NOT supported for CAM-S2 in runtime v1 (refused): its sky rule exists to undo blob_near, which CAM-S2 has
@@ -71,7 +86,13 @@ ROOT = K.ROOT
 FORMAT = "motar-camera-policy-cams2-v1"
 LINEAGE = "CAM-S2"
 # Variant by the trained yaw-rate ceiling (receipt NAVRL_YAW_RATE_MAX, exact string).
-VARIANTS = {"3.0": "CAM-S2a", "1.0472": "CAM-S2b"}
+VARIANTS = {"3.0": "CAM-S2a", "1.0472": "CAM-S2b", "1.5708": "CAM-S3W"}
+# RT-S3W: variants whose policy was trained with the CAM-S3 camera sector reduction (and only those).
+SECTOR_VARIANTS = ("CAM-S3W",)
+CAMS3_SECTOR_ENV = "NAVRL_CAMS3_SECTOR_K"
+CAMS3_PATH = "aerial_gym/task/navrl_task/navrl_cams3.py"
+YAW_LIMIT_NOTE = ("PX4 v1.17 limits offboard yaw rate only by MC_YAWRATE_MAX (200 deg/s); the policy's trained ceiling "
+                  "action.yaw_rate_max_rps is enforced by the runtime's command scaling, not by PX4.")
 CAMERA_SIZE = (312, 234)
 # Delays this lineage's flight timing accepts (camera_policy_contract.trained_action_delay_steps dispatches here). The
 # CAM-K2 set SUPPORTED_TRAINED_DELAY_STEPS stays (0,): only a receipt written by the delay code itself
@@ -102,6 +123,8 @@ TRAINING_SOURCE_PINS = (("sha256", "navrl_perception", "aerial_gym/task/navrl_ta
                         ("sha256", "depth_model", "aerial_gym/task/navrl_task/navrl_depth_model.py"),
                         (None, "cams2_sha256", "aerial_gym/task/navrl_task/navrl_cams2.py"),
                         (None, "camsafe_sha256", "aerial_gym/task/navrl_task/navrl_camsafe.py"))
+# RT-S3W: bound in addition when the contract carries the cams3 block (not part of a CAM-S2a/b contract).
+CAMS3_SOURCE_PATHS = SOURCE_PATHS + (CAMS3_PATH,)
 # The training run directory's own listings, or the SHA256SUMS of a handoff bundle that carries the receipt copy.
 CHECKPOINT_LISTS = ("checkpoint_sha256_all.txt", "checkpoint_sha256.txt", "SHA256SUMS")
 NEAR_CONSTANT_VAR = 1e-6
@@ -178,8 +201,9 @@ def _metadata(receipt_path, checkpoint_path, obs_norm_path, previous_action_dela
         raise ValueError("training used settings this runtime does not implement: %s" % ", ".join(present))
     variant = VARIANTS.get(env.get("NAVRL_YAW_RATE_MAX"))
     if variant is None:
-        raise ValueError("NAVRL_YAW_RATE_MAX=%r is neither CAM-S2a (3.0) nor CAM-S2b (1.0472)"
+        raise ValueError("NAVRL_YAW_RATE_MAX=%r is neither CAM-S2a (3.0), CAM-S2b (1.0472) nor CAM-S3W (1.5708)"
                          % env.get("NAVRL_YAW_RATE_MAX"))
+    cams3 = _cams3_block(receipt, env, variant, root)
     cams2 = _private("cams2_contract_settings", Path(root) / "aerial_gym/task/navrl_task/navrl_cams2.py").settings_from_env(env)
     camsafe = _private("camsafe_contract_settings",
                        Path(root) / "aerial_gym/task/navrl_task/navrl_camsafe.py").settings_from_env(env)
@@ -203,7 +227,7 @@ def _metadata(receipt_path, checkpoint_path, obs_norm_path, previous_action_dela
         raise ValueError("receipt depth model does not encode invalid depth as no return")
     minz, maxz = _float(env, "NAVRL_DEPTH_MINZ_M"), _float(env, "NAVRL_DEPTH_MAXZ_M")
     pins = []
-    for group, key, rel in TRAINING_SOURCE_PINS:
+    for group, key, rel in TRAINING_SOURCE_PINS + (((None, "cams3_sha256", CAMS3_PATH),) if cams3 else ()):
         recorded = (receipt.get(group) or {}).get(key) if group else receipt.get(key)
         if recorded != K.sha256_file(Path(root) / rel):
             pins.append(rel)
@@ -224,7 +248,7 @@ def _metadata(receipt_path, checkpoint_path, obs_norm_path, previous_action_dela
         raise ValueError("checkpoint SHA-256 is not listed in the receipt run directory (%s)" % ", ".join(CHECKPOINT_LISTS))
     width, height = CAMERA_SIZE
     max_velocity, yaw_rate_max = _float(env, "NAVRL_MAX_VELOCITY"), _float(env, "NAVRL_YAW_RATE_MAX")
-    return {
+    out = {
         "format": FORMAT, "lineage": LINEAGE, "variant": variant,
         "checkpoint": {"path": str(checkpoint_path), "sha256": ck_sha, "listing": listing,
                        "obs_norm_path": str(obs_norm_path), "obs_norm_sha256": K.sha256_file(obs_norm_path),
@@ -256,6 +280,45 @@ def _metadata(receipt_path, checkpoint_path, obs_norm_path, previous_action_dela
         "qualification": {"cpu": "NOT_TESTED", "gazebo": "NOT_TESTED", "hardware": "NOT_TESTED"},
         "ground": dict(K.GROUND_DEFAULT), "ceiling": dict(K.CEILING_DEFAULT), "estimator_height": None,
     }
+    if cams3 is not None:
+        out["cams3"] = cams3
+    return out
+
+
+def _cams3_block(receipt, env, variant, root=ROOT):
+    """RT-S3W: the cams3 block of a sector-trained receipt (None for every other receipt), parsed by the training
+    module's own settings parser; refuses a receipt whose sector record, variant or measured-depth record disagree."""
+    raw = env.get(CAMS3_SECTOR_ENV, "").strip()
+    if not raw:
+        if variant in SECTOR_VARIANTS:
+            raise ValueError("variant %s needs the camera sector reduction (%s unset)" % (variant, CAMS3_SECTOR_ENV))
+        if receipt.get("cams3_sector") is not None:
+            raise ValueError("receipt records cams3_sector without %s" % CAMS3_SECTOR_ENV)
+        return None
+    if variant not in SECTOR_VARIANTS:
+        raise ValueError("%s is set for variant %s; only %s implement the sector rule"
+                         % (CAMS3_SECTOR_ENV, variant, ", ".join(SECTOR_VARIANTS)))
+    module = _private("cams3_contract_settings", Path(root) / CAMS3_PATH)
+    sector = module.sector_settings_from_env(env)
+    record = receipt.get("cams3_sector") if isinstance(receipt.get("cams3_sector"), dict) else {}
+    if sector is None or record.get("settings") != sector:
+        raise ValueError("receipt cams3_sector disagrees with its %s" % CAMS3_SECTOR_ENV)
+    # Presence only: the mask library itself is training data and need not exist on the vehicle (its parser would
+    # refuse a missing library), and nothing of it reaches the flight environment.
+    switch = env.get("NAVRL_DEPTH_MEAS", "").strip()
+    if switch not in ("", "0", "1"):
+        raise ValueError("NAVRL_DEPTH_MEAS must be unset, 0 or 1, got %r" % switch)
+    meas_on = switch == "1"
+    meas_record = receipt.get("cams3_meas") if isinstance(receipt.get("cams3_meas"), dict) else None
+    if meas_on != (meas_record is not None):
+        raise ValueError("receipt cams3_meas disagrees with its NAVRL_DEPTH_MEAS setting")
+    return {"sector_k": int(sector[CAMS3_SECTOR_ENV]), "sector_env": CAMS3_SECTOR_ENV,
+            "sector_rule": "kth_smallest_range_over_every_pixel_of_each_in_fov_bin",
+            "sector_install": "navrl_perception.camera_no_return_to_lidar_range replaced after the no_lidar ablation",
+            "measured_depth_in_training": meas_on, "measured_depth_on_vehicle": False,
+            "measured_depth_note": "training-only imitation of the real sensor's invalid pixels; the real OAK-D "
+                                   "supplies them, so NAVRL_DEPTH_MEAS* never enters the flight environment",
+            "yaw_limit_note": YAW_LIMIT_NOTE}
 
 
 # Review r1 P2-3: the checkpoint's own training snapshot (state["env_state"], written by the task) must agree with the
@@ -316,6 +379,11 @@ def checkpoint_env_problems(env_state, receipt_env):
     return problems
 
 
+def source_paths(contract):
+    """The runtime sources a contract binds: CAMS3_SOURCE_PATHS with the cams3 block, else SOURCE_PATHS."""
+    return CAMS3_SOURCE_PATHS if isinstance(contract, dict) and "cams3" in contract else SOURCE_PATHS
+
+
 def is_cams2(contract):
     return isinstance(contract, dict) and contract.get("lineage") == LINEAGE
 
@@ -329,7 +397,7 @@ def build_contract(receipt_path, checkpoint_path, obs_norm_path, *, previous_act
         contract["ceiling"] = dict(ceiling)
     if estimator_height is not None:
         contract["estimator_height"] = json.loads(json.dumps(estimator_height))
-    contract["sources"] = {rel: K.sha256_file(Path(root) / rel) for rel in SOURCE_PATHS}
+    contract["sources"] = {rel: K.sha256_file(Path(root) / rel) for rel in source_paths(contract)}
     problems = validate_contract(contract, root=root)
     if problems:
         raise ValueError("invalid CAM-S2 camera policy contract: " + "; ".join(problems))
@@ -368,7 +436,7 @@ def validate_contract(contract, verify_files=True, *, root=ROOT):
         problems.append("the outdoor profile is not supported for CAM-S2 in runtime v1")
     keys = {"format", "lineage", "variant", "checkpoint", "training_record", "runtime_env", "environment_inheritance",
             "camera", "observation", "action", "depth", "detector", "state", "qualification", "ground", "ceiling",
-            "estimator_height", "sources"}
+            "estimator_height", "sources"} | ({"cams3"} if "cams3" in expected else set())
     if set(contract) != keys:
         problems.append("contract keys differ from the CAM-S2 schema")
     problems.extend(K.height_filter_problems(contract))
@@ -385,8 +453,10 @@ def validate_contract(contract, verify_files=True, *, root=ROOT):
             continue
         if not _same(contract.get(key), value):
             problems.append("%s differs from the CAM-S2 training receipt" % key)
+    if isinstance(env, dict) and any(k.startswith("NAVRL_DEPTH_MEAS") for k in env):
+        problems.append("the measured-depth model is training only; it must not run on the vehicle")
     sources = contract.get("sources")
-    if not isinstance(sources, dict) or set(sources) != set(SOURCE_PATHS):
+    if not isinstance(sources, dict) or set(sources) != set(source_paths(expected)):
         problems.append("runtime source set differs from the CAM-S2 contract")
     elif verify_files:
         for rel, digest in sources.items():
@@ -456,6 +526,8 @@ def main(argv=None):
                 json.dump(contract, stream, indent=2, sort_keys=True, allow_nan=False)
                 stream.write("\n")
         print(json.dumps({"status": "CONTRACT_VALID", "lineage": contract["lineage"], "variant": contract["variant"],
+                          "cams3_sector_k": (contract.get("cams3") or {}).get("sector_k"),
+                          "yaw_rate_max_rps": contract["action"]["yaw_rate_max_rps"],
                           "checkpoint_sha256": contract["checkpoint"]["sha256"],
                           "previous_action_delay_steps": contract["action"]["previous_action_delay_steps"],
                           "capture_age_bound_s": K.capture_age_bound_s(contract),
