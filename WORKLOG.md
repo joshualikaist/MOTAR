@@ -27490,3 +27490,48 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   2. The user's explicit approval of the new scope (5 arms incl. S0M; S2b-FT at 60 deg/s; ~1.4 h expected, 2.0 h chain
      cap, 2.4 h ledger).
   3. Then the approval file, the host check and the three stages.
+
+## 2026-11-28 — CAM-S3-E (S3-W evaluation, CAM-REF stage 3) COMPLETE: BAR_NOT_MET_POINT, pointer STRUCTURAL_NEXT
+
+- **Run.** Commit `e73c573` (prereg `docs/plans/prereg_camonly_s3w_eval_2026-11-27.md` + amendment 1), approval
+  `~/motar_tmp/cams3e_20261127/execution_approval.json` (user "오케이 너가 하자고 하는대로 한번 해보자." then "승인",
+  2026-11-27 22:40; scope SHA-256 63fb7f7e…). Chain `~/motar_tmp/cams3e_20261127/gpu1/chain.sh`, `--out` under the
+  unit folder (review r2 P2-1 avoided by launch, not fixed in code).
+  - smoke 22:58:40–23:05:05 SMOKE_OK; identity 23:05:05–23:10:36 IDENTITY_PASS (S0ID = CAM-DX1 V312 4501 per
+    episode: 743 / 273 / 8 of 1,024); eval 23:10:36–00:09:09 COMPLETE (12 cells).
+  - GPU wall 383 + 329 + 3,510 s = 1.17 h (cap 2.0 h, ledger 2.4 h). Host faults 0 → 0 at every stage. Tree frozen.
+- **Pooled results** (205 bars, P_S, seeds 4501-4503, 3,072 episodes per arm; S0 reused from CAM-DX1 V312):
+
+  | Arm | Policy / setting | Capture | Crash | Bar contact | Target contact | Timeout |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | S0 | S2b-FT, 60 deg/s | 70.4 | 28.5 | 22.3 | 6.0 | 1.1 |
+  | S0M | S2b-FT + measured masks | 69.8 | 29.1 | 23.7 | 5.1 | 1.1 |
+  | S0T | S2b-FT, thin arena | 70.9 | 28.5 | 22.7 | 5.7 | 0.6 |
+  | W | S3-W ep18000, 90 deg/s, masks, sector k 24 | 72.6 | 25.4 | 15.7 | 9.4 | 2.0 |
+  | WT | S3-W, thin arena | 76.0 | 23.0 | 13.3 | 9.6 | 0.9 |
+
+- **Q1:** W BAR_NOT_MET_POINT. All crashes 25.4 % (one-sided Wilson 95 % [24.1, 26.7], ABOVE_20); bar contacts
+  15.7 % (BELOW_20). WT 23.0 % (ABOVE_20).
+- **Q2** (pp, block-paired bootstrap CI):
+  - W − S0 NO_IMPROVEMENT: crash −3.1 [−5.3, −1.0] SMALL, capture +2.2 [0.0, 4.4] SMALL, bar contact −6.6
+    [−8.6, −4.7] MATERIAL, target contact +3.4 [2.1, 4.7].
+  - W − S0M NO_IMPROVEMENT: crash −3.7 [−6.0, −1.5] SMALL, capture +2.8 SMALL, bar contact −7.9 MATERIAL, target
+    contact +4.3.
+  - WT − S0T IMPROVES: crash −5.5 [−7.7, −3.3] MATERIAL, capture +5.1 [2.9, 7.4] MATERIAL.
+- **Q3:** S0M − S0 crash +0.6 pp (sensor model alone changes little). Intervention shares (last log window, review r2
+  P3-1; unlabelled): camsafe capped W 0.18-0.20 vs S0 0.16, governor W 0.36-0.38 vs S0 0.33; WT camsafe 0.15.
+- **Pointer (fixed by amendment 1): STRUCTURAL_NEXT.** Bar contacts fell materially, but about half of the gain went to
+  target contacts and the all-crash change stayed SMALL; fine-tuning this lineage stops. Hypothesis "the five S3-W
+  changes bring camera-only below 20 % crash at P_S" rejected: measured 25.4 %.
+  - Reading (not a gate): the remaining crashes are now 37 % target contacts (9.4 of 25.4 pp); the 90 deg/s policy
+    meets the target more often without capturing it. The filters intervene slightly more for W than for S0.
+- **Review r2** (Opus 5.5, fix diff 8fbf950..e73c573): GO_WITH_FIXES, no P1; copy `REVIEW_E_r2.md`. Open: P2-1 (out
+  root must be under the unit folder; fix before any rerun), P3-1..8 (wording, killed-cell 0 s, double count,
+  non-dict crash, procedural rerun rule, check mode ledger print, pointer wording, incomplete blocks in the
+  intervention table).
+- **Results review:** NOT_RUN at this commit; until it finishes the reading is CONDITIONAL.
+- **Evidence:** `docs/evidence/camonly_2026-11-04/cams3/` eval_analysis.json, eval_{smoke,identity,run}_report.json,
+  eval_execution_approval.json, eval_user_approval.json, REVIEW_E_r2.md. Raw cells
+  `~/motar_tmp/cams3e_20261127/gpu1/`, analysis `~/motar_tmp/cams3e_20261127/analysis/` (controls 9 OK).
+- **Next (user):** a structural design (S3-M memory, target-approach terms / capture geometry, or the learning rate);
+  no runtime unit from this result. Push / merge not done.
