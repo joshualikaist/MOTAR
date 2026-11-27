@@ -417,7 +417,7 @@ family that is in the test's scope.
   - → `results/record_envelope_v2_live_2026-09-14/`
   - → `results/record_integrity_review_2026-09-14/`
 - **Compare with:** none
-- **Members:** `results/public_release_2026-09-12/`, `results/public_site_*`, `results/record_envelope_v2_live_2026-09-14/`, `results/record_integrity_review_2026-09-14/`
+- **Members:** `results/public_release_2026-09-12/`, `results/public_site_*`, `results/record_envelope_v2_live_2026-09-14/`, `results/record_integrity_review_2026-09-14/`, `docs/evidence/website_figure_rebuild_2026-10-22/`, `docs/research/figure-redesign-2026-10-22.md`
 
 ### `task-diagnostics` — Task diagnostics instrumentation (T1, T2)
 
@@ -628,7 +628,7 @@ family that is in the test's scope.
   - → `docs/plans/boia_shadow_q01_v2.md`
   - → `docs/evidence/boia_shadow_q01_v2_run_2026-10-21/`
 - **Compare with:** `occlusion-occ`, `h-r3`, `q02-reacquisition`
-- **Members:** `docs/research/occlusion_algorithm_v1/`, `docs/evidence/boia_*`, `docs/plans/boia_shadow_*`
+- **Members:** `docs/research/occlusion_algorithm_v1/`, `docs/evidence/boia_*`, `docs/plans/boia_shadow_*`, `docs/evidence/website_boia_progress_2026-10-22/`, `docs/research/boia-progress.md`
 
 ### `q02-reacquisition` — Evidence-aware reacquisition (Q02-A, Q02-B, Q03)
 
@@ -799,7 +799,12 @@ family that is in the test's scope.
     S3-W as variant CAM-S3W of the CAM-S2 contract: sector rule k 24 installed as in training, measured depth
     training-only (refused on the vehicle), yaw scale 1.5708 rad/s. CPU parity on an analytic scene max |Δobs|
     5.1e-7; the S2b-FT column rule differs (control). Host step time only; Orin NX NOT_MEASURED; flight not approved.
-    `docs/evidence/camonly_2026-11-04/rt_s3w/`.
+    `docs/evidence/camonly_2026-11-04/rt_s3w/`. Review r1 (Opus 5.5): GO for a desk / hand-held shadow test only
+    (`REVIEW_r1.md`).
+  - **Outdoor hand-held depth (2026-11-26 recordings, analysed 2026-11-27, offline CPU):** ground read as near
+    obstacles depends strongly on the assumed camera height; sky false-near returns are a few percent of frame-bins.
+    `docs/evidence/camonly_2026-11-04/outdoor_1126/` (committed 2026-11-28 with unit PUB). Public summary:
+    `docs/status/data/camonly-status.json`.
 - **Read first:** [`docs/plans/camonly_study_plan_v1.md`](plans/camonly_study_plan_v1.md)
 - **Lineage:**
   - D-2026-11-04-3 (camera-only comparison allowed in opt-in conditions)

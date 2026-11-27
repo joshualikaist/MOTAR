@@ -1,0 +1,44 @@
+{
+ "level": {
+  "frames": 136,
+  "median_abs_left_minus_right_m": 0.0942,
+  "median_abs_upper_minus_lower_m": 0.0723
+ },
+ "meas": {
+  "frames": 136,
+  "median_abs_left_minus_right_m": 0.1483,
+  "median_abs_upper_minus_lower_m": 0.0645
+ },
+ "roll_negated": {
+  "frames": 136,
+  "median_abs_left_minus_right_m": 0.1801,
+  "median_abs_upper_minus_lower_m": 0.085
+ },
+ "pitch_only": {
+  "frames": 136,
+  "median_abs_left_minus_right_m": 0.0972,
+  "median_abs_upper_minus_lower_m": 0.0595
+ },
+ "roll_only": {
+  "frames": 136,
+  "median_abs_left_minus_right_m": 0.1561,
+  "median_abs_upper_minus_lower_m": 0.0866
+ },
+ "pitch_negated": {
+  "frames": 136,
+  "median_abs_left_minus_right_m": 0.1546,
+  "median_abs_upper_minus_lower_m": 0.0954
+ },
+ "meas_better_lr_share_vs_level": 0.3015,
+ "meas_better_ud_share_vs_level": 0.5368,
+ "roll_negated_better_lr_share_vs_level": 0.2868,
+ "roll_negated_better_ud_share_vs_level": 0.4632,
+ "pitch_only_better_lr_share_vs_level": 0.5809,
+ "pitch_only_better_ud_share_vs_level": 0.5956,
+ "roll_only_better_lr_share_vs_level": 0.2721,
+ "roll_only_better_ud_share_vs_level": 0.3824,
+ "pitch_negated_better_lr_share_vs_level": 0.2868,
+ "pitch_negated_better_ud_share_vs_level": 0.2868,
+ "meas_better_lr_share": 0.3015,
+ "meas_better_ud_share": 0.5368
+}

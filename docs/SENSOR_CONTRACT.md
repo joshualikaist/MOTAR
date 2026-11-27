@@ -26,6 +26,16 @@ Independent evaluation may use geometry and semantic provenance. Preserve existi
 detector supervision, rewards, termination and the critic, outside the actor/online information
 boundary. Do not substitute oracle range/depth for the declared RGB-D or LiDAR measurement model.
 
+## Camera-only real-vehicle line (user decisions of 2026-11-04 and 2026-11-06)
+
+D-2026-11-04-3 allowed an opt-in camera-only comparison, and D-2026-11-06-1 recorded that the real vehicle
+carries no LiDAR (one OAK-D depth + colour camera). The camera-only policies trained since then are a separate
+lineage for that vehicle. This section is added on 2026-11-28 to close the revision D-2026-11-06-1 left open;
+the text above is unchanged. It does not alter Policy F, its 898-D actor or the RGB-D + LiDAR contract that
+governs the historical records and comparisons. The information boundary applies unchanged: ground-truth target
+state never enters a camera-only actor. Records: [`DECISIONS.md`](DECISIONS.md),
+[`evidence/camonly_2026-11-04/`](evidence/camonly_2026-11-04/README.md).
+
 ## S-L1 scope
 
 S-L1 improves the correctness and reliability of the existing fusion system. The original

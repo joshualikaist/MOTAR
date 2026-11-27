@@ -3,53 +3,86 @@
 **MOTAR: Moving Object Tracking And Rendezvous**<br>
 *Reinforcement Learning for UAV Tracking and Close Approach in Random Obstacle Fields*
 
-MOTAR studies how perception uncertainty, safety-filter geometry, target-motion distribution shift and observation changes affect frozen UAV tracking and close-approach policies in random obstacle fields. All policy evaluations are simulation-only.
+MOTAR studies moving-target rendezvous: an aerial pursuer that tracks another vehicle and closes in
+on it among dense vertical obstacles. It measures how perception uncertainty, safety-filter
+geometry, target-motion shift and the sensor set change learned policies. Two lines exist: the
+historical RGB-D camera + LiDAR line around frozen Policy F, and, since November 2026,
+a camera-only line for a real vehicle that carries no LiDAR. All policy evaluations are simulation-only.
 
 ![Verified Policy F system: RGB-D, LiDAR and own state to perception, a flat 898-D observation, Transformer, XY speed governor, Lee controller and UAV PhysX](docs/assets/paper/redesign-2026-10-22/fig01-system.svg)
 
-**Main finding:** target-motion effects replicated under a bias-corrected evaluation. Against the
-target motion the policy was trained on, a static target scored **−5.37 pp** capture, a
-constant-velocity target **−3.45 pp** and an obstacle-aware target **+1.35 pp**: an independent replication with 7 fresh seeds and 229,376 primary episodes.
-*Simulation only; no real-flight or state-of-the-art claim.*
+**Main finding (historical line):** target-motion effects replicated under a bias-corrected
+evaluation. Against the policy's training target motion, a static target scored **−5.37 pp**
+capture, a constant-velocity target **−3.45 pp** and an obstacle-aware target **+1.35 pp**
+(7 fresh seeds, 229,376 primary episodes). *Simulation only; no real-flight or state-of-the-art claim.*
 
 ## Why MOTAR?
 
-MOTAR measures perception error on real footage, injects it into a frozen policy, and separately varies safety geometry, target motion and rendering. This research evidence sequence is not a causal
-chain. Preregistrations and deviations are linked from [`docs/EVIDENCE.md`](docs/EVIDENCE.md); negative, inconclusive and withdrawn results remain available.
+MOTAR measures perception error on real footage, injects it into a frozen policy, and separately
+varies safety geometry, target motion, rendering and the sensor set. This evidence sequence is not
+a causal chain. Preregistrations and deviations are linked from [`docs/EVIDENCE.md`](docs/EVIDENCE.md);
+negative, inconclusive and withdrawn results stay published.
+
+## Current research: camera-only real-vehicle line
+
+The real vehicle (user decision D-2026-11-06-1) has one forward OAK-D depth + colour camera, visual-inertial
+odometry and PX4, and no LiDAR. Camera-only policies are a new lineage, trained and evaluated in simulation;
+Policy F and the RGB-D + LiDAR contract still govern the historical results
+([sensor contract](docs/SENSOR_CONTRACT.md), [camera-only evidence](docs/evidence/camonly_2026-11-04/README.md)).
+
+- **Removing the LiDAR from Policy F** (zero-shot, out-of-distribution) raised crash by **+39.95 pp**;
+  removing only the LiDAR outside the camera's view, **+39.25 pp**.
+- **CAM-S3-E** compared the latest camera-only policy S3-W with its parent S2b-FT at 205 bars,
+  3 seeds × 1,024 episodes per arm (percent of episodes):
+
+| Policy | Capture | Crash | Bar contact | Target contact |
+| --- | --- | --- | --- | --- |
+| S2b-FT (parent) | 70.4 % | 28.5 % | 22.3 % | 6.0 % |
+| S3-W | 72.6 % | 25.4 % | 15.7 % | 9.4 % |
+
+  S3-W misses the ≤ 20 % crash bar: crash 25.4 %, one-sided Wilson 95 % [24.1, 26.7],
+  **BAR_NOT_MET_POINT**. Against S2b-FT, crash changed by **−3.1 pp** [−5.3, −0.9] (SMALL): fewer bar
+  contacts, more contacts with the target, status NO_IMPROVEMENT. The preregistered pointer is
+  **STRUCTURAL_NEXT**: fine-tuning this lineage stops. Independent results review: PASS_WITH_LIMITS.
+- **Vehicle runtime.** The onboard runtime reproduces S3-W's observation and action; its independent review
+  reads GO for a desk or hand-held shadow test only. No autonomous flight has been run or approved.
+- **Outdoor hand-held depth recordings.** With an assumed camera height of 150 cm, the ground alone makes
+  38.7 % of frame-bins read an obstacle nearer than 5 m (18.5–54.8 % for 130–170 cm); sky false-near
+  returns affect 2.67 %. Ground handling is the open blocker before any flight.
+
+All numbers above are read from [`docs/status/data/camonly-status.json`](docs/status/data/camonly-status.json),
+which `tools/build_camonly_public_status.py` builds from the committed records.
 
 ## Key Results
 
 | Question | Result | Status and limit |
 | --- | --- | --- |
-| Target motion vs the training target | static **−5.37 pp** · constant velocity **−3.45 pp** · obstacle-aware **+1.35 pp** capture | Independent bias-corrected replication, policy F, 7 fresh seeds; all three contrasts replicated. The obstacle-aware gain was not uniform at high density. The original 3-seed campaign stays as historical evidence |
+| Target motion vs the training target | static **−5.37 pp** · constant velocity **−3.45 pp** · obstacle-aware **+1.35 pp** capture | Independent bias-corrected replication, policy F, 7 fresh seeds; all three contrasts replicated. The obstacle-aware gain was not uniform at high density |
 | Measured perception error → policy | **−4.57 pp** capture, 95 % CI [−6.32, −2.82] | Policy F; episode-level interval from two evaluation seeds at one density; one injector |
 | Readaptation under that error | **+0.73 pp**, 95 % CI [−1.04, +2.50] | **INCONCLUSIVE**: no net benefit established; 3 training seeds |
 | Safety-filter geometry | **−1.4903 pp** crash; seed-level 95 % CI [−2.42, −0.57] | Policy F, 3 evaluation seeds; lower in 15/15 seed × density cells, which are not independent replicates. Configured contrast; not a safety guarantee |
 | Observation contract | **−48.967 pp** capture | **MATERIAL_LOSS**; causality **NOT_TESTED**; policy R (a different checkpoint), 3 evaluation seeds |
 | Perception range error on real footage | **6.2 %** median of 9 block medians | One flight (9 blocks of 15 s; 3,107 frames, not independent samples); apparent-size proxy |
 
-pp = percentage points. Two frozen checkpoints carry these results: policy F (ep25000 + riskcap) and,
-for the observation contract only, policy R (ref5in D1 ep1900). No external result is compared numerically: Class A matched comparisons = 0.
+pp = percentage points. Policy F (ep25000 + riskcap) carries these results except the observation contract
+(policy R, ref5in D1 ep1900). No external result is compared numerically: Class A matched comparisons = 0.
 
 ## System
 
 ![Observation structure: 288 fused static-scan values plus 480 obstacle-history values, 50 own-state-history values and 80 target-track values; then network embedding into 17 tokens](docs/assets/paper/redesign-2026-10-22/fig02-observation.svg)
 
-A forward RGB-D camera and a LiDAR feed perception. The flat 898-D actor observation is assembled
-first, then embedded into 17 tokens inside the frozen Transformer PPO network. The task replaces
-the actor's z output with PI altitude hold; an XY speed filter caps the planar request before the
-Lee velocity controller. Five sampled history slots nominally span two seconds; tracker expiry
-is a separate five-second contract. Ground-truth
-target state never enters the policy's observation. The scenario inputs (target motion, rendering
-contract, measured-error injection) are the factors the experiments vary. Details and source paths:
-[`ARCHITECTURE.md`](ARCHITECTURE.md). The [rebuilt figure atlas](https://joshualikaist.github.io/MOTAR/status/figures.html)
-provides editable SVG, embedded-font PDF and 300 dpi PNG, with [source verification](docs/research/figure-redesign-2026-10-22.md).
+In the historical line a forward RGB-D camera and a LiDAR feed perception. The flat 898-D actor observation
+is assembled first, then embedded into 17 tokens inside the frozen Transformer PPO network; an XY speed
+filter caps the planar request before the Lee velocity controller. The camera-only line keeps the 898-D layout
+but fills the scan from the camera alone. Ground-truth target state never enters any actor observation.
+Details and source paths: [`ARCHITECTURE.md`](ARCHITECTURE.md); figures with source verification:
+[figure atlas](https://joshualikaist.github.io/MOTAR/status/figures.html).
 
 ## Target-motion replication
 
-**CURRENT · REPLICATED.** 7 fresh evaluation seeds (4104–4110), 4 arms × 4 densities,
-112 cells × 2,048 primary episodes = 229,376 primary episodes. No PPO training. H is historical training-lineage motion; E0 is static; E1 is bounded constant velocity;
-E2 is bounded obstacle-aware waypoint motion. Capture rates: H 87.76% · E0 82.39% · E1 84.32% · E2 89.12%.
+**REPLICATED.** 7 fresh evaluation seeds, 4 arms × 4 densities, 112 cells × 2,048 primary episodes =
+229,376 primary episodes, no PPO training. H is the historical training motion; E0 static; E1 bounded
+constant velocity; E2 bounded obstacle-aware motion. Capture: H 87.76% · E0 82.39% · E1 84.32% · E2 89.12%.
 
 | Capture contrast (pp), BCa95 | Original n=3: legacy window | Replication n=7: per-environment quota |
 | --- | --- | --- |
@@ -57,63 +90,38 @@ E2 is bounded obstacle-aware waypoint motion. Capture rates: H 87.76% · E0 82.3
 | E1 − H | −2.82 [−3.53, −2.44] | −3.45 [−3.79, −3.11] |
 | E2 − H | +1.33 [+1.15, +1.50] | +1.35 [+1.07, +1.87] |
 
-All three preregistered directional contrasts replicated; each has 7/7 seeds in the same direction,
-exact p = 0.015625 and Holm-adjusted p = 0.046875. The Holm-adjusted p-values are 0.046875, at the resolution boundary of the seven-seed exact sign-flip design. Effect sizes, confidence intervals, and seed-level consistency must therefore be reported alongside the hypothesis tests.
-
-The aggregate E2−H contrast replicated, but its positive direction was not uniformly expressed at the two highest obstacle densities: 5/7 seeds at 160 bars and 4/7 at 205 bars. Density-specific analyses remain exploratory.
-
-Original campaign (18 September, n=3, legacy pooled stopping window); bias discovery and canary (instrumentation validation, not scientific evidence); independent replication (25–26 September, n=7, corrected per-environment quota). These stages remain separate and are never pooled.
-
-Within the seven-seed replication, the historical pooled stopping window attenuated all three capture contrasts toward zero. The estimator change does not by itself explain the full difference between the original n=3 campaign and the n=7 replication because the seed sets differ.
-
-[Figure 4](docs/assets/paper/final/fig4-target-motion.svg) shows every seed and both campaigns.
+Each contrast has 7/7 seeds in the same direction (exact p = 0.015625, Holm-adjusted p = 0.046875, the
+resolution boundary of a seven-seed sign-flip design), so effect sizes and intervals are reported with the
+tests. E2's gain was not uniform at 160 and 205 bars; density-specific analyses are exploratory. The original
+campaign, the bias discovery and the replication are separate stages and are never pooled.
 [Full record](results/target_motion_replication_7seed/README.md) ·
-[Canonical status](results/target_motion_replication_7seed/summary.json) ·
 [Analysis](results/target_motion_replication_7seed/analysis.json).
 
-## Current Research Extension — BOIA (October 2026)
+## Research Extension — BOIA (October 2026)
 
-BOIA investigates sensor-evidence-based intervention timing for moving-target interception
-(close approach) in unknown cluttered environments: when to continue Frozen F tracking and
-when to propose active reacquisition after observation loss. First acquisition is outside
-this extension. The RGB-D Camera + LiDAR contract, Frozen F checkpoint and actor remain unchanged.
-
-The proposed path connects sensor evidence, target belief and a local obstacle representation
-to candidate reacquisition planning and intervention timing. Evaluation is shadow-only;
-reacquisition proposals do not command the vehicle.
-
-| Milestone | Verified development status |
-| --- | --- |
-| Q01-V2 | Implemented; bounded native/OFF/ON shadow parity qualified for the recorded profile |
-| Q02-A v2.6 | Implemented, CPU Tested, Independently Reviewed: `PASS_WITH_EXPLICIT_IDENTITY_LIMITATIONS`; residual P2 H1/H2 |
-| Q02-B | CPU Tested; independent review FAIL with two P1 findings; HOLD until corrected |
-| Q03 | Map and L1/L2 planner CPU Tested; independent review FAIL on P1-2; L3/L4 unvalidated |
-| Q04 | Design only; D0 HOLD pending fixes, preregistration and separate GPU approval |
-
-**Verification boundary:** actual occlusion accuracy is NOT VALIDATED; persistent same-target
-identity is NOT CONFIRMED. The oracle-derived simulator detector is not a real-image detector.
-Capture improvement, online intervention and physical safety are unmeasured; G5 HOLD and further
-GPU work on hold pending separate approval. The latest research PUBLIC_CPU receipt is 3,177 run,
-0 failures, 10 skips and 4 errors (aggregate FAIL); this is separate from the public-release CPU profile. [Progress and limitations](docs/research/boia-progress.md) ·
+BOIA studies when to keep Frozen F tracking and when to propose active reacquisition after observation
+loss in the historical RGB-D Camera + LiDAR line. First acquisition is outside its scope. Evaluation is shadow-only: proposals do not command the
+vehicle. Q01-V2 parity is qualified; Q02-A passed review with identity limitations; Q02-B and Q03 failed
+independent review and are on HOLD; Q04 is design only (G5 HOLD). Actual occlusion accuracy is NOT VALIDATED and
+persistent same-target identity is NOT CONFIRMED. The latest research PUBLIC_CPU receipt is 3,177 run,
+0 failures, 10 skips and 4 errors (aggregate FAIL). [Progress and limitations](docs/research/boia-progress.md) ·
 [Source-bound evidence](docs/status/data/boia-progress.json) · [Website section](docs/status/index.html#boia).
-The Code link still targets the separate `MOTAR-public` release; these local research snapshots
-are provenance references, not newly published research-code links.
 
 ## Repository Structure
 
 | Path | Contents |
 | --- | --- |
 | `aerial_gym/` | Simulator and the MOTAR task: environment, sensors, perception, policy, safety filter, control |
-| `tools/` | Public tools (environment doctor, renderer, figure and document builders) and experiment scripts |
+| `tools/` | Public tools (environment doctor, renderer, figure and document builders), experiment and runtime scripts |
 | `tests/` | Contract, evidence and documentation guards |
 | `results/` | One immutable folder per experiment: receipts, raw counts, summaries, VOID runs |
-| `docs/` | Evidence, reproducibility, operations, history, preregistrations; the site in `docs/status/` |
+| `docs/` | Evidence, decisions, preregistrations, operations, history; the site in `docs/status/` |
+| `ros2/` | The camera-only onboard runtime package (shadow testing only) |
 
 ## Quick Start
 
-**PUBLIC_CPU validation:** 0 failures / 0 errors; GPU-only tests are excluded.
-
-The supported public path is CPU-only: Linux x86-64, Python 3.8, Git, and a new virtual environment. It needs no GPU and no Isaac Gym, and runs no policy.
+The supported public path is CPU-only: Linux x86-64, Python 3.8, Git and a new virtual environment. It needs
+no GPU and no Isaac Gym, and runs no policy.
 
 ```bash
 git clone https://github.com/joshualikaist/MOTAR-public.git MOTAR && cd MOTAR
@@ -125,31 +133,30 @@ python -B tools/run_renderer_validation.py --device cpu --seed 0 --num-scenes 1 
 python -B -m unittest discover -s tests -p 'test_public*.py'
 ```
 
-The smoke test renders generic boxes and debug buffers. It is not an experiment verdict. The recorded results are verified from their receipts rather than re-run, as described in
-[`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md). The historical simulator environment is
-separate: it needs a GPU and Isaac Gym Preview 4, which NVIDIA distributes and which cannot be redistributed here.
-
-The target-motion measurement source is `b1c0bc6`. GPU-only evaluation requires the pinned simulator environment; cross-machine bitwise reproducibility has not been established.
-Raw replication evidence stays outside normal Git history; the
-[manifest and archive SHA](results/target_motion_replication_7seed/replication_record.json) are retained.
+The smoke test renders generic boxes; it is not an experiment verdict. Recorded results are verified from
+their receipts rather than re-run ([`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md)). Simulator runs need
+a GPU and Isaac Gym Preview 4, which NVIDIA distributes and which cannot be redistributed here;
+cross-machine bitwise reproducibility has not been established.
 
 ## Research Evidence
 
-Every result, its interval, its record and its limit are on one page:
-[**`docs/EVIDENCE.md`**](docs/EVIDENCE.md). The public site has a project page and a full evidence
-page ([`docs/status/`](docs/status/index.html)); historical figures remain in the
-[figure overview](docs/results_overview_2026-09-12.md).
+Every result, its interval, its record and its limit: [**`docs/EVIDENCE.md`**](docs/EVIDENCE.md). Experiment
+families and their lineage: [`docs/EXPERIMENTS.md`](docs/EXPERIMENTS.md). The public site is in
+[`docs/status/`](docs/status/index.html); historical figures are in the
+[figure overview](docs/results_overview_2026-09-12.md). Paper draft and overview deck (historical line):
+`paper/MOTAR_draft_2026-09-26.md`, `presentations/MOTAR_overview_2026-09-26.pptx`.
 
 ## Documentation
 
 - [`PROJECT.md`](PROJECT.md): purpose, questions, scope and phase.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): how the system connects and which directories may change.
-- [`docs/EVIDENCE.md`](docs/EVIDENCE.md): what is established, and what is not.
-- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md): environments, data availability, verification.
-- [`docs/OPERATIONS.md`](docs/OPERATIONS.md): everyday commands and run rules.
+- [`docs/PROJECT_STATE.md`](docs/PROJECT_STATE.md) and [`docs/DECISIONS.md`](docs/DECISIONS.md): current state
+  and the user's standing decisions.
+- [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) and [`docs/OPERATIONS.md`](docs/OPERATIONS.md):
+  environments, verification and run rules.
 - [`docs/HISTORY.md`](docs/HISTORY.md): milestones and the negative record.
-- [`AGENTS.md`](AGENTS.md) and [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md): rules for contributors, the site
-  and the figures.
+- [`AGENTS.md`](AGENTS.md) and [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md): rules for contributors, the site and
+  the figures.
 
 ## Limitations
 
@@ -161,19 +168,17 @@ page ([`docs/status/`](docs/status/index.html)); historical figures remain in th
 > checkpoint, arena, densities and seeds. Readaptation is INCONCLUSIVE, the D8b cause is NOT_TESTED,
 > and persistent target identity and metric range are BLOCKED by missing ground truth.
 
-Additional boundaries: Class A matched external benchmarks = 0; target-motion inference uses
-7 independent evaluation seeds, and density-specific E2 effects are exploratory. Persistent physical
-target identity remains unsupported. The minimum-distance metric is **WITHHELD_SEMANTIC_MISMATCH**:
-capture uses swept closest approach within a step, while the recorded distance is sampled at step end. Several raw datasets and artifacts are not distributed in normal Git.
+The camera-only line has not flown autonomously; its outdoor evidence is hand-held depth recordings, and its
+simulated target and depth artefacts are models. Class A matched external benchmarks = 0. The minimum-distance
+metric is **WITHHELD_SEMANTIC_MISMATCH**. Several raw datasets and artifacts are not distributed in normal Git.
 
 ## Citation and license
 
 Cite the software with [`CITATION.cff`](CITATION.cff). No MOTAR paper has been published, and no
 author identifier is invented. Cite the upstream software and datasets used by an experiment separately.
 
-**License.**
-
-Original code is offered under the repository's [BSD-3-Clause notice](LICENSE), subject to the retained upstream notices. This does not cover every data file or dependency; see the
+**License.** Original code is offered under the repository's [BSD-3-Clause notice](LICENSE), subject to the
+retained upstream notices. This does not cover every data file or dependency; see the
 [third-party inventory](THIRD_PARTY_LICENSES.md). ETH ds5 images are not redistributed and must be
 obtained separately under CC BY-NC-SA 4.0 ([external data](docs/external_data/ETH_DS5.md)).
 

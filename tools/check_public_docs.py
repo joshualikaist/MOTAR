@@ -115,10 +115,11 @@ def local_link_errors(text, path, root=ROOT):
 # numbers only in the opening block, Key Results and the replication section. Every decimal
 # must match a canonical machine-readable record (landing_number_errors). The quick start may
 # report the required CPU validation outcome; detailed execution logs stay in WORKLOG.
-LANDING_HEADINGS = ("Why MOTAR?", "Key Results", "System", "Target-motion replication",
-                    "Current Research Extension — BOIA (October 2026)", "Repository Structure", "Quick Start",
+CAMONLY_HEADING = "Current research: camera-only real-vehicle line"
+LANDING_HEADINGS = ("Why MOTAR?", CAMONLY_HEADING, "Key Results", "System", "Target-motion replication",
+                    "Research Extension — BOIA (October 2026)", "Repository Structure", "Quick Start",
                     "Research Evidence", "Documentation", "Limitations", "Citation and license")
-NUMBER_SECTIONS = ("", "Key Results", "Target-motion replication")
+NUMBER_SECTIONS = ("", CAMONLY_HEADING, "Key Results", "Target-motion replication")
 
 
 def landing_sections(text):
@@ -193,6 +194,11 @@ def headline_values(root=ROOT):
         prereg = (root / "docs/plans/prereg_b1r_classical_baseline_v1.md").read_text(encoding="utf-8")
         block = re.search(r"```json\n(.*?)\n```", prereg.split("## 12.", 1)[1], flags=re.S).group(1)
         values.add(float(json.loads(block)["controller"]["max_velocity"]))
+    # Camera-only line (2026-11): every value of the public status record, which
+    # tools/build_camonly_public_status.py rebuilds from the committed evidence.
+    camonly = root / "docs/status/data/camonly-status.json"
+    if camonly.is_file():
+        values.update(float(v) for v in json.loads(camonly.read_text())["values"].values())
     audit = json.loads((root / "docs/results/target_motion_visibility_reacquisition_audit_2026-09-19.json").read_text())
     for row in audit["per_arm_outcome"].values():
         values.add(100 * row["never_acquired_rate"])

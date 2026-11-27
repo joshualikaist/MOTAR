@@ -69,6 +69,25 @@ but recorded distance samples step ends. Values remain in the frozen analysis.
 [Current machine-readable status](../results/target_motion_replication_7seed/summary.json);
 [raw availability and archive SHA](REPRODUCIBILITY.md#closed-target-motion-replication).
 
+## Camera-only real-vehicle line (November 2026)
+
+The real vehicle carries no LiDAR (user decisions D-2026-11-04-3 and D-2026-11-06-1). Camera-only policies are a
+new lineage, compared with Policy F and never substituted for it. Values are copied from
+[`status/data/camonly-status.json`](status/data/camonly-status.json), which
+`tools/build_camonly_public_status.py` rebuilds from the records below and
+[`tests/test_camonly_public_status.py`](../tests/test_camonly_public_status.py) checks.
+
+| Result | Value | Verdict | Record |
+| --- | --- | --- | --- |
+| LiDAR removed from Policy F (C2, zero-shot) | crash +39.95 pp; out-of-view LiDAR only +39.25 pp | REPORTED; out-of-distribution condition | [`c2_analysis.json`](evidence/camonly_2026-11-04/c1c2/c2_analysis.json) |
+| S3-W at 205 bars (CAM-S3-E), 3 seeds × 1,024 episodes | crash 25.4 %, one-sided Wilson 95 % [24.1, 26.7]; capture 72.6 %; bar contact 15.7 %, target contact 9.4 % | BAR_NOT_MET_POINT against the ≤ 20 % bar | [`eval_analysis_aerialgym.json`](evidence/camonly_2026-11-04/cams3/eval_analysis_aerialgym.json) |
+| S3-W − S2b-FT (S2b-FT: crash 28.5 %, capture 70.4 %) | crash −3.1 pp [−5.3, −0.9] | SMALL; status NO_IMPROVEMENT; pointer STRUCTURAL_NEXT; results review PASS_WITH_LIMITS | [`REVIEW_E_results_r1.md`](evidence/camonly_2026-11-04/cams3/REVIEW_E_results_r1.md) |
+| Onboard runtime for S3-W (RT-S3W) | observation and action match the training path | Review GO for a desk / hand-held shadow test only; no flight | [`REVIEW_r1.md`](evidence/camonly_2026-11-04/rt_s3w/REVIEW_r1.md) |
+| Outdoor hand-held depth (2026-11-26) | ground: 38.7 % of frame-bins near at an assumed 150 cm camera height (18.5–54.8 % for 130–170 cm); sky false-near 2.67 % | Offline analysis; assumed height, heuristic sky mask | [`outdoor_1126/`](evidence/camonly_2026-11-04/outdoor_1126/README.md) |
+
+Not established for this line: any autonomous flight, a crash rate at or below the user's 20 % bar, drone
+detection of an unmarked target on real images, or a sim-to-real transfer.
+
 ## Supporting results
 
 | Result | Value | Verdict | Record |

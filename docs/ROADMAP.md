@@ -19,6 +19,9 @@ policy in simulation, and qualify corrections one lineage at a time:
 Every claim is bound to a preregistration and a machine-readable record. There is no real-flight
 claim and no state-of-the-art claim.
 
+Since November 2026 a second direction runs alongside: a camera-only policy for the real vehicle, which carries
+no LiDAR (D-2026-11-04-3, D-2026-11-06-1). It is a new lineage compared with Policy F, not a replacement (M8).
+
 ## Completed milestones
 
 | Milestone | Outcome | Record |
@@ -107,6 +110,17 @@ claim and no state-of-the-art claim.
   R0/R1 and documentation only authorized by the current G4-R4 instruction; no GPU/online/push.
 - **Scope:** this user-directed research sequence updates the old post-loss-only wording and
   G4-awaiting-approval status; historical design remains in its original evidence directories.
+
+### M8 — Camera-only real-vehicle line (branch history `camonly/dev` → `camonly/s2b`, merged 2026-11-28)
+
+- **Done:** C0–C2 (LiDAR removal from Policy F, REPORTED), CAM-K1/K2, CAM-S2a/S2b, CAM-REF stages 1–2, CAM-S3 S3-W
+  trained, CAM-S3-E (BAR_NOT_MET_POINT, pointer STRUCTURAL_NEXT, results review PASS_WITH_LIMITS), RT-S3W runtime
+  (review GO for a shadow test only), outdoor hand-held depth analysis.
+  Records: [`evidence/camonly_2026-11-04/`](evidence/camonly_2026-11-04/README.md), family `camera-only` in
+  [`EXPERIMENTS.md`](EXPERIMENTS.md).
+- **Next (each needs the user):** the vehicle-side shadow test; a structural design for the policy (memory without a
+  map, a separate target channel, latency in training, a measured outdoor depth-artefact model); then any GPU run
+  under its own preregistration. No flight is approved.
 
 ## Checking for forgotten work
 

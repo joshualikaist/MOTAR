@@ -53,6 +53,9 @@ or a host fault.
   Preserve Frozen Policy F's 898-D actor and sensor fusion. Do not remove, disable or zero LiDAR,
   or pursue a camera-only conversion without a new explicit user instruction. See the current
   [`sensor contract`](docs/SENSOR_CONTRACT.md) and its linked correction of historical roadmap text.
+  Such instructions exist for the real-vehicle line: D-2026-11-04-3 (opt-in camera-only study) and D-2026-11-06-1
+  (the real vehicle has no LiDAR). Camera-only policies are a separate lineage, compared with Policy F and never
+  substituted for it.
   Evaluation-only GT/semantic provenance must not become online tracking or control inputs.
 - **Frozen Policy F (ep25000 riskcap) is the reference policy and stays frozen**: no actor or
   checkpoint replaces it without the user's approval. New PPO training is allowed again

@@ -5,88 +5,80 @@ A short index of where MOTAR stands now. It is not a log; history lives in [`HIS
 [`EVIDENCE.md`](EVIDENCE.md); what the project is lives in [`PROJECT.md`](../PROJECT.md). Every status
 below names its record. Where this file and a record disagree, the record is right.
 
-**Last verified:** 2026-10-21KST (G4-R4 request/evidence2026-10-20UTC), on
-`codex/mt-p1`. C02 source8689efcd; strict research CPU source82ef02c.
-BOIA's current research entry point is the
-[Master Plan](research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md).
-Historical receipts retain their own source/version; no simulator/GPU ran in R4.
+**Last verified:** 2026-11-28 KST, on `main` after the merge of `camonly/s2b` (unit PUB-2026-11-28).
+Newer state is at the bottom of [`WORKLOG.md`](../WORKLOG.md).
 
 ## In one line
 
-MOTAR is a simulation study of an aerial pursuer that tracks a moving target with RGB-D camera +
-LiDAR fusion, using one frozen policy (Policy F). It asks what the perception, safety and
-target-motion conditions do to capture, and which corrections help.
+MOTAR is a simulation study of an aerial pursuer that tracks and closes in on a moving target among
+dense vertical obstacles. The historical line uses RGB-D camera + LiDAR fusion and one frozen policy
+(Policy F). The current line (since November 2026) trains camera-only policies for a real vehicle that
+carries no LiDAR.
 
-## What is working and verified
+## Research lines
 
-Each item is verified only within the scope stated in its record.
-
-| Area | Status | Record |
+| Line | Status | Record |
 | --- | --- | --- |
-| Sensor contract | RGB-D camera + LiDAR fusion is the official contract | [`SENSOR_CONTRACT.md`](SENSOR_CONTRACT.md) |
-| Environment qualification | EQ-0 → EQ-1D → E-L0 complete; the environment verdict is LIMITED_VALIDITY | [`evidence/eq1d_qualification_2026-10-18/`](evidence/eq1d_qualification_2026-10-18/REPORT.md) |
-| Occlusion study | OCC-P2 complete; RQ1/RQ3 supported, RQ2 inconclusive | [`evidence/occ_p2_confirmatory_2026-10-17/`](evidence/occ_p2_confirmatory_2026-10-17/REPORT.md) |
-| Sensor-fusion corrections | S-L1A/B/C/D v1 GO; C-v2 GO in a limited scope | [`evidence/s_l1c_v2_2026-10-18/`](evidence/s_l1c_v2_2026-10-18/QUALIFICATION.md) |
-| H-R3 mechanics | P03-Q01 GO for qualification only | [`evidence/h_r3_p03_preparation_2026-10-19/`](evidence/h_r3_p03_preparation_2026-10-19/REPORT.md) |
-| BOIA CPU research | Passive shadow observer with native Frozen F baseline (Q01-V2) CPU-qualified; GPU NOT_RUN; no online integration, G5 HOLD | [`G4-R7 evidence`](evidence/boia_g4r7_shadow_v2_preflight_2026-10-21/IMPLEMENTATION_REPORT.md) |
+| Sensor contract | RGB-D camera + LiDAR governs Policy F and the historical records; the real-vehicle line is camera-only by user decision (D-2026-11-04-3, D-2026-11-06-1) | [`SENSOR_CONTRACT.md`](SENSOR_CONTRACT.md), [`DECISIONS.md`](DECISIONS.md) |
+| Camera-only line, simulation | CAM-S3-E: S3-W crash 25.4 %, BAR_NOT_MET_POINT; W − S0 NO_IMPROVEMENT; pointer STRUCTURAL_NEXT; results review PASS_WITH_LIMITS | [`evidence/camonly_2026-11-04/cams3/`](evidence/camonly_2026-11-04/cams3/REVIEW_E_results_r1.md) |
+| Camera-only line, vehicle runtime | RT-S3W: S3-W observation and action reproduced; review GO for a desk / hand-held shadow test only; no flight approved | [`evidence/camonly_2026-11-04/rt_s3w/`](evidence/camonly_2026-11-04/rt_s3w/REVIEW_r1.md) |
+| Outdoor depth (hand-held, 2026-11-26) | Ground read as near obstacles depends strongly on the assumed camera height; sky false-near returns are a few percent of frame-bins | [`evidence/camonly_2026-11-04/outdoor_1126/`](evidence/camonly_2026-11-04/outdoor_1126/README.md) |
+| Target-motion replication (historical) | REPLICATED, 7 seeds | [`../results/target_motion_replication_7seed/`](../results/target_motion_replication_7seed/README.md) |
+| Classical baselines B1-R (historical) | Policy F above both reactive baselines; C1/C2 SUPERIOR | [`evidence/b1r_v1/`](evidence/b1r_v1/analysis_summary.json) |
+| BOIA (historical RGB-D + LiDAR line) | Shadow-only; Q02-B and Q03 review FAIL / HOLD; G5 HOLD | [`research/boia-progress.md`](research/boia-progress.md) |
+| Sensor-fusion corrections S-L1 | S-L1A/B/C/D v1 GO in their recorded scopes | [`evidence/s_l1c_v2_2026-10-18/`](evidence/s_l1c_v2_2026-10-18/QUALIFICATION.md) |
 | KROC2027 study | H-A supported; H-A2/I_A and H-B inconclusive | [`evidence/mt_precision_review_2026-10-16/`](evidence/mt_precision_review_2026-10-16/README.md) |
 
-## Current branch and phase
+All families, with what to read first and what compares, are in [`EXPERIMENTS.md`](EXPERIMENTS.md).
 
-- **Work branch:** `codex/mt-p1`. It is the current research branch (worktree `src/MOTAR-mt-p1`) and
-  is not yet merged into `main`. A merge needs user review (`motar-lp5.2`). `origin/main` carries
-  three publication commits from 2026-10-22/23 (`7689664`, `f9c1772`, `a32932f`) that are in neither
-  local `main` nor `codex/mt-p1`; the approved merge must integrate them.
-- **Phase:** G4-R7 (CPU only) prepared the Q01-V2 passive shadow run; executing it needs a
-  separate GPU approval (`motar-3p3.22`). Measured-evidence/continuation/mission work needs approval. KROC2027 freeze remains2026-10-28;
-  H-R3 stays PROVISIONAL. BOIA has no qualified episode or online system yet.
+## Branch and phase
+
+- **Branch:** `main` carries all research after the 2026-11-28 merge of `camonly/s2b` (which contained
+  `camonly/dev`). GitHub keeps `main` and `archive/*` tags only; no new branches (user, 2026-11-26).
+- **Phase:** camera-only line after CAM-S3-E. Fine-tuning the S2b-FT → S3-W lineage stopped
+  (STRUCTURAL_NEXT). The next design (memory without a map, a separate target channel, measured depth
+  artefacts, latency) is for the user to choose; every GPU run needs approval and a committed preregistration.
+- **Vehicle:** OAK-D, VIO, PX4, Jetson Orin NX, about 1.1 kg (D-2026-11-08-1, D-2026-11-18-2). The S3-W
+  bundle goes to a desk / hand-held shadow test; no autonomous flight is approved.
 
 ## Known problems and blockers
 
-- **BOIA G5 HOLD:** B03/B04, physicalC02, real sensor/continuation/mission/deadline qualification
-  remain unresolved. Historical capture masks same-step crashes; collision-free capture needs
-  separate pre-mask evidence. See the Master Plan, not synthetic PASS as a mission claim.
-- **PUBLIC_CPU:** R4 NOT_RERUN; last C02 source ran2941tests with4knownerrors, overallFAIL
-  (`motar-6nn.5`). R4 focused/fullBOIA pass does not clear that public gate.
-
-- **H-R3 attribution is INCONCLUSIVE.** Confirmation is on HOLD until the estimand is chosen
-  (`motar-6nn.1`).
-- **Stale docs.** `PROJECT.md` (phase dated 2026-09-26) predates the October approved runs
-  (`motar-lp5.4`). `AGENTS.md` and `docs/OPERATIONS.md` §1–2 were updated on 2026-10-31.
-- **TF32 caveat missing from public claims.** Historical moving-target cells are TF32-exposed, and the
-  public target-motion claims do not say so yet (`motar-lp5.3`).
-- **No physical-safety claim.** P-L1 and G-L1 are not done (`motar-tbx`).
-- **No external backup.** Raw results are local only; the user declined an external backup (see
-  [`DECISIONS.md`](DECISIONS.md)).
+- **Not flight-ready.** S3-W crashes in 25.4 % of simulated episodes; ground handling of outdoor depth and
+  sky false-near returns are open; the target detector for an unmarked drone is not integrated.
+- **Shadow-test checks open (RT-S3W review P3):** the top-band invalid share of the vehicle's depth must match
+  training; Orin NX step time is not measured.
+- **Review findings open before any CAM-S3-E rerun:** package review r2 P2-1 (output root must lie under the
+  unit folder) and P3-1..8.
+- **PUBLIC_CPU baseline:** 9 failures and 8 errors on `camonly/s2b`, all pre-existing and listed in the
+  WORKLOG; none is new to the camera-only work.
+- **Host faults:** cpu4/5 machine-check history; check the kernel crash count before and after long runs.
+- **No external backup.** Raw results are local only (BACKUP_DECLINED_BY_USER).
 
 ## Recent decisions
 
 Full list with reasons: [`DECISIONS.md`](DECISIONS.md).
 
-- **2026-10-19:** Beads is the only tracker for actionable TODOs; Claude-Mem is reference memory.
-- **2026-10-19:** BACKUP_DECLINED_BY_USER. Raw stays local; no deletion follows from this.
-- **2026-10-19:** H-R3 P03-Q01 is GO for qualification only; no automatic pilot.
-- **2026-10-18:** the sensor contract is RGB-D + LiDAR fusion.
-- **2026-10-14:** Policy F is the only policy; no new PPO.
+- **2026-11-28:** merge `camonly/s2b` into `main`, publish with README and site rewritten (unit PUB-2026-11-28).
+- **2026-11-27:** S3-W trained without false-near measurement; CAM-S3-E evaluated under its amendment 1.
+- **2026-11-26:** GitHub keeps `main` plus `archive/*` tags; no new branches.
+- **2026-11-23:** the simulated target is the same quadrotor; capture = centre distance ≤ 1.0 m at
+  closing speed ≤ 1.0 m/s.
+- **2026-11-06:** the real vehicle has no LiDAR; camera-only lineage on the OAK-D.
+- **2026-11-04:** new PPO training allowed again (D-2026-11-04-1); camera-only study opt-in (D-2026-11-04-3).
 
 ## Next priorities
 
-Run `bd ready` for the live list. BOIA next requires approval for R2 measured-evidence and
-Frozen-F continuation qualification design (`motar-3p3.19`), while existing B03/B04/physicalC02
-issues remain open. Broader programme priorities below are retained, not execution authority:
+Run `bd ready` for the live list. Open decisions for the user:
 
-- `motar-d43.1`: write the KROC2027 paper draft (internal deadline 2026-11-13).
-- `motar-6nn.1`: the user's choice of H-R3 estimand.
-- `motar-lp5.1`: push the unpublished `codex/mt-p1` commits (needs push approval).
-- `motar-lp5.4`: sync the stale canonical docs.
-- `motar-lp5.3`: add the TF32 qualification to the public target-motion claims.
+- the next structural design for the camera-only line;
+- a measured outdoor depth-artefact model (CPU) and the vehicle-side shadow test results;
+- the hold-k / delay-d evaluation probe (GPU, needs approval).
 
 ## Where things are
 
 - **Commands, test profiles and run rules:** [`OPERATIONS.md`](OPERATIONS.md). The default check is
   `python -B tools/run_tests.py`.
-- **Experiment families** (what belongs together, what to read first, what compares):
-  [`EXPERIMENTS.md`](EXPERIMENTS.md).
+- **Experiment families:** [`EXPERIMENTS.md`](EXPERIMENTS.md).
 - **Plans:** [`plans/`](plans/). **Evidence:** [`evidence/`](evidence/). **Long-term direction:**
   [`ROADMAP.md`](ROADMAP.md).
 - **Tasks:** Beads (`bd ready`, `bd show <id>`). The database is untracked and local, in the main

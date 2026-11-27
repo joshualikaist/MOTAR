@@ -27701,3 +27701,55 @@ the authorized remote push.
     vs runtime config not proven equal; already open as CAM-S2 P2-6).
 - **Next:** the Jetson side runs the desk / hand-held shadow test with README v1 (Orin NX step time, sector ranges
   against real distances, invalid shares). No flight approved; push / merge not done.
+
+## 2026-11-28 — PUB: merge camonly/s2b into main; README and site rewrite
+
+- **Approval** (user, 2026-11-28): "main 병합 후 push (권장)" and "관련해서 github readme랑 페이지 사이트도 다 전면
+  수정해줘. 올바른 내용으로" (`~/motar_tmp/pub_20261128/user_approval.json`; state before:
+  `~/motar_tmp/pub_20261128/state_before.txt`). The builder makes local commits only; push follows an independent review.
+- **Merges** (normal merge commits, no rebase or force):
+  - `78b456a` = main `198a200` + origin/main `a32932f` (the three 2026-10-22/23 publication commits). Conflicts:
+    WORKLOG.md union (both sides kept); README.md, docs/status/index.html, docs/status/evidence.html and
+    tests/test_project_page.py taken from origin/main (published 2026-10-22 site), then rewritten below.
+  - `2b14219` = `78b456a` + camonly/s2b `564fd91` (contains camonly/dev). Conflicts: WORKLOG.md union;
+    AGENTS.md (auto-merged) set to the camonly/s2b text, which drops the 2026-11-05 five-hour wall-clock section
+    superseded by the 2026-11-11 usage-based rule; tools/agent_session.py, tests/test_agent_session.py and
+    .claude/skills/session-handoff/SKILL.md from camonly/s2b (usage-based version); ARCHITECTURE.md from main
+    (October source-verified pipeline text); docs/status/index.html from main (rewritten below).
+  - The local-main site changes of 2026-09-27 (paper/deck links) and camonly/dev's B1-R site row were lost in the
+    site conflict; both are restored in the rewrite (tests test_paper_companion, test_canonical_docs B1-R).
+- **Archive tags (local, lightweight):** only `codex/mt-p1` had a commit (`42415ff`) in neither main nor an existing
+  archive tag → `archive/2026-11-28/codex-mt-p1`. cplanner/dev, gainrand/dev and camonly/t1 are already covered by
+  the `archive/2026-11-26/*` tags. No branch or worktree deleted.
+- **Public surfaces rewritten** (English; every new number bound to a record):
+  - New `tools/build_camonly_public_status.py` → `docs/status/data/camonly-status.json` (SHA-256 22074c69…) from
+    `c1c2/c2_analysis.json`, `cams3/eval_analysis_aerialgym.json`, `cams3/REVIEW_E_results_r1.md`,
+    `rt_s3w/REVIEW_r1.md` and the newly committed `docs/evidence/camonly_2026-11-04/outdoor_1126/` (11-26 outdoor
+    analysis from `~/motar_tmp/outdoor_20261127/`, with a README noting that RT-S3W later added the sector rule).
+  - New `tests/test_camonly_public_status.py` (6 tests): rebuild equals the committed file; verdict labels; README,
+    index.html, evidence.html and EVIDENCE.md quote the display strings; tampered-record and changed-number
+    negative controls; no flight / upgrade wording.
+  - `tools/check_public_docs.py`: landing headings gain "Current research: camera-only real-vehicle line" (a number
+    section) and rename the BOIA heading to "Research Extension — BOIA (October 2026)"; headline values include
+    the camera-only status record.
+  - README.md: camera-only line first (C2 +39.95 pp; CAM-S3-E table; BAR_NOT_MET_POINT, STRUCTURAL_NEXT,
+    PASS_WITH_LIMITS; runtime GO for a shadow test only; outdoor ground/sky); historical results kept and condensed;
+    185 lines, 1,826 words.
+  - docs/status/index.html: new chapter `#camera-only`, nav link, hero, contract strip, BOIA relabelled as the
+    historical line's extension, B1-R article restored, paper/deck paths, footer month. evidence.html: section
+    `#camera-only`, limits. docs/EVIDENCE.md: camera-only table. PROJECT_STATE.md rewritten (85 lines, last verified
+    2026-11-28); ROADMAP.md M8; SENSOR_CONTRACT.md dated section closing the revision D-2026-11-06-1 left open;
+    AGENTS.md research-rule sentence naming D-2026-11-04-3 / D-2026-11-06-1; EXPERIMENTS.md: the four origin/main
+    records added to `public-release-records` and `boia`, camera-only status updated.
+- **Checks:** check_public_docs PASS; build_paper_figures --check PASS (byte-exact); test_status_site.js and
+  test_status_interception_episode.js PASS; camonly status --check PASS.
+  Full PUBLIC_CPU (`~/motar_tmp/pub_20261128/tests_full_final.log`): 4,662 tests, 4 failures, 0 errors. Three are in
+  the camonly/s2b baseline (test_cams2a_eval yawclip receipt, test_sitl_s4r1 prereg commands, test_camk1e real
+  entry receipt). One is new and explained: test_cams3_eval allowlist — the CAM-S3-E stage-3 guard compares the tree
+  with 335a1fa and refuses paths changed since then; on main the merge brings origin/main and local-main files
+  (README, ARCHITECTURE, DESIGN_SYSTEM, check_public_docs, .beads/config.yaml, two figure builders) and RT-S3W's
+  runtime files. A CAM-S3-E rerun from main would therefore fail closed in preflight, as intended. Fourteen
+  baseline failures/errors (BOIA runner, result manifest, sitl_s3a, ref5in) no longer occur on the merged tree.
+  Post-merge, pre-rewrite run: `tests_full_postmerge.log` (7 failures, 0 errors).
+- **Next:** independent review of the merge and the public surfaces, then push of main and the new archive tag
+  (user-approved, after review).

@@ -1,0 +1,453 @@
+{
+ "note": "Thin-object sub-bin test (EMULATED yaw): the taped trunk/pole stop frames are shifted horizontally by s source pixels\n(s = -20..+20, ~ +-2.4 deg, about one 5-deg bin pitch = 41.5 px; new[:, x] = old[:, x - s], vacated columns invalid),\nthen replayed through the same runtime projection + floor filter + real fuse (native / sector k=24). A pure shift\napproximates a small yaw (error < 0.1 px near the centre). For each shift: the bin whose bearing range contains the\nshifted object centre, and the minimum over all bins the object overlaps.\n  seen      : reading within max(0.3 m, 20 %) of the vehicle team's trunk depth (the object itself)\n  not_far   : reading <= trunk depth + tolerance (the object or something nearer)\nWrites shift_test.json.",
+ "shifts_px": [
+  -20,
+  -19,
+  -18,
+  -17,
+  -16,
+  -15,
+  -14,
+  -13,
+  -12,
+  -11,
+  -10,
+  -9,
+  -8,
+  -7,
+  -6,
+  -5,
+  -4,
+  -3,
+  -2,
+  -1,
+  0,
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20
+ ],
+ "rows": [
+  {
+   "scene": "161121_treeA_approach",
+   "object": "treeA",
+   "taped_m": 5.0,
+   "trunk_depth_m": 4.88,
+   "cols": [
+    302,
+    326
+   ],
+   "width_px_624": 25,
+   "angular_width_deg": 3.023,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 0.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 0.0
+    },
+    "sector": {
+     "seen_centre_bin": 0.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 0.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 0.9512,
+     "not_far_centre_bin": 0.9512,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 0.6098
+  },
+  {
+   "scene": "161121_treeA_approach",
+   "object": "treeA",
+   "taped_m": 3.0,
+   "trunk_depth_m": 2.72,
+   "cols": [
+    292,
+    338
+   ],
+   "width_px_624": 47,
+   "angular_width_deg": 5.684,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "161121_treeA_approach",
+   "object": "treeA",
+   "taped_m": 2.0,
+   "trunk_depth_m": 1.75,
+   "cols": [
+    266,
+    340
+   ],
+   "width_px_624": 75,
+   "angular_width_deg": 9.07,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "161952_treeC_approach",
+   "object": "treeC",
+   "taped_m": 5.0,
+   "trunk_depth_m": 5.31,
+   "cols": [
+    310,
+    337
+   ],
+   "width_px_624": 28,
+   "angular_width_deg": 3.386,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 0.4878,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 0.6098
+    },
+    "sector": {
+     "seen_centre_bin": 0.2927,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 0.4634
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 0.8049,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 0.8049
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 0.5366
+  },
+  {
+   "scene": "161952_treeC_approach",
+   "object": "treeC",
+   "taped_m": 3.0,
+   "trunk_depth_m": 2.95,
+   "cols": [
+    294,
+    350
+   ],
+   "width_px_624": 57,
+   "angular_width_deg": 6.893,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "161952_treeC_approach",
+   "object": "treeC",
+   "taped_m": 2.0,
+   "trunk_depth_m": 1.57,
+   "cols": [
+    293,
+    389
+   ],
+   "width_px_624": 97,
+   "angular_width_deg": 11.73,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "161952_treeC_approach",
+   "object": "treeC",
+   "taped_m": 1.0,
+   "trunk_depth_m": 0.69,
+   "cols": [
+    232,
+    433
+   ],
+   "width_px_624": 202,
+   "angular_width_deg": 24.427,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "162213_pole_approach",
+   "object": "pole",
+   "taped_m": 5.0,
+   "trunk_depth_m": 4.69,
+   "cols": [
+    275,
+    320
+   ],
+   "width_px_624": 46,
+   "angular_width_deg": 5.563,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 0.9024,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 0.9024,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "162213_pole_approach",
+   "object": "pole",
+   "taped_m": 3.0,
+   "trunk_depth_m": 3.19,
+   "cols": [
+    239,
+    305
+   ],
+   "width_px_624": 67,
+   "angular_width_deg": 8.102,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  },
+  {
+   "scene": "162213_pole_approach",
+   "object": "pole",
+   "taped_m": 2.0,
+   "trunk_depth_m": 1.64,
+   "cols": [
+    224,
+    369
+   ],
+   "width_px_624": 146,
+   "angular_width_deg": 17.656,
+   "G1.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "Gm0.5": {
+    "native": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    },
+    "sector": {
+     "seen_centre_bin": 1.0,
+     "not_far_centre_bin": 1.0,
+     "seen_any_overlap_bin": 1.0
+    }
+   },
+   "geometric_native_hit_share": 1.0
+  }
+ ],
+ "mean_G1.5_native": {
+  "seen_centre_bin": 0.839,
+  "not_far_centre_bin": 1.0,
+  "seen_any_overlap_bin": 0.861
+ },
+ "mean_G1.5_sector": {
+  "seen_centre_bin": 0.8293,
+  "not_far_centre_bin": 1.0,
+  "seen_any_overlap_bin": 0.8463
+ },
+ "mean_Gm0.5_native": {
+  "seen_centre_bin": 0.9658,
+  "not_far_centre_bin": 0.9951,
+  "seen_any_overlap_bin": 0.9805
+ },
+ "mean_Gm0.5_sector": {
+  "seen_centre_bin": 1.0,
+  "not_far_centre_bin": 1.0,
+  "seen_any_overlap_bin": 1.0
+ },
+ "native_columns_in_source_px": [
+  30.66,
+  76.63,
+  122.61,
+  170.58,
+  216.55,
+  262.53,
+  308.5,
+  356.47,
+  402.45,
+  448.42,
+  496.39,
+  542.37,
+  588.34
+ ]
+}

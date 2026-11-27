@@ -1,0 +1,61 @@
+{
+ "schema": "camonly_public_status_v1",
+ "sources": {
+  "c2": "docs/evidence/camonly_2026-11-04/c1c2/c2_analysis.json",
+  "cams3e": "docs/evidence/camonly_2026-11-04/cams3/eval_analysis_aerialgym.json",
+  "cams3e_review": "docs/evidence/camonly_2026-11-04/cams3/REVIEW_E_results_r1.md",
+  "rt_s3w_review": "docs/evidence/camonly_2026-11-04/rt_s3w/REVIEW_r1.md",
+  "outdoor": "docs/evidence/camonly_2026-11-04/outdoor_1126/sky_scan_analysis.json"
+ },
+ "values": {
+  "c2_total_crash_pp": 39.945475260416664,
+  "c2_out_fov_crash_pp": 39.249674479166664,
+  "w_capture_pct": 72.62369791666667,
+  "w_crash_pct": 25.390625,
+  "w_crash_wilson_lo_pct": 24.121001035711647,
+  "w_crash_wilson_hi_pct": 26.703558303995607,
+  "w_bar_contact_pct": 15.72265625,
+  "w_target_contact_pct": 9.407552083333334,
+  "s0_capture_pct": 70.41015625,
+  "s0_crash_pct": 28.515625,
+  "s0_bar_contact_pct": 22.330729166666668,
+  "s0_target_contact_pct": 6.022135416666667,
+  "w_minus_s0_crash_pp": -3.125,
+  "w_minus_s0_crash_ci_lo_pp": -5.338541666666667,
+  "w_minus_s0_crash_ci_hi_pp": -0.9440104166666667,
+  "outdoor_ground_near_pct_at_1p5m": 38.690000000000005,
+  "outdoor_ground_near_pct_at_1p3m": 18.47,
+  "outdoor_ground_near_pct_at_1p7m": 54.779999999999994,
+  "outdoor_sky_phantom_pct": 2.67,
+  "outdoor_frame_bins": 2380
+ },
+ "display": {
+  "c2_total": "+39.95 pp",
+  "c2_out_fov": "+39.25 pp",
+  "w_capture": "72.6 %",
+  "w_crash": "25.4 %",
+  "w_crash_wilson": "[24.1, 26.7]",
+  "w_bar_contact": "15.7 %",
+  "w_target_contact": "9.4 %",
+  "s0_capture": "70.4 %",
+  "s0_crash": "28.5 %",
+  "s0_bar_contact": "22.3 %",
+  "s0_target_contact": "6.0 %",
+  "w_minus_s0_crash": "−3.1 pp",
+  "w_minus_s0_crash_ci": "[−5.3, −0.9]",
+  "outdoor_ground_1p5": "38.7 %",
+  "outdoor_ground_range": "18.5–54.8 %",
+  "outdoor_sky_phantom": "2.67 %"
+ },
+ "labels": {
+  "c2_reading": "REPORTED",
+  "q1_label": "BAR_NOT_MET_POINT",
+  "q1_wilson": "ABOVE_20",
+  "w_minus_s0_status": "NO_IMPROVEMENT",
+  "w_minus_s0m_status": "NO_IMPROVEMENT",
+  "pointer": "STRUCTURAL_NEXT",
+  "results_review": "PASS_WITH_LIMITS",
+  "runtime_review": "GO"
+ },
+ "scope": "Simulation evaluation (CAM-S3-E) and a hand-held outdoor depth recording analysis; no autonomous real flight. Runtime review GO covers a desk / hand-held shadow test only."
+}
