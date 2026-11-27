@@ -22,6 +22,11 @@ modules. NAVRL_CAMREF_POLICY names the policy and must match the checkpoint the 
        cams2diag, inview): the CAM-DX1 path. The CAM-REF rules are refused (cams2 is S2b-FT's own rule set); the CAM-REF
        recorder only with cams2 off (inside cams2's wrapper it would count a target contact as a capture). No yaw clip
        (1.0472 rad/s is S2b-FT's own scale).
+  S3W  CAM-S3 S3-W ep18000 (stage 3, docs/plans/prereg_camonly_s3w_eval_2026-11-27.md): S2B's stack and path in its own
+       trained runtime: NAVRL_YAW_RATE_MAX 1.5708 (its action scale; no yaw clip), navrl_cams3 measured depth
+       (NAVRL_DEPTH_MEAS=1, false near 0, NAVRL_DEPTH_HOLE_P=0) and the sector rule (NAVRL_CAMS3_SECTOR_K=24), which
+       realveh_entry validates and installs. S2B refuses the sector rule (S2b-FT's runtime reads the sampled columns);
+       it may carry the measured depth (a sensor model, stage 3's S0M).
 Why K1 and S2B delegate: realveh_entry is the explicit, tested installer of navrl_vehicle_rand, navrl_depth_model and
 navrl_sensor_ablation (tests/test_realveh.py TestIsolation). F cannot use it (camtrain_entry's settings refuse any
 condition but no_lidar), so this file installs navrl_vehicle_rand for F itself: the one new importer of that module
@@ -50,17 +55,22 @@ POLICY_ENV, RECEIPT_ENV = "NAVRL_CAMREF_POLICY", "NAVRL_CAMREF_RECEIPT"
 # The checkpoint each policy name binds (NAVRL_EVAL_CHECKPOINT, set by the launcher from the file it SHA-checked).
 POLICY_CKPT = {"F": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
                "K1": "d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb",
-               "S2B": "f2c80fcc2b2eaeb24e0b05d2284e74594a7ed8e7953f6b17b7dce49b09f2bbab"}
-DELEGATE = {"F": None, "K1": "tools/realveh_entry.py", "S2B": "tools/realveh_entry.py"}
+               "S2B": "f2c80fcc2b2eaeb24e0b05d2284e74594a7ed8e7953f6b17b7dce49b09f2bbab",
+               "S3W": "2626a4b24eb29b11c469904ac1a4e06de0349a04e9c83164b23a1e6308fa98ee"}
+DELEGATE = {"F": None, "K1": "tools/realveh_entry.py", "S2B": "tools/realveh_entry.py", "S3W": "tools/realveh_entry.py"}
 K1_PERCEPTION = {"NAVRL_SENSOR_ABLATION": "no_lidar", "NAVRL_CAMTRAIN_HFOV_DEG": 66.0, "NAVRL_CAMTRAIN_VFOV_DEG": 54.0,
                  "NAVRL_CAMTRAIN_YAW_ALIGN_WEIGHT": 0.6, "NAVRL_CAMTRAIN_VISIBILITY_BONUS": 0.03}
 S2B_PERCEPTION = {"NAVRL_SENSOR_ABLATION": "no_lidar", "NAVRL_CAMSAFE": "1", "NAVRL_DEPTH_MODEL": "oakd",
                   "NAVRL_CAMERA_WIDTH": "312", "NAVRL_CAMERA_HEIGHT": "234", "NAVRL_DETECT_WIDTH": "312",
                   "NAVRL_DETECT_HEIGHT": "234", "NAVRL_CAMTRAIN_HFOV_DEG": "66.7", "NAVRL_CAMTRAIN_VFOV_DEG": "52.6",
                   "NAVRL_YAW_RATE_MAX": "1.0472"}
+S3W_PERCEPTION = dict(S2B_PERCEPTION, NAVRL_YAW_RATE_MAX="1.5708")
+S3W_REQUIRED = {"NAVRL_DEPTH_MEAS": "1", "NAVRL_DEPTH_MEAS_FALSE_NEAR": "0", "NAVRL_DEPTH_HOLE_P": "0",
+                "NAVRL_CAMS3_SECTOR_K": "24"}
 # Keys that change a policy's perception or bring in S2b-FT's own modules; refused for F (all) and K1 (all but the
 # ablation / camtrain keys, which K1 must carry with its own values).
-PERCEPTION_PREFIXES = ("NAVRL_CAMTRAIN_", "NAVRL_CAMSAFE", "NAVRL_CAMS2", "NAVRL_DEPTH_VALIDITY", "NAVRL_P9_")
+PERCEPTION_PREFIXES = ("NAVRL_CAMTRAIN_", "NAVRL_CAMSAFE", "NAVRL_CAMS2", "NAVRL_DEPTH_VALIDITY", "NAVRL_P9_",
+                       "NAVRL_DEPTH_MEAS", "NAVRL_CAMS3_")              # the last two: CAM-S3 rules (stage 3)
 PERCEPTION_KEYS = ("NAVRL_SENSOR_ABLATION", "NAVRL_DEPTH_MODEL", "NAVRL_DEPTH_MINZ_M", "NAVRL_DEPTH_MAXZ_M",
                    "NAVRL_DEPTH_SIGMA_D_PX", "NAVRL_DEPTH_FB_PXM", "NAVRL_DEPTH_HOLE_P", "NAVRL_DEPTH_SEED",
                    "NAVRL_CAMERA_WIDTH", "NAVRL_CAMERA_HEIGHT", "NAVRL_DETECT_WIDTH", "NAVRL_DETECT_HEIGHT",
@@ -172,17 +182,19 @@ def settings(environ=None):
                 ok = False
             if not ok:
                 raise SystemExit("camref: policy K1 needs %s=%s (its own perception), got %r" % (k, v, got))
-    else:                                                     # S2B
-        for k, v in S2B_PERCEPTION.items():
+    else:                                                     # S2B, S3W
+        for k, v in (S2B_PERCEPTION if policy == "S2B" else dict(S3W_PERCEPTION, **S3W_REQUIRED)).items():
             if env.get(k, "").strip() != v:
-                raise SystemExit("camref: policy S2B needs %s=%s (its own perception and stack), got %r"
-                                 % (k, v, env.get(k)))
+                raise SystemExit("camref: policy %s needs %s=%s (its own perception and stack), got %r"
+                                 % (policy, k, v, env.get(k)))
+        if policy == "S2B" and _set(env, "NAVRL_CAMS3_SECTOR_K"):
+            raise SystemExit("camref: policy S2B refuses NAVRL_CAMS3_SECTOR_K (its runtime reads the sampled columns)")
         if not _set(env, "NAVRL_P9_ERROR_MODEL"):
-            raise SystemExit("camref: policy S2B needs its P9 injector (NAVRL_P9_ERROR_MODEL)")
+            raise SystemExit("camref: policy %s needs its P9 injector (NAVRL_P9_ERROR_MODEL)" % policy)
         if R.rules_on(rules):
-            raise SystemExit("camref: policy S2B refuses the CAM-REF rules (cams2 is its own rule set)")
+            raise SystemExit("camref: policy %s refuses the CAM-REF rules (cams2 is its own rule set)" % policy)
         if _stray(env, prefixes=("NAVRL_YAWCLIP",)):
-            raise SystemExit("camref: policy S2B refuses NAVRL_YAWCLIP (1.0472 rad/s is its own scale)")
+            raise SystemExit("camref: policy %s refuses NAVRL_YAWCLIP (its action scale is its own)" % policy)
         if rules and rules.get("record") is not None and env.get("NAVRL_CAMS2", "").strip() == "1":
             raise SystemExit("camref: the CAM-REF recorder would sit inside navrl_cams2; use navrl_cams2diag")
     out["realveh"] = RV.settings(env)                       # the delegate's own validation (SystemExit on a refusal)

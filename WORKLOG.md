@@ -27410,3 +27410,36 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
   90 deg/s, delay U{1,2}; remaining approved GPU about 2.4 h of the 6 h; needs the user's approval of the
   preregistration); runtime unit for rule 2 + 90 deg/s (pin `navrl_cams3.py`, P3-3/P3-4) and an Orin timing of the
   sector rule (p95 margin 4.8 ms); outdoor masks when they arrive.
+
+## 2026-11-27 — CAM-S3-E preregistered: S3-W vs S2b-FT at P_S, each in its own runtime (CAM-REF stage 3; no GPU yet)
+
+- **Authorization:** the CAM-S3 conditional GPU approval (≤ 6 h incl. evaluation; ~2.4 h left after S3-W) and the
+  user's "우리 원래 하던거부터 진행하자" in answer to "평가 사전등록을 작성해서 리뷰를 받을까요?". GPU stages start only after
+  an Opus review with no open P1, this commit, the suite and the host check, with
+  `~/motar_tmp/cams3e_20261127/execution_approval.json` naming the scope and HEAD.
+- **Preregistration:** `docs/plans/prereg_camonly_s3w_eval_2026-11-27.md`. P_S = stage 1's S0 (CAM-DX1 V312), 205 bars x
+  4501-4503, quota 8 x 128 envs. Arms: S0 (CAM-DX1 V312 cells, pinned, not rerun), S0T (S2b-FT on bars_h3_thin), S0M
+  (S2b-FT + measured masks, no sector), W (S3-W ep18000 2626a4b2…, 1.5708 rad/s, masks, sector k 24, bars_h3), WT (W on
+  bars_h3_thin). Smoke 4 arms (positive / negative controls for masks, sector, yaw scale, arena line), identity S0ID vs
+  DX1 V312 205 / 4501, eval 12 cells; wall cap 2.0 h (sub-caps 0.4 / 0.3 / 2.0 h), expected ~1.4 h.
+  Readings: Q1 W against the bar (BAR_MET iff crash ≤ 20 %, capture ≥ 70 %, timeout ≤ 10 %), Q2 W − S0 and WT − S0T
+  labelled (MATERIAL / SMALL / NO_DETECTED_CHANGE), Q3 S0M − S0, W − S0M reported; fixed use: BAR_MET → runtime unit;
+  BAR_NOT_MET with W − S0 crash MATERIAL negative → helps, not enough; otherwise → structural next design (user).
+  Bootstrap default_rng(4711). Scope SHA-256 3bfb10f128df365e893d6f7e4be44b0d98dc9376e3dbca5384060dbfd49c9f70.
+- **Code:** `tools/camref_eval_run.py` stage-3 rungs and checks (S3W policy, CAMERA_POLICIES, s3_rung_delta, CAMS3_POINT,
+  cams3_receipt_problems, s3_smoke_controls, MISMATCH_ARENA; every earlier arm unchanged, tested against 7a2e9c8);
+  `tools/camref_entry.py` policy S3W (S2B refuses the sector key, F / K1 refuse every CAM-S3 key); launcher copy
+  `eval_navrl_cams3e_arms.sh` (SHA-256 561ea75c…; stage-1 launcher untouched); `tools/camref_stage3_run.py` (constants,
+  S3-W training checks `s3w_problems`, allowlist), `tools/camref_stage3_analyse.py` (controls OK), `tests/test_cams3_eval.py`.
+- **Check mode (CPU, read only, before commit):** only problem "uncommitted files" (expected); S3-W checks, base
+  provenance, every planned cell environment, references, launcher pin and allowlist pass; GPU-stage state: no approval
+  file (expected).
+- **Tests:** `tests/test_cams3_eval.py` 26 OK; with test_camref, test_camref_stage2, test_cams3, test_realveh 150 OK. Full
+  PUBLIC_CPU (OMP_NUM_THREADS=1, cores 6,7,12,13; `~/motar_tmp/cams3e_20261127/tests_full_pre.log`): 4,625 tests, 9 F /
+  11 E. Against the CAM-S3 baseline (`~/motar_tmp/cams3_20261127/tests_full_pre.log`) the two experiment-index failures
+  and the two test_boia_planner errors are gone. Three errors are new (test_sitl_agq_geometry_diag x2,
+  test_sitl_s3b_dev08_prefix x1): "MKL_NUM_THREADS must be 1", which this run did not set. The two modules rerun with
+  MKL_NUM_THREADS=1 read 40 OK, so none of the new errors comes from this change.
+- **Next:** independent Opus review of the package (read-only, `~/motar_tmp/cams3e_20261127/review_r1/`); on no open P1:
+  approval file, host check, `tools/camref_stage3_run.py smoke|identity|eval --approved-commit <HEAD> --out
+  ~/motar_tmp/cams3e_20261127/gpu1/<stage>`, then `tools/camref_stage3_analyse.py eval`.

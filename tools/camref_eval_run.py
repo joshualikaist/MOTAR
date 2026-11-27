@@ -90,7 +90,11 @@ K1_SEED = 1
 K1_SHA = R1.K1_SHA[K1_SEED]
 K1_TRAIN_REPORT = R1.CAMK1_DIR / ("train_s%d" % K1_SEED) / "train_report.json"
 FT_SHA = D.FT_CKPT_SHA
-POLICY_SHA = {"F": F_SHA, "K1": K1_SHA, "S2B": FT_SHA}
+# stage 3 (CAM-S3-E, docs/plans/prereg_camonly_s3w_eval_2026-11-27.md): CAM-S3 S3-W ep18000; its checkpoint, receipt and
+# training checks live in tools/camref_stage3_run.py, which adds it to checkpoints() only inside its install()
+S3W_SHA = "2626a4b24eb29b11c469904ac1a4e06de0349a04e9c83164b23a1e6308fa98ee"
+POLICY_SHA = {"F": F_SHA, "K1": K1_SHA, "S2B": FT_SHA, "S3W": S3W_SHA}
+CAMERA_POLICIES = ("S2B", "S3W")                 # the camera-only CAM-S2 stack (realveh_entry, cams2, camsafe, P9)
 
 # ---- reference cells (read only) and their SHA-256 pins ----------------------------------------------------------------
 MAIN_TREE = pathlib.Path("/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator")
@@ -251,6 +255,8 @@ def rung_delta(rung, seed):
         return s3_delta()
     elif rung == "S6":
         return s6_delta()
+    elif rung in S3_RUNGS:
+        return s3_rung_delta(rung, seed)
     else:
         raise ValueError("unknown rung %r" % rung)
     if rung == "K1T":
@@ -290,6 +296,66 @@ def s6_delta():
     return d
 
 
+# ---- stage 3 rungs (CAM-S3-E): S2b-FT and S3-W at P_S, each in its own trained runtime; arena / depth / sector deltas ----
+CAMS3_REL = "aerial_gym/task/navrl_task/navrl_cams3.py"
+CAMS3_LIBRARY = "/home/fair/motar_tmp/cams3_20261127/mask_library_v1.npz"
+CAMS3_LIBRARY_SHA = "55c781136c3ce26635cab61d11c2e5fe4cbdcd28a7433cb6c315f858c603a351"
+MEAS_SEED_OFFSET = 6                            # NAVRL_DEPTH_MEAS_SEED = 10 x seed + 6 (S2A's module seeds use 1-5)
+THIN_POOL = {"NAVRL_BAR_POOL": "bars_h3_thin"}
+S3W_YAW = {"NAVRL_YAW_RATE_MAX": "1.5708"}       # S3-W's trained action scale and Lee yaw clamp (90 deg/s); no clip
+SECTOR = {"NAVRL_CAMS3_SECTOR_K": "24"}
+S3_RUNGS = ("S0T", "S0M", "W", "WT")
+PS_CAMERA_RUNGS = ("S0",) + S3_RUNGS            # the camera-only policies at P_S (CAM-DX1 V312 construction)
+MEAS_RUNGS, SECTOR_RUNGS = ("S0M", "W", "WT"), ("W", "WT")
+
+
+def meas_delta(seed):
+    """Rule 1 of navrl_cams3 as S3-W trained it (measured masks + 10-row top band, false near OFF), replacing the iid
+    holes; the mask-pointer seed is a per-cell module seed, matched across the arms of a block."""
+    return {"NAVRL_DEPTH_HOLE_P": "0", "NAVRL_DEPTH_MEAS": "1", "NAVRL_DEPTH_MEAS_LIBRARY": CAMS3_LIBRARY,
+            "NAVRL_DEPTH_MEAS_SHA256": CAMS3_LIBRARY_SHA, "NAVRL_DEPTH_MEAS_SEED": str(10 * int(seed) + MEAS_SEED_OFFSET),
+            "NAVRL_DEPTH_MEAS_TOP_ROWS": "10", "NAVRL_DEPTH_MEAS_ADVANCE_P": "0.5", "NAVRL_DEPTH_MEAS_JUMP_P": "0.01",
+            "NAVRL_DEPTH_MEAS_FALSE_NEAR": "0"}
+
+
+def s3_rung_delta(rung, seed):
+    """S0T: S2b-FT on bars_h3_thin. S0M: S2b-FT with the measured masks (no sector rule). W: S3-W in its trained runtime
+    (1.5708 rad/s, measured masks, sector k = 24) on bars_h3. WT: W on bars_h3_thin."""
+    if rung == "S0T":
+        return dict(THIN_POOL)
+    if rung == "S0M":
+        return meas_delta(seed)
+    if rung not in ("W", "WT"):
+        raise ValueError("unknown stage-3 rung %r" % rung)
+    d = dict(S3W_YAW, **meas_delta(seed), **SECTOR)
+    if rung == "WT":
+        d.update(THIN_POOL)
+    return d
+
+
+# The stage-3 fields every P_S camera rung must show (bar pool, depth rule, false near, sector k), from its environment.
+CAMS3_POINT = {"S0": ("bars_h3", "iid_0.02", None, None), "S0T": ("bars_h3_thin", "iid_0.02", None, None),
+               "S0M": ("bars_h3", "measured", "0", None), "W": ("bars_h3", "measured", "0", "24"),
+               "WT": ("bars_h3_thin", "measured", "0", "24")}
+
+
+def cams3_point(env):
+    depth = "measured" if env.get("NAVRL_DEPTH_MEAS") == "1" else "iid_%s" % env.get("NAVRL_DEPTH_HOLE_P")
+    return (env.get("NAVRL_BAR_POOL"), depth, env.get("NAVRL_DEPTH_MEAS_FALSE_NEAR"), env.get("NAVRL_CAMS3_SECTOR_K"))
+
+
+def cams3_problems(env, arm):
+    r = rung(arm)
+    if r not in CAMS3_POINT:
+        return []
+    got, want = cams3_point(env), CAMS3_POINT[r]
+    p = [] if got == want else ["stage-3 point (pool, depth, false near, sector) of rung %s is %r, preregistered %r"
+                                % (r, got, want)]
+    if (policy(arm) == "S3W") != (r in SECTOR_RUNGS):
+        p.append("rung %s runs policy %s" % (r, policy(arm)))
+    return p
+
+
 # ---- arms ------------------------------------------------------------------------------------------------------------
 ARMS = {"F0ID": {"policy": "F", "rung": "F0", "label": "CAMREF_F0ID"},
         "S0ID": {"policy": "S2B", "rung": "S0", "label": "CAMREF_S0ID"},
@@ -308,9 +374,15 @@ ARMS = {"F0ID": {"policy": "F", "rung": "F0", "label": "CAMREF_F0ID"},
         "F4V": {"policy": "F", "rung": "F4V", "label": "CAMREF_F4V"},
         "F4A": {"policy": "F", "rung": "F4A", "label": "CAMREF_F4A"},
         "F4ID": {"policy": "F", "rung": "F4", "label": "CAMREF_F4ID"},
-        "F8ID": {"policy": "F", "rung": "F8", "label": "CAMREF_F8ID"}}
+        "F8ID": {"policy": "F", "rung": "F8", "label": "CAMREF_F8ID"},
+        # stage 3 (docs/plans/prereg_camonly_s3w_eval_2026-11-27.md): P_S camera arms; S0ID (stage 1's) is its identity
+        "S0T": {"policy": "S2B", "rung": "S0T", "label": "CAMS3E_S0T"},
+        "S0M": {"policy": "S2B", "rung": "S0M", "label": "CAMS3E_S0M"},
+        "W": {"policy": "S3W", "rung": "W", "label": "CAMS3E_W"},
+        "WT": {"policy": "S3W", "rung": "WT", "label": "CAMS3E_WT"}}
 ARM_BASE = {"F8_smoke": "F8", "K1S_smoke": "K1S", "S6_smoke": "S6", "F4D_smoke": "F4D", "F4R_smoke": "F4R",
-            "F4Y_smoke": "F4Y", "F4V_smoke": "F4V", "F4A_smoke": "F4A"}
+            "F4Y_smoke": "F4Y", "F4V_smoke": "F4V", "F4A_smoke": "F4A",
+            "S0T_smoke": "S0T", "S0M_smoke": "S0M", "W_smoke": "W", "WT_smoke": "WT"}
 DENSITY = 205
 SEEDS = (4501, 4502, 4503)
 NUM_ENVS, QUOTA, SMOKE_QUOTA = 128, 8, 1
@@ -320,7 +392,7 @@ IDENTITY_REF = {"F0ID": ("GR0_S00", 4501), "K1ID": ("K1E_K1s1", 4501), "S0ID": (
 EVAL_ARMS = ("F3", "F4", "F8", "S3", "S6", "K1T", "K1S")
 MAX_HOURS_TOTAL = 2.5                         # the preregistered wall cap of stage 1 (all three stages)
 STAGE_SUB_CAP_H = {"smoke": 0.5, "identity": 0.75, "eval": 2.5}
-CELL_TIMEOUT_S = {"F": 1800, "K1": 1800, "S2B": 2400}
+CELL_TIMEOUT_S = {"F": 1800, "K1": 1800, "S2B": 2400, "S3W": 2400}
 PROJECTION_MARGIN = 1.5
 MIN_FREE_GB = 1.0
 IDLE_MAX_BUSY = 0.15                           # an idle host: < 15 % of the online CPUs busy over a 2 s sample
@@ -353,6 +425,9 @@ MISMATCH_E2 = (r"TARGET BEHAVIOR MISMATCH \| checkpoint=historical running=e2_ob
                r"running=bounded_planar_drone_v1_rollout_direct_l2_v1\.",
                r"TASK CONTRACT MISMATCH \| NAVRL_TARGET_PATTERN: checkpoint=mixed running=waypoint\.")
 MISMATCH_V = D.MISMATCH_V
+# stage 3: the checkpoint's arena differs from the cell's (S2b-FT trained on bars_h3, S3-W on bars_h3_thin)
+MISMATCH_ARENA = {"S0T": (r"ARENA MISMATCH \| NAVRL_BAR_POOL: checkpoint=bars_h3 running=bars_h3_thin\.",),
+                  "W": (r"ARENA MISMATCH \| NAVRL_BAR_POOL: checkpoint=bars_h3_thin running=bars_h3\.",)}
 SMOKE_CONTROLS = ("every smoke cell OK with >= 1 finished episode",
                   "F8_smoke and K1S_smoke: [camref] rules telemetry with delay draws of both 1 and 2 steps and >= 1 capture "
                   "or target contact; [veh-rand] init line; [yawclip] line with commands > 0",
@@ -384,15 +459,15 @@ def camref_rules_on(arm):
 
 
 def visible_start(arm):
-    return camref_rules_on(arm) or rung(arm) in ("S0", "S3")
+    return camref_rules_on(arm) or rung(arm) in ("S3",) + PS_CAMERA_RUNGS
 
 
 def cams2_on(arm):
-    return rung(arm) in ("S0", "S3")
+    return rung(arm) in ("S3",) + PS_CAMERA_RUNGS
 
 
 def camref_record(arm):
-    return rung(arm) not in ("S0", "S3")
+    return rung(arm) not in ("S3",) + PS_CAMERA_RUNGS
 
 
 def cell_id(arm, density, seed):
@@ -425,7 +500,7 @@ def s2b_base_env(train_env, seed, cell_dir, quota, cap):
 
 def base_env(arm, seed, cell_dir, quota, cap, train_env):
     """The NAVRL_* base of a cell (with the runner's per-cell keys): F / K1 from F_BASE_ENV, S2b-FT from CAM-DX1's V312."""
-    if policy(arm) == "S2B":
+    if policy(arm) in CAMERA_POLICIES:
         env = s2b_base_env(train_env, seed, cell_dir, quota, cap)
     else:
         env = dict(F_BASE_ENV, NAVRL_EPISODE_LEDGER="1", NAVRL_EPISODE_QUOTA_PER_ENV=str(int(quota)),
@@ -457,6 +532,7 @@ P_S = {"start": "V312", "motion": "legacy_mixed", "capture": "cs2", "target": "D
 F_STACK = {"yaw": "scale_3.0", "free_mps": 3.53553390593, "camsafe": False, "sensor": "camera+lidar"}
 K1_STACK = dict(F_STACK, sensor="camera_66x54")
 S2B_STACK = {"yaw": "scale_1.0472", "free_mps": 2.5, "camsafe": True, "sensor": "camera_66.7x52.6_312x234"}
+S3W_STACK = dict(S2B_STACK, yaw="scale_1.5708")
 RUNG_PROTOCOL = {
     "F0": dict(P_K, target="analytic", **F_STACK),
     "F3": dict(P_T, target="analytic", **F_STACK),
@@ -472,7 +548,11 @@ RUNG_PROTOCOL = {
     "K1S": dict(P_S, **dict(K1_STACK, yaw="clip_1.047", free_mps=2.5)),
     "S0": dict(P_S, **S2B_STACK),
     "S3": dict(P_T, **S2B_STACK),
-    "S6": dict(P_K, target="D8", **S2B_STACK)}
+    "S6": dict(P_K, target="D8", **S2B_STACK),
+    "S0T": dict(P_S, **S2B_STACK),                                    # stage 3: pool / depth / sector in CAMS3_POINT
+    "S0M": dict(P_S, **S2B_STACK),
+    "W": dict(P_S, **S3W_STACK),
+    "WT": dict(P_S, **S3W_STACK)}
 
 
 def _f(env, key, default=None):
@@ -566,9 +646,12 @@ def env_problems(env, arm, seed, cell_dir, quota, cap, train_env, protocol_sha=N
         p.append("Policy F cell carries a sensor ablation")
     if pol == "K1" and env.get("NAVRL_SENSOR_ABLATION") != "no_lidar":
         p.append("CAM-K1 cell is not no_lidar")
-    if pol == "S2B" and any(k in env for k in ("NAVRL_CAMREF_CAPTURE", "NAVRL_CAMREF_DELAY", "NAVRL_CAMREF_GEOMETRY",
-                                                "NAVRL_YAWCLIP")):
+    if pol in CAMERA_POLICIES and any(k in env for k in ("NAVRL_CAMREF_CAPTURE", "NAVRL_CAMREF_DELAY",
+                                                         "NAVRL_CAMREF_GEOMETRY", "NAVRL_YAWCLIP")):
         p.append("S2b-FT cell carries CAM-REF rules or a yaw clip")
+    if pol in ("F", "K1") and any(k.startswith(("NAVRL_DEPTH_MEAS", "NAVRL_CAMS3_")) for k in env):
+        p.append("policy %s cell carries the CAM-S3 rules" % pol)
+    p += cams3_problems(env, arm)
     if ("NAVRL_CAMS2" in env) != cams2_on(arm) or ("NAVRL_CAMREF_RECORD" in env) != camref_record(arm):
         p.append("cams2 / CAM-REF recorder state does not match rung %s" % r)
     if ("NAVRL_INVIEW_START" in env) != visible_start(arm):
@@ -683,8 +766,8 @@ def condition_problems(cond, arm, train_env):
     want = {"num_envs": NUM_ENVS, "episode_len_steps": 600, "full_goal_distribution": True,
             "fov_curriculum_saturated": True, "speed_governor_mode": "riskcap",
             "goal_dist_max_m": 12.0 if visible_start(arm) else 28.0,
-            "speed_governor_free_mps": 2.5 if (policy(arm) == "S2B" or "free" in factors(arm)) else 3.53553390593,
-            "p9_empirical_error_enabled": policy(arm) == "S2B",
+            "speed_governor_free_mps": 2.5 if (policy(arm) in CAMERA_POLICIES or "free" in factors(arm)) else 3.53553390593,
+            "p9_empirical_error_enabled": policy(arm) in CAMERA_POLICIES,
             "d8_dynamic_mesh_treatment": rung(arm) not in ("F0", "F3", "K1PK")}
     p = ["result condition %s is %r, expected %r" % (k, cond.get(k), v) for k, v in want.items() if cond.get(k) != v]
     contract = cond.get("d8_dynamic_mesh_contract")
@@ -693,7 +776,7 @@ def condition_problems(cond, arm, train_env):
             p.append("result condition d8_dynamic_mesh_contract %r is not mode %s" % (contract, S2A.D8_MODE))
     elif contract is not None:
         p.append("result condition carries a D8 contract in an analytic-target rung")
-    if policy(arm) == "S2B" and cond.get("p9_empirical_error_sha256") != train_env.get("NAVRL_P9_EXPECTED_SHA256"):
+    if policy(arm) in CAMERA_POLICIES and cond.get("p9_empirical_error_sha256") != train_env.get("NAVRL_P9_EXPECTED_SHA256"):
         p.append("result condition P9 SHA %r is not training's" % cond.get("p9_empirical_error_sha256"))
     return p
 
@@ -763,8 +846,9 @@ def camref_line(text):
 
 def mismatch_allow(arm):
     allow = MISMATCH_COMMON
-    if policy(arm) == "S2B":
+    if policy(arm) in CAMERA_POLICIES:
         allow += MISMATCH_P9
+    allow += MISMATCH_ARENA.get(rung(arm), ())
     if rung(arm) in ("F0", "K1PK", "S6"):
         allow += MISMATCH_E2
     if visible_start(arm):
@@ -836,10 +920,10 @@ def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, t
         except (OSError, ValueError) as e:
             return p + ["realveh receipt missing or unreadable: %s" % e]
         s = rv.get("settings") or {}
-        want_veh = rung(arm) in ("K1S", "S0")
+        want_veh = rung(arm) in ("K1S",) + PS_CAMERA_RUNGS
         if (s.get("vehicle_rand") is not None) != want_veh:
             p.append("realveh vehicle randomisation state does not match rung %s" % rung(arm))
-        if ("cams2" in s) != cams2_on(arm) or ("camsafe" in s) != (policy(arm) == "S2B"):
+        if ("cams2" in s) != cams2_on(arm) or ("camsafe" in s) != (policy(arm) in CAMERA_POLICIES):
             p.append("realveh cams2 / camsafe state does not match rung %s" % rung(arm))
         if ("yawclip" in s) != (rung(arm) == "K1S"):
             p.append("realveh yaw-clip state does not match rung %s" % rung(arm))
@@ -847,20 +931,22 @@ def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, t
             p.append("realveh visible-start state does not match rung %s" % rung(arm))
         if cams2_on(arm):
             after = (rv.get("cams2") or {}).get("config_after") or {}
-            alt = 1.5 if rung(arm) == "S0" else 1.0
+            alt = 1.5 if rung(arm) in PS_CAMERA_RUNGS else 1.0
             if after.get("flight_altitude") != alt or (after.get("camera_translation") or [None])[0] != \
-                    (0.08 if rung(arm) == "S0" else 0.10) or after.get("success_radius") != 0.4:
+                    (0.08 if rung(arm) in PS_CAMERA_RUNGS else 0.10) or after.get("success_radius") != 0.4:
                 p.append("realveh cams2 config_after %r is not rung %s's" % (after, rung(arm)))
         if ((rv.get("ablation") or {}).get("condition")) != "no_lidar":
             p.append("realveh ablation is not no_lidar")
         if shas.get("realveh_entry") != (rv.get("sha256") or {}).get("realveh_entry"):
             p.append("realveh receipt names another realveh_entry")
+        p += cams3_receipt_problems(rv, arm, root)
     log = cell_dir / "cell.log"
     text = log.read_text(errors="replace") if log.is_file() else ""
     have = {"[camref] {": camref_record(arm) or camref_rules_on(arm),
-            "[veh-rand] ": "rand" in factors(arm) or rung(arm) == "S0", "[yawclip] ": "yaw" in factors(arm),
+            "[veh-rand] ": "rand" in factors(arm) or rung(arm) in PS_CAMERA_RUNGS, "[yawclip] ": "yaw" in factors(arm),
             "[inview] ": visible_start(arm), "[inviewdiag] {": "NAVRL_INVIEW_DIAG" in (rec.get("env_navrl") or {}),
-            "[camsafe] ": policy(arm) == "S2B", "[cams2contact] {": cams2_on(arm), "[cams2diag] {": cams2_on(arm)}
+            "[camsafe] ": policy(arm) in CAMERA_POLICIES, "[cams2contact] {": cams2_on(arm),
+            "[cams2diag] {": cams2_on(arm), "[cams3] {": rung(arm) in MEAS_RUNGS}
     for prefix, want in have.items():
         if (prefix in text) != want:
             p.append("telemetry %s %s" % (prefix.strip(), "missing" if want else "present but the module is off"))
@@ -881,6 +967,88 @@ def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, t
             p.append("KROC2027 recorder summary unreadable: %s" % e)
     p += mismatch_problems(text, arm)
     return p
+
+
+def cams3_receipt_problems(rv, arm, root=ROOT):
+    """Stage 3: the delegate installed navrl_cams3's measured depth / sector rule exactly on the rungs that set them, with
+    the preregistered settings and the committed module bytes (pure on the realveh receipt)."""
+    s = rv.get("settings") or {}
+    meas, sector = s.get("cams3_meas"), s.get("cams3_sector")
+    r = rung(arm)
+    p = []
+    if (meas is not None) != (r in MEAS_RUNGS) or (rv.get("cams3_meas") is not None) != (r in MEAS_RUNGS):
+        p.append("realveh measured-depth state does not match rung %s" % r)
+    if (sector is not None) != (r in SECTOR_RUNGS) or (rv.get("cams3_sector") is not None) != (r in SECTOR_RUNGS):
+        p.append("realveh sector-rule state does not match rung %s" % r)
+    if meas is not None:
+        want = {k[len("NAVRL_"):]: v for k, v in meas_delta(0).items() if k.startswith("NAVRL_DEPTH_MEAS_")
+                and k != "NAVRL_DEPTH_MEAS_SEED"}
+        got = {k[len("NAVRL_"):]: str(v) for k, v in meas.items() if k.startswith("NAVRL_DEPTH_MEAS_")
+               and k != "NAVRL_DEPTH_MEAS_SEED"}
+        norm = (lambda d: {k: (float(v) if k not in ("DEPTH_MEAS_LIBRARY", "DEPTH_MEAS_SHA256") else v)
+                           for k, v in d.items()})
+        if norm(got) != norm(want):
+            p.append("realveh measured-depth settings %r are not the preregistered %r" % (got, want))
+    if sector is not None and int(sector.get("NAVRL_CAMS3_SECTOR_K", -1)) != int(SECTOR["NAVRL_CAMS3_SECTOR_K"]):
+        p.append("realveh sector k %r is not %s" % (sector.get("NAVRL_CAMS3_SECTOR_K"), SECTOR["NAVRL_CAMS3_SECTOR_K"]))
+    if (meas is not None or sector is not None) and rv.get("cams3_sha256") != sha(pathlib.Path(root) / CAMS3_REL):
+        p.append("realveh receipt names other navrl_cams3 bytes")
+    return p
+
+
+def cams3_events(text):
+    """The [cams3] JSON events of a cell log, in order (malformed lines skipped)."""
+    out = []
+    for line in text.splitlines():
+        if line.startswith("[cams3] {"):
+            try:
+                out.append(json.loads(line[len("[cams3] "):]))
+            except ValueError:
+                continue
+    return out
+
+
+YAW_MISMATCH = re.compile(r"CONFIG MISMATCH \| NAVRL_YAW_RATE_MAX:")
+ARENA_LINE = re.compile(r"ARENA MISMATCH \| NAVRL_BAR_POOL: checkpoint=(\S+) running=(\S+?)\.")
+
+
+def s3_smoke_controls(cell_dir, arm):
+    """Stage-3 smoke controls of one cell, each a positive control in some arms and a negative one in the others:
+    measured depth installed and active only in S0M / W / WT; the sector rule (k = 24, 13 bins) only in W / WT; the yaw
+    scale of the policy's own runtime (1.5708 in W / WT, 1.0472 in S0T / S0M) in the launcher snapshot with no yaw
+    CONFIG MISMATCH line (the task compares it with the checkpoint's); the task's ARENA line naming the running pool
+    (S0T running bars_h3_thin, W running bars_h3, none in S0M / WT whose pool equals the checkpoint's)."""
+    log = cell_dir / "cell.log"
+    text = log.read_text(errors="replace") if log.is_file() else ""
+    try:
+        snap = json.loads((cell_dir / "receipt.json").read_text()).get("env_snapshot_navrl") or {}
+    except (OSError, ValueError):
+        snap = {}
+    ev = cams3_events(text)
+    names = [e.get("event") for e in ev]
+    r, out = rung(arm), {}
+    if r in MEAS_RUNGS:
+        inst = [e for e in ev if e.get("event") == "install_measured"]
+        first = [e for e in ev if e.get("event") == "meas_first"]
+        out["measured_depth_live"] = (len(inst) == 1 and inst[0].get("false_near") == "off" and len(first) == 1
+                                      and first[0].get("library_frames") == 1849
+                                      and 0.0 < float(first[0].get("mask_invalid_share") or 0.0) < 1.0)
+    else:
+        out["no_measured_depth"] = not any(n in ("install_measured", "meas_first", "meas_summary") for n in names)
+    if r in SECTOR_RUNGS:
+        inst = [e for e in ev if e.get("event") == "install_sector"]
+        first = [e for e in ev if e.get("event") == "sector_first"]
+        out["sector_k24_live"] = (len(inst) == 1 and len(first) == 1 and first[0].get("k") == 24
+                                  and first[0].get("bins") == 13)
+    else:
+        out["no_sector_rule"] = not any(n in ("install_sector", "sector_first") for n in names)
+    yaw = S3W_YAW["NAVRL_YAW_RATE_MAX"] if policy(arm) == "S3W" else "1.0472"
+    out["yaw_scale_%s" % yaw] = snap.get("NAVRL_YAW_RATE_MAX") == yaw and not YAW_MISMATCH.search(text)
+    arena = [m.groups() for m in ARENA_LINE.finditer(text)]
+    want = {"S0T": [("bars_h3", "bars_h3_thin")], "W": [("bars_h3_thin", "bars_h3")]}.get(r, [])
+    out["arena_line_" + ("running_%s" % want[0][1] if want else "none")] = (arena == want
+                                                                            and snap.get("NAVRL_BAR_POOL") == CAMS3_POINT[r][0])
+    return out
 
 
 def check_cell(cell_dir, arm, head, start_host, ckpt_sha, train_env, num_envs, quota, root=ROOT):
@@ -934,6 +1102,8 @@ def smoke_cell_controls(cell_dir, arm):
     if rung(arm) == "S6":
         out["no_cams2_telemetry"] = "[cams2diag] {" not in text and "[cams2contact] {" not in text
         out["camref_recorder_line"] = bool(line)
+    if rung(arm) in S3_RUNGS:
+        out.update(s3_smoke_controls(cell_dir, arm))
     out["start_bearings"] = not start_rows_problems(cell_dir, arm)
     return out
 

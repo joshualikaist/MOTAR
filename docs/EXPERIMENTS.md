@@ -828,6 +828,7 @@ family that is in the test's scope.
   - → `docs/plans/prereg_camonly_ref_stage2_2026-11-26.md` (CAM-REF stage 2: F4 + one P_T→P_S factor each — F4D delay, F4R vehicle/gain randomisation, F4Y yaw clip 60°/s, F4V FREE 2.5, F4A altitude/mount — x 3 seeds, identities F4ID/F8ID vs stage-1 cells; Q1 factor effects, Q2 F8−F4 and interaction; package tools/camref_stage2_*.py; review `docs/evidence/camonly_2026-11-04/camref/REVIEW_stage2_r1.md`; records ~/motar_tmp/camref2_20261126/)
   - CAM-REF stage 2 (`f2fa049`, 2026-11-26 14:37-15:45; records ~/motar_tmp/camref2_20261126/gpu1/, analysis `docs/evidence/camonly_2026-11-04/camref/analysis_stage2_gpu1.json`): smoke OK, identity PASS, eval COMPLETE, host faults 1 → 1. F bar crash vs F4 9.0 %: delay +9.9 pp MATERIAL, yaw clip 60°/s +5.2 pp MATERIAL, randomisation / FREE 2.5 / altitude no detected change; F8 − F4 +13.6 pp, interaction −1.3 (CI includes 0)
   - → `docs/plans/prereg_camonly_s3w_2026-11-27.md` (CAM-S3 S3-W: S2b-FT ep15000 continued 3,000 epochs with yaw 90 deg/s, bars_h3_thin (26 % thin 0.20-0.30 m bars), measured OAK-D invalid masks + top band replacing iid holes (false near implemented, OFF after review r1 P1-1; accepted by the user 2026-11-27 ("오측정 없이 S3-W 진행"); ran 2026-11-27 17:46-21:18: TRAINED, 18,000 epochs, host faults 0 -> 0, training-rollout rates flat at capture 0.61 / crash 0.29-0.30 / timeout 0.09-0.11 in every 500-epoch window (training statistics only, evaluation NOT_TESTED; `docs/evidence/camonly_2026-11-04/cams3/train_w_run_report.json`, `train_w_windows.json`)), and the camera sector reduction k=24 (`navrl_cams3.py`); conditional GPU approval 2026-11-27; package tools/cams3_*.py, train_navrl_cams3.sh, tests/test_cams3.py; records ~/motar_tmp/cams3_20261127/)
+  - → `docs/plans/prereg_camonly_s3w_eval_2026-11-27.md` (CAM-S3-E, CAM-REF stage 3: S3-W ep18000 (W, WT) against S2b-FT (S0 = CAM-DX1 V312; S0T thin arena; S0M measured masks) at P_S, each in its own runtime, 205 bars x 4501-4503; Q1 W against the user's bar (BAR_MET / BAR_NOT_MET), Q2 W - S0 and WT - S0T; package tools/camref_stage3_run.py, tools/camref_stage3_analyse.py, eval_navrl_cams3e_arms.sh, tests/test_cams3_eval.py; preregistered, not run; records ~/motar_tmp/cams3e_20261127/)
 - **Compare with:** `gain-randomization`
 - **Members:** `docs/plans/camonly_study_plan_v1.md`, `docs/plans/prereg_camonly_c1c2_v1.md`,
   `docs/plans/prereg_camonly_c1c2_v1_amendment1_2026-11-04.md`, `docs/evidence/camonly_2026-11-04/`,
@@ -841,7 +842,7 @@ family that is in the test's scope.
   `docs/plans/prereg_camonly_s2b_2026-11-24.md`, `docs/plans/prereg_camonly_s2b_ft_eval_2026-11-24.md`,
   `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25.md`,
   `docs/plans/prereg_camonly_dx1_capture_diag_2026-11-25_amendment1.md`, `docs/plans/prereg_camonly_ref_matched_protocol_2026-11-26.md`, `docs/plans/prereg_camonly_ref_stage2_2026-11-26.md`,
-  `docs/plans/prereg_camonly_s3w_2026-11-27.md`
+  `docs/plans/prereg_camonly_s3w_2026-11-27.md`, `docs/plans/prereg_camonly_s3w_eval_2026-11-27.md`
 
 ### `load-invariance` — Does concurrent CPU work change a GPU evaluation? (T-LOAD)
 
