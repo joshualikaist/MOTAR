@@ -27443,3 +27443,50 @@ records, SITL debug and smoke runs, dev07). All ran on cores 6,7,12,13 at nice 1
 - **Next:** independent Opus review of the package (read-only, `~/motar_tmp/cams3e_20261127/review_r1/`); on no open P1:
   approval file, host check, `tools/camref_stage3_run.py smoke|identity|eval --approved-commit <HEAD> --out
   ~/motar_tmp/cams3e_20261127/gpu1/<stage>`, then `tools/camref_stage3_analyse.py eval`.
+
+## 2026-11-27 — CAM-S3-E review r1 NO_GO (authorization only); amendment 1 with the code fixes (no GPU)
+
+- **Review r1** (Claude Opus 5.5, fresh context, read-only; `~/motar_tmp/cams3e_20261127/review_r1/REVIEW.md`, copy
+  `docs/evidence/camonly_2026-11-04/cams3/REVIEW_E_r1.md`): NO_GO on P1-1 only.
+  - P1-1: the user's "우리 원래 하던거부터 진행하자" approved writing and reviewing, not the GPU run. The user has not seen
+    the five-arm design or S2b-FT at 60 deg/s.
+  - Code GO_WITH_FIXES.
+  - Verified: environments, rule liveness, identity, allowlist, launcher copy, analysis mechanics, the 2.0 h cap within
+    the ~2.4 h left.
+  - P2-1: the pointer read crash alone (probe 2: crash -8 pp with capture -12 pp gave "helps").
+  - P2-2: W - S0 confounds the sensor model (probe 3: W - S0 -2 pp NO_DETECTED_CHANGE while W - S0M -13 pp), and the
+    60 deg/s departure was unstated.
+  - P2-3: BAR_MET on point estimates is laxer than stage 1's Wilson rule (probe 1: 19.6 % crash, upper bound 20.8 %).
+  - P2-4: the cap was per output folder, not per unit.
+  - P3-1..10.
+- **Amendment 1** (`docs/plans/prereg_camonly_s3w_eval_2026-11-27_amendment1.md`; the preregistration stays
+  byte-unchanged):
+  - Authorization pending the user's explicit approval of the new scope (SHA-256
+    63fb7f7ef236da3f842cb5b9d0cafa3d4ffab245e9e4acdb6346c9281488408a; 3bfb10f1… no longer applies). Any rerun needs the
+    user's approval naming the hours the ledger reports.
+  - Q2 co-primary W - S0 and W - S0M (plus WT - S0T), each with a status: IMPROVES / CRASH_DOWN_CAPTURE_DOWN /
+    NO_IMPROVEMENT. The departure is stated: each policy keeps its own trained action scale, S2b-FT 60 deg/s and S3-W
+    90 deg/s.
+  - Q1 renamed BAR_MET_POINT, reported with stage 1's Wilson label.
+  - Pointers: RUNTIME_NEXT only with all-crash BELOW_20, else RUNTIME_NEXT_QUALIFIED; HELPS_NOT_ENOUGH /
+    SENSOR_MODEL_DEPENDENT / CRASH_DOWN_CAPTURE_DOWN / STRUCTURAL_NEXT / NOT_RUN.
+  - Unit-wide GPU ledger (`camref_stage3_run.unit_ledger`): 2.4 h minus every `*_report.json` and every unlisted cell
+    directory under the unit folder; the stage cap is min(sub-cap, chain remainder, ledger remainder).
+  - P3: void verdicts refused; complete blocks only; NOT_RUN pointer; stage-3 liveness on every stage-3 cell; test temp
+    folders removed whole (also in `tests/test_camref_stage2.py`, which failed to import without -B); wording.
+    Camsafe / governor intervention shares are reported per cell from the logs, NOT_RECORDED when absent. Four scripts
+    are bound to the eval commit. The launcher comments name S3W (pin 94dc5ffe…).
+  - New analysis controls: the three review probes plus a NOT_RUN case; 9 controls, all OK.
+- **Tests:**
+  - `test_cams3_eval` 34 OK.
+  - With test_camref, test_camref_stage2, test_cams3, test_realveh, test_experiment_index: 167 OK, with python -B and
+    without -B; no temporary folder left.
+  - Full PUBLIC_CPU (OMP_NUM_THREADS=1 MKL_NUM_THREADS=1, cores 6,7,12,13;
+    `~/motar_tmp/cams3e_20261127/tests_full_amend1.log`): 4,633 tests, 9 F / 8 E. Every one is in the CAM-S3 baseline
+    (`~/motar_tmp/cams3_20261127/tests_full_pre.log`); that baseline's two experiment-index failures and two
+    test_boia_planner errors are gone. This 9 F / 8 E is the baseline amendment 1's P3-6 names.
+- **Next:**
+  1. Re-review of the fix diff.
+  2. The user's explicit approval of the new scope (5 arms incl. S0M; S2b-FT at 60 deg/s; ~1.4 h expected, 2.0 h chain
+     cap, 2.4 h ledger).
+  3. Then the approval file, the host check and the three stages.

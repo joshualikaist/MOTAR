@@ -965,6 +965,8 @@ def receipt_problems(cell_dir, arm, density, seed, ckpt_sha, quota, committed, t
                     p.append("KROC2027 recorder import origin of %s outside the tree" % mod)
         except (OSError, ValueError) as e:
             p.append("KROC2027 recorder summary unreadable: %s" % e)
+    if rung(arm) in S3_RUNGS:                    # review r1 P3-4: rule liveness on every stage-3 cell, not only smoke
+        p += ["stage-3 control %s failed" % k for k, v in s3_smoke_controls(cell_dir, arm).items() if not v]
     p += mismatch_problems(text, arm)
     return p
 
@@ -1013,7 +1015,8 @@ ARENA_LINE = re.compile(r"ARENA MISMATCH \| NAVRL_BAR_POOL: checkpoint=(\S+) run
 
 
 def s3_smoke_controls(cell_dir, arm):
-    """Stage-3 smoke controls of one cell, each a positive control in some arms and a negative one in the others:
+    """Stage-3 liveness controls of one cell (smoke controls, and checked again on every stage-3 cell by
+    receipt_problems, review r1 P3-4), each a positive control in some arms and a negative one in the others:
     measured depth installed and active only in S0M / W / WT; the sector rule (k = 24, 13 bins) only in W / WT; the yaw
     scale of the policy's own runtime (1.5708 in W / WT, 1.0472 in S0T / S0M) in the launcher snapshot with no yaw
     CONFIG MISMATCH line (the task compares it with the checkpoint's); the task's ARENA line naming the running pool

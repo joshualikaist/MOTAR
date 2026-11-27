@@ -5,6 +5,7 @@ private name; skipped (not passed) when git cannot show it. Stage 2's constants 
 camref_stage2_run.installed(), which restores stage 1's (PUBLIC_CPU runs every test in one process)."""
 import importlib.util
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -38,8 +39,7 @@ def _stage1_runner():
     try:
         spec.loader.exec_module(module)
     finally:
-        path.unlink()                                       # review r1 P3-2: no temporary copy left behind
-        d.rmdir()
+        shutil.rmtree(str(d), ignore_errors=True)           # review r1 P3-2 (stage 2); CAM-S3-E r1 P3-5: __pycache__
     return module
 
 

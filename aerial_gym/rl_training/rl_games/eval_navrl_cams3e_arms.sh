@@ -2,18 +2,18 @@
 # CAM-S3-E (docs/plans/prereg_camonly_s3w_eval_2026-11-27.md, stage 3 of the CAM-REF runner): a copy of
 # eval_navrl_camref_arms.sh (sha256 51f949d0..., pinned for stages 1 and 2 and left unchanged) whose only change, marked
 # [cams3e], is that NAVRL_CAMREF_POLICY may also be S3W (CAM-S3 S3-W, which tools/camref_entry.py runs through
-# tools/realveh_entry.py like S2B). Everything below is the stage-1 copy.
+# tools/realveh_entry.py like S2B); three comments name S3W too (review r1 P3-10). The rest is the stage-1 copy.
 # CAM-REF (draft ~/motar_tmp/camref_20261126/draft/prereg_camonly_ref_matched_protocol_2026-11-26.md): a copy of CAM-S2a-E's
 # launcher eval_navrl_cams2a_arms.sh (sha256 0ad30292...; itself a descendant of the pinned
 # eval_navrl_target_behavior_arms.sh) with these changes, all marked [camref]:
 #   1. the caller exports the WHOLE task environment of the cell (tools/camref_eval_run.py: Policy F's and CAM-K1's from
 #      GR-0's KROC2027 contract, CAM-S2b-FT's from its training receipt via CAM-DX1's cell construction, plus the rung's
-#      keys). The launcher requires only the keys every policy's contract defines, NAVRL_CAMREF_POLICY (F | K1 | S2B) and
+#      keys). The launcher requires only the keys every policy's contract defines, NAVRL_CAMREF_POLICY (F | K1 | S2B | S3W [cams3e]) and
 #      the pinned interpreter / simulator; the cams2 / camsafe / no_lidar requirements of the CAM-S2a copy are gone
 #      (Policy F has the LiDAR; S2b-FT's S6 rung runs with cams2 off). camref_entry.py validates the policy's stack;
 #   2. CAMREF_CKPT / CAMREF_CKPT_SHA name the checkpoint (a last_gen_ppo_ep_*.pth, never gen_ppo.pth);
 #   3. NAVRL_CAMREF_POLICY is recorded in every cell receipt (camref_policy);
-#   4. per cell: NAVRL_CAMREF_RECEIPT; NAVRL_REALVEH_RECEIPT for the policies that run through realveh_entry (K1, S2B);
+#   4. per cell: NAVRL_CAMREF_RECEIPT; NAVRL_REALVEH_RECEIPT for the policies that run through realveh_entry (K1, S2B, S3W [cams3e]);
 #      NAVRL_CAMREF_RECORD_JSONL when NAVRL_CAMREF_RECORD=1; NAVRL_CAMS2DIAG_JSONL when NAVRL_CAMS2DIAG=1;
 #   5. CAMEVAL_PY is tools/camref_python (exported interpreter CAMREF_REAL_PYTHON).
 # Everything else (checkpoint SHA check, evaluation mode, cell loop, receipt writer, resume rule) is the CAM-S2a copy.
@@ -116,7 +116,7 @@ for ARM in "${ARMS_ARR[@]}"; do
       mkdir -p "${CELL_DIR}"
       export NAVRL_CAMREF_RECEIPT="${CELL_DIR}/camref_receipt.json"            # [camref] 4
       if [[ "${NAVRL_CAMREF_POLICY}" != "F" ]]; then
-        export NAVRL_REALVEH_RECEIPT="${CELL_DIR}/realveh_receipt.json"        # [camref] 4 (K1, S2B: realveh_entry)
+        export NAVRL_REALVEH_RECEIPT="${CELL_DIR}/realveh_receipt.json"        # [camref] 4 (K1, S2B, S3W: realveh_entry) [cams3e]
       fi
       if [[ "${NAVRL_CAMREF_RECORD:-}" == "1" ]]; then
         export NAVRL_CAMREF_RECORD_JSONL="${CELL_DIR}/camref_episodes.jsonl"   # [camref] 4

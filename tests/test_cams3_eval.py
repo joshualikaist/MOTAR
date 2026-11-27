@@ -5,7 +5,9 @@ from git under a private name; skipped (not passed) when git cannot show it. Sta
 camref_stage3_run.installed(), which restores stage 1's (PUBLIC_CPU runs every test in one process)."""
 import importlib.util
 import json
+import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -45,8 +47,7 @@ def _old_runner():
     try:
         return _load("camref_eval_run_pre_stage3_under_test", path)
     finally:
-        path.unlink()
-        d.rmdir()
+        shutil.rmtree(str(d), ignore_errors=True)            # review r1 P3-5: __pycache__ without -B
 
 
 OLD = _old_runner()
@@ -85,7 +86,7 @@ class EarlierArmsUnchanged(unittest.TestCase):
 
     def test_unit_constants_unchanged_outside_install(self):
         for k in S.PATCHED:
-            if k != "checkpoints":
+            if k not in ("checkpoints", "stage_budget_h"):          # functions; replaced only inside install()
                 self.assertEqual(getattr(X, k), getattr(OLD, k), k)
         self.assertEqual(X.LAUNCHER_SHA, "51f949d08ec70935aeca13fe3b28ce289ff208edeccc526d4b0410662573518a")
         self.assertEqual(X.sha(ROOT / X.LAUNCHER), X.LAUNCHER_SHA)       # the stage-1 launcher is untouched
@@ -215,13 +216,17 @@ class Launcher(unittest.TestCase):
         self.assertEqual(X.sha(ROOT / S.LAUNCHER), S.LAUNCHER_SHA)
         added = [line for line in new if line not in old]
         removed = [line for line in old if line not in new]
-        self.assertEqual(len(removed), 2)
-        self.assertTrue(all("NAVRL_CAMREF_POLICY" in line for line in removed))
-        comments = [line for line in added if line.startswith("# ")]
-        code = [line for line in added if not line.startswith("# ")]
-        self.assertEqual(len(comments), 4)                               # the header naming the copy and its change
-        self.assertEqual(len(code), 3)
-        self.assertTrue(all("NAVRL_CAMREF_POLICY" in line for line in code))
+        header = added[:4]
+        marked = added[4:]
+        self.assertEqual(new[1:5], header)
+        self.assertTrue(all(line.startswith("# ") for line in header))
+        self.assertEqual(len(header), 4)                                 # the header naming the copy and its change
+        self.assertTrue(all("[cams3e]" in line or "S3W" in line or "NAVRL_CAMREF_POLICY" in line for line in marked),
+                        marked)
+        self.assertEqual(len(marked), 6)                                 # 3 policy-check lines, 3 comments (P3-10)
+        self.assertTrue(all("S2B" in line for line in removed))
+        self.assertEqual(len(removed), 5)
+        code = [line for line in marked if not line.lstrip().startswith("#")]
         self.assertTrue(any('== "S3W"' in line for line in code))
         self.assertFalse(any('== "S3W"' in line for line in old))
         self.assertEqual([line for line in new if line not in added], [line for line in old if line not in removed])
@@ -404,13 +409,15 @@ class Analysis(unittest.TestCase):
     def test_controls_pass(self):
         ok, res = B.controls()
         self.assertTrue(ok, res)
+        self.assertGreaterEqual(len(res), 9)
 
     def test_bar_rule_is_inclusive_at_the_limits_and_strict_beyond(self):
-        cells = B.synthetic(n=1000, w=(0.70, 0.20, 0.05))
-        r = B.readings(cells)
-        self.assertEqual(r["Q1"]["W"]["label"], "BAR_MET")
+        r = B.readings(B.synthetic(n=1000, w=(0.70, 0.20, 0.05)))
+        self.assertEqual(r["Q1"]["W"]["label"], "BAR_MET_POINT")
+        self.assertEqual(r["Q1"]["W"]["all_crashes"]["wilson_label"], "UNRESOLVED")
+        self.assertEqual(B.use_of_result(r)["pointer"], "RUNTIME_NEXT_QUALIFIED")
         r = B.readings(B.synthetic(n=1000, w=(0.699, 0.20, 0.05)))
-        self.assertEqual(r["Q1"]["W"]["label"], "BAR_NOT_MET")
+        self.assertEqual(r["Q1"]["W"]["label"], "BAR_NOT_MET_POINT")
 
     def test_incomplete_blocks_read_not_run(self):
         cells = B.synthetic()
@@ -418,13 +425,152 @@ class Analysis(unittest.TestCase):
         r = B.readings(cells)
         self.assertEqual(r["Q1"]["W"], "NOT_RUN")
         self.assertEqual(r["Q2"]["W-S0"], "NOT_RUN")
-        self.assertEqual(B.use_of_result(r)["pointer"], "STRUCTURAL_NEXT")
+        self.assertEqual(B.use_of_result(r)["pointer"], "NOT_RUN")      # review r1 P3-3
+        self.assertNotIn("W", r["cells"])
 
-    def test_q3_is_reported_without_labels(self):
+    def test_per_cell_summaries_use_only_the_given_blocks(self):
+        cells = B.synthetic()
+        r = B.readings(cells, blocks=(4501, 4502))
+        self.assertEqual(set(r["cells"]["W"]["episodes"]), {"4501", "4502"})     # review r1 P3-2
+
+    def test_w_minus_s0m_is_labelled_and_s0m_minus_s0_is_not(self):
         r = B.readings(B.synthetic(w=(0.73, 0.21, 0.03)))
-        self.assertIsNone(r["Q3"]["W-S0M"]["crash"]["label"])
-        self.assertLess(r["Q3"]["W-S0M"]["crash"]["mean_pp"], -7.0)
+        self.assertEqual(r["Q2"]["W-S0M"]["crash"]["label"], "MATERIAL")
+        self.assertEqual(r["Q2"]["W-S0M"]["status"], "IMPROVES")
+        self.assertIsNone(r["Q3"]["S0M-S0"]["crash"]["label"])
         self.assertEqual(set(r["Q3"]["bar"]), {"WT", "S0", "S0T", "S0M"})
+
+    def test_comparison_status_both_ways(self):
+        mk = (lambda c, k: {"crash": {"label": c[0], "mean_pp": c[1]}, "capture": {"label": k[0], "mean_pp": k[1]}})
+        self.assertEqual(B.comparison_status(mk(("MATERIAL", -8), ("SMALL", -2))), "IMPROVES")
+        self.assertEqual(B.comparison_status(mk(("MATERIAL", -8), ("MATERIAL", -12))), "CRASH_DOWN_CAPTURE_DOWN")
+        self.assertEqual(B.comparison_status(mk(("MATERIAL", 8), ("MATERIAL", 12))), "NO_IMPROVEMENT")
+        self.assertEqual(B.comparison_status(mk(("SMALL", -4), ("NO_DETECTED_CHANGE", 0))), "NO_IMPROVEMENT")
+        self.assertEqual(B.comparison_status("NOT_RUN"), "NOT_RUN")
+
+    def test_interventions_parsed_or_not_recorded(self):
+        text = ("[camsafe] calls=32 capped_frac=0.1 penalised_frac=0.2 x\n[camsafe] calls=320 capped_frac=0.1576 "
+                "penalised_frac=0.1324 mean_penalty=0.01\n\x1b[33;20m[1 ms][navrl_task] - WARNING : NavRL speedgov | "
+                "mode=riskcap intervene=0.326 stop=0.000 requested=2.0m/s\n")
+        got = B.interventions(text)
+        self.assertEqual(got["camsafe"], {"calls": 320, "capped_frac": 0.1576, "penalised_frac": 0.1324})
+        self.assertEqual(got["speed_governor"], {"mode": "riskcap", "intervene": 0.326, "stop": 0.0})
+        self.assertEqual(B.interventions("nothing here"), {"camsafe": "NOT_RECORDED", "speed_governor": "NOT_RECORDED"})
+        with tempfile.TemporaryDirectory() as d:
+            self.assertEqual(B.intervention_table({"W": {4501: d}})["W"]["4501"]["camsafe"], "NOT_RECORDED")
+
+    @unittest.skipUnless(X.reference_dir("DX1_V312", 4501).is_dir(), "CAM-DX1 cells absent")
+    def test_binding_refuses_void_and_foreign_reports(self):
+        with tempfile.TemporaryDirectory() as d:
+            d = pathlib.Path(d)
+            (d / "i").mkdir()
+            (d / "e").mkdir()
+            head = subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True,
+                                  text=True).stdout.strip()
+            (d / "i" / "identity_report.json").write_text(json.dumps({"verdict": "IDENTITY_PASS", "commit": head}))
+            ev = {"verdict": "VOID_HOST_FAULT", "commit": head, "unit": S.UNIT, "scope": S.SCOPE, "records": [],
+                  "linked_reports": {"identity_report.json": str((d / "i" / "identity_report.json").resolve())}}
+            (d / "e" / "eval_run_report.json").write_text(json.dumps(ev))
+            b, _, _ = B.load_eval(d / "i", d / "e")
+            self.assertFalse(b["eval_not_void"])                           # review r1 P3-1
+            self.assertFalse(b["ok"])
+            self.assertEqual(set(b["scripts_match_eval_commit"]), set(B.BOUND_FILES))     # review r1 P3-9
+            ev["verdict"] = "COMPLETE"
+            (d / "e" / "eval_run_report.json").write_text(json.dumps(ev))
+            b, _, _ = B.load_eval(d / "i", d / "e")
+            self.assertTrue(b["eval_not_void"])
+
+
+class UnitLedger(unittest.TestCase):
+    """Amendment 1 (review r1 P2-4): every report and every unlisted cell directory under the unit folder counts."""
+    def _report(self, path, wall, cells=()):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps({"wall_s": wall, "verdict": "SMOKE_FAIL",
+                                    "records": [{"cell_dir": str(c)} for c in cells]}))
+
+    def _cell(self, d, duration=None):
+        d.mkdir(parents=True)
+        (d / "cell.log").write_text("x")
+        if duration is not None:
+            (d / "receipt.json").write_text(json.dumps({"duration_s": duration}))
+        return d
+
+    def test_reports_and_orphans_are_summed(self):
+        with tempfile.TemporaryDirectory() as u:
+            u = pathlib.Path(u)
+            self.assertEqual(S.unit_ledger(u)["used_s"], 0.0)               # empty unit: nothing used
+            listed = self._cell(u / "gpu1/smoke/W/c1", 100)
+            self._report(u / "gpu1/smoke/smoke_report.json", 900.0, [listed])
+            self._report(u / "gpu2/identity/identity_report.json", 300.0)
+            orphan = self._cell(u / "gpu3/eval/W/c2", 250)
+            killed = self._cell(u / "gpu3/eval/W/c3")
+            (killed / "later.txt").write_text("y")
+            t0 = (killed / "cell.log").stat().st_mtime
+            os.utime(str(killed / "later.txt"), (t0 + 40, t0 + 40))
+            led = S.unit_ledger(u)
+            self.assertAlmostEqual(led["used_s"], 900 + 300 + 250 + 40, delta=1.0)
+            self.assertEqual({pathlib.Path(o["cell_dir"]).name for o in led["orphan_cells"]}, {"c2", "c3"})
+            self.assertNotIn(str(listed), [o["cell_dir"] for o in led["orphan_cells"]])
+            (u / "gpu4").mkdir()
+            (u / "gpu4" / "eval_run_report.json").write_text("{broken")
+            led = S.unit_ledger(u)
+            self.assertEqual(len(led["reports"]), 3)
+            self.assertTrue(any("error" in r for r in led["reports"]))      # unreadable report recorded, not skipped
+            self.assertTrue(orphan.is_dir())
+
+    def test_stage_budget_is_the_smaller_of_chain_and_unit(self):
+        with tempfile.TemporaryDirectory() as u:
+            u = pathlib.Path(u)
+            saved = S.UNIT_DIR
+            try:
+                S.unit_ledger.__defaults__ = (u,)
+                with S.installed():
+                    self._budgets(u)
+            finally:
+                S.unit_ledger.__defaults__ = (saved,)
+
+    def _budgets(self, u):
+        if True:
+            if True:
+                b, used = S.stage_budget_h("eval", {})
+                self.assertAlmostEqual(b, 2.0)                               # empty unit: the 2.0 h sub-cap rules
+                self._report(u / "gpu1/eval/eval_run_report.json", 3600 * 1.0)
+                b, used = S.stage_budget_h("eval", {})
+                self.assertAlmostEqual(used, 1.0)
+                self.assertAlmostEqual(b, 1.4)                               # 2.4 h - 1.0 h, below the sub-cap
+                self._report(u / "gpu2/eval/eval_run_report.json", 3600 * 1.5)
+                self.assertEqual(S.stage_budget_h("eval", {})[0], 0.0)        # spent: no stage starts
+                self.assertAlmostEqual(S.stage_budget_h("smoke", {})[0], 0.0)
+
+    def test_install_routes_the_runner_through_the_ledger(self):
+        with S.installed() as R:
+            self.assertIs(R.stage_budget_h, S.stage_budget_h)
+        self.assertIsNot(X.stage_budget_h, S.stage_budget_h)
+
+
+class PerCellLiveness(unittest.TestCase):
+    """Review r1 P3-4: receipt_problems checks the stage-3 controls on every stage-3 cell, not only in smoke."""
+    def _cell(self, d, lines):
+        d.mkdir()
+        (d / "cell.log").write_text("\n".join(lines) + "\n")
+        (d / "camref_receipt.json").write_text(json.dumps({"policy": "S3W", "installed": [], "sha256": {},
+                                                           "env_navrl": {}}))
+        (d / "receipt.json").write_text(json.dumps({"env_snapshot_navrl": {"NAVRL_YAW_RATE_MAX": "1.5708",
+                                                                           "NAVRL_BAR_POOL": "bars_h3"}}))
+        (d / "realveh_receipt.json").write_text("{}")
+        return d
+
+    @needs_ft
+    def test_missing_sector_event_fails_an_eval_cell(self):
+        with tempfile.TemporaryDirectory() as d:
+            good = self._cell(pathlib.Path(d) / "good", GOOD["W"][0])
+            bad = self._cell(pathlib.Path(d) / "bad", [x for x in GOOD["W"][0] if "sector" not in x])
+            p_good = X.receipt_problems(good, "W", 205, 4501, "c", 8, {}, TRAIN_ENV)
+            p_bad = X.receipt_problems(bad, "W", 205, 4501, "c", 8, {}, TRAIN_ENV)
+            self.assertFalse([x for x in p_good if x.startswith("stage-3 control")], p_good)
+            self.assertIn("stage-3 control sector_k24_live failed", p_bad)
+            p_s0 = X.receipt_problems(good, "S0ID", 205, 4501, "c", 8, {}, TRAIN_ENV)
+            self.assertFalse([x for x in p_s0 if x.startswith("stage-3 control")])      # earlier arms unchanged
 
 
 if __name__ == "__main__":

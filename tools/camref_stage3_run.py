@@ -15,7 +15,9 @@ constants (scope, preregistration, approval folder, plans, wall cap, launcher co
 checkpoints() with its training checks, then calls its main().
 Stages (same chain and guards as stage 1): smoke (the four arms at quota 1, 205 / 4501, never counted), identity (S0ID),
 eval (the four arms x seeds 4501-4503, block-major by seed: 12 cells). Wall cap 2.0 h shared by the three stages
-(sub-caps 0.4 / 0.3 / 2.0 h).
+(sub-caps 0.4 / 0.3 / 2.0 h), and, unit-wide (amendment 1, review r1 P2-4), no stage gets more than what is left of
+UNIT_GPU_H = 2.4 h after every CAM-S3-E report under UNIT_DIR (failed and voided attempts included) and every cell
+directory no report lists (unit_ledger).
 usage: tools/camref_stage3_run.py scope | {check,smoke,identity,eval} [--approved-commit SHA] --out DIR
 """
 import contextlib
@@ -29,6 +31,7 @@ sys.path.insert(0, str(HERE))
 import camref_eval_run as R                                 # noqa: E402
 
 PREREG = "docs/plans/prereg_camonly_s3w_eval_2026-11-27.md"
+AMENDMENT = "docs/plans/prereg_camonly_s3w_eval_2026-11-27_amendment1.md"
 TRAIN_PREREG = "docs/plans/prereg_camonly_s3w_2026-11-27.md"
 UNIT = "CAM-S3-E"
 SCOPE = ("CAM-S3-E v1 (CAM-REF stage 3): GPU evaluation at P_S (the CAM-DX1 V312 construction) at 205 bars, quota 8 per "
@@ -38,7 +41,9 @@ SCOPE = ("CAM-S3-E v1 (CAM-REF stage 3): GPU evaluation at P_S (the CAM-DX1 V312
          "bars_h3_thin; reference S0 = CAM-DX1 V312 205 / 4501-4503 (SHA-256 pinned); smoke S0T, S0M, W, WT at quota 1 "
          "(205 / 4501); identity S0ID (S2b-FT at P_S, against CAM-DX1 V312 205 / 4501, first 8 episodes per env), any "
          "difference IDENTITY_FAIL; eval S0T, S0M, W, WT x seeds 4501-4503 (12 cells, block-major by seed); wall cap "
-         "2.0 h shared by the three stages, cells that cannot finish inside it skipped; idle host; "
+         "2.0 h shared by the three stages, cells that cannot finish inside it skipped; unit ledger (amendment 1): no "
+         "stage beyond what is left of 2.4 h after every CAM-S3-E report and unlisted cell directory under "
+         "~/motar_tmp/cams3e_20261127; idle host; "
          "tools/camref_stage3_run.py over tools/camref_eval_run.py with eval_navrl_cams3e_arms.sh and "
          "tools/camref_entry.py")
 UNIT_DIR = pathlib.Path.home() / "motar_tmp" / "cams3e_20261127"
@@ -61,7 +66,7 @@ SMOKE_CONTROLS = ("every smoke cell OK with >= 1 finished episode (cams2 telemet
                   "S0T_smoke: the task's ARENA line checkpoint=bars_h3 running=bars_h3_thin; W_smoke: checkpoint="
                   "bars_h3_thin running=bars_h3; S0M_smoke, WT_smoke: no ARENA line; snapshot pool = the rung's")
 LAUNCHER = "aerial_gym/rl_training/rl_games/eval_navrl_cams3e_arms.sh"
-LAUNCHER_SHA = "561ea75ca9db5d0d50d4387622aa086b69084d40c5853852b1b9fbf6e3d87750"   # the committed copy
+LAUNCHER_SHA = "94dc5ffe40c7a6028d72cd9dd23e6e0a5d0bead119f6c43ca95df2f5747e7d5a"   # the committed copy
 NEW_FILES = ("tools/camref_stage3_run.py", "tools/camref_stage3_analyse.py", "tests/test_cams3_eval.py", LAUNCHER)
 # Paths changed since S2b-FT's training commit (335a1fa) outside stage 1's allowlist: the CAM-S3 simulation files (the
 # module, the thin-bar assets and the object config's height ratio for the new pool; S0ID shows they leave S0 unchanged),
@@ -144,6 +149,66 @@ def s3w_problems(ft_env, report_path=S3W_REPORT, receipt_path=S3W_RECEIPT, ckpt=
 
 
 _STAGE1_CHECKPOINTS = R.checkpoints
+_STAGE1_BUDGET = R.stage_budget_h
+
+# ---- unit-wide GPU ledger (amendment 1, review r1 P2-4) -----------------------------------------------------------------
+# What the 2026-11-27 approval (<= 6 h of GPU for S3-W and its evaluation) leaves after S3-W: 6 h - (smoke 1 min + smoke
+# 3 min + run 3.53 h, docs/evidence/camonly_2026-11-04/cams3/*run_report.json), rounded down to 2.4 h.
+UNIT_GPU_H = 2.4
+REPORT_GLOB = "*_report.json"
+
+
+def cell_wall_s(cell_dir):
+    """A cell directory's wall time: the launcher receipt's duration_s, else the span of its files' mtimes (a cell
+    killed before its receipt), else 0."""
+    d = pathlib.Path(cell_dir)
+    try:
+        rec = json.loads((d / "receipt.json").read_text())
+        if isinstance(rec.get("duration_s"), (int, float)):
+            return float(rec["duration_s"])
+    except (OSError, ValueError):
+        pass
+    times = [f.stat().st_mtime for f in d.rglob("*") if f.is_file()]
+    return (max(times) - min(times)) if len(times) > 1 else 0.0
+
+
+def unit_ledger(unit_dir=UNIT_DIR):
+    """{used_s, reports, orphan_cells}: the wall time of every *_report.json under unit_dir (any stage, any verdict)
+    plus every cell directory (one holding cell.log or receipt.json) that no report's records name. An unreadable report
+    counts the span of its folder's files instead (never zero by accident)."""
+    unit_dir = pathlib.Path(unit_dir)
+    used, reports, listed = 0.0, [], set()
+    for path in sorted(unit_dir.rglob(REPORT_GLOB)):
+        try:
+            r = json.loads(path.read_text())
+            w = float(r.get("wall_s") or 0.0)
+            for rec in r.get("records") or []:
+                if rec.get("cell_dir"):
+                    listed.add(str(pathlib.Path(rec["cell_dir"]).resolve()))
+        except (OSError, ValueError, TypeError) as e:
+            w = cell_wall_s(path.parent)
+            reports.append({"path": str(path), "wall_s": w, "error": str(e)})
+            used += w
+            continue
+        reports.append({"path": str(path), "wall_s": w, "verdict": r.get("verdict")})
+        used += w
+    orphans = []
+    for marker in sorted(set(unit_dir.rglob("cell.log")) | set(unit_dir.rglob("receipt.json"))):
+        d = marker.parent
+        if str(d.resolve()) in listed or str(d) in [o["cell_dir"] for o in orphans]:
+            continue
+        w = cell_wall_s(d)
+        orphans.append({"cell_dir": str(d), "wall_s": w})
+        used += w
+    return {"used_s": used, "reports": reports, "orphan_cells": orphans}
+
+
+def stage_budget_h(stage, found):
+    """min(stage 1's rule: the sub-cap and 2.0 h minus this chain's earlier stages, what the unit ledger leaves of
+    UNIT_GPU_H). Returns (budget_h, used_h) with used_h the unit ledger's hours."""
+    budget, _ = _STAGE1_BUDGET(stage, found)
+    used_h = unit_ledger()["used_s"] / 3600.0
+    return max(0.0, min(budget, UNIT_GPU_H - used_h)), used_h
 
 
 def checkpoints():
@@ -156,7 +221,7 @@ def checkpoints():
 
 PATCHED = ("PREREG", "UNIT", "SCOPE", "UNIT_DIR", "SMOKE_PLAN", "IDENTITY_PLAN", "IDENTITY_REF", "EVAL_ARMS",
            "MAX_HOURS_TOTAL", "STAGE_SUB_CAP_H", "SMOKE_CONTROLS", "COMMITTED_FILES", "NEW_FILES", "LAUNCHER",
-           "LAUNCHER_SHA", "CODE_ALLOWLIST", "checkpoints")
+           "LAUNCHER_SHA", "CODE_ALLOWLIST", "checkpoints", "stage_budget_h")
 
 
 def install():
@@ -164,10 +229,12 @@ def install():
     R.PREREG, R.UNIT, R.SCOPE, R.UNIT_DIR = PREREG, UNIT, SCOPE, UNIT_DIR
     R.SMOKE_PLAN, R.IDENTITY_PLAN, R.IDENTITY_REF, R.EVAL_ARMS = SMOKE_PLAN, IDENTITY_PLAN, IDENTITY_REF, EVAL_ARMS
     R.MAX_HOURS_TOTAL, R.STAGE_SUB_CAP_H, R.SMOKE_CONTROLS = MAX_HOURS_TOTAL, STAGE_SUB_CAP_H, SMOKE_CONTROLS
-    R.COMMITTED_FILES = tuple(dict.fromkeys((PREREG, TRAIN_PREREG, R.CAMS3_REL) + R.COMMITTED_FILES + NEW_FILES))
+    R.COMMITTED_FILES = tuple(dict.fromkeys((PREREG, AMENDMENT, TRAIN_PREREG, R.CAMS3_REL) + R.COMMITTED_FILES
+                                            + NEW_FILES))
     R.NEW_FILES = tuple(dict.fromkeys(R.NEW_FILES + NEW_FILES))
     R.LAUNCHER, R.LAUNCHER_SHA, R.CODE_ALLOWLIST = LAUNCHER, LAUNCHER_SHA, CODE_ALLOWLIST
     R.checkpoints = checkpoints
+    R.stage_budget_h = stage_budget_h
 
 
 @contextlib.contextmanager
