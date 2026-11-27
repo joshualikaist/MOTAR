@@ -1,0 +1,16 @@
+{
+  "audit_files_bound": 33,
+  "bound_metadata_files_checked": 560,
+  "cells": 112,
+  "environment_modified": false,
+  "local_links_checked": 47,
+  "main_wip_stash_policy_integrity": "PASS",
+  "measured_source_files": 45,
+  "primary_frames": 2320985,
+  "prior_commits_retained": true,
+  "quota_episodes": 57344,
+  "raw_members_verified_this_invocation": 3347,
+  "scope": "EQ-0 audit integrity, not environment qualification",
+  "simulator_or_gpu_executed": false,
+  "status": "PASS"
+}

@@ -1,0 +1,4 @@
+{
+ "corrects": "AUDIT_INDEX.json not_performed[0]",
+ "correction": "Checkpoint re-hash WAS performed afterwards as a separate small command: size 8869844 bytes, sha256 f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40 equals F_SHA. Earlier probe refusals were not caused by the .pth path (a .pth-free version was also refused); the cause was not determined; split shorter commands succeeded."
+}

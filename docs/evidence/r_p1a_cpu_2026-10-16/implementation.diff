@@ -1,0 +1,2278 @@
+diff --git a/aerial_gym/task/navrl_task/kroc_eval_adapter.py b/aerial_gym/task/navrl_task/kroc_eval_adapter.py
+index 2ed3d7c..302e8a6 100644
+--- a/aerial_gym/task/navrl_task/kroc_eval_adapter.py
++++ b/aerial_gym/task/navrl_task/kroc_eval_adapter.py
+@@ -11,6 +11,8 @@ Two independent switches, both read from the environment once, at task construct
+   into ``kroc2027_episodes.jsonl`` and ``kroc2027_summary.json`` next to ``NAVRL_BULK_EVAL_JSON``.
+   It reads detached tensors only, draws no randomness, writes into no task buffer, and nothing it
+   computes reaches an observation, a reward or a termination (AGENTS.md observation contract).
++* ``NAVRL_KROC2027_RECOVERY_EVENTS=1`` adds independent post-acquisition event sidecars.
++  It requires the recorder, is OFF by default, and never supplies online control inputs.
+ 
+ * ``NAVRL_KROC2027_SEARCH=b1`` wraps the unchanged policy with the B1 yaw-scanning supervisor
+   (``motar_eval.search_supervisor``): it rewrites the normalised action before the command is built,
+@@ -38,6 +40,9 @@ import torch
+ VIEW_VAR = "NAVRL_KROC2027_INITIAL_VIEW"
+ DISTANCE_VAR = "NAVRL_KROC2027_INITIAL_DISTANCE_M"
+ RECORDER_VAR = "NAVRL_KROC2027_RECORDER"
++RECOVERY_VAR = "NAVRL_KROC2027_RECOVERY_EVENTS"
++RECOVERY_FILE = "recovery_events.jsonl"
++RECOVERY_SUMMARY_FILE = "recovery_summary.json"
+ SEARCH_VAR = "NAVRL_KROC2027_SEARCH"
+ PACKETS_VAR = "NAVRL_KROC2027_PACKETS"
+ PACKET_SCHEMA_VAR = "NAVRL_KROC2027_PACKET_SCHEMA"
+@@ -274,11 +279,262 @@ def sample_initial_view_for_task(task, env_ids, b_min, b_max, spec, footprint_ru
+ 
+ def build_kroc_adapter(task):
+     """The recorder when ``NAVRL_KROC2027_RECORDER`` is on, else ``None``."""
++    recovery = _recovery_enabled()
+     if not _truthy(os.environ.get(RECORDER_VAR, "0")):
++        if recovery:
++            raise ValueError(RECOVERY_VAR + " requires " + RECORDER_VAR + "=1")
+         return None
+     return KrocRecorder(task)
+ 
+ 
++def _recovery_enabled():
++    mode = os.environ.get(RECOVERY_VAR, "0")
++    if not _off(mode) and not _truthy(mode):
++        raise ValueError(RECOVERY_VAR + " must be off or 1")
++    return _truthy(mode)
++
++
++def _recovery_scene_contract(task):
++    """Admit only the existing fixed-bar scene; unknown configurations stay unknown."""
++    cfg = getattr(getattr(task, "sim_env", None), "cfg", None)
++    if (getattr(cfg, "__module__", None) != "aerial_gym.config.env_config.navrl_bars_env"
++            or getattr(cfg, "__name__", None) != "NavRLBarsEnvCfg"
++            or getattr(getattr(cfg, "env", None), "use_warp", None) is not True
++            or getattr(task, "_physical_target", None) is not False):
++        return "UNKNOWN"
++    ec = getattr(cfg, "env_config", None)
++    includes = getattr(ec, "include_asset_type", {})
++    mapping = getattr(ec, "asset_type_to_dict_map", {})
++    if not isinstance(includes, dict) or not isinstance(mapping, dict):
++        return "UNKNOWN"
++    if any(name not in mapping for name, enabled in includes.items() if enabled):
++        return "UNKNOWN"
++    active = {name for name, enabled in includes.items()
++              if enabled and getattr(mapping[name], "num_assets", 0) > 0}
++    bars = mapping.get("bars")
++    if (active != {"bars"}
++            or getattr(bars, "__module__", None) != "aerial_gym.config.asset_config.env_object_config"
++            or getattr(bars, "__name__", None) != "bar_asset_params"
++            or getattr(bars, "fix_base_link", None) is not True):
++        return "UNKNOWN"
++    for name in ("min_state_ratio", "max_state_ratio"):
++        state = getattr(bars, name, ())
++        if len(state) != 13 or any(value != 0 for value in state[7:13]):
++            return "UNKNOWN"
++    return "static_scene_mesh"
++
++
++def _build_recovery_probe(task):
++    # Lazy: OFF never imports the geometry module or Warp. No render is repeated here.
++    if getattr(task, "detector", None) is None:
++        return None
++    from aerial_gym.task.navrl_task.recovery_visibility_probe import build_visibility_probe
++
++    return build_visibility_probe(getattr(task, "detector", None), enabled=True,
++                                  target_dynamics=getattr(task, "_target_dynamics", "NOT_RECORDED"),
++                                  scene_contract=_recovery_scene_contract(task))
++
++
++class _RecoveryRecorder:
++    """Separate evaluation sink; all inputs are copied and no output reaches the task."""
++
++    def __init__(self, parent):
++        from motar_eval import recovery_events as core
++        import subprocess
++
++        self.parent, self.core = parent, core
++        self.monitors = [None] * parent.num_envs
++        self.pending = [None] * parent.num_envs
++        self.reset_serial = [0] * parent.num_envs
++        self.stage_serial = 0
++        self.closed_episodes = self.skipped_empty = self.observations = 0
++        self._closed = False
++        tracker = getattr(getattr(parent.task, "perception", None), "tracker", None)
++        self.memory_s = float(getattr(tracker, "memory_s", math.nan))
++        if self.memory_s != 5.0 or not math.isfinite(parent.dt) or parent.dt <= 0:
++            raise ValueError("recovery telemetry requires the unchanged 5 s tracker and a finite dt")
++        root = Path(__file__).resolve().parents[3]
++        paths = ["aerial_gym/task/navrl_task/kroc_eval_adapter.py",
++                 "aerial_gym/task/navrl_task/recovery_visibility_probe.py",
++                 "motar_eval/recovery_events.py", "tools/recovery_observability.py",
++                 "aerial_gym/task/navrl_task/navrl_task.py",
++                 "aerial_gym/task/navrl_task/navrl_perception.py",
++                 "aerial_gym/task/navrl_task/navrl_detector.py",
++                 "aerial_gym/task/navrl_task/target_motion.py",
++                 "aerial_gym/config/task_config/navrl_task_config.py",
++                 "aerial_gym/config/env_config/navrl_bars_env.py",
++                 "aerial_gym/config/asset_config/env_object_config.py"]
++        source = subprocess.run(["git", "rev-parse", "HEAD"], cwd=root,
++                                capture_output=True, text=True, check=True).stdout.strip()
++        dirty = subprocess.run(["git", "status", "--porcelain", "--", *paths], cwd=root,
++                               capture_output=True, text=True, check=True).stdout != ""
++        behavior = str(getattr(parent.task, "_target_behavior_level", "NOT_RECORDED"))
++        backend = str(getattr(parent.task, "_target_distance_backend", "NOT_RECORDED"))
++        lineage = {"historical": "H_historical", "e0_static": "E0_static",
++                   "e1_cv": "E1_direct_l2_v1" if backend == "direct_l2_v1" else "E1_cv",
++                   "e2_obstacle_aware": "E2_direct_l2_v1" if backend == "direct_l2_v1"
++                   else "E2_obstacle_aware"}.get(behavior, "NOT_RECORDED")
++        dynamics = str(getattr(parent.task, "_target_dynamics", "NOT_RECORDED"))
++        model = str(getattr(parent.task, "_target_motion_model", "NOT_RECORDED"))
++        expected_model = ("bounded_planar_drone_v1_rollout_direct_l2_v1" if backend == "direct_l2_v1"
++                          else "bounded_planar_drone_v1_rollout" if dynamics == "bounded"
++                          else "symmetric_local_steer_v2_heading_continuity90")
++        if (dynamics not in ("bounded", "legacy") or model != expected_model
++                or (backend == "direct_l2_v1" and
++                    (dynamics != "bounded" or behavior not in ("e1_cv", "e2_obstacle_aware")))):
++            lineage = "NOT_RECORDED"
++        self.identity = {"source_commit": source,
++                         "checkpoint_sha256": parent.context["checkpoint_sha256"] or "NOT_RECORDED",
++                         "motion_lineage": lineage, "distance_backend": backend,
++                         "target_dynamics": dynamics, "target_motion_model": model,
++                         "seed": parent.context["seed"], "bars": parent.context["bars"],
++                         "run_id": parent.context["run_id"], "cell_id": parent.context["cell_id"]}
++        metadata = dict(self.identity, dt_s=parent.dt, tracker_memory_s=self.memory_s,
++                        event_contract=core.CONTRACT, source_dirty=dirty,
++                        source_files_sha256={p: hashlib.sha256((root / p).read_bytes()).hexdigest()
++                                             for p in paths},
++                        tracker_expiry_comparator="age > memory_s",
++                        frame_contract="COMPLETED_PHYSICS_STATE_0_BASED_CONSUMED_BEFORE_ACTION",
++                        sensor_capture_time="NOT_RECORDED", safe_abort="NOT_RECORDED",
++                        scene_manifest_hash="NOT_RECORDED", pre_loss_actor_prefix_hash="NOT_RECORDED",
++                        evaluation_only=True, gpu_trajectory_noninterference="NOT_TESTED")
++        self.probe = _build_recovery_probe(parent.task)
++        self.path = parent.cell_dir / RECOVERY_FILE
++        self.summary_path = parent.cell_dir / RECOVERY_SUMMARY_FILE
++        self.handle = self.path.open("x", encoding="utf-8")
++        self._write({"record_type": "header", "schema": "motar.recovery-observability.v1",
++                     "metadata": metadata, "run_identity": self.identity})
++
++    def _write(self, record):
++        self.handle.write(json.dumps(record, sort_keys=True, allow_nan=False) + "\n")
++        self.handle.flush()
++
++    def _close(self, env, kind, outcome=None):
++        monitor = self.monitors[env]
++        if monitor is None:
++            return
++        if monitor.frames == 0:
++            if kind == "episode_end":
++                raise ValueError("recovery episode ended without a consumed observation")
++            self.skipped_empty += 1
++        else:
++            terminal = int(self.parent._steps[env].item()) * self.parent.dt
++            summary = monitor.finish(terminal, outcome, terminal_kind=kind)
++            self._write({"record_type": kind, "env_index": env,
++                         "env_episode_index": self.episode_indices[env],
++                         "terminal_time_s": terminal, "summary": summary})
++            self.closed_episodes += 1
++        self.monitors[env] = self.pending[env] = None
++
++    def on_reset(self, env_ids):
++        if not hasattr(self, "episode_indices"):
++            self.episode_indices = [0] * self.parent.num_envs
++        for env in env_ids.cpu().tolist():
++            self._close(env, "reset")
++            self.reset_serial[env] += 1
++            # A manual reset without a task outcome must still have a unique telemetry key.
++            index = self.parent.episode_index[env]
++            self.episode_indices[env] = index
++            key = self.parent._env_context(env)["episode_key"]
++            if self.reset_serial[env] > index + 1:
++                key += "/reset%d" % self.reset_serial[env]
++            self.monitors[env] = self.core.RecoveryEpisodeEvents(
++                key, dt_s=self.parent.dt, run_identity=self.identity)
++        if self.probe is not None:
++            self.probe.invalidate()
++
++    def stage(self, diagnostics):
++        from dataclasses import asdict
++
++        n = self.parent.num_envs
++        perception = self.parent.task.perception
++        tracker = perception.tracker
++        alignment = ("ZERO_LATENCY_RENDER_DELIVERY" if
++                     getattr(perception, "detection_latency_s", None) == 0.0
++                     and getattr(perception, "_latency_steps", None) == 0
++                     and hasattr(perception, "empirical_error") and perception.empirical_error is None
++                     else "NOT_RECORDED")
++        def values(tensor, name):
++            if not isinstance(tensor, torch.Tensor) or tuple(tensor.shape) != (n,):
++                raise ValueError("recovery " + name + " must be a per-environment tensor")
++            return tensor.detach().cpu().tolist()
++        camera = values(diagnostics.get("camera_visible"), "camera_visible")
++        fused = values(diagnostics.get("visible"), "visible")
++        lidar = (values(diagnostics["lidar_visible"], "lidar_visible")
++                 if "lidar_visible" in diagnostics else [None] * n)
++        active = values(tracker.active, "track_active")
++        age_tensor = diagnostics.get("track_age", getattr(tracker, "age", None))
++        ages = values(age_tensor, "track_age") if age_tensor is not None else [None] * n
++        steps = self.parent._steps.detach().cpu().tolist()
++        self.stage_serial += 1
++        token = "stage%d" % self.stage_serial
++        geometry_rows = self.probe.snapshot(token, render_token=token) if self.probe is not None else [None] * n
++        if len(geometry_rows) != n:
++            raise ValueError("recovery geometry batch differs from the observation batch")
++        for env in range(n):
++            monitor = self.monitors[env]
++            if monitor is None:
++                raise ValueError("recovery observation has no reset episode")
++            frame, time_s = int(steps[env]), int(steps[env]) * self.parent.dt
++            stamp = self.core.FrameStamp(monitor.episode_id, frame, time_s, None,
++                                         "%s/frame%d" % (monitor.episode_id, frame))
++            sensor = self.core.SensorFrame(
++                camera[env], lidar[env], fused[env], active[env], ages[env], self.memory_s,
++                self.core.FINAL_DIAGNOSTICS_CONTRACT if "lidar_visible" in diagnostics else None,
++                track_age_dtype=str(age_tensor.dtype) if age_tensor is not None else "NOT_RECORDED")
++            raw = geometry_rows[env] or {}
++            geometry = self.core.EvaluationGeometry(
++                raw.get("target_center_in_fov"), raw.get("target_center_in_range"),
++                raw.get("center_los_blocked"), raw.get("geometry_contract", "UNKNOWN"),
++                raw.get("rendered_target_visible_pixels"), frame_index=frame, state_time_s=time_s,
++                measurement_alignment=alignment)
++            self.pending[env] = {"stamp": asdict(stamp), "sensor": asdict(sensor),
++                                 "geometry": asdict(geometry), "geometry_provenance": raw}
++
++    def consume(self):
++        for env, pending in enumerate(self.pending):
++            if pending is None:
++                raise ValueError("recovery action has no unconsumed observation")
++            monitor = self.monitors[env]
++            if pending["stamp"]["frame_index"] != int(self.parent._steps[env].item()):
++                raise ValueError("recovery staged observation is stale")
++            inputs = {key: pending[key] for key in ("stamp", "sensor", "geometry")}
++            result = monitor.observe(self.core.FrameStamp(**inputs["stamp"]),
++                                     self.core.SensorFrame(**inputs["sensor"]),
++                                     self.core.EvaluationGeometry(**inputs["geometry"]))
++            self._write({"record_type": "observation", "env_index": env,
++                         "env_episode_index": self.episode_indices[env], "inputs": inputs,
++                         "geometry_provenance": pending["geometry_provenance"],
++                         "episode_context": {"scene_manifest_hash": "NOT_RECORDED",
++                                             "pre_loss_actor_prefix_hash": "NOT_RECORDED"},
++                         "observation": result})
++            self.observations += 1
++            self.pending[env] = None
++
++    def on_episode_end(self, env_ids, capture, crash, timeout):
++        for row, env in enumerate(env_ids.cpu().tolist()):
++            flags = (bool(capture[row]), bool(crash[row]), bool(timeout[row]))
++            if sum(flags) != 1:
++                raise ValueError("recovery telemetry requires one resolved task outcome")
++            self._close(env, "episode_end", ("capture", "crash", "timeout")[flags.index(True)])
++
++    def finalize(self, reason):
++        if self._closed:
++            return
++        for env in range(self.parent.num_envs):
++            self._close(env, "run_shutdown")
++        self.handle.close()
++        summary = {"schema": "motar.recovery-observability-summary.v1", "reason": reason,
++                   "run_identity": self.identity, "observations": self.observations,
++                   "closed_episodes": self.closed_episodes, "skipped_empty_episodes": self.skipped_empty,
++                   "trace_file": RECOVERY_FILE,
++                   "trace_sha256": hashlib.sha256(self.path.read_bytes()).hexdigest(),
++                   "safe_abort": "NOT_RECORDED", "gpu_trajectory_noninterference": "NOT_TESTED"}
++        with self.summary_path.open("x", encoding="utf-8") as handle:
++            handle.write(json.dumps(summary, sort_keys=True, indent=2) + "\n")
++        self._closed = True
++
++
+ def build_search_supervisor(task, environ=None):
+     """The B1 yaw-scanning supervisor when ``NAVRL_KROC2027_SEARCH=b1``, else ``None``."""
+     environ = os.environ if environ is None else environ
+@@ -364,6 +620,13 @@ class KrocRecorder:
+             raise RuntimeError("NAVRL_KROC2027_RECORDER=1 needs NAVRL_BULK_EVAL_JSON for its sidecar files")
+         self.cell_dir = Path(output).resolve().parent
+         self.cell_dir.mkdir(parents=True, exist_ok=True)
++        recovery_enabled = _recovery_enabled()
++        if recovery_enabled:
++            protected = (EPISODES_FILE, SUMMARY_FILE, RECOVERY_FILE, RECOVERY_SUMMARY_FILE,
++                         Path(output).name)
++            if any((self.cell_dir / name).exists() or (self.cell_dir / name).is_symlink()
++                   for name in protected):
++                raise FileExistsError("recovery telemetry requires a fresh cell output directory")
+         self.episodes_path = self.cell_dir / EPISODES_FILE
+         self.summary_path = self.cell_dir / SUMMARY_FILE
+         self.on_violation = os.environ.get(ON_VIOLATION_VAR, "stop").strip().lower()
+@@ -442,6 +705,7 @@ class KrocRecorder:
+             "motar_eval": _module_origin("motar_eval"),
+             "kroc_eval_adapter": str(Path(__file__).resolve()),
+         }
++        self._recovery = _RecoveryRecorder(self) if recovery_enabled else None
+         atexit.register(self._finalize_at_exit)
+ 
+     # ------------------------------------------------------------ helpers
+@@ -477,6 +741,8 @@ class KrocRecorder:
+         env_ids = torch.as_tensor(env_ids, dtype=torch.long, device=self.device)
+         if env_ids.numel() == 0:
+             return
++        if self._recovery is not None:
++            self._recovery.on_reset(env_ids)
+         target_xy = t.target_position[:, 0:2].detach()
+         target_v = t.target_vel_w[:, 0:2].detach()
+         self.motion.reset(env_ids, target_xy, target_v)
+@@ -822,12 +1088,16 @@ class KrocRecorder:
+         self._pending_observation = (camera, visible, track, in_fov, geo_visible)
+         if self.packets_enabled:
+             self._snapshot_target_inputs()
++        if self._recovery is not None:
++            self._recovery.stage(diagnostics)
+ 
+     def before_action(self):
+         """Start of step: the observation that drives this action enters the chronology."""
+         pending = getattr(self, "_pending_observation", None)
+         if pending is None:
+             raise RuntimeError("KROC2027 recorder: an action without a preceding observation")
++        if self._recovery is not None:
++            self._recovery.consume()
+         self.events.observe(*pending)
+ 
+     def on_episode_end(self, finished, successes, crashes, timeouts):
+@@ -839,6 +1109,8 @@ class KrocRecorder:
+         capture = successes.detach().to(torch.bool)[env_ids].cpu().tolist()
+         crash = (crashes.detach() if crashes.dtype == torch.bool else crashes.detach() > 0)[env_ids].cpu().tolist()
+         timeout = timeouts.detach().to(torch.bool)[env_ids].cpu().tolist()
++        if self._recovery is not None:
++            self._recovery.on_episode_end(env_ids, capture, crash, timeout)
+         event_records = self.events.finish(env_ids)
+         end_dist = self.task.ep_min_goal_dist[env_ids].detach().double().cpu().tolist()
+         host = {k: v[env_ids].detach().double().cpu().tolist() for k, v in self._speed.items()}
+@@ -1000,3 +1272,5 @@ class KrocRecorder:
+         tmp = self.summary_path.with_suffix(".json.tmp")
+         tmp.write_text(json.dumps(summary, indent=1, sort_keys=True) + "\n")
+         os.replace(tmp, self.summary_path)
++        if self._recovery is not None:
++            self._recovery.finalize(reason)
+diff --git a/WORKLOG.md b/WORKLOG.md
+--- a/WORKLOG.md
++++ b/WORKLOG.md
+@@ -20429,3 +20429,26 @@
+ - Next action requiring user approval: implement and CPU-verify the stated R-P1a package only. External backup awaits a destination. No new GPU or merge/push approval is requested or inferred.
+ 
+ - Follow-up verification: all 19 new document files passed whitespace checks and every new JSON parsed; nine compact source copies and three local report hashes match the evidence index. Audit classifications sum to 881 across 104 families. The proposed draft was AST-parsed only, not executed. Public document checks report zero errors. Runtime/test files are unchanged. Main/branch HEAD, stash object IDs, user WIP hashes, raw manifests/analysis and committed amendment bytes match the before-review snapshot. No new software-test run or R-P1a PASS is claimed.
++
++## 2026-10-16 — R-P1a(복구 관측, 기본 OFF) 구현 완료 기록과 최종 CPU 검증(중단된 세션 마무리)
++
++- 사용자 승인 범위: R-P1a 구현과 CPU 검증만. GPU·PPO·R-P1b/c·Recovery Planner·commit·merge·push 없음.
++  기준 `c038ba5`(branch `codex/mt-p1`), 모두 미커밋.
++- 구현 파일: `aerial_gym/task/navrl_task/kroc_eval_adapter.py`(수정, `NAVRL_KROC2027_RECOVERY_EVENTS=1`일 때만 동작),
++  새 파일 `aerial_gym/task/navrl_task/recovery_visibility_probe.py`, `motar_eval/recovery_events.py`,
++  `tools/recovery_observability.py`, `tests/test_recovery_{events,observability_contract,visibility_geometry}.py`, 보고서
++  `docs/audits/r_p1a_implementation_2026-10-16.md`, 증거 `docs/evidence/r_p1a_cpu_2026-10-16/`.
++- 최종 CPU(마지막 소스 변경 20:34:31 이후): scoped 38/38 OK. PUBLIC_CPU 2,319개 실행, 실패 0·오류 0·skip 10, GPU 전용
++  5개 제외. 기록된 두 명령을 그대로 다시 실행해 같은 수·같은 scoped 목록을 확인(`*_reverify.log`).
++- 정정·이력: `validation.json`(20:33:59)은 마지막 test 변경 이전 기록이라 test 파일 SHA(`2a933c13…` → `f1c81b2f…`)와
++  수(37/2,318)가 오래됨. 원본은 그대로 두고 `validation_final.json`이 대체. 보고서가 가리키던 `implementation.diff`와
++  WORKLOG 구현 기록은 중단으로 빠져 있어 이번에 추가.
++- 비간섭 점검(코드): OFF면 새 모듈을 import하지 않고 모든 hook이 `self._recovery is None`으로 건너뜀. 평가 도구가
++  `NAVRL_KROC2027_*`를 상속 환경에서 지우므로 기본 OFF. ON에서도 입력은 detach 후 복사하고, task 버퍼에 쓰지 않으며
++  RNG를 쓰지 않음. probe는 자기 Warp 버퍼에만 씀. GT 기하는 별도 sidecar(`recovery_events.jsonl`)로만 감.
++  카메라 측정과 현재 mesh LOS는 따로 기록되며, 결합 후보는 지연 0이 확인될 때만 계산되고 아니면 `alignment_unknown`.
++  CPU fixture에서 OFF/ON의 기존 KROC 출력 byte 동일, RNG·actor·tracker 입력 보존(테스트). GPU 비간섭은 `NOT_TESTED`.
++- 보존: raw 583개(MT-P2-C01 131 + KROC27-A-M02 452) SHA 전부 일치, Policy F `f7022139…` 불변. main `cb644bb`, 사용자 WIP
++  3개, stash `23ddb33f`, branch HEAD `c038ba5` 모두 작업 전 snapshot과 같음. 외부 백업 미완료(백업이 같은 디스크),
++  디스크 3.3 GB 남음(98 %).
++- 다음: 로컬 commit은 사용자 승인 후. GPU 검증(카메라/mesh 일치, ON/OFF 궤적 동일성)은 별도 사전등록과 승인 필요.
+diff --git a/aerial_gym/task/navrl_task/recovery_visibility_probe.py b/aerial_gym/task/navrl_task/recovery_visibility_probe.py
+new file mode 100644
+index 0000000..233a3cb
+--- /dev/null
++++ b/aerial_gym/task/navrl_task/recovery_visibility_probe.py
+@@ -0,0 +1,265 @@
++"""Evaluation-only centre LOS from the detector camera and its actual scene mesh.
++
++Importing this module, or constructing an OFF factory, imports no torch/Warp/simulator.
++The supported ON path lazily queries the same scene mesh as the target renderer, using
++the camera pose already written by that render. It never rerenders or edits detector data.
++The caller attests render identity with matching tokens; these are not sensor timestamps.
++Centre-ray blockage is not full silhouette occlusion. GPU runtime parity is NOT_TESTED.
++"""
++import copy
++import importlib
++import math
++
++CONTRACT = "MOTAR_ACTUAL_SCENE_MESH_CENTER_LOS_V1"
++UNKNOWN_CONTRACT = "MOTAR_RECOVERY_GEOMETRY_UNKNOWN_V1"
++NOT_RECORDED = "NOT_RECORDED"
++
++
++def _vector(values, size):
++    out = tuple(float(value) for value in values)
++    if len(out) != size or not all(math.isfinite(value) for value in out):
++        raise ValueError("geometry vector has invalid dimensions or non-finite values")
++    return out
++
++
++def _dot(a, b):
++    return sum(x * y for x, y in zip(a, b))
++
++
++def _cross(a, b):
++    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2],
++            a[0] * b[1] - a[1] * b[0])
++
++
++def camera_center_geometry(origin, orientation_xyzw, target, hfov_rad, vfov_rad, max_range_m):
++    """Independent scalar reference: centre frustum and Euclidean centre range, separately.
++
++    x forward / y left / z up; quaternion is the actual rendered camera's world rotation.
++    The finite target surface can still render when its centre is outside either condition.
++    """
++    eye, point, quat = _vector(origin, 3), _vector(target, 3), _vector(orientation_xyzw, 4)
++    if abs(_dot(quat, quat) - 1.0) > 1e-4:
++        raise ValueError("camera quaternion is not unit length")
++    if not (0. < hfov_rad < math.pi and 0. < vfov_rad < math.pi
++            and math.isfinite(max_range_m) and max_range_m > 0.):
++        raise ValueError("unsupported camera frustum")
++    delta = tuple(t - e for t, e in zip(point, eye))
++    # Inverse xyzw quaternion rotation; no alteration of the caller's quaternion.
++    q = tuple(-v for v in quat[:3])
++    cross = _cross(q, delta)
++    second = _cross(q, cross)
++    local = tuple(delta[i] + 2. * quat[3] * cross[i] + 2. * second[i] for i in range(3))
++    distance = math.sqrt(_dot(delta, delta))
++    inside = (local[0] > 0. and abs(local[1]) <= local[0] * math.tan(hfov_rad / 2.)
++              and abs(local[2]) <= local[0] * math.tan(vfov_rad / 2.))
++    return {"target_center_in_fov": inside,
++            "target_center_in_range": 0. < distance <= max_range_m,
++            "center_range_m": distance}
++
++
++def segment_triangle_intersection(start, end, a, b, c, epsilon=1e-10):
++    """Double-precision reference segment parameter, or None; edge hits count.
++
++    Coplanar rays are not classified as crossings by this ray-triangle reference.
++    This analytic fixture is not a replacement for the actual scene-mesh query.
++    """
++    start, end, a, b, c = (_vector(v, 3) for v in (start, end, a, b, c))
++    direction = tuple(y - x for x, y in zip(start, end))
++    e1, e2 = tuple(y - x for x, y in zip(a, b)), tuple(y - x for x, y in zip(a, c))
++    h = _cross(direction, e2)
++    determinant = _dot(e1, h)
++    if abs(determinant) <= epsilon:
++        return None
++    rel = tuple(x - y for x, y in zip(start, a))
++    u = _dot(rel, h) / determinant
++    q = _cross(rel, e1)
++    v = _dot(direction, q) / determinant
++    fraction = _dot(e2, q) / determinant
++    if u < -epsilon or v < -epsilon or u + v > 1. + epsilon or not -epsilon <= fraction <= 1. + epsilon:
++        return None
++    return max(0., min(1., fraction))
++
++
++def reference_mesh_blocked(start, end, vertices, triangle_indices):
++    """Analytic triangle fixture, using explicit vertices rather than scene GT boxes."""
++    if len(triangle_indices) % 3:
++        raise ValueError("triangle index count is not divisible by three")
++    return any(segment_triangle_intersection(start, end, *(vertices[i] for i in triangle_indices[j:j + 3]))
++               is not None for j in range(0, len(triangle_indices), 3))
++
++
++def reference_aabb_blocked(start, end, lower, upper):
++    """Closed slab fixture for tests only; never used as the live actual-mesh oracle."""
++    start, end, lower, upper = (_vector(v, 3) for v in (start, end, lower, upper))
++    lo, hi = 0., 1.
++    for a, b, minimum, maximum in zip(start, end, lower, upper):
++        if minimum > maximum:
++            raise ValueError("invalid AABB")
++        direction = b - a
++        if abs(direction) < 1e-12:
++            if not minimum <= a <= maximum:
++                return False
++        else:
++            near, far = sorted(((minimum - a) / direction, (maximum - a) / direction))
++            lo, hi = max(lo, near), min(hi, far)
++            if lo > hi:
++                return False
++    return True
++
++
++def _center_los_kernel(mesh_ids, origins, targets, blockage):
++    # wp is bound, and these annotations are installed, only by the explicit lazy ON path.
++    index = wp.tid()
++    ray = targets[index] - origins[index]
++    length = wp.length(ray)
++    blockage[index] = wp.int32(-1)
++    if length > 1.0e-8:
++        direction = ray / length
++        distance = float(0.0)
++        u = float(0.0)
++        v = float(0.0)
++        sign = float(0.0)
++        normal = wp.vec3()
++        face = int(0)
++        blocked = wp.mesh_query_ray(mesh_ids[index], origins[index], direction, length,
++                                    distance, u, v, sign, normal, face)
++        blockage[index] = wp.int32(0)
++        if blocked:
++            blockage[index] = wp.int32(1)
++
++
++_WARP_KERNEL = None
++wp = None  # Bound only on the explicit lazy ON path; no module import or initialization here.
++
++
++def _load_warp_kernel():
++    global _WARP_KERNEL, wp
++    if _WARP_KERNEL is None:
++        wp = importlib.import_module("warp")
++        wp.init()
++        _center_los_kernel.__annotations__ = {
++            "mesh_ids": wp.array(dtype=wp.uint64), "origins": wp.array(dtype=wp.vec3),
++            "targets": wp.array(dtype=wp.vec3), "blockage": wp.array(dtype=wp.int32)}
++        _WARP_KERNEL = wp.kernel(_center_los_kernel)
++    return wp, _WARP_KERNEL
++
++
++def _host_values(value):
++    if hasattr(value, "detach"):
++        return value.detach().cpu().tolist()
++    if hasattr(value, "tolist"):
++        return value.tolist()
++    return copy.deepcopy(value)
++
++
++def rendered_frustum(detector):
++    """Use the actual render FOV scale, not perception's nominal camera intrinsics."""
++    scale = 1. + float(getattr(detector, "fov_scale_err", 0.))
++    return float(detector.hfov) * scale, float(detector.vfov) * scale, float(detector.max_range)
++
++
++class RecoveryVisibilityProbe:
++    """Observer-owned mesh probe; no tensor is written through a detector reference."""
++
++    def __init__(self, detector, *, target_dynamics, scene_contract):
++        self.detector = detector
++        self.target_dynamics = target_dynamics
++        self.scene_contract = scene_contract
++        self._last_token = None
++        self._last_rows = None
++        self._invalidated_token = None
++        self._owned_buffers = None
++
++    def invalidate(self):
++        """Call at reset; no old frame may be reused as a fresh render."""
++        if self._last_token is not None:
++            self._invalidated_token = copy.deepcopy(self._last_token)
++        self._last_token = None
++        self._last_rows = None
++
++    def _unsupported(self):
++        d = self.detector
++        if self.target_dynamics not in ("legacy", "bounded") or getattr(d, "target_use_oriented_box", True):
++            return "UNSUPPORTED_PHYSICAL_OR_ORIENTED_TARGET"
++        if self.scene_contract != "static_scene_mesh":
++            return "UNSUPPORTED_SCENE_CONTRACT"
++        if getattr(d, "detect_decoupled", True):
++            return "UNSUPPORTED_DECOUPLED_CAMERA"
++        if (getattr(d, "target_render_mode", None) != "analytic_flat"
++                or getattr(d, "_dynamic_mesh_treatment", None) is not None):
++            return "UNSUPPORTED_DYNAMIC_TARGET_GEOMETRY"
++        for name in ("mesh_ids", "_origins", "_orientations", "_targets", "target_mask", "hfov", "vfov", "max_range"):
++            if not hasattr(d, name):
++                return "MISSING_RENDER_INPUT_" + name
++        return None
++
++    def _unknown(self, token, reason):
++        return [{"target_center_in_fov": None, "target_center_in_range": None,
++                 "center_los_blocked": None, "geometry_contract": UNKNOWN_CONTRACT,
++                 "rendered_target_visible_pixels": None, "full_visual_occlusion": NOT_RECORDED,
++                 "status": "UNKNOWN", "reason": reason, "capture_token": copy.deepcopy(token),
++                 "sensor_capture_time_s": NOT_RECORDED}
++                for _ in range(int(self.detector.num_envs))]
++
++    def snapshot(self, capture_token, *, render_token):
++        """Read a caller-attested fresh render; missing/stale tokens produce UNKNOWN.
++
++        The detector has no native exposure/frame stamp. Matching caller tokens attest the
++        adapter invoked this after its render; they cannot establish a hardware capture time.
++        Repeated requests for that token return copied cached scalars without another query.
++        """
++        if capture_token is None or render_token is None or capture_token != render_token:
++            return self._unknown(capture_token, "MISSING_OR_MISMATCHED_RENDER_TOKEN")
++        if capture_token == self._invalidated_token:
++            return self._unknown(capture_token, "INVALIDATED_RENDER_TOKEN")
++        if capture_token == self._last_token and self._last_rows is not None:
++            return copy.deepcopy(self._last_rows)
++        unsupported = self._unsupported()
++        if unsupported:
++            return self._unknown(capture_token, unsupported)
++        d = self.detector
++        origins, quats, targets = (_host_values(getattr(d, name)) for name in ("_origins", "_orientations", "_targets"))
++        mask = _host_values(d.target_mask)
++        n = int(d.num_envs)
++        if len(origins) != n or len(quats) != n or len(targets) != n or len(mask) != n:
++            return self._unknown(capture_token, "RENDER_BATCH_SHAPE_MISMATCH")
++        try:
++            hfov, vfov, far_plane = rendered_frustum(d)
++            rows = [camera_center_geometry(eye, quat, target, hfov, vfov, far_plane)
++                    for eye, quat, target in zip(origins, quats, targets)]
++        except (ValueError, TypeError):
++            return self._unknown(capture_token, "INVALID_RENDER_CAMERA_GEOMETRY")
++        wp_module, kernel = _load_warp_kernel()
++        device = d.mesh_ids.device
++        if tuple(d.mesh_ids.shape) != (n,):
++            return self._unknown(capture_token, "SCENE_MESH_BATCH_SHAPE_MISMATCH")
++        # These inputs and outputs are independently allocated; existing sensor buffers are read only.
++        eye_buffer = wp_module.array(origins, dtype=wp_module.vec3, device=device)
++        target_buffer = wp_module.array(targets, dtype=wp_module.vec3, device=device)
++        output_buffer = wp_module.zeros(n, dtype=wp_module.int32, device=device)
++        self._owned_buffers = (eye_buffer, target_buffer, output_buffer)
++        wp_module.launch(kernel, dim=n, inputs=[d.mesh_ids, eye_buffer, target_buffer],
++                         outputs=[output_buffer], device=device)
++        blockages = output_buffer.numpy().tolist()
++        for index, row in enumerate(rows):
++            row.update(center_los_blocked=(None if blockages[index] < 0 else bool(blockages[index])),
++                       geometry_contract=CONTRACT, rendered_target_visible_pixels=sum(
++                           int(value > 0) for line in mask[index] for value in line),
++                       full_visual_occlusion=NOT_RECORDED, capture_token=copy.deepcopy(capture_token),
++                       camera_origin_world=origins[index], camera_orientation_xyzw=quats[index],
++                       target_center_world=targets[index], status="PROBED",
++                       reason=None, sensor_capture_time_s=NOT_RECORDED,
++                       actual_hfov_rad=hfov, actual_vfov_rad=vfov, camera_far_plane_m=far_plane,
++                       target_geometry="ANALYTIC_VIRTUAL_SPHERE", target_dynamics=self.target_dynamics,
++                       scene_contract=self.scene_contract,
++                       render_identity_provenance="CALLER_ATTESTED_SAME_RENDER",
++                       runtime_parity="NOT_TESTED_SEPARATE_GPU_APPROVAL_REQUIRED")
++        self._last_token, self._last_rows = copy.deepcopy(capture_token), copy.deepcopy(rows)
++        return rows
++
++
++def build_visibility_probe(detector, *, enabled=False, target_dynamics="bounded", scene_contract="static_scene_mesh"):
++    """Default OFF performs no construction, imports, buffers, mesh queries or initialization."""
++    if not enabled:
++        return None
++    return RecoveryVisibilityProbe(detector, target_dynamics=target_dynamics, scene_contract=scene_contract)
+diff --git a/motar_eval/recovery_events.py b/motar_eval/recovery_events.py
+new file mode 100644
+index 0000000..c9958ff
+--- /dev/null
++++ b/motar_eval/recovery_events.py
+@@ -0,0 +1,318 @@
++"""Evaluation-only recovery chronology from immutable, copied scalar observations.
++
++This module does not inspect simulator state, control inputs, tensors or random generators.
++Unknown geometry and unrecorded sensor provenance remain unknown. Intervals describe
++post-acquisition observations, never a guarantee of physical target identity or safety.
++"""
++from dataclasses import asdict, dataclass
++import copy
++import hashlib
++import json
++import math
++from typing import Optional
++
++CONTRACT = "MOTAR_RECOVERY_EVENTS_P1A_V1"
++FINAL_DIAGNOSTICS_CONTRACT = "MOTAR_FROZEN_F_FINAL_DIAGNOSTICS_V1"
++NOT_RECORDED = "NOT_RECORDED"
++_TIME_TOLERANCE_S = 1e-6
++
++
++def _number(value, name, *, minimum=0.0):
++    if isinstance(value, bool) or not isinstance(value, (int, float)):
++        raise ValueError(name + " must be a finite scalar number")
++    if not math.isfinite(value) or value < minimum:
++        raise ValueError(name + " must be finite and >= " + str(minimum))
++
++
++def _text(value, name):
++    if not isinstance(value, str) or not value:
++        raise ValueError(name + " must be a nonempty string")
++
++
++def _flag(value, name, *, optional=False):
++    if not (isinstance(value, bool) or (optional and value is None)):
++        raise ValueError(name + " must be a boolean" + (" or None" if optional else ""))
++
++
++def _index(value, name):
++    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
++        raise ValueError(name + " must be a nonnegative integer")
++
++
++@dataclass(frozen=True)
++class FrameStamp:
++    episode_id: str
++    frame_index: int
++    state_time_s: float
++    capture_time_s: Optional[float] = None
++    frame_token: Optional[str] = None
++
++    def __post_init__(self):
++        _text(self.episode_id, "episode_id")
++        _index(self.frame_index, "frame_index")
++        _number(self.state_time_s, "state_time_s")
++        if self.capture_time_s is not None:
++            _number(self.capture_time_s, "capture_time_s")
++            if self.capture_time_s > self.state_time_s + _TIME_TOLERANCE_S:
++                raise ValueError("capture time cannot follow state time")
++        if self.frame_token is not None:
++            _text(self.frame_token, "frame_token")
++
++
++@dataclass(frozen=True)
++class SensorFrame:
++    camera_valid: bool
++    lidar_valid: Optional[bool]
++    fused_valid: bool
++    track_active: bool
++    track_age_s: Optional[float]
++    track_memory_s: float = 5.0
++    fused_sources_contract: Optional[str] = None
++    camera_loss_cause: str = NOT_RECORDED
++    track_age_dtype: str = NOT_RECORDED
++
++    def __post_init__(self):
++        for name in ("camera_valid", "fused_valid", "track_active"):
++            _flag(getattr(self, name), name)
++        _flag(self.lidar_valid, "lidar_valid", optional=True)
++        if self.track_age_s is not None:
++            _number(self.track_age_s, "track_age_s")
++        _number(self.track_memory_s, "track_memory_s")
++        if self.track_memory_s <= 0:
++            raise ValueError("track_memory_s must be positive")
++        if self.fused_sources_contract is not None:
++            _text(self.fused_sources_contract, "fused_sources_contract")
++        _text(self.camera_loss_cause, "camera_loss_cause")
++        _text(self.track_age_dtype, "track_age_dtype")
++        if self.fused_sources_contract == FINAL_DIAGNOSTICS_CONTRACT:
++            if self.lidar_valid is None:
++                raise ValueError("verified final diagnostics require a recorded LiDAR flag")
++            if self.fused_valid != (self.camera_valid or self.lidar_valid):
++                raise ValueError("fused validity disagrees with verified final sensor sources")
++
++
++@dataclass(frozen=True)
++class EvaluationGeometry:
++    target_center_in_fov: Optional[bool]
++    target_center_in_range: Optional[bool]
++    center_los_blocked: Optional[bool]
++    geometry_contract: str
++    rendered_target_visible_pixels: Optional[int] = None
++    full_visual_occlusion: str = NOT_RECORDED
++    frame_index: Optional[int] = None
++    state_time_s: Optional[float] = None
++    measurement_alignment: str = NOT_RECORDED
++
++    def __post_init__(self):
++        for name in ("target_center_in_fov", "target_center_in_range", "center_los_blocked"):
++            _flag(getattr(self, name), name, optional=True)
++        _text(self.geometry_contract, "geometry_contract")
++        if self.rendered_target_visible_pixels is not None:
++            _index(self.rendered_target_visible_pixels, "rendered_target_visible_pixels")
++        # This milestone has no target-alone silhouette support raster contract.
++        if self.full_visual_occlusion != NOT_RECORDED:
++            raise ValueError("full visual occlusion is unsupported by this centre-ray contract")
++        if self.frame_index is not None:
++            _index(self.frame_index, "geometry frame_index")
++        if self.state_time_s is not None:
++            _number(self.state_time_s, "geometry state_time_s")
++        if self.measurement_alignment not in (NOT_RECORDED, "ZERO_LATENCY_RENDER_DELIVERY"):
++            raise ValueError("unsupported measurement/render alignment contract")
++
++
++def _digest(value):
++    return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":"),
++                                     allow_nan=False).encode("utf-8")).hexdigest()
++
++
++def _identity(value):
++    if value is None:
++        return {}
++    if not isinstance(value, dict):
++        raise ValueError("run_identity must be a scalar mapping")
++    for key, item in value.items():
++        _text(key, "run identity key")
++        if item is not None and not isinstance(item, (str, bool, int, float)):
++            raise ValueError("run identity values must be copied JSON scalars")
++        if isinstance(item, float) and not math.isfinite(item):
++            raise ValueError("run identity values must be finite")
++    return copy.deepcopy(value)
++
++
++class RecoveryEpisodeEvents:
++    """One episode; observe each consumed frame exactly once, before its action.
++
++    Eligibility is established by a camera-valid active fused track and applies only
++    to later frames. The caller supplies actual tracker age, including its dtype;
++    elapsed evaluator time never substitutes for the tracker expiry condition.
++    """
++
++    def __init__(self, episode_id, *, dt_s=0.1, run_identity=None,
++                 scene_manifest_hash=NOT_RECORDED, pre_loss_actor_prefix_hash=NOT_RECORDED):
++        _text(episode_id, "episode_id")
++        _number(dt_s, "dt_s")
++        if dt_s <= 0:
++            raise ValueError("dt_s must be positive")
++        _text(scene_manifest_hash, "scene_manifest_hash")
++        _text(pre_loss_actor_prefix_hash, "pre_loss_actor_prefix_hash")
++        self.episode_id = episode_id
++        self.dt_s = dt_s
++        self.run_identity = _identity(run_identity)
++        self.scene_manifest_hash = scene_manifest_hash
++        self.pre_loss_actor_prefix_hash = pre_loss_actor_prefix_hash
++        self.ever_acquired = False
++        self.camera_started = False
++        self.last_index = -1
++        self.last_time = None
++        self.last_capture_time = None
++        self.previous_track = False
++        self.open_runs = {}
++        self.rows = []
++        self.frames = 0
++        self.closed = False
++        self._tokens = set()
++        self.prefix_hash = _digest({"contract": CONTRACT, "episode_id": episode_id,
++                                    "dt_s": dt_s, "run_identity": self.run_identity,
++                                    "scene_manifest_hash": scene_manifest_hash,
++                                    "pre_loss_actor_prefix_hash": pre_loss_actor_prefix_hash})
++
++    def _end_run(self, name, time_s, boundary, end_frame=None):
++        start = self.open_runs.pop(name, None)
++        if start is None:
++            return None
++        row = {"event": name, "episode_id": self.episode_id,
++               "start_frame": start[0], "start_time_s": start[1],
++               "end_frame": end_frame, "end_time_s": time_s,
++               "duration_s": time_s - start[1], "boundary": boundary,
++               "censored": boundary != "observed_end"}
++        self.rows.append(row)
++        return row
++
++    def observe(self, stamp: FrameStamp, sensor: SensorFrame, geometry: EvaluationGeometry):
++        if not isinstance(stamp, FrameStamp) or not isinstance(sensor, SensorFrame) or not isinstance(geometry, EvaluationGeometry):
++            raise ValueError("observe requires immutable scalar input records")
++        if self.closed or stamp.episode_id != self.episode_id:
++            raise ValueError("episode is closed or frame belongs to a different episode")
++        if stamp.frame_index != self.last_index + 1:
++            raise ValueError("consumed frame indices must be consecutive and never duplicated")
++        expected_time = 0.0 if self.last_time is None else self.last_time + self.dt_s
++        if abs(stamp.state_time_s - expected_time) > _TIME_TOLERANCE_S:
++            raise ValueError("state time must start at zero and follow the physical dt")
++        if self.last_time is not None and stamp.state_time_s <= self.last_time:
++            raise ValueError("state time must increase strictly")
++        if stamp.frame_token is not None and stamp.frame_token in self._tokens:
++            raise ValueError("consumed frame token must be unique within an episode")
++        if (stamp.capture_time_s is not None and self.last_capture_time is not None
++                and stamp.capture_time_s < self.last_capture_time - _TIME_TOLERANCE_S):
++            raise ValueError("recorded capture time cannot move backwards")
++        if geometry.frame_index is not None and geometry.frame_index != stamp.frame_index:
++            raise ValueError("geometry frame index does not match consumed state")
++        if geometry.state_time_s is not None and abs(geometry.state_time_s - stamp.state_time_s) > _TIME_TOLERANCE_S:
++            raise ValueError("geometry timestamp does not match consumed state")
++
++        eligible = self.ever_acquired
++        fov, within_range, blocked = (geometry.target_center_in_fov,
++                                     geometry.target_center_in_range, geometry.center_los_blocked)
++        qualified = None if None in (fov, within_range, blocked) else fov and within_range and blocked
++        aligned = geometry.measurement_alignment == "ZERO_LATENCY_RENDER_DELIVERY"
++        signals = {"camera_measurement_loss": not sensor.camera_valid,
++                   "fused_measurement_loss": not sensor.fused_valid,
++                   "track_inactive": not sensor.track_active,
++                   "fov_exit": None if fov is None else not fov,
++                   "range_exit": None if within_range is None else not within_range,
++                   "mesh_center_los_blocked": blocked,
++                   "center_los_occlusion": qualified,
++                   "post_acquisition_occlusion_candidate": (False if not eligible else
++                       None if qualified is None or not aligned else qualified and not sensor.camera_valid)}
++        emitted_start = len(self.rows)
++        resumed = []
++        for name, value in signals.items():
++            if not eligible or value is None:
++                unknown_boundary = ("alignment_unknown" if name == "post_acquisition_occlusion_candidate"
++                                    and qualified is not None and not aligned else "geometry_unknown")
++                self._end_run(name, stamp.state_time_s,
++                              unknown_boundary if value is None else "ineligible", stamp.frame_index)
++            elif value:
++                self.open_runs.setdefault(name, (stamp.frame_index, stamp.state_time_s))
++            else:
++                ended = self._end_run(name, stamp.state_time_s, "observed_end", stamp.frame_index)
++                if ended is not None and name in ("camera_measurement_loss", "fused_measurement_loss", "track_inactive"):
++                    resumed.append((name, ended))
++        for name, ended in resumed:
++            event = {"camera_measurement_loss": "camera_measurement_reacquired",
++                     "fused_measurement_loss": "fused_measurement_reacquired",
++                     "track_inactive": "track_reacquired"}[name]
++            self.rows.append({"event": event, "episode_id": self.episode_id,
++                              "frame_index": stamp.frame_index, "time_s": stamp.state_time_s,
++                              "loss_start_frame": ended["start_frame"],
++                              "latency_s": ended["duration_s"],
++                              "physical_target_identity": NOT_RECORDED})
++        if eligible and self.previous_track and not sensor.track_active:
++            # Under the frozen source contract a final valid camera or LiDAR update
++            # requires an active tracker. Such a contradictory row cannot prove expiry.
++            inconsistent_measurement = (sensor.fused_sources_contract == FINAL_DIAGNOSTICS_CONTRACT
++                                        and sensor.fused_valid)
++            expired = (sensor.track_age_s is not None and sensor.track_age_s > sensor.track_memory_s
++                       and not inconsistent_measurement)
++            self.rows.append({"event": "track_expiry_transition" if expired else "track_deactivation",
++                              "episode_id": self.episode_id, "frame_index": stamp.frame_index,
++                              "time_s": stamp.state_time_s, "actual_track_age_s": sensor.track_age_s,
++                              "actual_track_memory_s": sensor.track_memory_s,
++                              "track_age_dtype": sensor.track_age_dtype,
++                              "reason": "AGE_GT_MEMORY" if expired else "UNKNOWN"})
++        acquired_now = sensor.camera_valid and sensor.fused_valid and sensor.track_active
++        self.camera_started |= acquired_now
++        self.ever_acquired |= acquired_now
++        self.previous_track = sensor.track_active
++        self.last_index, self.last_time = stamp.frame_index, stamp.state_time_s
++        if stamp.capture_time_s is not None:
++            self.last_capture_time = stamp.capture_time_s
++        if stamp.frame_token is not None:
++            self._tokens.add(stamp.frame_token)
++        self.frames += 1
++        row = {"contract": CONTRACT, **asdict(stamp), **asdict(sensor),
++               "geometry_contract": geometry.geometry_contract,
++               "target_center_in_fov": fov, "target_center_in_range": within_range,
++               "center_los_blocked": blocked,
++               "rendered_target_visible_pixels": geometry.rendered_target_visible_pixels,
++               "full_visual_occlusion": geometry.full_visual_occlusion,
++               "geometry_frame_index": geometry.frame_index,
++               "geometry_state_time_s": geometry.state_time_s,
++               "measurement_alignment": geometry.measurement_alignment,
++               "eligible_before_frame": eligible, "ever_acquired": self.ever_acquired,
++               "initial_search": not eligible and not acquired_now,
++               "fused_source_identity_verified": sensor.fused_sources_contract == FINAL_DIAGNOSTICS_CONTRACT,
++               "lidar_valid_status": NOT_RECORDED if sensor.lidar_valid is None else "RECORDED",
++               "track_age_status": NOT_RECORDED if sensor.track_age_s is None else "RECORDED",
++               "capture_time_status": NOT_RECORDED if stamp.capture_time_s is None else "RECORDED",
++               "safe_abort": NOT_RECORDED, **signals,
++               "newly_emitted_events": copy.deepcopy(self.rows[emitted_start:])}
++        self.prefix_hash = _digest({"previous_prefix_hash": self.prefix_hash, "observation": row})
++        row["prefix_hash"] = self.prefix_hash
++        return row
++
++    def finish(self, terminal_time_s, outcome=None, *, terminal_kind="episode_end"):
++        if self.closed or terminal_kind not in ("episode_end", "run_shutdown", "reset"):
++            raise ValueError("episode already closed or unsupported terminal kind")
++        if terminal_kind == "episode_end" and outcome not in ("capture", "crash", "timeout"):
++            raise ValueError("episode_end requires the actual resolved task outcome")
++        if terminal_kind != "episode_end" and outcome is not None:
++            raise ValueError("shutdown/reset cannot invent an episode outcome")
++        _number(terminal_time_s, "terminal_time_s")
++        if self.last_time is not None and terminal_time_s < self.last_time:
++            raise ValueError("terminal time precedes consumed observation")
++        boundary = "terminal_" + outcome if terminal_kind == "episode_end" else terminal_kind
++        emitted_start = len(self.rows)
++        for name in list(self.open_runs):
++            self._end_run(name, terminal_time_s, boundary)
++        self.closed = True
++        intervals = copy.deepcopy(self.rows)
++        return {"contract": CONTRACT, "episode_id": self.episode_id, "frames": self.frames,
++                "ever_acquired": self.ever_acquired, "outcome": outcome,
++                "terminal_kind": terminal_kind, "terminal_time_s": terminal_time_s,
++                "safe_abort": NOT_RECORDED, "run_identity": copy.deepcopy(self.run_identity),
++                "dt_s": self.dt_s, "scene_manifest_hash": self.scene_manifest_hash,
++                "pre_loss_actor_prefix_hash": self.pre_loss_actor_prefix_hash,
++                "intervals": intervals, "events": copy.deepcopy(intervals),
++                "newly_emitted_events": copy.deepcopy(self.rows[emitted_start:]),
++                "prefix_hash": self.prefix_hash}
+diff --git a/tools/recovery_observability.py b/tools/recovery_observability.py
+new file mode 100644
+index 0000000..8c1f820
+--- /dev/null
++++ b/tools/recovery_observability.py
+@@ -0,0 +1,373 @@
++#!/usr/bin/env python3
++"""Validate recorded R-P1a sidecars on CPU; no launch, render, rollout or policy commands.
++
++Only scalar JSONL and optional episode ledgers are read. Reports go to stdout or an
++exclusively created file outside any results tree. Unknown geometry stays unknown.
++"""
++from __future__ import annotations
++
++import argparse
++import ast
++from collections import Counter, defaultdict
++import hashlib
++import importlib.util
++import json
++import math
++from pathlib import Path
++import re
++import sys
++
++ROOT = Path(__file__).resolve().parents[1]
++POLICY_F_SHA256 = "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
++SIDECAR_SCHEMA = "motar.recovery-observability.v1"
++AUDIT_SCHEMA = "motar.recovery-observability-audit.v1"
++NOT_RECORDED = "NOT_RECORDED"
++LINEAGES = {
++    "H_historical", "E0_static", "E1_cv", "E2_obstacle_aware",
++    "E1_direct_l2_v1", "E2_direct_l2_v1", "historical", "e0_static", "e1_cv",
++    "e2_obstacle_aware", "bounded_planar_drone_v1_rollout",
++    "bounded_planar_drone_v1_rollout_direct_l2_v1",
++    "symmetric_local_steer_v2_heading_continuity90",
++}
++
++
++def sha256_file(path):
++    digest = hashlib.sha256()
++    with Path(path).open("rb") as stream:
++        for block in iter(lambda: stream.read(1024 * 1024), b""):
++            digest.update(block)
++    return digest.hexdigest()
++
++
++def load_event_core():
++    """Load the standard-library-only event core without importing the simulator package."""
++    path = ROOT / "motar_eval/recovery_events.py"
++    spec = importlib.util.spec_from_file_location("_recovery_observability_cpu_core", path)
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[spec.name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++def tracker_expiry_source_contract():
++    """Read the actual age > memory predicate and 5 s configuration using AST, not imports."""
++    perception = ROOT / "aerial_gym/task/navrl_task/navrl_perception.py"
++    config = ROOT / "aerial_gym/config/task_config/navrl_task_config.py"
++    tree = ast.parse(perception.read_text())
++    tracker = next(n for n in tree.body if isinstance(n, ast.ClassDef)
++                   and n.name == "BatchedConstantVelocityTracker")
++    step = next(n for n in tracker.body if isinstance(n, ast.FunctionDef) and n.name == "step")
++    strict = any(isinstance(n, ast.Compare) and len(n.ops) == 1 and isinstance(n.ops[0], ast.Gt)
++                 and isinstance(n.left, ast.Attribute) and n.left.attr == "age"
++                 and isinstance(n.comparators[0], ast.Attribute)
++                 and n.comparators[0].attr == "memory_s" for n in ast.walk(step))
++    values = [n.value.value for n in ast.walk(ast.parse(config.read_text()))
++              if isinstance(n, ast.Assign) and isinstance(n.value, ast.Constant)
++              and any(isinstance(t, ast.Name) and t.id == "tracker_memory_s" for t in n.targets)]
++    if not strict or values != [5.0]:
++        raise ValueError("tracker expiry source differs from the frozen strict age > 5.0 s contract")
++    return {"memory_s": 5.0, "comparator": "age > memory_s",
++            "age_boundary": "actual recorded float32 age; no evaluator timer expiry",
++            "perception_sha256": sha256_file(perception), "config_sha256": sha256_file(config)}
++
++
++def _finite(value, label, *, optional=False):
++    if optional and value is None:
++        return
++    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
++        raise ValueError(label + " must be a finite number")
++
++
++def _hex(value, length, label):
++    if not isinstance(value, str) or re.fullmatch("[0-9a-f]{%d}" % length, value) is None:
++        raise ValueError(label + " must be a lowercase hexadecimal digest")
++
++
++def _validate_metadata(header, core, expected_source_commit, expected_checkpoint_sha256,
++                       expected_lineage):
++    if header.get("schema") != SIDECAR_SCHEMA:
++        raise ValueError("unsupported recovery sidecar schema")
++    meta = header.get("metadata", header.get("run_identity", {}))
++    if not isinstance(meta, dict):
++        raise ValueError("header metadata must be an object")
++    if header.get("evaluation_only", meta.get("evaluation_only")) is not True:
++        raise ValueError("sidecar must declare evaluation_only=true")
++    _hex(meta.get("source_commit"), 40, "source_commit")
++    _hex(meta.get("checkpoint_sha256"), 64, "checkpoint_sha256")
++    if expected_source_commit and meta["source_commit"] != expected_source_commit:
++        raise ValueError("source commit differs from the requested source binding")
++    if meta["checkpoint_sha256"] != expected_checkpoint_sha256:
++        raise ValueError("checkpoint differs from the requested Policy F binding")
++    lineage = meta.get("motion_lineage", meta.get("target_motion_model"))
++    if lineage not in LINEAGES or (expected_lineage and lineage != expected_lineage):
++        raise ValueError("missing, unsupported or mismatched motion lineage")
++    if "direct_l2_v1" in lineage and meta.get("distance_backend") != "direct_l2_v1":
++        raise ValueError("direct lineage requires an explicit direct_l2_v1 backend")
++    backend = meta.get("distance_backend")
++    if backend not in ("legacy_cdist", "direct_l2_v1"):
++        raise ValueError("unsupported distance backend")
++    if backend == "direct_l2_v1" and "direct_l2_v1" not in lineage:
++        raise ValueError("direct backend must retain its distinct lineage identity")
++    seed = meta.get("seed")
++    if isinstance(seed, bool) or not isinstance(seed, int) or seed < 0:
++        raise ValueError("seed must be a recorded nonnegative integer")
++    if meta.get("event_contract", core.CONTRACT) != core.CONTRACT:
++        raise ValueError("event contract mismatch")
++    dt = meta.get("dt_s", header.get("dt_s"))
++    _finite(dt, "dt_s")
++    if dt <= 0:
++        raise ValueError("dt_s must be positive")
++    if meta.get("tracker_memory_s", 5.0) != 5.0:
++        raise ValueError("tracker memory differs from the actual frozen source")
++    if meta.get("tracker_expiry_comparator", "age > memory_s") != "age > memory_s":
++        raise ValueError("recorded expiry comparator differs from actual strict source")
++    identity = header.get("run_identity", {})
++    if not isinstance(identity, dict):
++        raise ValueError("run_identity must be an object")
++    for name in ("source_commit", "checkpoint_sha256", "motion_lineage", "distance_backend", "seed"):
++        if name in identity and identity[name] != meta.get(name):
++            raise ValueError("header metadata differs from hashed run identity: " + name)
++    return meta, float(dt)
++
++
++def _source_file_binding(header, metadata):
++    dirty = header.get("source_dirty", metadata.get("source_dirty"))
++    if dirty is not None and not isinstance(dirty, bool):
++        raise ValueError("source_dirty must be an actual boolean when recorded")
++    files = header.get("source_files", metadata.get("source_files",
++                       header.get("source_files_sha256", metadata.get("source_files_sha256"))))
++    if files is None:
++        if dirty:
++            raise ValueError("dirty source needs source_files hashes; HEAD alone does not bind it")
++        return {"status": NOT_RECORDED, "note": "declared commit alone does not verify runtime file bytes"}
++    if not isinstance(files, dict) or not files:
++        raise ValueError("source_files must be a nonempty relative-path SHA mapping")
++    for relative, digest in files.items():
++        _hex(digest, 64, "source file SHA-256")
++        path = ROOT / relative
++        if Path(relative).is_absolute() or ".." in Path(relative).parts or ROOT not in path.resolve().parents:
++            raise ValueError("source file must remain inside the replay checkout")
++        if sha256_file(path) != digest:
++            raise ValueError("source file differs from recorded bytes: " + relative)
++    return {"status": "CURRENT_CHECKOUT_BYTES_MATCH", "files": files, "source_dirty": dirty}
++
++
++def _episode_key(record, episode_id):
++    if "env_index" in record and "env_episode_index" in record:
++        values = (record["env_index"], record["env_episode_index"])
++        if any(isinstance(v, bool) or not isinstance(v, int) or v < 0 for v in values):
++            raise ValueError("environment and episode indices must be nonnegative integers")
++        return values
++    match = re.fullmatch(r"s\d+/b\d+/e(\d+)/k(\d+)", episode_id)
++    return (int(match[1]), int(match[2])) if match else None
++
++
++def _load_ledger(path):
++    ledger = {}
++    with Path(path).open() as stream:
++        for number, line in enumerate(stream, 1):
++            row = json.loads(line)
++            key = (int(row["env_index"]), int(row["env_episode_index"]))
++            if key in ledger:
++                raise ValueError("duplicate ledger episode at line %d" % number)
++            if row["outcome"] not in ("capture", "crash", "timeout"):
++                raise ValueError("unsupported ledger outcome")
++            if any(name in row for name in ("capture", "crash", "timeout")):
++                flags = [row.get(name) for name in ("capture", "crash", "timeout")]
++                if (not all(isinstance(v, bool) for v in flags) or sum(flags) != 1
++                        or not row[row["outcome"]]):
++                    raise ValueError("ledger outcome flags do not form the recorded partition")
++            ledger[key] = row
++    return ledger
++
++
++def _input_records(record):
++    """The lossless sidecar stores core constructor inputs separately from emitted output."""
++    inputs = record.get("inputs", record)
++    if not all(isinstance(inputs.get(k), dict) for k in ("stamp", "sensor", "geometry")):
++        raise ValueError("observation needs scalar stamp/sensor/geometry input objects")
++    return inputs["stamp"], inputs["sensor"], inputs["geometry"]
++
++
++def validate_trace(trace_path, ledger_path=None, *, expected_source_commit=None,
++                   expected_checkpoint_sha256=POLICY_F_SHA256, expected_lineage=None,
++                   include_episodes=False):
++    """Return an audit dict; malformed traces are INVALID, never silently repaired or closed."""
++    path = Path(trace_path)
++    report = {"schema": AUDIT_SCHEMA, "status": "INVALID", "device": "cpu",
++              "trace": str(path), "problems": [], "safe_abort": NOT_RECORDED,
++              "full_visual_occlusion": NOT_RECORDED, "runtime_parity": "NOT_TESTED",
++              "identity_limit": "sensor/track resumption is not persistent physical target identity",
++              "scene_and_actor_prefix_limit": "event-prefix digests do not prove matched scenes or actor/action prefixes"}
++    monitors, closed, identity, join_keys = {}, set(), {}, {}
++    intervals = defaultdict(list)
++    outcomes = Counter()
++    closure = Counter()
++    observations = 0
++    eligible_observations = 0
++    summaries = []
++    matched_ledger = set()
++    prefix_checked = 0
++    try:
++        core = load_event_core()
++        report["event_core_sha256"] = sha256_file(ROOT / "motar_eval/recovery_events.py")
++        report["tracker_expiry_source_contract"] = tracker_expiry_source_contract()
++        ledger = _load_ledger(ledger_path) if ledger_path else None
++        header = None
++        with path.open() as stream:
++            for line_number, line in enumerate(stream, 1):
++                if not line.strip():
++                    raise ValueError("blank sidecar line at %d" % line_number)
++                record = json.loads(line)
++                if not isinstance(record, dict):
++                    raise ValueError("sidecar records must be JSON objects")
++                json.dumps(record, allow_nan=False)
++                kind = record.get("record_type")
++                if header is None:
++                    if kind != "header":
++                        raise ValueError("the first record must be a schema/source header")
++                    header = record
++                    metadata, dt = _validate_metadata(header, core, expected_source_commit,
++                                                       expected_checkpoint_sha256, expected_lineage)
++                    report["metadata"] = metadata
++                    report["frame_contract"] = header.get("frame_contract", metadata.get("frame_contract", NOT_RECORDED))
++                    report["source_file_binding"] = _source_file_binding(header, metadata)
++                    report["source_binding"] = ("EXPECTED_COMMIT_MATCH" if expected_source_commit
++                                                 else "DECLARED_COMMIT_ONLY")
++                    continue
++                if kind == "header":
++                    raise ValueError("duplicate or changed run header")
++                if kind == "observation":
++                    stamp_dict, sensor_dict, geometry_dict = _input_records(record)
++                    stamp = core.FrameStamp(**stamp_dict)
++                    episode = stamp.episode_id
++                    if episode in closed:
++                        raise ValueError("observation after episode closure")
++                    if episode not in monitors:
++                        context = record.get("episode_context", {})
++                        identity[episode] = context
++                        monitors[episode] = core.RecoveryEpisodeEvents(
++                            episode, dt_s=dt,
++                            run_identity=header.get("run_identity", metadata),
++                            scene_manifest_hash=context.get("scene_manifest_hash", NOT_RECORDED),
++                            pre_loss_actor_prefix_hash=context.get("pre_loss_actor_prefix_hash", NOT_RECORDED))
++                        join_keys[episode] = _episode_key(record, episode)
++                    elif ("episode_context" in record and record["episode_context"] != identity[episode]):
++                        raise ValueError("episode context changed inside a consumed trace")
++                    if _episode_key(record, episode) != join_keys[episode]:
++                        raise ValueError("episode environment/index identity changed")
++                    if sensor_dict.get("track_memory_s", 5.0) != 5.0:
++                        raise ValueError("observed track memory differs from frozen 5 s")
++                    output = monitors[episode].observe(stamp, core.SensorFrame(**sensor_dict),
++                                                       core.EvaluationGeometry(**geometry_dict))
++                    stored = record.get("observation", record.get("output"))
++                    if not isinstance(stored, dict):
++                        raise ValueError("missing emitted observation for replay comparison")
++                    if stored != output:
++                        raise ValueError("emitted observation/prefix differs from exact CPU event replay")
++                    prefix_checked += 1
++                    observations += 1
++                    eligible_observations += bool(output["eligible_before_frame"])
++                elif kind in ("episode_end", "run_shutdown", "reset"):
++                    stored = record.get("summary")
++                    if not isinstance(stored, dict):
++                        raise ValueError("closure needs the emitted episode summary")
++                    episode = stored.get("episode_id")
++                    if episode not in monitors or episode in closed:
++                        raise ValueError("closure does not match exactly one open episode")
++                    terminal_kind = stored.get("terminal_kind")
++                    if terminal_kind != kind:
++                        raise ValueError("closure kind disagrees with its terminal contract")
++                    terminal_time = record.get("terminal_time_s")
++                    _finite(terminal_time, "terminal_time_s")
++                    if (terminal_kind == "episode_end"
++                            and abs(terminal_time - monitors[episode].frames * dt) > 1e-6):
++                        raise ValueError("episode terminal boundary must follow its final consumed action")
++                    actual = monitors[episode].finish(terminal_time, stored.get("outcome"),
++                                                      terminal_kind=terminal_kind)
++                    if actual != stored:
++                        raise ValueError("stored episode intervals/prefix differ from CPU replay")
++                    if stored.get("safe_abort") != NOT_RECORDED:
++                        raise ValueError("safe abort provenance is not implemented")
++                    closed.add(episode)
++                    closure[terminal_kind] += 1
++                    outcome = stored.get("outcome")
++                    if outcome is not None:
++                        outcomes[outcome] += 1
++                    if ledger is not None and terminal_kind == "episode_end":
++                        key = join_keys[episode]
++                        if (key in matched_ledger or key not in ledger
++                                or ledger[key]["outcome"] != outcome):
++                            raise ValueError("resolved episode does not join the ledger outcome")
++                        matched_ledger.add(key)
++                    for event in stored.get("intervals", []):
++                        name = event["event"]
++                        intervals[name].append(event)
++                    if include_episodes:
++                        summaries.append(stored)
++                else:
++                    raise ValueError("unsupported record type: %r" % kind)
++        if header is None:
++            raise ValueError("empty sidecar")
++        incomplete = sorted(set(monitors) - closed)
++        if incomplete:
++            raise ValueError("open episodes lack explicit terminal/shutdown/reset closure: %s" % incomplete)
++        if ledger is not None and set(ledger) != matched_ledger:
++            raise ValueError("ledger episodes are absent from the resolved sidecar closures")
++        report["trace_sha256"] = sha256_file(path)
++        report["status"] = "PASS"
++    except (OSError, ValueError, TypeError, KeyError, StopIteration, json.JSONDecodeError) as exc:
++        report["problems"].append("%s: %s" % (type(exc).__name__, exc))
++    report.update(observations=observations, eligible_observations=eligible_observations,
++                  episodes_closed=len(closed), closure_counts=dict(closure), outcomes=dict(outcomes),
++                  observation_prefixes_replayed=prefix_checked,
++                  intervals={name: {"count": len(events),
++                                    "censored": sum(bool(e.get("censored")) for e in events),
++                                    "boundaries": dict(Counter(e.get("boundary", "instantaneous")
++                                                               for e in events)),
++                                    "closed_duration_s": sum(e.get("duration_s", 0.0) for e in events
++                                                             if not e.get("censored", False)),
++                                    "censored_elapsed_s": sum(e.get("duration_s", 0.0) for e in events
++                                                               if e.get("censored", False)),
++                                    "runs_at_least_s": {str(t): sum(e.get("duration_s", 0.0) >= t
++                                                                    for e in events)
++                                                        for t in (2, 5, 10, 15)}}
++                             for name, events in intervals.items()})
++    if include_episodes:
++        report["episodes"] = summaries
++    if ledger_path:
++        report["ledger"] = str(ledger_path)
++        report["ledger_episodes_joined"] = len(matched_ledger)
++    return report
++
++
++audit_sidecar = validate_trace
++
++
++def main(argv=None):
++    parser = argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--trace", type=Path, required=True)
++    parser.add_argument("--episodes", type=Path, help="existing same-cell episode ledger for outcome joins")
++    parser.add_argument("--device", choices=("cpu",), default="cpu")
++    parser.add_argument("--expected-source-commit")
++    parser.add_argument("--expected-checkpoint-sha256", default=POLICY_F_SHA256)
++    parser.add_argument("--expected-lineage")
++    parser.add_argument("--include-episodes", action="store_true")
++    parser.add_argument("--out", type=Path, help="new report path outside any results tree")
++    args = parser.parse_args(argv)
++    if args.out and (args.out.exists() or "results" in args.out.resolve().parts):
++        parser.error("refusing to overwrite a path or write under results")
++    result = validate_trace(args.trace, args.episodes,
++                            expected_source_commit=args.expected_source_commit,
++                            expected_checkpoint_sha256=args.expected_checkpoint_sha256,
++                            expected_lineage=args.expected_lineage, include_episodes=args.include_episodes)
++    payload = json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n"
++    if args.out:
++        with args.out.open("x") as stream:
++            stream.write(payload)
++    print(payload, end="")
++    return 0 if result["status"] == "PASS" else 1
++
++
++if __name__ == "__main__":
++    sys.exit(main())
+diff --git a/tests/test_recovery_events.py b/tests/test_recovery_events.py
+new file mode 100644
+index 0000000..c5b6c21
+--- /dev/null
++++ b/tests/test_recovery_events.py
+@@ -0,0 +1,284 @@
++"""CPU scalar-contract tests for evaluation-only recovery chronology."""
++from dataclasses import FrozenInstanceError, asdict
++import json
++import math
++import random
++import struct
++import unittest
++
++from motar_eval.recovery_events import (
++    CONTRACT, FINAL_DIAGNOSTICS_CONTRACT, NOT_RECORDED, EvaluationGeometry,
++    FrameStamp, RecoveryEpisodeEvents, SensorFrame,
++)
++
++
++def sensor(camera=False, lidar=False, active=True, age=0., **kwargs):
++    return SensorFrame(camera, lidar, camera or lidar, active, age,
++                       fused_sources_contract=FINAL_DIAGNOSTICS_CONTRACT, **kwargs)
++
++
++def geometry(fov=True, within_range=True, blocked=False, **kwargs):
++    kwargs.setdefault("measurement_alignment", "ZERO_LATENCY_RENDER_DELIVERY")
++    return EvaluationGeometry(fov, within_range, blocked, "CPU_SYNTHETIC_MESH_CENTRE_V1", **kwargs)
++
++
++class RecoveryEventsTest(unittest.TestCase):
++    def observe(self, monitor, index, s=None, g=None, **kwargs):
++        return monitor.observe(FrameStamp(monitor.episode_id, index, index * monitor.dt_s, **kwargs),
++                               sensor() if s is None else s, geometry() if g is None else g)
++
++    def acquired(self, episode="episode", **kwargs):
++        monitor = RecoveryEpisodeEvents(episode, **kwargs)
++        first = self.observe(monitor, 0, sensor(camera=True))
++        self.assertFalse(first["eligible_before_frame"])
++        return monitor
++
++    def test_never_acquired_hidden_start_and_lidar_do_not_open_recovery(self):
++        m = RecoveryEpisodeEvents("episode")
++        for i in range(6):
++            row = self.observe(m, i, sensor(lidar=True), geometry(blocked=True))
++            self.assertFalse(row["eligible_before_frame"])
++            self.assertTrue(row["initial_search"])
++            self.assertFalse(row["post_acquisition_occlusion_candidate"])
++        summary = m.finish(.6, "timeout")
++        self.assertFalse(summary["ever_acquired"])
++        self.assertEqual(summary["intervals"], [])
++
++    def test_acquisition_requires_camera_fused_and_active_same_frame(self):
++        m = RecoveryEpisodeEvents("episode")
++        self.observe(m, 0, sensor(camera=True, active=False))
++        self.observe(m, 1, sensor(lidar=True, active=True))
++        self.assertFalse(m.ever_acquired)
++        self.observe(m, 2, sensor(camera=True))
++        row = self.observe(m, 3)
++        self.assertTrue(row["eligible_before_frame"])
++        self.assertIn("camera_measurement_loss", m.open_runs)
++
++    def test_independent_camera_fused_track_geometry_and_reacquisition(self):
++        m = self.acquired()
++        self.observe(m, 1, sensor(lidar=True), geometry(fov=False, blocked=True))
++        self.observe(m, 2, sensor(active=False, age=5.000001, track_age_dtype="torch.float32"),
++                     geometry(within_range=False, blocked=True))
++        row = self.observe(m, 3, sensor(camera=True), geometry(blocked=True, rendered_target_visible_pixels=8))
++        events = row["newly_emitted_events"]
++        self.assertEqual({e["event"] for e in events if "reacquired" in e["event"]},
++                         {"camera_measurement_reacquired", "fused_measurement_reacquired", "track_reacquired"})
++        self.assertTrue(row["center_los_occlusion"])
++        self.assertFalse(row["post_acquisition_occlusion_candidate"])
++        self.assertEqual(row["full_visual_occlusion"], NOT_RECORDED)
++        all_events = m.finish(.4, "capture")["intervals"]
++        camera_loss = next(e for e in all_events if e["event"] == "camera_measurement_loss")
++        fused_loss = next(e for e in all_events if e["event"] == "fused_measurement_loss")
++        self.assertAlmostEqual(camera_loss["duration_s"], .2)
++        self.assertAlmostEqual(fused_loss["duration_s"], .1)
++        self.assertTrue(any(e["event"] == "track_expiry_transition" for e in all_events))
++        self.assertTrue(any(e["event"] == "fov_exit" for e in all_events))
++        self.assertTrue(any(e["event"] == "range_exit" for e in all_events))
++
++    def test_mesh_block_does_not_prove_loss_or_full_occlusion(self):
++        m = self.acquired()
++        row = self.observe(m, 1, sensor(camera=True), geometry(blocked=True, rendered_target_visible_pixels=4))
++        self.assertTrue(row["mesh_center_los_blocked"])
++        self.assertTrue(row["center_los_occlusion"])
++        self.assertFalse(row["camera_measurement_loss"])
++        self.assertFalse(row["post_acquisition_occlusion_candidate"])
++        with self.assertRaises(ValueError):
++            geometry(full_visual_occlusion="TRUE")
++
++    def test_unknown_geometry_censors_and_splits_without_inventing_visibility(self):
++        m = self.acquired()
++        self.observe(m, 1, g=geometry(blocked=True))
++        row = self.observe(m, 2, g=geometry(fov=None, within_range=None, blocked=None))
++        ended = [e for e in row["newly_emitted_events"] if e["event"] == "center_los_occlusion"]
++        self.assertEqual(len(ended), 1)
++        self.assertTrue(ended[0]["censored"])
++        self.assertEqual(ended[0]["boundary"], "geometry_unknown")
++        self.assertIsNone(row["center_los_occlusion"])
++        self.assertIn("camera_measurement_loss", m.open_runs)
++        self.observe(m, 3, g=geometry(blocked=True))
++        result = m.finish(.4, "timeout")
++        self.assertEqual(sum(e["event"] == "center_los_occlusion" for e in result["intervals"]), 2)
++
++    def test_unknown_or_delayed_measurement_alignment_never_proves_primary_occlusion(self):
++        m = self.acquired()
++        first = self.observe(m, 1, g=geometry(blocked=True))
++        self.assertTrue(first["post_acquisition_occlusion_candidate"])
++        # Current render geometry is known, but the delivered measurement can be delayed.
++        # Its actual older capture time does not establish a matching old geometry probe.
++        unknown = EvaluationGeometry(True, True, True, "CPU_CURRENT_RENDER_V1")
++        row = self.observe(m, 2, g=unknown, capture_time_s=.1)
++        self.assertTrue(row["center_los_occlusion"])
++        self.assertIsNone(row["post_acquisition_occlusion_candidate"])
++        self.assertEqual(row["measurement_alignment"], NOT_RECORDED)
++        self.assertNotIn("post_acquisition_occlusion_candidate", m.open_runs)
++        ended = next(e for e in row["newly_emitted_events"]
++                     if e["event"] == "post_acquisition_occlusion_candidate")
++        self.assertTrue(ended["censored"])
++        self.assertEqual(ended["boundary"], "alignment_unknown")
++        self.assertIn("center_los_occlusion", m.open_runs)
++        with self.assertRaises(ValueError):
++            geometry(measurement_alignment="DELAYED_BUT_ASSUMED_MATCHED")
++        a, b = self.acquired(), self.acquired()
++        aligned = self.observe(a, 1, g=geometry(blocked=True))
++        unaligned = self.observe(b, 1, g=geometry(blocked=True, measurement_alignment=NOT_RECORDED))
++        self.assertNotEqual(aligned["prefix_hash"], unaligned["prefix_hash"])
++
++    def test_actual_strict_float32_expiry_not_evaluator_elapsed_time(self):
++        ages = [None, 4.999999523162842, 5., 5.000000476837158]
++        for age in ages:
++            with self.subTest(age=age):
++                m = self.acquired(dt_s=10.)
++                row = self.observe(m, 1, sensor(active=False, age=age, track_age_dtype="torch.float32"))
++                event = next(e for e in row["newly_emitted_events"] if e["event"].startswith("track_"))
++                expected = "track_expiry_transition" if age is not None and age > 5. else "track_deactivation"
++                self.assertEqual(event["event"], expected)
++                self.assertEqual(event["actual_track_age_s"], age)
++                self.assertEqual(event["track_age_dtype"], "torch.float32")
++        # Recorded 0.1 float32 accumulation remains below 5 at the 50th step;
++        # its actual scalar, rather than integer frame arithmetic, decides expiry.
++        age = 0.
++        for _ in range(50):
++            age = struct.unpack("f", struct.pack("f", age + .1))[0]
++        self.assertLess(age, 5.)
++        m = self.acquired()
++        row = self.observe(m, 1, sensor(active=False, age=age, track_age_dtype="torch.float32"))
++        self.assertEqual(row["newly_emitted_events"][0]["event"], "track_deactivation")
++        age = struct.unpack("f", struct.pack("f", age + .1))[0]
++        self.assertGreater(age, 5.)
++        m = self.acquired()
++        row = self.observe(m, 1, sensor(active=False, age=age, track_age_dtype="torch.float32"))
++        self.assertEqual(row["newly_emitted_events"][0]["event"], "track_expiry_transition")
++
++    def test_2_5_10_15_second_arithmetic_is_chronology_only(self):
++        for duration in (2, 5, 10, 15):
++            with self.subTest(duration=duration):
++                m = self.acquired()
++                for i in range(1, duration * 10 + 1):
++                    self.observe(m, i, g=geometry(blocked=True))
++                self.observe(m, duration * 10 + 1, sensor(camera=True))
++                summary = m.finish((duration * 10 + 2) * .1, "capture")
++                loss = next(e for e in summary["intervals"] if e["event"] == "camera_measurement_loss")
++                self.assertAlmostEqual(loss["duration_s"], duration)
++                self.assertFalse(loss["censored"])
++                self.assertTrue(any(e["event"] == "camera_measurement_reacquired" for e in summary["intervals"]))
++
++    def test_terminal_and_shutdown_reset_censor_without_expiry(self):
++        for kind, outcome in (("episode_end", "capture"), ("episode_end", "crash"),
++                              ("episode_end", "timeout"), ("run_shutdown", None), ("reset", None)):
++            with self.subTest(kind=kind, outcome=outcome):
++                m = self.acquired()
++                self.observe(m, 1)
++                summary = m.finish(.2, outcome, terminal_kind=kind)
++                self.assertTrue(all(e["censored"] for e in summary["intervals"]))
++                self.assertFalse(any("expiry" in e["event"] for e in summary["intervals"]))
++                self.assertEqual(summary["outcome"], outcome)
++                self.assertEqual(summary["safe_abort"], NOT_RECORDED)
++                with self.assertRaises(ValueError):
++                    m.finish(.3, outcome, terminal_kind=kind)
++                with self.assertRaises(ValueError):
++                    self.observe(m, 2)
++        m = self.acquired("next")
++        self.assertTrue(m.ever_acquired)
++        next_episode = RecoveryEpisodeEvents("next_episode")
++        self.assertFalse(self.observe(next_episode, 0)["eligible_before_frame"])
++
++    def test_validation_does_not_mutate_monitor_on_failure(self):
++        m = self.acquired()
++        attempts = [FrameStamp("wrong", 1, .1), FrameStamp("episode", 0, .1),
++                    FrameStamp("episode", 2, .1), FrameStamp("episode", 1, .2)]
++        for stamp in attempts:
++            with self.assertRaises(ValueError):
++                m.observe(stamp, sensor(), geometry())
++        with self.assertRaises(ValueError):
++            self.observe(m, 1, g=geometry(frame_index=0))
++        with self.assertRaises(ValueError):
++            self.observe(m, 1, g=geometry(state_time_s=.0))
++        self.assertEqual(m.frames, 1)
++        self.assertEqual(self.observe(m, 1)["frame_index"], 1)
++        for bad in (math.inf, math.nan, -1, True, "0"):
++            with self.assertRaises(ValueError):
++                FrameStamp("episode", 0, bad)
++            with self.assertRaises(ValueError):
++                SensorFrame(False, False, False, False, bad)
++        for bad in (0., True, -1):
++            with self.assertRaises(ValueError):
++                FrameStamp("episode", bad, 0.)
++        with self.assertRaises(ValueError):
++            SensorFrame(1, False, True, True, 0.)
++
++    def test_frame_tokens_capture_times_and_delay_are_separate(self):
++        m = RecoveryEpisodeEvents("episode")
++        self.observe(m, 0, sensor(camera=True), frame_token="ring0", capture_time_s=0.)
++        row = self.observe(m, 1, frame_token="ring1", capture_time_s=0.)
++        self.assertEqual(row["capture_time_s"], 0.)
++        self.assertEqual(row["state_time_s"], .1)
++        with self.assertRaises(ValueError):
++            self.observe(m, 2, frame_token="ring1", capture_time_s=.1)
++        self.observe(m, 2, frame_token="ring2", capture_time_s=.1)
++        with self.assertRaises(ValueError):
++            self.observe(m, 3, frame_token="ring3", capture_time_s=0.)
++        with self.assertRaises(ValueError):
++            FrameStamp("episode", 0, 0., capture_time_s=.1)
++
++    def test_known_source_or_and_unknown_source_are_distinct(self):
++        with self.assertRaises(ValueError):
++            SensorFrame(True, False, False, True, 0., fused_sources_contract=FINAL_DIAGNOSTICS_CONTRACT)
++        with self.assertRaises(ValueError):
++            SensorFrame(False, None, False, True, 0., fused_sources_contract=FINAL_DIAGNOSTICS_CONTRACT)
++        unknown = SensorFrame(False, None, True, True, 0.)
++        row = self.observe(RecoveryEpisodeEvents("episode"), 0, unknown)
++        self.assertFalse(row["fused_source_identity_verified"])
++        self.assertIsNone(row["lidar_valid"])
++        self.assertEqual(row["lidar_valid_status"], NOT_RECORDED)
++        self.assertEqual(row["camera_loss_cause"], NOT_RECORDED)
++
++    def test_inconsistent_final_measurement_cannot_prove_expiry(self):
++        m = self.acquired()
++        row = self.observe(m, 1, sensor(camera=True, active=False, age=5.1))
++        event = next(e for e in row["newly_emitted_events"] if e["event"].startswith("track_"))
++        self.assertEqual(event["event"], "track_deactivation")
++        self.assertEqual(event["reason"], "UNKNOWN")
++
++    def test_immutable_copied_records_prefix_suffix_independence_and_no_rng(self):
++        s, g, stamp = sensor(camera=True), geometry(), FrameStamp("episode", 0, 0.)
++        with self.assertRaises(FrozenInstanceError):
++            s.camera_valid = False
++        identity = {"source_commit": "abc", "checkpoint_sha256": "def", "seed": 49}
++        state = random.getstate()
++        a = RecoveryEpisodeEvents("episode", run_identity=identity)
++        b = RecoveryEpisodeEvents("episode", run_identity=dict(identity))
++        identity["seed"] = 50
++        row_a = a.observe(stamp, s, g)
++        row_b = b.observe(stamp, s, g)
++        self.assertEqual(row_a, row_b)
++        prefix = json.dumps(row_a, sort_keys=True)
++        self.observe(a, 1)
++        self.observe(b, 1, sensor(camera=True))
++        result_a = a.finish(.2, "crash")
++        result_b = b.finish(.2, "capture")
++        self.assertEqual(prefix, json.dumps(row_a, sort_keys=True))
++        self.assertNotEqual(result_a["prefix_hash"], result_b["prefix_hash"])
++        self.assertEqual(result_a["run_identity"]["seed"], 49)
++        self.assertEqual(random.getstate(), state)
++        self.assertEqual(asdict(stamp), {"episode_id": "episode", "frame_index": 0,
++                                        "state_time_s": 0., "capture_time_s": None, "frame_token": None})
++        self.assertEqual(result_a["scene_manifest_hash"], NOT_RECORDED)
++        self.assertEqual(result_a["pre_loss_actor_prefix_hash"], NOT_RECORDED)
++        self.assertEqual(result_a["contract"], CONTRACT)
++        json.dumps(result_a, allow_nan=False)
++
++    def test_finish_validates_outcome_boundary_and_unobserved_empty_episode(self):
++        m = self.acquired()
++        for args, kwargs in (((-.1, "timeout"), {}), ((.1,), {}),
++                             ((.1, "capture"), {"terminal_kind": "run_shutdown"}),
++                             ((.1, "safe_abort"), {}), ((.1,), {"terminal_kind": "other"})):
++            with self.assertRaises(ValueError):
++                m.finish(*args, **kwargs)
++        self.assertFalse(m.closed)
++        empty = RecoveryEpisodeEvents("empty").finish(0., terminal_kind="run_shutdown")
++        self.assertEqual(empty["frames"], 0)
++        self.assertEqual(empty["intervals"], [])
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests/test_recovery_observability_contract.py b/tests/test_recovery_observability_contract.py
+new file mode 100644
+index 0000000..26010e5
+--- /dev/null
++++ b/tests/test_recovery_observability_contract.py
+@@ -0,0 +1,324 @@
++"""CPU stand-ins exercise the evaluator lifecycle; these are not GPU rollout evidence."""
++import ast
++import importlib.util
++import json
++import os
++from pathlib import Path
++import random
++import subprocess
++import sys
++import tempfile
++from types import SimpleNamespace
++import unittest
++from unittest import mock
++
++import numpy as np
++import torch
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def load(path, name):
++    spec = importlib.util.spec_from_file_location(name, path)
++    mod = importlib.util.module_from_spec(spec)
++    sys.modules[name] = mod
++    spec.loader.exec_module(mod)
++    return mod
++
++
++legacy = load(ROOT / "tests/test_kroc2027_adapter_contract.py", "_recovery_legacy_fixture")
++adapter = legacy.adapter
++audit = load(ROOT / "tools/recovery_observability.py", "_recovery_trace_tool_test")
++
++
++def task_fixture(n=1):
++    task = legacy.make_task(n=n)
++    task.perception.tracker.memory_s = 5.0
++    task.perception.tracker.age = torch.zeros(n)
++    task.perception.detection_latency_s = 0.0
++    task.perception._latency_steps = 0
++    task.perception.empirical_error = None
++    task._target_dynamics = "bounded"
++    task._physical_target = False
++    task._target_behavior_level = "e2_obstacle_aware"
++    task._target_distance_backend = "direct_l2_v1"
++    task._target_motion_model = "bounded_planar_drone_v1_rollout_direct_l2_v1"
++    task.task_obs = {"observations": torch.zeros(n, 898)}
++    return task
++
++
++def flags(task, camera=True, lidar=False, age=0.0):
++    n = task.num_envs
++    task.perception.tracker.active[:] = camera or age <= 5.0
++    task.perception.tracker.age[:] = age
++    return {"camera_visible": torch.full((n,), camera, dtype=torch.bool),
++            "lidar_visible": torch.full((n,), lidar, dtype=torch.bool),
++            "visible": torch.full((n,), camera or lidar, dtype=torch.bool),
++            "track_age": task.perception.tracker.age}
++
++
++def rows(path):
++    return [json.loads(line) for line in Path(path).read_text().splitlines()]
++
++
++class RecoveryIntegrationTests(unittest.TestCase):
++    def make_recorder(self, directory, task=None, enabled=True):
++        task = task or task_fixture()
++        env = legacy.recorder_env(directory, NAVRL_KROC2027_RECOVERY_EVENTS=str(int(enabled)),
++                                  NAVRL_EVAL_CHECKPOINT=audit.POLICY_F_SHA256)
++        with mock.patch.dict(os.environ, env), mock.patch.object(adapter, "_build_recovery_probe", return_value=None):
++            rec = adapter.build_kroc_adapter(task)
++        self.addCleanup(rec.finalize, "test cleanup")
++        rec.on_reset(torch.arange(task.num_envs))
++        return task, rec
++
++    def test_off_import_boundary_and_required_recorder(self):
++        with mock.patch.dict(os.environ, {adapter.RECORDER_VAR: "0", adapter.RECOVERY_VAR: "0"}):
++            self.assertIsNone(adapter.build_kroc_adapter(object()))
++        with mock.patch.dict(os.environ, {adapter.RECORDER_VAR: "0", adapter.RECOVERY_VAR: "1"}):
++            with self.assertRaisesRegex(ValueError, "requires"):
++                adapter.build_kroc_adapter(object())
++        with mock.patch.dict(os.environ, {adapter.RECOVERY_VAR: "typo"}):
++            with self.assertRaises(ValueError):
++                adapter.build_kroc_adapter(object())
++
++    def test_detached_staging_once_clock_and_final_outcome_join(self):
++        with tempfile.TemporaryDirectory() as directory:
++            task, rec = self.make_recorder(directory)
++            diag = flags(task)
++            rec.after_perception(diag)
++            rec.after_perception(diag)  # Repeated staging cannot count an extra frame.
++            diag["camera_visible"][:] = False
++            task.perception.tracker.active[:] = False
++            task.perception.tracker.age[:] = 9.0
++            rec.before_action()
++            with self.assertRaisesRegex(ValueError, "unconsumed"):
++                rec.before_action()
++            rec._steps += 1  # CPU fixture: completed physical-action boundary, not a rollout.
++            rec.after_perception(flags(task, camera=False, age=.1))
++            rec.before_action()
++            rec._steps += 1
++            rec.on_episode_end(torch.tensor([True]), torch.tensor([True]),
++                               torch.tensor([False]), torch.tensor([False]))
++            rec.finalize()
++            trace = rows(Path(directory) / adapter.RECOVERY_FILE)
++            observed = [r["observation"] for r in trace if r["record_type"] == "observation"]
++            self.assertEqual([r["frame_index"] for r in observed], [0, 1])
++            self.assertTrue(observed[0]["camera_valid"])
++            self.assertTrue(observed[0]["track_active"])
++            self.assertEqual(observed[0]["track_age_s"], 0.0)
++            self.assertIsNone(observed[0]["capture_time_s"])
++            self.assertIsNone(observed[0]["center_los_blocked"])
++            self.assertEqual(trace[-1]["summary"]["terminal_time_s"], .2)
++            self.assertEqual(trace[-1]["summary"]["outcome"], "capture")
++            result = audit.validate_trace(Path(directory) / adapter.RECOVERY_FILE,
++                                          Path(directory) / adapter.EPISODES_FILE)
++            self.assertEqual(result["status"], "PASS", result)
++            self.assertEqual(result["ledger_episodes_joined"], 1)
++
++    def test_partial_reset_censors_and_clears_eligibility_only_for_reset_env(self):
++        with tempfile.TemporaryDirectory() as directory:
++            task, rec = self.make_recorder(directory, task_fixture(n=2))
++            rec.after_perception(flags(task))
++            rec.before_action()
++            rec._steps += 1
++            rec.after_perception(flags(task, camera=False, age=.1))
++            rec.before_action()
++            rec._steps += 1
++            rec.on_reset(torch.tensor([0]))
++            rec.after_perception(flags(task, camera=False, age=.2))
++            rec.before_action()
++            rec._steps += 1
++            rec.finalize("interrupted")
++            trace = rows(Path(directory) / adapter.RECOVERY_FILE)
++            reset = next(r for r in trace if r["record_type"] == "reset")
++            self.assertIsNone(reset["summary"]["outcome"])
++            self.assertEqual(reset["terminal_time_s"], .2)
++            obs = [r for r in trace if r["record_type"] == "observation"][-2:]
++            self.assertEqual([r["observation"]["eligible_before_frame"] for r in obs], [False, True])
++            self.assertEqual([r["observation"]["frame_index"] for r in obs], [0, 2])
++            self.assertTrue(all(r["summary"]["outcome"] is None for r in trace
++                                if r["record_type"] == "run_shutdown"))
++            result = audit.validate_trace(Path(directory) / adapter.RECOVERY_FILE)
++            self.assertEqual(result["status"], "PASS", result)
++
++    def test_empty_reset_is_skipped_and_shutdown_is_not_timeout(self):
++        with tempfile.TemporaryDirectory() as directory:
++            task, rec = self.make_recorder(directory)
++            rec.on_reset(torch.tensor([0]))
++            rec.after_perception(flags(task, camera=False, age=5.1))
++            rec.before_action()
++            rec.finalize("budget stop")
++            trace = rows(Path(directory) / adapter.RECOVERY_FILE)
++            self.assertEqual(trace[-1]["record_type"], "run_shutdown")
++            self.assertFalse(trace[-1]["summary"]["ever_acquired"])
++            self.assertIsNone(trace[-1]["summary"]["outcome"])
++            self.assertEqual(trace[-1]["terminal_time_s"], 0.0)
++            self.assertEqual(json.loads((Path(directory) / adapter.RECOVERY_SUMMARY_FILE).read_text())
++                             ["skipped_empty_episodes"], 1)
++
++    def test_read_only_task_tensors_rng_and_legacy_sidecar_identity(self):
++        with tempfile.TemporaryDirectory() as base:
++            old_bytes = []
++            for enabled in (False, True):
++                directory = Path(base) / str(enabled) / "same_cell"
++                directory.mkdir(parents=True)
++                task = task_fixture()
++                diag = flags(task)
++                tensors = [*task.obs_dict.values(), task.target_position, task.target_vel_w,
++                           task.perception.tracker.active, task.perception.tracker.age,
++                           task.task_obs["observations"], *diag.values()]
++                snapshots = [tensor.clone() for tensor in tensors]
++                py_rng, np_rng, torch_rng = random.getstate(), np.random.get_state(), torch.get_rng_state().clone()
++                with mock.patch.object(adapter, "datetime") as fixed_time:
++                    fixed_time.now.return_value.isoformat.return_value = "CPU_FIXED_TIMESTAMP"
++                    _, rec = self.make_recorder(directory, task, enabled)
++                    rec.after_perception(diag)
++                    rec.before_action()
++                    rec._steps += 1
++                    rec.on_episode_end(torch.tensor([True]), torch.tensor([False]),
++                                       torch.tensor([False]), torch.tensor([True]))
++                    rec.finalize()
++                for tensor, before in zip(tensors, snapshots):
++                    self.assertTrue(torch.equal(tensor, before))
++                self.assertEqual(random.getstate(), py_rng)
++                self.assertEqual(np.random.get_state()[0], np_rng[0])
++                np.testing.assert_array_equal(np.random.get_state()[1], np_rng[1])
++                self.assertEqual(np.random.get_state()[2:], np_rng[2:])
++                self.assertTrue(torch.equal(torch.get_rng_state(), torch_rng))
++                old_bytes.append([(directory / name).read_bytes()
++                                  for name in (adapter.EPISODES_FILE, adapter.SUMMARY_FILE)])
++                self.assertEqual((directory / adapter.RECOVERY_FILE).exists(), enabled)
++            self.assertEqual(old_bytes[0], old_bytes[1])
++
++    def test_existing_evidence_refused_before_old_recorder_open(self):
++        with tempfile.TemporaryDirectory() as directory:
++            path = Path(directory) / adapter.EPISODES_FILE
++            path.write_bytes(b"historical evidence\n")
++            with mock.patch.dict(os.environ, legacy.recorder_env(directory, NAVRL_KROC2027_RECOVERY_EVENTS="1")):
++                with self.assertRaises(FileExistsError):
++                    adapter.build_kroc_adapter(task_fixture())
++            self.assertEqual(path.read_bytes(), b"historical evidence\n")
++
++    def test_missing_camera_flag_or_inconsistent_fusion_rejected(self):
++        with tempfile.TemporaryDirectory() as directory:
++            task, rec = self.make_recorder(directory)
++            with self.assertRaisesRegex(ValueError, "camera_visible"):
++                rec.after_perception({"visible": torch.tensor([True])})
++            diag = flags(task)
++            diag["visible"][:] = False
++            with self.assertRaisesRegex(ValueError, "fused validity"):
++                rec.after_perception(diag)
++            rec.finalize()
++
++    def test_current_mesh_and_delayed_measurements_are_not_a_primary_occlusion(self):
++        class Probe:
++            def snapshot(self, token, *, render_token):
++                return [{"target_center_in_fov": True, "target_center_in_range": True,
++                         "center_los_blocked": True, "geometry_contract": "CPU_FIXTURE_MESH"}]
++        with tempfile.TemporaryDirectory() as directory:
++            task, rec = self.make_recorder(directory)
++            rec._recovery.probe = Probe()
++            rec.after_perception(flags(task))
++            rec.before_action()
++            rec._steps += 1
++            task.perception.detection_latency_s = .2
++            task.perception._latency_steps = 2
++            rec.after_perception(flags(task, camera=False, age=.1))
++            rec.before_action()
++            rec._steps += 1
++            rec.finalize()
++            obs = [r["observation"] for r in rows(Path(directory) / adapter.RECOVERY_FILE)
++                   if r["record_type"] == "observation"]
++            self.assertTrue(obs[1]["center_los_occlusion"])
++            self.assertIsNone(obs[1]["post_acquisition_occlusion_candidate"])
++            self.assertEqual(obs[1]["measurement_alignment"], "NOT_RECORDED")
++
++    def test_static_scene_claim_requires_source_checked_fixed_bars(self):
++        bars = type("bar_asset_params", (), {
++            "__module__": "aerial_gym.config.asset_config.env_object_config",
++            "num_assets": 70, "fix_base_link": True,
++            "min_state_ratio": [0.] * 13, "max_state_ratio": [0.] * 13})
++        cfg = type("NavRLBarsEnvCfg", (), {
++            "__module__": "aerial_gym.config.env_config.navrl_bars_env",
++            "env": SimpleNamespace(use_warp=True),
++            "env_config": SimpleNamespace(include_asset_type={"bars": True},
++                                          asset_type_to_dict_map={"bars": bars})})
++        task = task_fixture()
++        self.assertEqual(adapter._recovery_scene_contract(task), "UNKNOWN")
++        self.assertIsNone(adapter._build_recovery_probe(task))
++        task.sim_env = SimpleNamespace(cfg=cfg)
++        self.assertEqual(adapter._recovery_scene_contract(task), "static_scene_mesh")
++        bars.fix_base_link = False
++        self.assertEqual(adapter._recovery_scene_contract(task), "UNKNOWN")
++        bars.fix_base_link = True
++        bars.min_state_ratio[7] = .1
++        self.assertEqual(adapter._recovery_scene_contract(task), "UNKNOWN")
++        bars.min_state_ratio[7] = 0.
++        task._physical_target = True
++        self.assertEqual(adapter._recovery_scene_contract(task), "UNKNOWN")
++
++    def test_unsupported_motion_cannot_be_mislabeled_as_valid_direct_lineage(self):
++        for dynamics, model in (("physical", "physx_ref5in_6dof_motor_wrench_v2_same_substep"),
++                                ("bounded", "unapproved_route_model")):
++            with self.subTest(dynamics=dynamics), tempfile.TemporaryDirectory() as directory:
++                task = task_fixture()
++                task._target_dynamics, task._target_motion_model = dynamics, model
++                _, rec = self.make_recorder(directory, task)
++                rec.after_perception(flags(task))
++                rec.before_action()
++                rec.finalize()
++                path = Path(directory) / adapter.RECOVERY_FILE
++                self.assertEqual(rows(path)[0]["metadata"]["motion_lineage"], "NOT_RECORDED")
++                self.assertEqual(rows(path)[0]["metadata"]["target_motion_model"], model)
++                self.assertEqual(audit.validate_trace(path)["status"], "INVALID")
++
++    def test_cli_replay_detects_tampered_trace_and_refuses_overwrite(self):
++        with tempfile.TemporaryDirectory() as directory:
++            task, rec = self.make_recorder(directory)
++            rec.after_perception(flags(task))
++            rec.before_action()
++            rec._steps += 1
++            rec.finalize()
++            path = Path(directory) / adapter.RECOVERY_FILE
++            original = rows(path)
++            for field, value in (("state_time_s", .1), ("eligible_before_frame", True), ("prefix_hash", "0" * 64)):
++                data = json.loads(json.dumps(original))
++                if field == "state_time_s":
++                    data[1]["inputs"]["stamp"][field] = value
++                else:
++                    data[1]["observation"][field] = value
++                damaged = Path(directory) / (field + ".jsonl")
++                damaged.write_text("\n".join(json.dumps(r) for r in data) + "\n")
++                self.assertEqual(audit.validate_trace(damaged)["status"], "INVALID")
++            out = Path(directory) / "audit.json"
++            env = dict(os.environ, CUDA_VISIBLE_DEVICES="", PYTHONNOUSERSITE="1")
++            command = [sys.executable, "-B", str(ROOT / "tools/recovery_observability.py"),
++                       "--trace", str(path), "--device", "cpu", "--out", str(out)]
++            run = subprocess.run(command, env=env, text=True, capture_output=True)
++            self.assertEqual(run.returncode, 0, run.stderr + run.stdout)
++            before = out.read_bytes()
++            run = subprocess.run(command, env=env, text=True, capture_output=True)
++            self.assertNotEqual(run.returncode, 0)
++            self.assertEqual(out.read_bytes(), before)
++
++    def test_no_new_runtime_readback_or_frozen_source_edits(self):
++        for relative in ("aerial_gym/task/navrl_task/navrl_task.py",
++                         "aerial_gym/task/navrl_task/navrl_perception.py",
++                         "aerial_gym/task/navrl_task/navrl_detector.py",
++                         "motar_eval/events.py"):
++            baseline = subprocess.run(["git", "show", "HEAD:" + relative], cwd=ROOT,
++                                      check=True, capture_output=True).stdout
++            self.assertEqual((ROOT / relative).read_bytes(), baseline)
++        tree = ast.parse((ROOT / "aerial_gym/task/navrl_task/kroc_eval_adapter.py").read_text())
++        recovery = next(n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "_RecoveryRecorder")
++        for node in ast.walk(recovery):
++            if isinstance(node, (ast.Assign, ast.AugAssign, ast.AnnAssign)):
++                targets = getattr(node, "targets", [getattr(node, "target", None)])
++                self.assertFalse(any(isinstance(child, ast.Attribute) and child.attr == "task"
++                                     for target in targets if target is not None
++                                     for child in ast.walk(target)))
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/tests/test_recovery_visibility_geometry.py b/tests/test_recovery_visibility_geometry.py
+new file mode 100644
+index 0000000..02f5838
+--- /dev/null
++++ b/tests/test_recovery_visibility_geometry.py
+@@ -0,0 +1,193 @@
++"""Recovery probe reference geometry and isolated actual Warp CPU mesh checks; no simulator."""
++import ast
++import importlib.util
++import json
++import math
++import os
++from pathlib import Path
++import random
++import subprocess
++import sys
++import tempfile
++from types import SimpleNamespace
++import unittest
++from unittest import mock
++
++ROOT = Path(__file__).resolve().parents[1]
++SOURCE = ROOT / "aerial_gym/task/navrl_task/recovery_visibility_probe.py"
++SPEC = importlib.util.spec_from_file_location("_recovery_visibility_test_module", SOURCE)
++probe = importlib.util.module_from_spec(SPEC)
++sys.modules[SPEC.name] = probe
++SPEC.loader.exec_module(probe)
++
++
++def detector(**overrides):
++    values = dict(num_envs=1, target_use_oriented_box=False, detect_decoupled=False,
++                  target_render_mode="analytic_flat", _dynamic_mesh_treatment=None,
++                  mesh_ids=SimpleNamespace(shape=(1,), device="cpu"),
++                  _origins=[[0., 0., 0.]], _orientations=[[0., 0., 0., 1.]],
++                  _targets=[[4., 0., 0.]], target_mask=[[[1, 0], [0, 0]]],
++                  hfov=math.radians(87), vfov=math.radians(58), max_range=20.)
++    values.update(overrides)
++    return SimpleNamespace(**values)
++
++
++class ReferenceGeometryTest(unittest.TestCase):
++    def test_actual_camera_pose_and_yaw_quaternion(self):
++        s = math.sqrt(.5)
++        row = probe.camera_center_geometry([1, 2, 3], [0, 0, s, s], [1, 7, 3],
++                                           math.radians(87), math.radians(58), 12.)
++        self.assertTrue(row["target_center_in_fov"])
++        self.assertTrue(row["target_center_in_range"])
++        self.assertAlmostEqual(row["center_range_m"], 5.)
++        reversed_row = probe.camera_center_geometry([1, 2, 3], [0, 0, -s, s], [1, 7, 3],
++                                                    math.radians(87), math.radians(58), 12.)
++        self.assertFalse(reversed_row["target_center_in_fov"])
++
++    def test_fov_range_and_vertical_exit_are_independent(self):
++        def row(point):
++            return probe.camera_center_geometry([0, 0, 0], [0, 0, 0, 1], point, 1., 1., 12.)
++        self.assertFalse(row([-1, 0, 0])["target_center_in_fov"])
++        self.assertTrue(row([-1, 0, 0])["target_center_in_range"])
++        self.assertTrue(row([15, 0, 0])["target_center_in_fov"])
++        self.assertFalse(row([15, 0, 0])["target_center_in_range"])
++        self.assertFalse(row([2, 0, 4])["target_center_in_fov"])
++        self.assertFalse(row([0, 0, 0])["target_center_in_range"])
++
++    def test_nonunit_or_nonfinite_geometry_is_rejected(self):
++        for quaternion in ([0, 0, 0, 2], [0, 0, math.nan, 1]):
++            with self.assertRaises(ValueError):
++                probe.camera_center_geometry([0, 0, 0], quaternion, [2, 0, 0], 1., 1., 12.)
++
++    def test_renderer_fov_scale_is_not_replaced_with_nominal_intrinsics(self):
++        d = detector(hfov=1., vfov=1., fov_scale_err=.5)
++        actual = probe.rendered_frustum(d)
++        point = [4., 4. * math.tan(.6), 0.]
++        self.assertFalse(probe.camera_center_geometry([0, 0, 0], [0, 0, 0, 1], point,
++                                                     1., 1., 20.)["target_center_in_fov"])
++        self.assertTrue(probe.camera_center_geometry([0, 0, 0], [0, 0, 0, 1], point,
++                                                    *actual)["target_center_in_fov"])
++
++    def test_explicit_triangle_mesh_front_behind_and_clear(self):
++        vertices = [(2, -1, -1), (2, 1, -1), (2, 1, 1), (2, -1, 1)]
++        triangles = [0, 1, 2, 0, 2, 3]
++        self.assertTrue(probe.reference_mesh_blocked([0, 0, 0], [4, 0, 0], vertices, triangles))
++        self.assertFalse(probe.reference_mesh_blocked([0, 0, 0], [1, 0, 0], vertices, triangles))
++        self.assertFalse(probe.reference_mesh_blocked([0, 2, 0], [4, 2, 0], vertices, triangles))
++        self.assertTrue(probe.reference_aabb_blocked([0, 0, 0], [4, 0, 0], [2, -1, -1], [2.1, 1, 1]))
++        self.assertFalse(probe.reference_aabb_blocked([0, 2, 0], [4, 2, 0], [2, -1, -1], [2.1, 1, 1]))
++
++    def test_triangle_edge_grazing_and_parallel_do_not_use_aabb_as_oracle(self):
++        a, b, c = [2, -1, -1], [2, 1, -1], [2, 0, 1]
++        self.assertAlmostEqual(probe.segment_triangle_intersection([0, 0, 0], [4, 0, 0], a, b, c), .5)
++        self.assertIsNone(probe.segment_triangle_intersection([0, 0, 0], [0, 1, 0], a, b, c))
++        tree = ast.parse(SOURCE.read_text())
++        snapshot = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef)
++                        and node.name == "snapshot")
++        self.assertNotIn("reference_aabb_blocked", ast.get_source_segment(SOURCE.read_text(), snapshot))
++
++
++class ProbeContractsTest(unittest.TestCase):
++    def test_off_import_and_factory_initialize_nothing(self):
++        script = ("import importlib.util,sys; "
++                  "s=importlib.util.spec_from_file_location('independent_probe',%r); "
++                  "m=importlib.util.module_from_spec(s);s.loader.exec_module(m); "
++                  "assert m.build_visibility_probe(object()) is None; "
++                  "assert not any(x in sys.modules for x in ('torch','warp','isaacgym','aerial_gym'))") % str(SOURCE)
++        subprocess.run([sys.executable, "-B", "-c", script], check=True, timeout=30)
++
++    def test_unknown_geometry_does_not_initialize_backend(self):
++        cases = [(dict(target_use_oriented_box=True), {}), (dict(detect_decoupled=True), {}),
++                 (dict(target_render_mode="mesh_shaded"), {}),
++                 (dict(_dynamic_mesh_treatment=object()), {}), ({}, dict(target_dynamics="physical")),
++                 ({}, dict(scene_contract="moving_assets"))]
++        with mock.patch.object(probe, "_load_warp_kernel", side_effect=AssertionError("backend loaded")):
++            for changes, options in cases:
++                obj = probe.build_visibility_probe(detector(**changes), enabled=True, **options)
++                row = obj.snapshot(("episode", 0), render_token=("episode", 0))[0]
++                self.assertEqual(row["status"], "UNKNOWN")
++                self.assertIsNone(row["center_los_blocked"])
++                self.assertEqual(row["full_visual_occlusion"], "NOT_RECORDED")
++
++    def test_missing_or_stale_tokens_are_unknown_without_probe_or_rng(self):
++        obj = probe.build_visibility_probe(detector(), enabled=True)
++        state = random.getstate()
++        with mock.patch.object(probe, "_load_warp_kernel", side_effect=AssertionError("backend loaded")):
++            for token, rendered in ((None, None), (("e", 1), None), (("e", 1), ("e", 0))):
++                row = obj.snapshot(token, render_token=rendered)[0]
++                self.assertEqual(row["reason"], "MISSING_OR_MISMATCHED_RENDER_TOKEN")
++                self.assertEqual(row["sensor_capture_time_s"], "NOT_RECORDED")
++        self.assertEqual(state, random.getstate())
++
++    def test_invalidate_clears_only_owned_cache(self):
++        d = detector()
++        obj = probe.build_visibility_probe(d, enabled=True)
++        obj._last_token, obj._last_rows = ("e", 0), [{"marker": "old"}]
++        before = dict(d.__dict__)
++        obj.invalidate()
++        self.assertIsNone(obj._last_token)
++        self.assertIsNone(obj._last_rows)
++        self.assertEqual(d.__dict__, before)
++        with mock.patch.object(probe, "_load_warp_kernel", side_effect=AssertionError("backend loaded")):
++            self.assertEqual(obj.snapshot(("e", 0), render_token=("e", 0))[0]["reason"],
++                             "INVALIDATED_RENDER_TOKEN")
++
++
++class ActualWarpCpuMeshTest(unittest.TestCase):
++    def test_cpu_kernel_matches_independent_mesh_reference_and_preserves_inputs(self):
++        if importlib.util.find_spec("warp") is None:
++            self.skipTest("NOT_TESTED: Warp unavailable for isolated CPU mesh query")
++        script = r'''
++import importlib.util, json, math, os, random, sys
++from types import SimpleNamespace
++import numpy as np
++import torch
++import warp as wp
++wp.config.kernel_cache_dir = sys.argv[2]
++wp.init()
++spec=importlib.util.spec_from_file_location("probe_cpu_mesh",sys.argv[1])
++p=importlib.util.module_from_spec(spec);sys.modules[spec.name]=p;spec.loader.exec_module(p)
++vertices=[(2,-1,-1),(2,1,-1),(2,1,1),(2,-1,1)]
++indices=[0,1,2,0,2,3]
++points=wp.array(vertices,dtype=wp.vec3,device="cpu")
++triangles=wp.array(indices,dtype=wp.int32,device="cpu")
++mesh=wp.Mesh(points=points,indices=triangles)
++origins=torch.tensor([[0.,0.,0.],[0.,0.,0.],[0.,2.,0.]])
++targets=torch.tensor([[4.,0.,0.],[1.,0.,0.],[4.,2.,0.]])
++quats=torch.tensor([[0.,0.,0.,1.]]*3)
++mask=torch.tensor([[[1,0],[0,0]],[[0,0],[0,0]],[[0,1],[0,1]]],dtype=torch.int32)
++d=SimpleNamespace(num_envs=3,target_use_oriented_box=False,detect_decoupled=False,
++ target_render_mode="analytic_flat",_dynamic_mesh_treatment=None,
++ mesh_ids=wp.array([mesh.id]*3,dtype=wp.uint64,device="cpu"),_origins=origins,
++ _orientations=quats,_targets=targets,target_mask=mask,hfov=math.radians(87),
++ vfov=math.radians(58),max_range=20.)
++before=[x.clone() for x in (origins,targets,quats,mask)]
++rng=torch.random.get_rng_state().clone();python_rng=random.getstate();numpy_rng=np.random.get_state()
++obj=p.build_visibility_probe(d,enabled=True)
++rows=obj.snapshot(("e",0),render_token=("e",0))
++expected=[p.reference_mesh_blocked(a,b,vertices,indices) for a,b in zip(origins.tolist(),targets.tolist())]
++assert [r["center_los_blocked"] for r in rows]==expected==[True,False,False],rows
++assert [r["rendered_target_visible_pixels"] for r in rows]==[1,0,2]
++assert rows[0]["full_visual_occlusion"]=="NOT_RECORDED" # blocked centre with visible silhouette support
++assert rows[1]["center_los_blocked"] is False and rows[1]["rendered_target_visible_pixels"]==0
++assert rows[0]["camera_origin_world"]==origins[0].tolist()
++assert all(torch.equal(a,b) for a,b in zip(before,(origins,targets,quats,mask)))
++assert torch.equal(rng,torch.random.get_rng_state()) and python_rng==random.getstate()
++after=np.random.get_state();assert numpy_rng[0]==after[0] and np.array_equal(numpy_rng[1],after[1]) and numpy_rng[2:]==after[2:]
++rows[0]["center_los_blocked"]=False
++assert obj.snapshot(("e",0),render_token=("e",0))[0]["center_los_blocked"] is True
++obj.invalidate()
++assert obj.snapshot(("e",1),render_token=("e",0))[0]["status"]=="UNKNOWN"
++assert 'isaacgym' not in sys.modules and 'aerial_gym' not in sys.modules
++print("RECOVERY_VISIBILITY_WARP_CPU_PASS")
++'''
++        with tempfile.TemporaryDirectory(prefix="motar-recovery-warp-cpu-") as cache:
++            env = dict(os.environ, CUDA_VISIBLE_DEVICES="", PYTHONNOUSERSITE="1", PYTHONDONTWRITEBYTECODE="1")
++            done = subprocess.run([sys.executable, "-B", "-c", script, str(SOURCE), cache],
++                                  env=env, capture_output=True, text=True, timeout=45)
++        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
++        self.assertIn("RECOVERY_VISIBILITY_WARP_CPU_PASS", done.stdout)
++
++
++if __name__ == "__main__":
++    unittest.main()
+diff --git a/docs/audits/r_p1a_implementation_2026-10-16.md b/docs/audits/r_p1a_implementation_2026-10-16.md
+new file mode 100644
+index 0000000..9aaee01
+--- /dev/null
++++ b/docs/audits/r_p1a_implementation_2026-10-16.md
+@@ -0,0 +1,100 @@
++# R-P1a implementation and CPU verification — 2026-10-16
++
++Status: **IMPLEMENTED; CPU verification only. GPU runtime validation NOT_TESTED.**
++Base: `c038ba50193fb6401a473d8eb9ff4be097883e0e`, branch `codex/mt-p1`.
++The user's subsequent “승인할게. 이어서 진행해.” approved the implementation and CPU scope
++of [the proposal](../plans/r_p1a_observability_v1.md). That proposal and its unapplied design
++draft remain unchanged as provenance; this report supersedes their pre-approval status.
++
++## Actual changes
++
++| File | Change |
++| --- | --- |
++| `motar_eval/recovery_events.py` | Immutable scalar frames and independent post-acquisition event intervals, expiry transitions, prefix hashes and censoring |
++| `aerial_gym/task/navrl_task/kroc_eval_adapter.py` | Default-OFF flag, detached staging, consume-before-action, reset/terminal/shutdown handling, separate sidecars |
++| `aerial_gym/task/navrl_task/recovery_visibility_probe.py` | Lazy actual scene-mesh centre-ray query with evaluator-owned buffers; unsupported geometry stays UNKNOWN |
++| `tools/recovery_observability.py` | CPU trace replay, provenance checks, interval summaries and existing episode-outcome joins; no launcher |
++| `tests/test_recovery_events.py` | Scalar timing, prior acquisition, independent causes, expiry, censoring, prefix and alignment contracts |
++| `tests/test_recovery_observability_contract.py` | CPU adapter stand-ins, byte-identical existing outputs, input/RNG preservation, ledger joins and malformed-trace rejection |
++| `tests/test_recovery_visibility_geometry.py` | Independent geometry fixtures and an actual Warp CPU mesh query |
++| `WORKLOG.md` | Append-only implementation record |
++
++The [actual review diff](../evidence/r_p1a_cpu_2026-10-16/implementation.diff) contains these
++runtime/test changes, this report and the new WORKLOG entry. Earlier uncommitted audit/proposal
++files and the untracked raw-results symlink are excluded from that patch.
++
++## Measurement contract
++
++`NAVRL_KROC2027_RECOVERY_EVENTS=1` requires the existing recorder flag and a fresh cell output
++directory. It writes `recovery_events.jsonl` and `recovery_summary.json` separately from existing
++KROC outputs. OFF imports no new probe or event core. ON records source-file hashes as well as
++the actual source HEAD, checkpoint declaration, dynamics/model, distance backend and episode key.
++Unknown or unsupported lineage cannot pass the CPU provenance validator as a valid direct lineage.
++
++A recovery interval requires an earlier camera-valid, fused-valid, active track. Initial hidden
++search is ineligible. Camera loss, fused loss, track inactivity/expiry, centre FOV exit, range
++exit and mesh LOS are separate, potentially overlapping signals. The actual tracker age and
++strict `age > memory_s` transition determine expiry; no evaluator timer changes tracker state.
++Shutdown/reset censor intervals; capture/crash/timeout remain the task's existing outcomes.
++
++Physical time is the count of completed physics actions times `step_dt`: the reset observation
++is frame 0, consumed before its action. Terminal intervals close after the last completed action,
++before reset. Sensor capture time remains unrecorded. A combined primary occlusion candidate
++requires verified zero configured detection latency, zero latency steps and no empirical latency
++injector. Otherwise current-render LOS is retained independently and the combined candidate is
++UNKNOWN. This does not invent a hardware capture timestamp.
++
++The probe checks the actual fixed-bar scene configuration, camera pose/FOV, mesh IDs and rendered
++virtual target state. It never rerenders the detector. Physical/oriented/dynamic targets,
++decoupled cameras or unsupported scenes produce UNKNOWN. Centre-ray blockage and visible pixel
++counts do not establish full silhouette occlusion or the cause of a camera rejection.
++
++## CPU evidence and preservation
++
++Counts, commands, source hashes and checks are in [validation.json](../evidence/r_p1a_cpu_2026-10-16/validation.json),
++with [scoped](../evidence/r_p1a_cpu_2026-10-16/scoped_cpu.log) and
++[PUBLIC_CPU](../evidence/r_p1a_cpu_2026-10-16/public_cpu.log) logs. CUDA was hidden; no simulator
++rollout or policy execution was performed. The full suite used the existing Matplotlib font cache
++copied to `/tmp`; no assertions were changed. Stand-ins verify both stationary and moving event
++chronology and 2/5/10/15-second arithmetic, not natural-occlusion feasibility.
++
++Existing KROC episode/summary bytes match with recovery OFF versus ON in CPU fixtures. Python,
++NumPy and torch RNG states, supplied task/actor/tracker tensors and frozen source files are
++preserved. Actual GPU trajectory noninterference remains untested.
++
++All 131 canary and 452 main-run manifest members retain their SHA-256 values. Policy F matches
++the frozen checkpoint SHA. Main HEAD, branch HEAD, user WIP, stash, preregistrations, earlier audit
++records and raw symlink are preserved; nothing is staged or committed. Existing backup archives
++remain on the same filesystem: external backup is still incomplete. No deletion was performed.
++
++## Remaining work and approval boundary
++
++- GPU camera/mesh parity and matched ON/OFF trajectories: **NOT_TESTED**; require a new committed
++  preregistration and explicit approval for the particular GPU run.
++- Matched scene/pre-loss actor/action prefixes and natural 2/5/10/15-second occlusions:
++  **NOT_TESTED**; R-P1b remains separate. Initial 4–12 m is still a feasibility candidate.
++- Sensor capture timestamp, full silhouette occlusion, sampled dropout versus rejection,
++  persistent physical target identity and an explicit safe-abort reason: **NOT_RECORDED**.
++- No belief/prediction, scenario generator, Recovery Planner, PPO, commit, merge or push was
++  included. Existing A/B results remain initial-view evidence, not long-occlusion recovery evidence.
++
++The approved R-P1a implementation/CPU package is complete. Commit review and each subsequent
++research package remain separate; this report does not authorize any GPU run.
++
++## Final verification addendum (2026-10-16, after the interrupted session)
++
++The text above is kept as written. This addendum records what the final check found.
++
++- `validation.json` (20:33:59) predates the last source change. `tests/test_recovery_observability_contract.py`
++  was edited at 20:34:31 to add `test_unsupported_motion_cannot_be_mislabeled_as_valid_direct_lineage`.
++  That record therefore lists a stale SHA-256 for the test file (`2a933c13…`, now `f1c81b2f…`) and the
++  earlier counts (scoped 37, PUBLIC_CPU 2,318). It is kept unchanged as history.
++  [`validation_final.json`](../evidence/r_p1a_cpu_2026-10-16/validation_final.json) supersedes it.
++- The final runs after the last source change both pass: scoped 38/38, and PUBLIC_CPU 2,319 run with 0 failures,
++  0 errors, 10 skipped and 5 GPU-only exclusions (`scoped_cpu_final.log`, `public_cpu_final.log`). Re-running the
++  same two recorded commands unchanged gave identical counts and the same scoped test list
++  (`*_reverify.log`). The PUBLIC_CPU command depends on `/tmp/mt_p1_mpl_cache` (a copy of the host
++  `fontlist-v330.json`, SHA-256 `0c77c752…`), which does not survive a reboot.
++- The review diff `implementation.diff` named above did not exist when the session stopped. It was generated
++  afterwards from the final tree, with the same scope as stated above.
++- The table above lists a WORKLOG implementation record, but none had been written. It is appended now.

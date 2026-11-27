@@ -1,0 +1,8 @@
+{
+  "unit": "RT-S3W (camera runtime support for the S3-W policy)",
+  "approved_by": "user",
+  "approved_at": "2026-11-28 (KST), chat",
+  "user_words": "두번째거 승인.",
+  "refers_to": "assistant proposal: add S3-W support to the Jetson camera runtime (sector reduction k=24, 90 deg/s yaw action scale, contract file, independent review); measured-depth model OFF on the vehicle; CPU only, no GPU; then desk / hand-held shadow test on the Jetson before any flight",
+  "not_approved": ["GPU runs", "push", "merge", "flight", "any change to checkpoints or committed preregistrations/results"]
+}

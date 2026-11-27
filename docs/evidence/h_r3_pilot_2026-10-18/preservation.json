@@ -1,0 +1,60 @@
+{
+  "schema": "motar.h-r3-preservation.v1",
+  "raw_run": "../aerial_gym_simulator/results/h_r3_pilot_v1/HR3-P01_seed4502",
+  "raw_manifest_sha256": "ae2633a28859b91c6ad0499d0835872a430b8a3a97c946cfca5cff885a3ecfcf",
+  "raw_members": 21,
+  "raw_members_verified": 21,
+  "policy_f_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "rms_digest": {
+    "B0": [
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f"
+    ],
+    "B1": [
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f"
+    ],
+    "B2": [
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f"
+    ],
+    "B3": [
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+      "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f"
+    ]
+  },
+  "model_training_flag": {
+    "B0": false,
+    "B1": false,
+    "B2": false,
+    "B3": false
+  },
+  "import_origins_inside_worktree": {
+    "B0": true,
+    "B1": true,
+    "B2": true,
+    "B3": true
+  },
+  "main_checkout": {
+    "head": "cb644bbe46456b1900020177617a13040a3f1552",
+    "tracked_changes": [
+      ".gitignore",
+      "WORKLOG.md",
+      "presentations/README.md"
+    ]
+  },
+  "stash_top": [
+    "23ddb33f92cf6c75cf9095e149bb7e2516eb7543 On main: KROC2027 merge 2026-10-15: user WIP (.gitignore, WORKLOG.md, presentations/README.md) - restore after canary"
+  ],
+  "protected_untracked": {
+    "results/mt_p1_precision_v1": {
+      "files": 585,
+      "newest_mtime": 1792141521.3266556
+    },
+    "results/occlusion_pilot_v1": {
+      "files": 969,
+      "newest_mtime": 1792175546.6052117
+    }
+  },
+  "smoke_raw": "session scratch only (not preserved); its analysis is smoke_n16_analysis.json"
+}

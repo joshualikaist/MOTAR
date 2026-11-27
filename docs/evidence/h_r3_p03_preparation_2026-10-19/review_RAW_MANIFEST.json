@@ -1,0 +1,45 @@
+{
+  "schema": "motar.p03-preparation.review-manifest.v1",
+  "members": [
+    {
+      "path": "fable_prompt.txt",
+      "bytes": 139588,
+      "sha256": "c8074808e8411f4f0fb34529bdeb50948d8c57c231aeaecc426c3491b008d2e0"
+    },
+    {
+      "path": "fable_output.json",
+      "bytes": 8491,
+      "sha256": "83f0479373977b9c90bb0931ef7bb0d4bd7c77afea686cd9d728a3509f4908b4"
+    },
+    {
+      "path": "fable_stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fable_process.json",
+      "bytes": 1059,
+      "sha256": "c998544ab93ce3b12d3cc3c5825ed29f973f0858e2b00f13185e86a8ba098663"
+    },
+    {
+      "path": "review_cpu_probes.py",
+      "bytes": 1799,
+      "sha256": "c7a40794ded6d3e945f89461b990a4d2f3cc70b0126e63bcbd4b1c7e8bede0ce"
+    },
+    {
+      "path": "review_cpu_probes.json",
+      "bytes": 684,
+      "sha256": "d080ce4d753c9c84a443f2bff15375cb2f5fa482ab4f25c1fae6b7e32ae52aac"
+    },
+    {
+      "path": "cpu_final_tests.log",
+      "bytes": 6019,
+      "sha256": "f5c465559443654498ace709dbf4ac36847244c5c9b3860f42f56edfe23eb55b"
+    },
+    {
+      "path": "cpu_post_review_tests.log",
+      "bytes": 6128,
+      "sha256": "157a1a386d8311fd1f03b251dda020859ce6a66bae7ad4e9a8c25dbbb911882a"
+    }
+  ]
+}

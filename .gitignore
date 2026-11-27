@@ -100,3 +100,6 @@ results/target_motion_replication_7seed/canary/ledger_*/
 # KROC2027 raw cells stay on disk; each run folder's RAW_MANIFEST.json binds them by SHA-256 (2026-10-15)
 results/kroc2027_*/**/*__*bars__seed*/
 results/kroc2027_*/**/obs_dump.npz
+# OCC-G0/OCC-P1 raw cells stay on disk; RAW_MANIFEST.json binds them (2026-10-17)
+results/occlusion_pilot_v1/**/*__*bars__seed*/
+results/occlusion_pilot_v1/**/obs_dump.npz

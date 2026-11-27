@@ -9,6 +9,34 @@ except ValueError:
     _NAVRL_YAW_RATE_MAX = 2.5
 
 
+
+
+def _gain_rand_from_env():
+    """Opt-in controller-gain randomization (D-2026-11-04-1; docs/plans/prereg_gain_randomization_gr0_v1.md).
+
+    Unset or "0": None, and the config is byte-for-byte the historical one (randomize_params False, midpoint gains).
+    "1": (scale, seed). At every robot reset each env's K_vel, K_rot and K_angvel elements are drawn independently and
+    uniformly in nominal * [1 - scale, 1 + scale], nominal being the midpoint gains Policy F was trained with, from a
+    dedicated torch.Generator seeded with NAVRL_GAIN_RAND_SEED, so the global RNG stream is not consumed. Both
+    NAVRL_GAIN_RAND_SCALE (0 <= scale < 1) and NAVRL_GAIN_RAND_SEED are required; anything else refuses."""
+    raw = os.environ.get("NAVRL_GAIN_RAND", "").strip()
+    if raw in ("", "0"):
+        return None
+    if raw != "1":
+        raise ValueError("NAVRL_GAIN_RAND must be unset, 0 or 1, got %r" % raw)
+    try:
+        scale = float(os.environ["NAVRL_GAIN_RAND_SCALE"])
+        seed = int(os.environ["NAVRL_GAIN_RAND_SEED"])
+    except (KeyError, ValueError) as exc:
+        raise ValueError("NAVRL_GAIN_RAND=1 needs NAVRL_GAIN_RAND_SCALE and NAVRL_GAIN_RAND_SEED") from exc
+    if not (0.0 <= scale < 1.0) or seed < 0:
+        raise ValueError("NAVRL_GAIN_RAND_SCALE must be in [0, 1) and NAVRL_GAIN_RAND_SEED >= 0")
+    return scale, seed
+
+
+GAIN_RAND = _gain_rand_from_env()
+
+
 class control(_base):
     """NavRL-scoped Lee velocity controller config.
 
@@ -44,3 +72,7 @@ class control(_base):
     # radius at 2.5 m/s, so it bounds attitude without costing the agility the weave needs.
     # NavRL-scoped: every other task keeps the unlimited default.
     max_tilt_angle_deg = float(os.environ.get("NAVRL_MAX_TILT_DEG", "").strip() or 45.0)
+
+    if GAIN_RAND is not None:
+        randomize_params = True
+        gain_rand_scale, gain_rand_seed = GAIN_RAND

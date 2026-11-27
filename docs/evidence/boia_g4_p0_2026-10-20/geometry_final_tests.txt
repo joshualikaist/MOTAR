@@ -1,0 +1,28 @@
+test_invalid_context_row_never_certifies_point_or_segment (p0_geometry_final.ContextInputCounterexamples) ... ok
+test_nonfinite_or_nonpositive_far_never_certifies_free (p0_geometry_final.ContextInputCounterexamples) ... ok
+test_camera_lidar_depth_mismatch_is_conservatively_preserved (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_eq1d_style_bar_point53m_before_belief_is_preserved (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_false_association_on_bar_has_no_identity_privilege (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_large_belief_covariance_cannot_erase_far_foreground (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_near_foreground_bar_is_not_erased_by_zero_covariance_gate (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_positive_actual_target_is_retained_with_abstention_tradeoff (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_return_order_invalid_mask_and_source_arrays_are_preserved (p0_geometry_final.ExclusionCounterexamples) ... ok
+test_default_declared_four_rows_use_horizontal_first_hit (p0_geometry_final.HorizontalFreeCounterexamples) ... ok
+test_explicit_zero_and_positive_negative_elevations (p0_geometry_final.HorizontalFreeCounterexamples) ... ok
+test_invalid_and_nearzero_ranges_cannot_expand_free_space (p0_geometry_final.HorizontalFreeCounterexamples) ... ok
+test_row_minimum_is_taken_after_projection_not_before (p0_geometry_final.HorizontalFreeCounterexamples) ... ok
+test_undeclared_nonstandard_rows_fail_closed (p0_geometry_final.HorizontalFreeCounterexamples) ... ok
+test_fov_and_camera_transform_use_declared_yaw_frame (p0_geometry_final.IndependentHelperChecks) ... ok
+test_normal_clearance_matches_scalar_gaussian_and_strict_zero (p0_geometry_final.IndependentHelperChecks) ... ok
+test_sector_helper_uses_minimum_on_boundary (p0_geometry_final.IndependentHelperChecks) ... ok
+test_union_is_computed_per_joint_path_before_averaging (p0_geometry_final.IndependentHelperChecks) ... ok
+test_camera_offset_los_counterexample_forecast_and_bpod (p0_geometry_final.VisibilityOriginsAndModelLimits) ... ok
+test_segment_distance_zero_length_and_partition_independent_examples (p0_geometry_final.VisibilityOriginsAndModelLimits) ... ok
+test_six_metre_target_with_first_hit5p8_remains_blocked (p0_geometry_final.VisibilityOriginsAndModelLimits) ... ok
+test_sparse_scan_sectors_are_not_a_physical_free_certificate (p0_geometry_final.VisibilityOriginsAndModelLimits) ... ok
+test_yaw_rotated_camera_origin_and_no_double_offset (p0_geometry_final.VisibilityOriginsAndModelLimits) ... ok
+
+----------------------------------------------------------------------
+Ran 23 tests in 0.017s
+
+OK

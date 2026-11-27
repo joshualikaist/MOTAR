@@ -1,0 +1,380 @@
+{
+  "unit": "G9 reported response reference",
+  "primary_attempt": 4,
+  "run_commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+  "source_json": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g9_attempt4/g9_lee_steps.json",
+  "source_sha256": "71e769a39ba82fe37c96800bb1042ca6773ec97c7c013de9f10f9b956c072bc9",
+  "reading": "REPORTED_ONLY_PENDING_REVIEW",
+  "actual_obstacle_count": 1,
+  "contacts_N": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "min_bar_distance_m": [
+    22.689504623413086,
+    22.697500228881836,
+    22.656476974487305,
+    22.687959671020508
+  ],
+  "whole_run_tilt_deg": [
+    31.447004318237305,
+    31.44647216796875,
+    31.445945739746094,
+    31.4457950592041
+  ],
+  "hover_alt_m": [
+    0.997543941682844,
+    1.000007680992582,
+    1.0068841715950279,
+    1.003179964141466
+  ],
+  "A3": {
+    "x": [
+      {
+        "from": 0.0,
+        "to": 1.0,
+        "reported_median_over_envs": {
+          "overshoot_pct": 0.9174227714538574,
+          "settling_5pct_s": 0.8599999999999817,
+          "rise_10_90_s": 0.6199999999999868,
+          "final_mean": 0.9958937561511993,
+          "onset_latency_s": 0.08999999999999808,
+          "envs": 4
+        },
+        "per_env_ranges": {
+          "rise_10_90_s": [
+            0.609999999999987,
+            0.6199999999999868
+          ],
+          "onset_latency_s": [
+            0.08999999999999808,
+            0.08999999999999808
+          ],
+          "overshoot_pct": [
+            0.9071826934814453,
+            0.9249687194824219
+          ],
+          "settling_5pct_s": [
+            0.8599999999999817,
+            0.8599999999999817
+          ],
+          "final_mean": [
+            0.9958732914924622,
+            0.9959046804904937
+          ]
+        }
+      },
+      {
+        "from": 1.0,
+        "to": 2.5,
+        "reported_median_over_envs": {
+          "overshoot_pct": 0.5651632944742913,
+          "settling_5pct_s": 0.8699999999999815,
+          "rise_10_90_s": 0.6199999999999868,
+          "final_mean": 2.4897880077362062,
+          "onset_latency_s": 0.0799999999999983,
+          "envs": 4
+        },
+        "per_env_ranges": {
+          "rise_10_90_s": [
+            0.6199999999999868,
+            0.6199999999999868
+          ],
+          "onset_latency_s": [
+            0.0799999999999983,
+            0.0799999999999983
+          ],
+          "overshoot_pct": [
+            0.5622545878092522,
+            0.5653222401936775
+          ],
+          "settling_5pct_s": [
+            0.8699999999999815,
+            0.8699999999999815
+          ],
+          "final_mean": [
+            2.4897827911376953,
+            2.489790177345276
+          ]
+        }
+      },
+      {
+        "from": 2.5,
+        "to": 0.0,
+        "reported_median_over_envs": {
+          "overshoot_pct": 1.0848264396190688,
+          "settling_5pct_s": 0.8699999999999815,
+          "rise_10_90_s": 0.6199999999999868,
+          "final_mean": 0.0005012560286559165,
+          "onset_latency_s": 0.06999999999999851,
+          "envs": 4
+        },
+        "per_env_ranges": {
+          "rise_10_90_s": [
+            0.6199999999999868,
+            0.6199999999999868
+          ],
+          "onset_latency_s": [
+            0.06999999999999851,
+            0.06999999999999851
+          ],
+          "overshoot_pct": [
+            1.084159612655644,
+            1.085137352347365
+          ],
+          "settling_5pct_s": [
+            0.8699999999999815,
+            0.8699999999999815
+          ],
+          "final_mean": [
+            0.0004197150975232944,
+            0.0005413499072892591
+          ]
+        }
+      }
+    ],
+    "y": [
+      {
+        "from": 0.0,
+        "to": 1.0,
+        "reported_median_over_envs": {
+          "overshoot_pct": 0.9094595909118652,
+          "settling_5pct_s": 0.8599999999999817,
+          "rise_10_90_s": 0.609999999999987,
+          "final_mean": 0.9958023715019226,
+          "onset_latency_s": 0.08999999999999808,
+          "envs": 4
+        },
+        "per_env_ranges": {
+          "rise_10_90_s": [
+            0.609999999999987,
+            0.609999999999987
+          ],
+          "onset_latency_s": [
+            0.08999999999999808,
+            0.08999999999999808
+          ],
+          "overshoot_pct": [
+            0.9088277816772461,
+            0.9127140045166016
+          ],
+          "settling_5pct_s": [
+            0.8599999999999817,
+            0.8599999999999817
+          ],
+          "final_mean": [
+            0.9957831668853759,
+            0.9958178687095642
+          ]
+        }
+      },
+      {
+        "from": 1.0,
+        "to": 2.5,
+        "reported_median_over_envs": {
+          "overshoot_pct": 0.5643844604492188,
+          "settling_5pct_s": 0.870000000000136,
+          "rise_10_90_s": 0.6200000000000969,
+          "final_mean": 2.48980233669281,
+          "onset_latency_s": 0.0800000000000125,
+          "envs": 4
+        },
+        "per_env_ranges": {
+          "rise_10_90_s": [
+            0.6200000000000969,
+            0.6200000000000969
+          ],
+          "onset_latency_s": [
+            0.0800000000000125,
+            0.0800000000000125
+          ],
+          "overshoot_pct": [
+            0.5637168884277344,
+            0.5652745564778572
+          ],
+          "settling_5pct_s": [
+            0.870000000000136,
+            0.870000000000136
+          ],
+          "final_mean": [
+            2.489766082763672,
+            2.489807014465332
+          ]
+        }
+      },
+      {
+        "from": 2.5,
+        "to": 0.0,
+        "reported_median_over_envs": {
+          "overshoot_pct": 1.084319949150081,
+          "settling_5pct_s": 0.870000000000136,
+          "rise_10_90_s": 0.6200000000000969,
+          "final_mean": 0.0004052536576637067,
+          "onset_latency_s": 0.07000000000001094,
+          "envs": 4
+        },
+        "per_env_ranges": {
+          "rise_10_90_s": [
+            0.6200000000000969,
+            0.6200000000000969
+          ],
+          "onset_latency_s": [
+            0.07000000000001094,
+            0.07000000000001094
+          ],
+          "overshoot_pct": [
+            1.0841995477676392,
+            1.0848771780729294
+          ],
+          "settling_5pct_s": [
+            0.870000000000136,
+            0.870000000000136
+          ],
+          "final_mean": [
+            0.00031267224898329004,
+            0.0005238343414384872
+          ]
+        }
+      }
+    ]
+  },
+  "A4": [
+    {
+      "cmd_rad_s": 3.0,
+      "median_over_envs": {
+        "overshoot_pct": 9.377217292785645,
+        "settling_5pct_s": 0.23000000000003595,
+        "rise_10_90_s": 0.1100000000000172,
+        "final_mean": 2.999661946296692,
+        "onset_latency_s": 0.020000000000003126,
+        "envs": 4
+      },
+      "per_env": [
+        {
+          "rise_10_90_s": 0.1100000000000172,
+          "onset_latency_s": 0.020000000000003126,
+          "overshoot_pct": 9.377217292785645,
+          "settling_5pct_s": 0.23000000000003595,
+          "final_mean": 2.999661946296692
+        },
+        {
+          "rise_10_90_s": 0.1100000000000172,
+          "onset_latency_s": 0.020000000000003126,
+          "overshoot_pct": 9.37685171763103,
+          "settling_5pct_s": 0.23000000000003595,
+          "final_mean": 2.9996614408493043
+        },
+        {
+          "rise_10_90_s": 0.1100000000000172,
+          "onset_latency_s": 0.020000000000003126,
+          "overshoot_pct": 9.376613299051929,
+          "settling_5pct_s": 0.23000000000003595,
+          "final_mean": 2.999661364555359
+        },
+        {
+          "rise_10_90_s": 0.1100000000000172,
+          "onset_latency_s": 0.020000000000003126,
+          "overshoot_pct": 9.377646446228027,
+          "settling_5pct_s": 0.23000000000003595,
+          "final_mean": 2.999662232398987
+        }
+      ]
+    },
+    {
+      "cmd_rad_s": -3.0,
+      "median_over_envs": {
+        "overshoot_pct": 9.407885869344067,
+        "settling_5pct_s": 0.22999999999995424,
+        "rise_10_90_s": 0.10999999999997812,
+        "final_mean": -2.9996616363525392,
+        "onset_latency_s": 0.01999999999999602,
+        "envs": 4
+      },
+      "per_env": [
+        {
+          "rise_10_90_s": 0.10999999999997812,
+          "onset_latency_s": 0.01999999999999602,
+          "overshoot_pct": 9.407504399617505,
+          "settling_5pct_s": 0.22999999999995424,
+          "final_mean": -2.9996616363525392
+        },
+        {
+          "rise_10_90_s": 0.10999999999997812,
+          "onset_latency_s": 0.01999999999999602,
+          "overshoot_pct": 9.407154719034839,
+          "settling_5pct_s": 0.22999999999995424,
+          "final_mean": -2.9996617460250854
+        },
+        {
+          "rise_10_90_s": 0.10999999999997812,
+          "onset_latency_s": 0.01999999999999602,
+          "overshoot_pct": 9.407885869344067,
+          "settling_5pct_s": 0.22999999999995424,
+          "final_mean": -2.999661674499512
+        },
+        {
+          "rise_10_90_s": 0.10999999999997812,
+          "onset_latency_s": 0.01999999999999602,
+          "overshoot_pct": 9.408839543660473,
+          "settling_5pct_s": 0.22999999999995424,
+          "final_mean": -2.9996611166000364
+        }
+      ]
+    }
+  ],
+  "A5": {
+    "cmd_body": [
+      2.5,
+      2.5
+    ],
+    "hspeed_last1s_m_s_per_env": [
+      3.5222079253196714,
+      3.52222784280777,
+      3.522235243320465,
+      3.522223560810089
+    ],
+    "tilt_max_deg_per_env": [
+      31.447004318237305,
+      31.44647216796875,
+      31.445945739746094,
+      31.4457950592041
+    ]
+  },
+  "host_faults": [
+    0,
+    0
+  ],
+  "sampling_limit": "Legacy sampling retained: world velocity is refreshed after physics; vehicle orientation and body angular velocity were refreshed before physics. Within-step alignment uncertainty is one physics dt; no exact PX4 latency claim.",
+  "resources": {
+    "started": "2026-11-05T14:27:15.718866+09:00",
+    "finished": "2026-11-05T14:27:33.825125+09:00",
+    "argv": [
+      "taskset",
+      "-c",
+      "0-3,8-11,14-23",
+      "timeout",
+      "-k",
+      "30",
+      "1200",
+      "/home/fair/miniconda3/envs/aerialgym/bin/python",
+      "-B",
+      "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_g9_lee_steps_v2.py",
+      "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g9_attempt4/g9_lee_steps.json",
+      "06383eba74134a594bd38ba933cb5e0512f1d342"
+    ],
+    "exit_code": 0,
+    "stop_reason": null,
+    "peak_aggregate_rss_bytes": 5041573888,
+    "rss_limit_bytes": 12884901888,
+    "timeout_s": 1200.0,
+    "poll_interval_s": 0.25,
+    "samples": 71,
+    "processes_observed": 2,
+    "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+    "kernel_cgroup_limit_claimed": false,
+    "subreaper_enabled": true,
+    "live_descendants_after_cleanup": 0
+  }
+}

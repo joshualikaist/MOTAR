@@ -1,0 +1,242 @@
+{
+ "camera": {
+  "camera_offset": [
+   [
+    0.10000000149011612,
+    0.0,
+    0.029999999329447746
+   ]
+  ],
+  "height": 90,
+  "max_range": 20.0,
+  "obstacle_height": 24,
+  "obstacle_max_range": 10.0,
+  "obstacle_width": 40,
+  "target_radius": 0.15,
+  "width": 160
+ },
+ "counters": [
+  {
+   "capture_step_counter": 0,
+   "delivery_step_counter": 0,
+   "pass": "level_scene"
+  },
+  {
+   "capture_step_counter": 0,
+   "delivery_step_counter": 0,
+   "pass": "level_alone"
+  },
+  {
+   "capture_step_counter": 0,
+   "delivery_step_counter": 0,
+   "pass": "roll15_scene"
+  },
+  {
+   "capture_step_counter": 0,
+   "delivery_step_counter": 0,
+   "pass": "roll15_alone"
+  },
+  {
+   "capture_step_counter": 0,
+   "delivery_step_counter": 0,
+   "pass": "pitch15_scene"
+  },
+  {
+   "capture_step_counter": 0,
+   "delivery_step_counter": 0,
+   "pass": "pitch15_alone"
+  }
+ ],
+ "layout": [
+  [],
+  [],
+  [],
+  [],
+  [
+   {
+    "centre": [
+     29.0,
+     20.0,
+     1.5
+    ],
+    "half": [
+     0.31139999628067017,
+     0.35679998993873596,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.0,
+     20.349100005626678,
+     1.5
+    ],
+    "half": [
+     0.2308499962091446,
+     0.33660000562667847,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.0,
+     19.59835001106262,
+     1.5
+    ],
+    "half": [
+     0.274150013923645,
+     0.38534998893737793,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.5,
+     20.317849998807908,
+     1.5
+    ],
+    "half": [
+     0.29179999232292175,
+     0.3137499988079071,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.5,
+     19.67160000066757,
+     1.5
+    ],
+    "half": [
+     0.3269500136375427,
+     0.310699999332428,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.0,
+     19.73839999437332,
+     1.5
+    ],
+    "half": [
+     0.2651500105857849,
+     0.27410000562667847,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.0,
+     20.317650012922286,
+     1.5
+    ],
+    "half": [
+     0.24539999663829803,
+     0.333950012922287,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.5,
+     19.64794999871254,
+     1.5
+    ],
+    "half": [
+     0.34104999899864197,
+     0.3561500012874603,
+     1.5
+    ],
+    "slot": 0
+   }
+  ],
+  [
+   {
+    "centre": [
+     26.5,
+     20.339499996709822,
+     1.5
+    ],
+    "half": [
+     0.35225000977516174,
+     0.3571999967098236,
+     1.5
+    ],
+    "slot": 0
+   }
+  ]
+ ],
+ "lidar": {
+  "height": 4,
+  "hfov_deg": [
+   -175.0,
+   180.0
+  ],
+  "max_range": 12.0,
+  "min_range": 0.2,
+  "target_radius": 0.2,
+  "vfov_deg": [
+   -10.0,
+   20.0
+  ],
+  "width": 72,
+  "yaw_only_attach": true
+ },
+ "nan_fields": [],
+ "origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "perception": {
+  "lidar_max_range": 12.0,
+  "min_pixels": 2,
+  "target_radius": 0.15
+ },
+ "process": {
+  "batch": "SENSORS",
+  "id": "sensors_s_l1c",
+  "mode": "s_l1c",
+  "num_envs": 13,
+  "seed": 4401
+ },
+ "scenes": [
+  "C02_SC0_1",
+  "C02_SC0_2",
+  "C02_SC1_1",
+  "C02_SC1_2",
+  "C02_SC1_FULL",
+  "C02_PA_1",
+  "C02_PA_2",
+  "C02_PA_3",
+  "C02_PA_4",
+  "C02_CO_1",
+  "C02_CO_2",
+  "C02_CO_3",
+  "C02_CO_4"
+ ],
+ "segmentation_keys": [
+  "segmentation_pixels"
+ ]
+}

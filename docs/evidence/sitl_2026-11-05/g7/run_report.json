@@ -1,0 +1,419 @@
+{
+ "unit": "G7",
+ "prereg": "docs/plans/prereg_actionhold_g7_v1.md",
+ "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+ "started": "2026-11-05T14:27:50.404641+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-05T14:27:50.404607+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/motar_eval/__init__.py"
+ },
+ "preflight_problems": [],
+ "hook_sha256": {
+  "tools/actionhold_hook.py": "4ba5d15a81e740d1ec58d4cbb990f581bd90c06a252118e05facf148b381d103",
+  "tools/actionhold_site/sitecustomize.py": "1242dd6997d30aaae93d0e665427633d7b70fc2ba60f0ec10d045fde2e340ae5"
+ },
+ "reading": "COMPLETE",
+ "cells": [
+  {
+   "arm": "k1d0",
+   "k": 1,
+   "d": 0,
+   "density": 205,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k1d0/E2_obstacle_aware__205bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 981,
+    "config": {
+     "delay_d": 0,
+     "hold_k": 1
+    },
+    "delayed_zero_env_steps": 0,
+    "held_env_steps": 0,
+    "latched_env_steps": 0,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   },
+   "identity": {
+    "result_equal": true,
+    "episodes_equal": true,
+    "outcome_a": {
+     "captured": 1864,
+     "crash": 186,
+     "timeout": 0,
+     "capture_rate": 0.9092682926829269,
+     "crash_rate": 0.09073170731707317,
+     "timeout_rate": 0.0,
+     "ever_reached_rate": 0.9078048780487805,
+     "closest_nocrash_mean_m": 0.4077410630226263,
+     "closest_nocrash_best_m": 0.11217302083969116,
+     "closest_nocrash_count": 1864
+    },
+    "outcome_b": {
+     "captured": 1864,
+     "crash": 186,
+     "timeout": 0,
+     "capture_rate": 0.9092682926829269,
+     "crash_rate": 0.09073170731707317,
+     "timeout_rate": 0.0,
+     "ever_reached_rate": 0.9078048780487805,
+     "closest_nocrash_mean_m": 0.4077410630226263,
+     "closest_nocrash_best_m": 0.11217302083969116,
+     "closest_nocrash_count": 1864
+    },
+    "episodes_byte_equal": true
+   }
+  },
+  {
+   "arm": "k2d0",
+   "k": 2,
+   "d": 0,
+   "density": 205,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k2d0/E2_obstacle_aware__205bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 1077,
+    "config": {
+     "delay_d": 0,
+     "hold_k": 2
+    },
+    "delayed_zero_env_steps": 0,
+    "held_env_steps": 68211,
+    "latched_env_steps": 69645,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   }
+  },
+  {
+   "arm": "k4d0",
+   "k": 4,
+   "d": 0,
+   "density": 205,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k4d0/E2_obstacle_aware__205bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 1122,
+    "config": {
+     "delay_d": 0,
+     "hold_k": 4
+    },
+    "delayed_zero_env_steps": 0,
+    "held_env_steps": 106632,
+    "latched_env_steps": 36984,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   }
+  },
+  {
+   "arm": "k1d1",
+   "k": 1,
+   "d": 1,
+   "density": 205,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k1d1/E2_obstacle_aware__205bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 1456,
+    "config": {
+     "delay_d": 1,
+     "hold_k": 1
+    },
+    "delayed_zero_env_steps": 3658,
+    "held_env_steps": 0,
+    "latched_env_steps": 0,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   }
+  },
+  {
+   "arm": "k2d0",
+   "k": 2,
+   "d": 0,
+   "density": 70,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k2d0/E2_obstacle_aware__70bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 799,
+    "config": {
+     "delay_d": 0,
+     "hold_k": 2
+    },
+    "delayed_zero_env_steps": 0,
+    "held_env_steps": 50504,
+    "latched_env_steps": 51768,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   }
+  },
+  {
+   "arm": "k4d0",
+   "k": 4,
+   "d": 0,
+   "density": 70,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k4d0/E2_obstacle_aware__70bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 1281,
+    "config": {
+     "delay_d": 0,
+     "hold_k": 4
+    },
+    "delayed_zero_env_steps": 0,
+    "held_env_steps": 121563,
+    "latched_env_steps": 42405,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   }
+  },
+  {
+   "arm": "k1d1",
+   "k": 1,
+   "d": 1,
+   "density": 70,
+   "seed": 4501,
+   "dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/actionhold_g7_v1/k1d1/E2_obstacle_aware__70bars__seed4501",
+   "verdict": "OK",
+   "sidecar": {
+    "calls": 812,
+    "config": {
+     "delay_d": 1,
+     "hold_k": 1
+    },
+    "delayed_zero_env_steps": 2484,
+    "held_env_steps": 0,
+    "latched_env_steps": 0,
+    "patch_applied": true,
+    "written_by": "player_run_exit"
+   }
+  }
+ ],
+ "records": [
+  {
+   "level": "k1d0",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 181.92546153068542,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:30:52.309156+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1867,
+     "crash": 181,
+     "timeout": 0
+    },
+    "duration_s": 182,
+    "result_sha256": "d0a2b7c68e75be633c4906410f2d3bf9f18b263310b13df5f805940b1219bc17"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "k2d0",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 190.1154384613037,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:34:02.441926+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1801,
+     "crash": 247,
+     "timeout": 0
+    },
+    "duration_s": 190,
+    "result_sha256": "671af77ec30d2c82de3399c4f3e31b25c7a186d1fe803b05326b9196d8a2e4df"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "k4d0",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 195.20811581611633,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:37:17.651268+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1510,
+     "crash": 538,
+     "timeout": 0
+    },
+    "duration_s": 195,
+    "result_sha256": "8addc517d992820c79f32e0a93a645ba81463438119f193bfa00b06a70b47904"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "k1d1",
+   "cell_id": "E2_obstacle_aware__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 205,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 248.34638166427612,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:41:25.991594+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1812,
+     "crash": 234,
+     "timeout": 2
+    },
+    "duration_s": 248,
+    "result_sha256": "b0a1d2154b8cc42931fc698fec9582da5ed417a5240afe035b4fd940a970bc19"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "k2d0",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 114.4865734577179,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:43:20.487549+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2004,
+     "crash": 44,
+     "timeout": 0
+    },
+    "duration_s": 114,
+    "result_sha256": "60f4b625d7fb44e285b8a303eea75fd3c16f67ce3a0ec2c69f80bea12f2db6ea"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "k4d0",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 173.2077968120575,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:46:13.692504+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 1947,
+     "crash": 100,
+     "timeout": 1
+    },
+    "duration_s": 173,
+    "result_sha256": "1a6a0e314bd4900b27c7b28a7aeec436ac0abeee4074113f57e71adeeb294180"
+   },
+   "problems": [],
+   "verdict": "OK"
+  },
+  {
+   "level": "k1d1",
+   "cell_id": "E2_obstacle_aware__70bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+   "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+   "scale": null,
+   "seed": 4501,
+   "density": 70,
+   "quota": 16,
+   "exit": 0,
+   "wall_s": 115.69068050384521,
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23",
+    "time": "2026-11-05T14:48:09.385479+09:00"
+   },
+   "stats": {
+    "quota_episodes": 2048,
+    "counts": {
+     "capture": 2011,
+     "crash": 37,
+     "timeout": 0
+    },
+    "duration_s": 116,
+    "result_sha256": "a408e3629c8feae1fbc323ec531a49aa08570af3d42a142cdc32d314eafce741"
+   },
+   "problems": [],
+   "verdict": "OK"
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+  "online": "0-3,6-23",
+  "time": "2026-11-05T14:48:09.419766+09:00"
+ },
+ "finished": "2026-11-05T14:48:09.419777+09:00"
+}

@@ -1,0 +1,14 @@
+{
+  "kind": "FINITE_FALSIFICATION_NOT_CONTINUUM_PROOF",
+  "seed": 20261020,
+  "capsules": 96,
+  "model_safe": 44,
+  "witness_checks": 92928,
+  "false_safe_witnesses": [],
+  "query_seconds": 0.006443388003390282,
+  "physical_qualification": "PHYSICAL_QUALIFICATION_NOT_AVAILABLE",
+  "source_sha256": {
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77"
+  }
+}

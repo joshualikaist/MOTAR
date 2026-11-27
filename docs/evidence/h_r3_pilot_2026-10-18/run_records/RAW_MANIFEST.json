@@ -1,0 +1,109 @@
+{
+ "members": [
+  {
+   "path": "run_report.json",
+   "bytes": 10378,
+   "sha256": "3615bccfc1bb0725fb9a0cd1cbe2c14e7cbfc8925e69982e338cd600abcd0c86"
+  },
+  {
+   "path": "seed4502_B0/h_r3_meta.json",
+   "bytes": 4171,
+   "sha256": "6eeb1a51422ffd737ef3181462d51d0e98751b9ecf2e168e6ccd168c18126fe0"
+  },
+  {
+   "path": "seed4502_B0/h_r3_trace.npz",
+   "bytes": 4239520,
+   "sha256": "8b713a81df1a67574dc59935aa1cbac19e8486ebc1028f4e88a68cc7f828e0fc"
+  },
+  {
+   "path": "seed4502_B0/process_done.json",
+   "bytes": 428,
+   "sha256": "2696e7cc90391b5d1ef75b8b49a16d82c4461ec438938556694bdf5d793c470e"
+  },
+  {
+   "path": "seed4502_B0/result.json",
+   "bytes": 24737,
+   "sha256": "f0cc4f6aa97209d78bcdcf257ffd689d9af4a84738a4038a26c0fee17bcda4a1"
+  },
+  {
+   "path": "seed4502_B0.log",
+   "bytes": 38241,
+   "sha256": "8030e70d6213fc147c939fd1a8385782b2e6deefb9b16a0a87dc1ceb0bfd406e"
+  },
+  {
+   "path": "seed4502_B1/h_r3_meta.json",
+   "bytes": 3891,
+   "sha256": "295ac6ae4436943c889c362e2ffb8df035cb0b0bbfad040279399ddf63fd2516"
+  },
+  {
+   "path": "seed4502_B1/h_r3_trace.npz",
+   "bytes": 4225822,
+   "sha256": "f1b9262ae9cb4a6127ec0a17109061fa768df78dcfa8601f35ef035415bfd5ea"
+  },
+  {
+   "path": "seed4502_B1/process_done.json",
+   "bytes": 428,
+   "sha256": "fe0e4a74e146363b312cbc7de5be3325647929ffafae7d6d4c1316efb67704c3"
+  },
+  {
+   "path": "seed4502_B1/result.json",
+   "bytes": 24742,
+   "sha256": "f6a78b05ae54e0a8cd75b04421b9fde169041294e5a69aeb214144bdbc3530ef"
+  },
+  {
+   "path": "seed4502_B1.log",
+   "bytes": 38244,
+   "sha256": "18f927d703527efaba15cabb2746fe33338eb9bcba767ef008c1cf51a3ae7e2a"
+  },
+  {
+   "path": "seed4502_B2/h_r3_meta.json",
+   "bytes": 4135,
+   "sha256": "bb6368d13c9e688c47c287e51a9edafbba5a7e4d2310b9f6fb6eea53f8514300"
+  },
+  {
+   "path": "seed4502_B2/h_r3_trace.npz",
+   "bytes": 4235977,
+   "sha256": "ae7fc3c2ebe7ab7011228ffaae2c03f14659ebbe083a3a2e59bedaa0f461715a"
+  },
+  {
+   "path": "seed4502_B2/process_done.json",
+   "bytes": 428,
+   "sha256": "b8e5a2b765ac2066168623a63e7f22a0456cd0e5df19bbf338075f3c3693b7ba"
+  },
+  {
+   "path": "seed4502_B2/result.json",
+   "bytes": 24814,
+   "sha256": "2dae26b298f9407a90d493e5f22a95d9db4907a1b0b8717130fa47c84a6e2eac"
+  },
+  {
+   "path": "seed4502_B2.log",
+   "bytes": 38318,
+   "sha256": "af3a1f2d75952c4bac8b0711be94c703ac3239adc66dae63889a4ada9b1bc08c"
+  },
+  {
+   "path": "seed4502_B3/h_r3_meta.json",
+   "bytes": 4163,
+   "sha256": "47cdf488dd9aa7398baba89e8a50ea00f20d35fc601fa67d6526d500269c5f0b"
+  },
+  {
+   "path": "seed4502_B3/h_r3_trace.npz",
+   "bytes": 4238682,
+   "sha256": "02d611561349ef3ee46c71470a6926e673d270c46edc89763a128ada9befc541"
+  },
+  {
+   "path": "seed4502_B3/process_done.json",
+   "bytes": 428,
+   "sha256": "71cc0210b283ffdec2a35a91757703c4ba450fbe79c933108010c6c636a6723f"
+  },
+  {
+   "path": "seed4502_B3/result.json",
+   "bytes": 24841,
+   "sha256": "e4c31a6243db9b5509acbef051d425fe807a9228dae2b79af83b55c308310107"
+  },
+  {
+   "path": "seed4502_B3.log",
+   "bytes": 38345,
+   "sha256": "8289ffd673b5a68c217fafd91d20253950e8e7d4dcee87b711aa7a5713f941df"
+  }
+ ]
+}

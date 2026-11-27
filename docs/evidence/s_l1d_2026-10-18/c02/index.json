@@ -1,0 +1,72 @@
+{
+ "amendment_sha256": "56a8cfc5bb8853030639299690339bb8f3e337768a42cd427c8a93baf044bbfc",
+ "analysis_decision": "GO",
+ "approved_source_commit": "7d0bb37358c0e4a26fe6581cf9ff3f6db30254ed",
+ "commands": {
+  "analysis": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' <aerialgym python> -B tools/s_l1d_c02_analysis.py --run <raw_root> --out docs/evidence/s_l1d_2026-10-18/c02/s_l1d_c02_analysis.json",
+  "run": "PYTHONNOUSERSITE=1 <aerialgym python> -B tools/s_l1d_c02_run.py run --approved-commit 7d0bb37358c0e4a26fe6581cf9ff3f6db30254ed"
+ },
+ "files": {
+  "REPORT.md": {
+   "bytes": 7178,
+   "sha256": "afb6a9a77ee4bb6300dde8005343aadbfa766a74db7aa552b772a88bb7851119"
+  },
+  "preservation_after.json": {
+   "bytes": 14203,
+   "sha256": "45175e9df2a0437653886d047671e26136b0c4b2f588c8f1187c32c766123908"
+  },
+  "run_records/RAW_MANIFEST.json": {
+   "bytes": 3540,
+   "sha256": "b131bc252313d0d2e3cddd6ac191487ce7cef9d90b448c00b8d2a7f48d09f81c"
+  },
+  "run_records/run_report.json": {
+   "bytes": 9589,
+   "sha256": "21b138246520ca726c4dd69522b9c2b475c44c63b20d4493877c8de0e3bcc666"
+  },
+  "run_records/sensors_s_l1c/d2_meta.json": {
+   "bytes": 3429,
+   "sha256": "b63d363e2082e38764ad8740044416fd76b8fe366d99dd1098231628cc673df0"
+  },
+  "run_records/sensors_s_l1c/process_done.json": {
+   "bytes": 809,
+   "sha256": "fff74b185c47a4d9eae8ebd79c25eff64b607c1847f376edbf32f546fbbdc8f8"
+  },
+  "run_records/sensors_s_l1c/s_l1d_sensor_meta.json": {
+   "bytes": 419,
+   "sha256": "691222a6d3c8b87c6128d664322334703d70104099a62cd50a46d4d4a9f87852"
+  },
+  "run_records/sensors_s_l1d/d2_meta.json": {
+   "bytes": 3429,
+   "sha256": "ff8a8eb7ca471c221b0e5b5d6a2de9b72fc606855b84ab1f81be943c570df06a"
+  },
+  "run_records/sensors_s_l1d/process_done.json": {
+   "bytes": 810,
+   "sha256": "710fb25fd8dec71e6bca6fcc3a8112f81db4cd07ed2df74a274be9a8e821bd39"
+  },
+  "run_records/sensors_s_l1d/s_l1d_sensor_meta.json": {
+   "bytes": 418,
+   "sha256": "553c9079c194cbaf9207bd5b9532c4e68b560375a524ec7f93b9f88ec492c3f6"
+  },
+  "s_l1d_c02_analysis.json": {
+   "bytes": 37198,
+   "sha256": "53f8b5a00895d6bcf26f895c18413e993b0ac345c4e54108da2c139d0fc40e72"
+  }
+ },
+ "gates": {
+  "C02-CENTRE": "PASS",
+  "C02-INTEGRITY": "PASS",
+  "C02-MAPPING": "PASS",
+  "C02-ORACLE": "PASS",
+  "C02-PARTIAL": "PASS",
+  "C02-SCALE": "PASS",
+  "C02-SENSOR-NONINTERFERENCE": "PASS",
+  "C02-UNIQUE": "PASS"
+ },
+ "plan_sha256": "73899f2dd25ed36b3a792254579893f9cde791fdef6cd7484294f74df695751a",
+ "production_source": "76f0f4cc08ceecf9a05e628ea82d956123d29524",
+ "raw_manifest_sha256": "b131bc252313d0d2e3cddd6ac191487ce7cef9d90b448c00b8d2a7f48d09f81c",
+ "raw_root": "../aerial_gym_simulator/results/s_l1d_v1/SL1D-C02 (outside Git)",
+ "run_id": "SL1D-C02",
+ "schema": "motar.s-l1d-c02-evidence-index.v1",
+ "status": "COMPLETED"
+}

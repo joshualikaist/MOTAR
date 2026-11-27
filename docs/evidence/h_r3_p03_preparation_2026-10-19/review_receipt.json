@@ -1,0 +1,43 @@
+{
+  "status": "COMPLETED_READ_ONLY_SOURCE_REVIEW",
+  "requested_model": "claude-fable-5-1",
+  "actual_canonical_model": "claude-fable-5-1",
+  "original_verdict": "CONDITIONAL",
+  "closure": "REGISTERED_SOURCE_READY; threeMEDIUMsource/CPUitemsclosedbeforeGPU",
+  "unresolved_blocker_high": 0,
+  "unresolved_medium": 0,
+  "reviewed_source_sha256": {
+    "tools/h_r3_p03_isolation.py": "14c9226288ec185c49d2f207b3bbf598498e314a5c414918701d205be66e1eb8",
+    "motar_eval/h_r3_p03_arms.py": "bf12fccb657291f1aa1049e3c196a591123283498b2d1d5eb5f3c337dcf3f662",
+    "tools/h_r3_p03_launcher.py": "578fba171bb8f5be4bcaaf5ea6aaf3538f294b922c23aeb66b36d7cb2bc95d20",
+    "tools/h_r3_p03_analysis.py": "b4c220f81d4c7b80f6cf299a29bf1507c4ae2e6c67cf67653eaeb8b1e688e6a3",
+    "tools/h_r3_p03_run.py": "975c7afa71d30bbe71bdc44d82c7e601efe04548d1edaee19bb5f966f47172eb",
+    "tests/test_h_r3_p03_isolation.py": "155c9bbc8c167cb4500e81e14c37a4b8585e3dc5f85981cf7d7402906c2845e8",
+    "tests/test_h_r3_p03_arms.py": "7f5c15d5a5fcf8c1be18ed734eae9e9c10a5b59c0207dfd2695e68833bf0128b",
+    "tests/test_h_r3_p03_analysis.py": "359f8a5c5b0931dda111da5a60f08271c20e260675bde71d8c28984f1ccd4f2d",
+    "tests/test_h_r3_p03_runner.py": "ca989222279df57431a6a87a2a9bfcb938a81ec6827546bacdd6def15e24d10c"
+  },
+  "post_fix_source_sha256": {
+    "tools/h_r3_p03_isolation.py": "14c9226288ec185c49d2f207b3bbf598498e314a5c414918701d205be66e1eb8",
+    "motar_eval/h_r3_p03_arms.py": "6c5f2dcce3bc6b3919e69e4eb8db40c879ff7c4e4cc0c6a68e66d2ccd9b21644",
+    "tools/h_r3_p03_launcher.py": "578fba171bb8f5be4bcaaf5ea6aaf3538f294b922c23aeb66b36d7cb2bc95d20",
+    "tools/h_r3_p03_analysis.py": "b4c220f81d4c7b80f6cf299a29bf1507c4ae2e6c67cf67653eaeb8b1e688e6a3",
+    "tools/h_r3_p03_run.py": "975c7afa71d30bbe71bdc44d82c7e601efe04548d1edaee19bb5f966f47172eb",
+    "tests/test_h_r3_p03_isolation.py": "155c9bbc8c167cb4500e81e14c37a4b8585e3dc5f85981cf7d7402906c2845e8",
+    "tests/test_h_r3_p03_arms.py": "1efb11f3bc5f3217d18e780724d503f048c1e35d3c82fff395e254d7a6491e8f",
+    "tests/test_h_r3_p03_analysis.py": "359f8a5c5b0931dda111da5a60f08271c20e260675bde71d8c28984f1ccd4f2d",
+    "tests/test_h_r3_p03_runner.py": "ca989222279df57431a6a87a2a9bfcb938a81ec6827546bacdd6def15e24d10c"
+  },
+  "post_review_changed_files": [
+    "motar_eval/h_r3_p03_arms.py",
+    "tests/test_h_r3_p03_arms.py"
+  ],
+  "post_fix_independent_agent_verification": "PASS read-only8directioncases; no furtheredits",
+  "wall_s": 510.36190300097223,
+  "public_review_sha256": "3cac80df42a824522c6ca6358343c69d869b2a6550ef49f824bd5de93fdba8bc",
+  "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/FABLE-P03-Q01",
+  "raw_manifest_sha256": "6d9119b9e3793753aa7a3db785f1a92792bd6eb36b216c737f2f03cf74356b6e",
+  "reviewer_executed_tests": false,
+  "reviewer_verified_GPU": false,
+  "gpu_status": "NOT_TESTED"
+}

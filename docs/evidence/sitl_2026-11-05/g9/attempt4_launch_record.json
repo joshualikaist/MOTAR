@@ -1,0 +1,42 @@
+{
+  "source_head": "06383eba74134a594bd38ba933cb5e0512f1d342",
+  "host_before": {
+    "time": "2026-11-05T14:27:15.700383+09:00",
+    "fault_count": 0,
+    "boot_id": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+    "online": "0-3,6-23"
+  },
+  "argv": [
+    "nice",
+    "-n",
+    "10",
+    "taskset",
+    "-c",
+    "6,7,12,13",
+    "python3",
+    "-B",
+    "/home/fair/motar_tmp/g7_20261105/run_capped.py",
+    "--rss-limit-mib",
+    "12288",
+    "--timeout-s",
+    "1200",
+    "--report",
+    "/home/fair/motar_tmp/g9_resume_20261105/resources_attempt4.json",
+    "--",
+    "taskset",
+    "-c",
+    "0-3,8-11,14-23",
+    "timeout",
+    "-k",
+    "30",
+    "1200",
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_g9_lee_steps_v2.py",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g9_attempt4/g9_lee_steps.json",
+    "06383eba74134a594bd38ba933cb5e0512f1d342"
+  ],
+  "aggregate_rss_watchdog_limit_bytes": 12884901888,
+  "output": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g9_attempt4",
+  "scope": "G9 only; user explicitly approved through G7"
+}

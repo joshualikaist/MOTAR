@@ -1,0 +1,61 @@
+{
+ "protocol": "s4r1-v1",
+ "reading": "INCOMPLETE_INVALID",
+ "integrity_problems": [
+  "attempt status ABORTED",
+  "fixed12 boots incomplete",
+  "invalid member7"
+ ],
+ "boots_recorded": 8,
+ "comparisons": [],
+ "reporting_tolerances": {
+  "sensor_stamp_relative": 0,
+  "sensor_payload": 1e-06,
+  "state": 0.001,
+  "perception_input": 1e-06,
+  "observation": 1e-06,
+  "actor": 1e-06,
+  "governed_request": 1e-06
+ },
+ "fixed_steps": [
+  0,
+  10,
+  25,
+  50,
+  100,
+  200,
+  300,
+  400,
+  500,
+  599
+ ],
+ "stamp_reference": "each boot's step-0 packet sim_now (relative; carries any step-0 offset into every step); absolute step-0 offsets and reference-free frame ages and sim_now increments reported separately",
+ "spread_by_scene": {},
+ "outcome_agreement": {
+  "within_off": {
+   "pairs": 0,
+   "equal": 0
+  },
+  "within_on": {
+   "pairs": 0,
+   "equal": 0
+  },
+  "between_conditions": {
+   "pairs": 0,
+   "equal": 0
+  }
+ },
+ "output_bytes": 263210694,
+ "source_frame_counter": "NOT_RECORDED",
+ "recording_warnings": {},
+ "limits": [
+  "n3/scene/condition cannot establish equivalence or a causal subscriber effect",
+  "first recorded divergence is not necessarily a causal initiator",
+  "tied stages are not ordered; a k=0 tie is uninformative about order",
+  "instrumented boots do not establish noninterference with historical recorders",
+  "whether --seed controls PX4 SITL sensor-plugin noise engines is NOT_TESTED",
+  "the instrumentation smoke was a short env0 boot: the 600-step path was first exercised live in attempt01 (CPU-tested only before)",
+  "question 2 is a descriptive range reading (k of 9 between pairs inside the pooled 6 within pairs per scene), not a test",
+  "no OAK-D, camera-only, new-vehicle, S5 or real-flight qualification"
+ ]
+}

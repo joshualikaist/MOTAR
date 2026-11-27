@@ -1,0 +1,76 @@
+{
+ "analyser_log": "f3930c6 2026-11-05T03:24:34+09:00 G7 preregistered: Policy F under held / delayed actions (chunking premise, latency budget)",
+ "boot_id_now": "407ae422-184d-4dbf-a89b-1fd5d05a51df",
+ "branch": "camonly/dev",
+ "head": "06383eba74134a594bd38ba933cb5e0512f1d342",
+ "hook_log": "f3930c6 2026-11-05T03:24:34+09:00 G7 preregistered: Policy F under held / delayed actions (chunking premise, latency budget)",
+ "hook_sha_report_eq_tree": {
+  "tools/actionhold_hook.py": true,
+  "tools/actionhold_site/sitecustomize.py": true
+ },
+ "k1d0_kroc_episodes_bytes_equal": true,
+ "k1d0_kroc_summary_diff": [
+  "/context/run_id",
+  "/finished_at",
+  "/import_origins/aerial_gym",
+  "/import_origins/kroc_eval_adapter",
+  "/import_origins/motar_eval"
+ ],
+ "k1d0_ledger_summary_diff": [],
+ "k1d0_result_json_diff": [
+  "/condition/evaluation_nonce"
+ ],
+ "k1d0_result_values": {
+  "/condition/evaluation_nonce": [
+   "610079f1c18f2f864d0b7976edede75c0f3c891984eeb75920c69b5101c09160",
+   "d71a84ae73429b93858d30c331d7fb2775b47e7c18bca9c085e50335bdbc3bdd"
+  ]
+ },
+ "meas_commit_time": "2026-11-05T14:27:12+09:00",
+ "meas_path_changed_base_to_meas": "",
+ "porcelain": "",
+ "preflight_problems": [],
+ "prereg_changed_base_to_meas": "",
+ "prereg_log": "f3930c6 2026-11-05T03:24:34+09:00 G7 preregistered: Policy F under held / delayed actions (chunking premise, latency budget)",
+ "reading": "COMPLETE",
+ "record_hosts_same": true,
+ "record_problems": [
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  []
+ ],
+ "record_verdicts": [
+  "OK",
+  "OK",
+  "OK",
+  "OK",
+  "OK",
+  "OK",
+  "OK"
+ ],
+ "ref_receipts": {
+  "205": {
+   "finished_at": "2026-11-04T04:03:01.905413+00:00",
+   "git_commit": "c56be07030c4284b12cd3c63fcdc871dea419115",
+   "git_dirty_files": 0,
+   "requested_episodes": 2048,
+   "status": "OK"
+  },
+  "70": {
+   "finished_at": "2026-11-04T02:59:53.376914+00:00",
+   "git_commit": "c56be07030c4284b12cd3c63fcdc871dea419115",
+   "git_dirty_files": 0,
+   "requested_episodes": 2048,
+   "status": "OK"
+  }
+ },
+ "report_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/motar_eval/__init__.py"
+ },
+ "runner_log": "16d351f 2026-11-05T14:18:44+09:00 G7: enforce preregistered raw ledger identity before GPU evaluation\nf3930c6 2026-11-05T03:24:34+09:00 G7 preregistered: Policy F under held / delayed actions (chunking premise, latency budget)"
+}

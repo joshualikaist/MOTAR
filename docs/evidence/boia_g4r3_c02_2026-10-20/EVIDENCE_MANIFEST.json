@@ -1,0 +1,166 @@
+{
+  "schema": "motar.g4r3.c02.evidence.v1",
+  "base_sha": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "self_excluded": true,
+  "path_base": "repository root",
+  "files": {
+    "docs/evidence/boia_g4r3_c02_2026-10-20/C02_FINAL_SOURCE_DIFF.patch": {
+      "bytes": 36963,
+      "sha256": "369cd434ad2b7faa47bc3bc4e5ce3e3ede487679a2c130f76f1db4803f9a27d3"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/C02_REPORT.md": {
+      "bytes": 10320,
+      "sha256": "d1a414d6c3a64393506012fdad7febaad8bee130939465855820f4e9cf80eb80"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/COMMIT_SCOPE.json": {
+      "bytes": 3213,
+      "sha256": "f47702b0e38469e274e09f223e9bccd27d200844cfea90232ba9992752dc88b2"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/CPU_VALIDATION_PROTOCOL.md": {
+      "bytes": 3777,
+      "sha256": "dc20555a516ef29d7788b4faec41dee4445163b02da932249fe4542adece0f9e"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/boia_final_tests.txt": {
+      "bytes": 22007,
+      "sha256": "63d13634cbda4f33518b21e04c70c8e706843198d011ea4f2b29f0f5ab4775b0"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/candidate_independence_after.json": {
+      "bytes": 40201,
+      "sha256": "1ec24eafa1e8d830c4f0028ad29b85da5a49cb2d1f2090d7c1e7963027a009d4"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/candidate_independence_after_tests.log": {
+      "bytes": 4161,
+      "sha256": "5211c4da9f5aab6fe697a67294d9f532036ac2e763f9504d4150698e44fe130d"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/candidate_independence_prefix.json": {
+      "bytes": 8180,
+      "sha256": "8049a4d484231478e9b72d295b06a63e60dda9de65b90fc7d2fdba1bec372f7b"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/candidate_independence_prefix.log": {
+      "bytes": 8526,
+      "sha256": "5f5f14b1fb1589eea4985a44444c5f7da365aa5bdd8eef732b4dd954b18a0fd8"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/candidate_independence_prefix_source_manifest.json": {
+      "bytes": 1156,
+      "sha256": "dfa6f14936ee1726b34292ef2d8baacaf8f4a9c18e695e3c91cc078e5ba9fd92"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/integrity.json": {
+      "bytes": 1538,
+      "sha256": "84bf122f0859fc57159ed95a690dbea738cbcba2427c05887e2a3cd38712e799"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/preflight.json": {
+      "bytes": 5102,
+      "sha256": "52171a3203fee6b0c05641c38a7ee8120f353409ded40bc4935109e690c378f0"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/public_cpu_final.txt": {
+      "bytes": 20386,
+      "sha256": "3f3aaf1c0d74ea73ba54043c6901a65338bc44b048a7d126b3e2a3dc0bbb9d40"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/public_cpu_per_test.json": {
+      "bytes": 549805,
+      "sha256": "0ea6e188ccbe90cd9d081b330ccb40cef1ad8fd8e3a3297e0484fce0d720f5b6"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/public_error_comparison.json": {
+      "bytes": 8264,
+      "sha256": "cc0b3394aefed28b0c6f2085b363a5c4b76a4bcfece3f524b9f14b85d90cdc11"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/replay_candidate_independence_prefix.py": {
+      "bytes": 4232,
+      "sha256": "5340d4754e03c9a50c0fc74031f0da3c71ec37c5f247a735600fdb93f4da742c"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/run_public_cpu_with_results.py": {
+      "bytes": 5424,
+      "sha256": "97f1da1d69e2cb5aa678916b12bb5d3a29c888396c77bcb499534525983cbba4"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/safety_prefix_candidate_fix.py.txt": {
+      "bytes": 24955,
+      "sha256": "0041a40ddb599c400c2e5d0ac7c7a0517d6ffbefa8a7f019c1905a6ab6c883f8"
+    },
+    "docs/evidence/boia_g4r3_c02_2026-10-20/validation.json": {
+      "bytes": 5382,
+      "sha256": "6b2bd6fba169f0998c46e31457f95e6a7cb3db5f4b2ee178b20a2bf4a4e1a2d3"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/C02_SOURCE_DIFF.patch": {
+      "bytes": 34000,
+      "sha256": "8358cdb3649e1f5df0b9c4dc94c67553f08b004e72e2b02d57102384c69ba0ba"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/CPU_VALIDATION_PROTOCOL.md": {
+      "bytes": 4614,
+      "sha256": "ba7cf06c8e0d3ba8b15feed6a61a8e5aa96ca208dee6d19b375cce399dd0d552"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry.json": {
+      "bytes": 509,
+      "sha256": "9a0ddf15b46a624ca6803de394476b72710eb187da1d1a50e78221595fee3a24"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry_check.py": {
+      "bytes": 3133,
+      "sha256": "9f7c827698508d03c5bb836dbbc833ebecc8cff9d67cf3c2078199f644f4f16c"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/boia_before_timing_guard.txt": {
+      "bytes": 20159,
+      "sha256": "74edf04474a5712a6a924f164ce03a4e0ed520df4ccfa8d8f3689f7803677dd2"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/boia_final_tests.txt": {
+      "bytes": 20281,
+      "sha256": "9b7e69a68c177ca36c1293837b1897fa6f17740bf2c824a1975b2018c353da30"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/collect_model_receipt.py": {
+      "bytes": 4459,
+      "sha256": "b1407712100bf16b42faa125c6ec076c91d66fb0a748633d1ca1972bf5f33a2d"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/integrity.json": {
+      "bytes": 3424,
+      "sha256": "8fd5d78ca0c0d5ef7fb04fc06a420e691004abe969b2f3a7836afd23d0345c4e"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/model_receipt.json": {
+      "bytes": 3689,
+      "sha256": "c9149f86f6e5986e2d8807d6cffc1aed82565239f9b43906fc6f3b58fe3b5030"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_before_timing_guard.txt": {
+      "bytes": 20371,
+      "sha256": "fb25d8b55ef93331ac3671ac6096497046c15a21cd8b338f49b8f396229c5351"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_build.json": {
+      "bytes": 2089,
+      "sha256": "09e3f63966d2f833fc886fb6f00ea16d5a49cdcb8059ad924d5483cffbc17f2a"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/validation.json": {
+      "bytes": 37827,
+      "sha256": "7fc98e761e561eae7aa2fa28767a2dc06867ec6cdcbdcea1b9f911dfab8aaea5"
+    }
+  },
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "b2638ca46324be01858de38144b4a259b425c33970cfb22dc8c58283d3363b1c",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd"
+  },
+  "tests_sha256": {
+    "tests/test_boia_access.py": "a5665da273dae1a20e4caeebda8fa7f92a3a13fd6873d32dd8dd370e919c53ff",
+    "tests/test_boia_arbitration.py": "7fc8ad95c738854fd069a8ebe054d2f8f74c2d61bd6fc8b1abb8c09ed50dede6",
+    "tests/test_boia_belief.py": "1d21aa970378778fb7f9e0d5b0473dd740b0d0228b7053b6e9b3612bb7fbeb2e",
+    "tests/test_boia_c02_candidate_independence.py": "4bd8fc65cac3389bd57437caecaf263be6ac350aba3795e5402d97f44f42bbbe",
+    "tests/test_boia_c02_geometry.py": "78752dde05832c1e32013e4abdcadc8733bb28eea7ffc39972dad9b97d5562c0",
+    "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e",
+    "tests/test_boia_candidates_safety.py": "4c5c2948275cb40793d54271d8fced79969e316a4b2bfb0f66bf46337f9b3e11",
+    "tests/test_boia_dynamics.py": "e9ae9206d674f5a9076945c6e274c133429381660e3704572c904b107b3a85fe",
+    "tests/test_boia_geometry_visibility.py": "cd837bd9441f0c09b04264909c8861ede78533e5fc360f54c3c6e024262125e7",
+    "tests/test_boia_p0_geometry.py": "088aa2fde66403990baa8fd2adb2553273886860d41ba09bdf6f22edf5fa059f",
+    "tests/test_boia_p0_online.py": "be05cfbac7fd88c802b0d88a773ef4715639fe282b74af8eb435688cb74c331b",
+    "tests/test_boia_p0_safety.py": "b9291c08f5666edb915fc803002ddaf06962384a989098d075959de8e43ff7c2",
+    "tests/test_boia_planner.py": "c459906af2e01966a5dd9afc95c2cf6175f2381a79eee5565895b241a6df9a1e"
+  },
+  "worklog_sha256_at_commit": "4cfaafd37374e6f054c1b3dc5594cf9a015447031b500758afa9404551da2ad5",
+  "raw_or_checkpoint_payload_included": false
+}

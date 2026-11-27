@@ -1,0 +1,35 @@
+{
+ "files": [
+  {
+   "bytes": 710829,
+   "file": "d2_renders.npz",
+   "sha256": "63704e883bd3bcde46b23ddf9cb28407128dcb9571b4cd676b86226cc7c49777"
+  },
+  {
+   "bytes": 6523,
+   "file": "d2_meta.json",
+   "sha256": "423437b1ac8ce42b1cbae6d634c100a27c89278b9e3899826c0135f0a3c08284"
+  },
+  {
+   "bytes": 384845,
+   "file": "carve_replays.npz",
+   "sha256": "01c156b36965d725383552e7fef0bed64cf251e5a706a44171c8720a420cc08d"
+  },
+  {
+   "bytes": 3236,
+   "file": "s_l1a_sensor_meta.json",
+   "sha256": "24b9e5d3433d9aa2a53abf4f3c7691b1465c011531cf051a9b5b53de1fb1cb2b"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 73280000,
+ "process": "sensors_depth",
+ "process_spec": {
+  "batch": "SENSORS",
+  "id": "sensors_depth",
+  "mode": "depth",
+  "num_envs": 36,
+  "seed": 4401
+ },
+ "wall_s": 7.154311180114746
+}

@@ -1,0 +1,43 @@
+{
+  "format": "motar-ros2-node-v1",
+  "binding": {
+    "schema": "motar-ros2-rgbd-v1",
+    "status": "UNCONFIGURED",
+    "topics": {
+      "rgb": "/motar/camera/rgb/image_rect",
+      "depth": "/motar/camera/depth/image_rect",
+      "camera_info": "/motar/camera/rgb/camera_info",
+      "odometry": "/motar/state/odometry"
+    },
+    "frames": {
+      "world": null,
+      "body": null,
+      "optical": null
+    },
+    "geometry": {
+      "mount_flu_m": null,
+      "optical_to_body_rotation": null,
+      "provenance": null
+    },
+    "producer": {
+      "rectified": null,
+      "depth_aligned_to_rgb": null,
+      "provenance": null
+    },
+    "conventions": {
+      "world": "ENU",
+      "body": "FLU",
+      "depth": "optical_z_m"
+    },
+    "clock": {
+      "domain": "ROS_TIME",
+      "source": null
+    }
+  },
+  "policy_contract_path": null,
+  "policy_contract_sha256": null,
+  "outputs": {
+    "velocity_topic": "/motar/policy/velocity_enu",
+    "diagnostic_topic": "/motar/policy/diagnostics"
+  }
+}

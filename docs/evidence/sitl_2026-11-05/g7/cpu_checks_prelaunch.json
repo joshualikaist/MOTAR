@@ -1,0 +1,24 @@
+{
+  "suite": "tests/test_actionhold*.py",
+  "tests_run": 11,
+  "result": "PASS",
+  "guard_positive_controls": [
+    "same bytes accepted"
+  ],
+  "guard_negative_controls": [
+    "same JSON with different bytes rejected",
+    "missing ledger rejected"
+  ],
+  "CUDA_VISIBLE_DEVICES": "",
+  "cpu_affinity": "6,7,12,13",
+  "nice": 10,
+  "address_space_cap_bytes": 4294967296,
+  "timeout_s": 180,
+  "runtime_s": 0.02,
+  "run_by": "Codex g7_readiness subagent",
+  "source_sha256": {
+    "tools/actionhold_run.py": "3ba5c379072bf820de6aa7d40a9a90f526367976a53336466d30be449ed239dc",
+    "tests/test_actionhold_identity.py": "0f6f0a919742f3eebee6e5be4e7cd5e0778bf63c6415386d9bead7011e427619"
+  },
+  "gpu_run": "NOT_RUN"
+}

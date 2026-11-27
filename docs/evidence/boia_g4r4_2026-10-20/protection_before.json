@@ -1,0 +1,20 @@
+{
+  "checks": {
+    "main_head": true,
+    "main_wip": true,
+    "stash": true,
+    "checkpoint": true
+  },
+  "reference": "docs/evidence/boia_g4r3_research_2026-10-20/integrity.json",
+  "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "stash_sha": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+  "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+  "disk_free_bytes": 9175429120,
+  "Raw_full_rehash": "NOT_RUN",
+  "Raw_payloads_written": false
+}

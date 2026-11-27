@@ -1,0 +1,943 @@
+{
+  "schema": "motar.s-l1c-v2-gpu-supplement.v1",
+  "source_sha": "e45794e876b15f71b5f38c65702fefadc368f93a",
+  "analysis_sha256": "15149c888624a9c460d8e209e1ada7ea5f5441bb2ea7ce2acd4c28ce1ab630a7",
+  "by_range": [
+    {
+      "mode": "v1",
+      "range_m": 1.16,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 24,
+      "false_accepts": 0,
+      "rejected": 48
+    },
+    {
+      "mode": "v1",
+      "range_m": 1.5,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 36,
+      "false_accepts": 0,
+      "rejected": 36
+    },
+    {
+      "mode": "v1",
+      "range_m": 2,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 36,
+      "false_accepts": 0,
+      "rejected": 36
+    },
+    {
+      "mode": "v1",
+      "range_m": 2.28,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 44,
+      "false_accepts": 0,
+      "rejected": 28
+    },
+    {
+      "mode": "v1",
+      "range_m": 2.3,
+      "cases": 72,
+      "opportunities": 36,
+      "true_accepts": 36,
+      "false_accepts": 0,
+      "rejected": 36
+    },
+    {
+      "mode": "v1",
+      "range_m": 3,
+      "cases": 72,
+      "opportunities": 36,
+      "true_accepts": 36,
+      "false_accepts": 0,
+      "rejected": 36
+    },
+    {
+      "mode": "v2",
+      "range_m": 1.16,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 48,
+      "false_accepts": 0,
+      "rejected": 24
+    },
+    {
+      "mode": "v2",
+      "range_m": 1.5,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 72,
+      "false_accepts": 0,
+      "rejected": 0
+    },
+    {
+      "mode": "v2",
+      "range_m": 2,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 72,
+      "false_accepts": 0,
+      "rejected": 0
+    },
+    {
+      "mode": "v2",
+      "range_m": 2.28,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 72,
+      "false_accepts": 0,
+      "rejected": 0
+    },
+    {
+      "mode": "v2",
+      "range_m": 2.3,
+      "cases": 72,
+      "opportunities": 36,
+      "true_accepts": 36,
+      "false_accepts": 0,
+      "rejected": 36
+    },
+    {
+      "mode": "v2",
+      "range_m": 3,
+      "cases": 72,
+      "opportunities": 36,
+      "true_accepts": 36,
+      "false_accepts": 0,
+      "rejected": 36
+    }
+  ],
+  "by_elevation": [
+    {
+      "mode": "v1",
+      "elevation_deg": -5,
+      "cases": 72,
+      "opportunities": 48,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 72
+    },
+    {
+      "mode": "v1",
+      "elevation_deg": 0,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 68,
+      "false_accepts": 0,
+      "rejected": 4
+    },
+    {
+      "mode": "v1",
+      "elevation_deg": 5,
+      "cases": 72,
+      "opportunities": 48,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 72
+    },
+    {
+      "mode": "v1",
+      "elevation_deg": 10,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 68,
+      "false_accepts": 0,
+      "rejected": 4
+    },
+    {
+      "mode": "v1",
+      "elevation_deg": 15,
+      "cases": 72,
+      "opportunities": 48,
+      "true_accepts": 8,
+      "false_accepts": 0,
+      "rejected": 64
+    },
+    {
+      "mode": "v1",
+      "elevation_deg": 20,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 68,
+      "false_accepts": 0,
+      "rejected": 4
+    },
+    {
+      "mode": "v2",
+      "elevation_deg": -5,
+      "cases": 72,
+      "opportunities": 48,
+      "true_accepts": 44,
+      "false_accepts": 0,
+      "rejected": 28
+    },
+    {
+      "mode": "v2",
+      "elevation_deg": 0,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 68,
+      "false_accepts": 0,
+      "rejected": 4
+    },
+    {
+      "mode": "v2",
+      "elevation_deg": 5,
+      "cases": 72,
+      "opportunities": 48,
+      "true_accepts": 44,
+      "false_accepts": 0,
+      "rejected": 28
+    },
+    {
+      "mode": "v2",
+      "elevation_deg": 10,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 68,
+      "false_accepts": 0,
+      "rejected": 4
+    },
+    {
+      "mode": "v2",
+      "elevation_deg": 15,
+      "cases": 72,
+      "opportunities": 48,
+      "true_accepts": 44,
+      "false_accepts": 0,
+      "rejected": 28
+    },
+    {
+      "mode": "v2",
+      "elevation_deg": 20,
+      "cases": 72,
+      "opportunities": 72,
+      "true_accepts": 68,
+      "false_accepts": 0,
+      "rejected": 4
+    }
+  ],
+  "by_negative_scene": [
+    {
+      "mode": "v1",
+      "scene": "BAR_1.16_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_1.16_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_1.5_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_1.5_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_2.28_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_2.28_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_2.3_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_2.3_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_2_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_2_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_3_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "BAR_3_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_1.16_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_1.16_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_1.5_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_1.5_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_2.28_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_2.28_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_2.3_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_2.3_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_2_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_2_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_3_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "FG_3_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N1",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N2",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N5",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N7",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v1",
+      "scene": "N8",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_1.16_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_1.16_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_1.5_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_1.5_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_2.28_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_2.28_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_2.3_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_2.3_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_2_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_2_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_3_0.02",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "BAR_3_0.6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_1.16_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_1.16_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_1.5_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_1.5_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_2.28_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_2.28_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_2.3_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_2.3_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_2_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_2_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_3_0.05",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "FG_3_0.3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N1",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N2",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N3",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N5",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N6",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N7",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    },
+    {
+      "mode": "v2",
+      "scene": "N8",
+      "cases": 3,
+      "opportunities": 0,
+      "true_accepts": 0,
+      "false_accepts": 0,
+      "rejected": 3
+    }
+  ],
+  "decision_counts": [
+    {
+      "mode": "v1",
+      "set": "negative",
+      "decision": "REJECT_V1",
+      "cases": 93
+    },
+    {
+      "mode": "v1",
+      "set": "positive",
+      "decision": "ACCEPT_V1",
+      "cases": 212
+    },
+    {
+      "mode": "v1",
+      "set": "positive",
+      "decision": "REJECT_V1",
+      "cases": 220
+    },
+    {
+      "mode": "v2",
+      "set": "negative",
+      "decision": "ABSTAIN_RANGE",
+      "cases": 2
+    },
+    {
+      "mode": "v2",
+      "set": "negative",
+      "decision": "ABSTAIN_SUPPORT",
+      "cases": 45
+    },
+    {
+      "mode": "v2",
+      "set": "negative",
+      "decision": "REJECT_EXTRA_NEAR_SURFACE",
+      "cases": 46
+    },
+    {
+      "mode": "v2",
+      "set": "positive",
+      "decision": "ABSTAIN_RANGE",
+      "cases": 24
+    },
+    {
+      "mode": "v2",
+      "set": "positive",
+      "decision": "ABSTAIN_SUPPORT",
+      "cases": 72
+    },
+    {
+      "mode": "v2",
+      "set": "positive",
+      "decision": "ACCEPT_GEOMETRY",
+      "cases": 124
+    },
+    {
+      "mode": "v2",
+      "set": "positive",
+      "decision": "ACCEPT_V1",
+      "cases": 212
+    }
+  ],
+  "new_correct_range": {
+    "count": 124,
+    "mae_m": 1.6191727010803337e-06,
+    "max_m": 1.2913726058716435e-05
+  },
+  "all_correct_range": {
+    "v1": {
+      "count": 212,
+      "mae_m": 0.006366343166176557,
+      "max_m": 0.16869334318467688
+    },
+    "v2": {
+      "count": 336,
+      "mae_m": 0.004017456930489179,
+      "max_m": 0.16869334318467688
+    }
+  },
+  "covariance": {
+    "v1": {
+      "updates": 212,
+      "radial_ratio_min": 0.0059220885982569135,
+      "radial_ratio_max": 0.006818836896736931,
+      "orthogonal_ratio_min": 0.999600052833557,
+      "orthogonal_ratio_max": 0.9996002555926677
+    },
+    "v2": {
+      "updates": 336,
+      "radial_ratio_min": 0.0059220885982569135,
+      "radial_ratio_max": 0.006818836896736931,
+      "orthogonal_ratio_min": 0.9996000468133683,
+      "orthogonal_ratio_max": 0.9996002753392055
+    }
+  },
+  "geometry_max_abs_error_m": 2.7742800132735113e-05,
+  "peak_gpu_used_mib": 4670,
+  "gpu_process_wall_hours": 0.23996995108522243,
+  "manifest_sha256": "fce6b844146a6e2869f6e619bb7c57aef8d049c662855d9a05c3034c0cb7443b",
+  "manifest_members": 284,
+  "raw_report_sha256": "b902491953e23c35d2e1dd7e2b5c4883eec9f8eab334719e37d6cf91fd642c77",
+  "cpu_manifest_sha256": "14d55c094b804e9c6de3c7edd16455c1e2b6a1d8b2977df89afa314154ac3f95",
+  "closed_loop": [
+    {
+      "config": "static",
+      "mode": "v1",
+      "frames": 4808,
+      "update_source_counts": {
+        "0": 501,
+        "1": 3886,
+        "2": 421
+      },
+      "max_identity_age_s": 2.299999952316284,
+      "max_fused_age_s": 1.700000286102295
+    },
+    {
+      "config": "static",
+      "mode": "v2",
+      "frames": 4808,
+      "update_source_counts": {
+        "0": 501,
+        "1": 3886,
+        "2": 421
+      },
+      "max_identity_age_s": 2.299999952316284,
+      "max_fused_age_s": 1.700000286102295
+    },
+    {
+      "config": "moving",
+      "mode": "v1",
+      "frames": 4808,
+      "update_source_counts": {
+        "0": 895,
+        "1": 3551,
+        "2": 362
+      },
+      "max_identity_age_s": 4.799997806549072,
+      "max_fused_age_s": 4.199998378753662
+    },
+    {
+      "config": "moving",
+      "mode": "v2",
+      "frames": 4808,
+      "update_source_counts": {
+        "0": 827,
+        "1": 3550,
+        "2": 431
+      },
+      "max_identity_age_s": 4.199998378753662,
+      "max_fused_age_s": 4.199998378753662
+    }
+  ],
+  "update_source_legend": {
+    "0": "prediction/no measurement",
+    "1": "camera identity update",
+    "2": "LiDAR range-only update"
+  },
+  "overall_status": "GPU_QUALIFIED_PENDING_REVIEW"
+}

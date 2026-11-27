@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "test_count": 52,
+  "wall_s": 0.263,
+  "command": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_h_r3_p03*.py' -v",
+  "source_sha256": {
+    "tools/h_r3_p03_isolation.py": "14c9226288ec185c49d2f207b3bbf598498e314a5c414918701d205be66e1eb8",
+    "motar_eval/h_r3_p03_arms.py": "6c5f2dcce3bc6b3919e69e4eb8db40c879ff7c4e4cc0c6a68e66d2ccd9b21644",
+    "tools/h_r3_p03_launcher.py": "578fba171bb8f5be4bcaaf5ea6aaf3538f294b922c23aeb66b36d7cb2bc95d20",
+    "tools/h_r3_p03_analysis.py": "b4c220f81d4c7b80f6cf299a29bf1507c4ae2e6c67cf67653eaeb8b1e688e6a3",
+    "tools/h_r3_p03_run.py": "975c7afa71d30bbe71bdc44d82c7e601efe04548d1edaee19bb5f966f47172eb",
+    "tests/test_h_r3_p03_isolation.py": "155c9bbc8c167cb4500e81e14c37a4b8585e3dc5f85981cf7d7402906c2845e8",
+    "tests/test_h_r3_p03_arms.py": "1efb11f3bc5f3217d18e780724d503f048c1e35d3c82fff395e254d7a6491e8f",
+    "tests/test_h_r3_p03_analysis.py": "359f8a5c5b0931dda111da5a60f08271c20e260675bde71d8c28984f1ccd4f2d",
+    "tests/test_h_r3_p03_runner.py": "ca989222279df57431a6a87a2a9bfcb938a81ec6827546bacdd6def15e24d10c"
+  },
+  "scope": "FocusedCPU only; actualWarpCPU oracle/modeparity +controls/parser/runner contracts; noGPU600stepclaim",
+  "independent_agent_review": "NO_BLOCKER; isolation/controls +launcher/supervisor fieldcontract reviewedread-only",
+  "gpu_status": "NOT_TESTED",
+  "pre_review_test_count": 51,
+  "post_review_fix": "Invaliddistance<1e-6 horizontalabstention, registeredthreshold unchanged; independentlyverified8cases"
+}

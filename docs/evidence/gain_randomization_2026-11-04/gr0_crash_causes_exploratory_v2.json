@@ -1,0 +1,40 @@
+{
+ "status": "EXPLORATORY_NOT_PREREGISTERED",
+ "supersedes": "gr0_crash_causes_exploratory.json, whose *_share fields are sums of per-cell shares (review L5); its counts are correct and unchanged here",
+ "source": "result.json crash_causes (aggregate window) per cell, summed per level",
+ "by_level": {
+  "S00": {
+   "crashes": 1106,
+   "bar_contact": 1076,
+   "below": 24,
+   "above": 0,
+   "out_of_bounds": 6,
+   "bar_contact_share_of_crashes": 0.972875226039783,
+   "below_share_of_crashes": 0.0216998191681736,
+   "above_share_of_crashes": 0.0,
+   "out_of_bounds_share_of_crashes": 0.0054249547920434
+  },
+  "S20": {
+   "crashes": 1273,
+   "bar_contact": 1194,
+   "below": 72,
+   "above": 0,
+   "out_of_bounds": 7,
+   "bar_contact_share_of_crashes": 0.9379418695993715,
+   "below_share_of_crashes": 0.056559308719560095,
+   "above_share_of_crashes": 0.0,
+   "out_of_bounds_share_of_crashes": 0.0054988216810683424
+  },
+  "S40": {
+   "crashes": 2019,
+   "bar_contact": 1568,
+   "below": 447,
+   "above": 0,
+   "out_of_bounds": 4,
+   "bar_contact_share_of_crashes": 0.7766220901436355,
+   "below_share_of_crashes": 0.2213967310549777,
+   "above_share_of_crashes": 0.0,
+   "out_of_bounds_share_of_crashes": 0.001981178801386825
+  }
+ }
+}

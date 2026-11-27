@@ -1,0 +1,30 @@
+{
+  "started": "2026-11-05T14:27:15.718866+09:00",
+  "finished": "2026-11-05T14:27:33.825125+09:00",
+  "argv": [
+    "taskset",
+    "-c",
+    "0-3,8-11,14-23",
+    "timeout",
+    "-k",
+    "30",
+    "1200",
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_g9_lee_steps_v2.py",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g9_attempt4/g9_lee_steps.json",
+    "06383eba74134a594bd38ba933cb5e0512f1d342"
+  ],
+  "exit_code": 0,
+  "stop_reason": null,
+  "peak_aggregate_rss_bytes": 5041573888,
+  "rss_limit_bytes": 12884901888,
+  "timeout_s": 1200.0,
+  "poll_interval_s": 0.25,
+  "samples": 71,
+  "processes_observed": 2,
+  "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+  "kernel_cgroup_limit_claimed": false,
+  "subreaper_enabled": true,
+  "live_descendants_after_cleanup": 0
+}

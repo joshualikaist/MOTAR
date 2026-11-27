@@ -1,0 +1,38 @@
+{
+  "unit": "U1",
+  "status": "CPU_TESTS_PASS",
+  "tests": {
+    "run": 21,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 0.051
+  },
+  "base_sha": "f10372166fb56c525af282d1c5faa1af26e78dba",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/__init__.py",
+    "motar_eval/boia/types.py",
+    "motar_eval/boia/geometry.py",
+    "motar_eval/boia/visibility.py",
+    "tests/test_boia_geometry_visibility.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/types.py": "70fd6f37b7ed33366ca73e62a9d5591526890939054aaf7c6369686d71c7917b",
+    "motar_eval/boia/geometry.py": "83f97733ee15148d16f6685c37e7ba9301ae10b707c3a984c6372188081a1133",
+    "motar_eval/boia/visibility.py": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62",
+    "tests/test_boia_geometry_visibility.py": "09b2976ac418111bf56979b82da361187dea303ba3ec275b4407f7c6ac39d8eb"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/__init__.py": 1,
+    "motar_eval/boia/types.py": 134,
+    "motar_eval/boia/geometry.py": 111,
+    "motar_eval/boia/visibility.py": 122,
+    "tests/test_boia_geometry_visibility.py": 322
+  },
+  "public_cpu": null,
+  "interpretation": "CPU unit evidence only; no performance/calibration/simulator/GPU qualification",
+  "note": "368source lines; exact sector-crossing free model, explicit-prior pointdiscs, MC1024 antithetic singlebar and positive-correlated independent-product bias checks. Root near-boundary falseclear and NaN stress bugs fixed before commit; independent read-only geometry/analytic review found no remaining HIGH. Model validity/foreground self-exclusion remain unqualified. No global RNG or TF32 distance-matrix expansion.",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9396432896
+}

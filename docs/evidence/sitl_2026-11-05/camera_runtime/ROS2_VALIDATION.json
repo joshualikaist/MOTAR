@@ -1,0 +1,134 @@
+{
+  "status": "CPU_SOURCE_PREPARATION_PASS_WITH_LIMITS",
+  "real_experiment_preparation": "INCOMPLETE",
+  "public_cpu": {
+    "profile": "PUBLIC_CPU",
+    "status": "PASS",
+    "ran": 4067,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "source_unchanged_during_full_suite": true,
+  "review_source_current_match": true,
+  "review_baseline_covered_files": 22,
+  "review_total_files": 22,
+  "baseline_missing_empty_resource_marker": {},
+  "kernel_before": {
+    "returncode": 0,
+    "regex_count": 0,
+    "stdout_sha256": "f41115bf95793ff69d24d6729109cc56956c9fa60c7223f86a922add5d77a267",
+    "stderr": ""
+  },
+  "kernel_after": {
+    "returncode": 0,
+    "regex_count": 0,
+    "stdout_sha256": "8c6d27fef6cba918209057c7585ef00aeadaa17d861950923325dc466c5e7cf4",
+    "stderr": ""
+  },
+  "full_result": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/PUBLIC_CPU_RESULT_v2.json",
+    "sha256": "024cca5bad379038c9acad4fdf815873a4151f39a63369c46baf05cef8b15cab"
+  },
+  "full_baseline": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/PUBLIC_CPU_BASE_v2.json",
+    "sha256": "531b9e4c644195df3055fdb329c1ff7fd5b29d58cf1187e151c46a202296dd13"
+  },
+  "full_log": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/public_cpu_v2.log",
+    "sha256": "60f87e5ab6f6644e60f0003173ec6b0aff9618d6045fdae3f5b1e14b54382a2d"
+  },
+  "review": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/review_r1/REVIEW.md",
+    "sha256": "556c15086ac012aefd07a364a1d4a2bf909831698980e5efaeb16e1898541738"
+  },
+  "review_addendum": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/review_r1/ADDENDUM_v2.md",
+    "sha256": "18c182127a9270959407c6adfbf5834b17c68f6af63a55ac2585dbf9ee05283d"
+  },
+  "review_source": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/review_r1/v2_source_sha256.json",
+    "sha256": "ac3967b84b6732978742f79db214239c798ac90948916e667685c849f04ca232"
+  },
+  "review_binding": {
+    "path": "/home/fair/motar_tmp/camera_ros2_20261111/REVIEW_BINDING_CHECK_v2.json",
+    "sha256": "428d8d8591004b2176dfa3c374bc5aaaedbe8a162b6c9c448fa8167060080f99"
+  },
+  "focused": {
+    "ran": 55,
+    "failures": 0,
+    "errors": 0,
+    "log": {
+      "path": "/home/fair/motar_tmp/camera_ros2_20261111/focused_v4_root_pythonpath.log",
+      "sha256": "053ef85f2458957ce1a4e67c9880e01ae92b37bb24ca70e79bb6f6b5ead16936"
+    }
+  },
+  "synthetic_actual_checkpoint_composition": {
+    "seeds": [
+      1,
+      2
+    ],
+    "frames_per_seed": 14,
+    "payload_pairs_per_seed": 14,
+    "vehicle_commands_sent": 0,
+    "fixture_clocks": "SYNTHETIC_NOT_LATENCY_EVIDENCE"
+  },
+  "preserved_development_failures": [
+    {
+      "path": "/home/fair/motar_tmp/camera_ros2_20261111/FOCUSED_DEV_FAILURE_1.json",
+      "sha256": "da518146950d5ef6965f39412c054ce6f330374c222684d9a64c6e9ba69d833f"
+    },
+    {
+      "path": "/home/fair/motar_tmp/camera_ros2_20261111/focused_v1.log",
+      "sha256": "4294f2ce8b9a2759da7a18cfda14b38105627fa76abc9028c1e468393c89a1cb"
+    },
+    {
+      "path": "/home/fair/motar_tmp/camera_ros2_20261111/PUBLIC_CPU_RESULT_v1.json",
+      "sha256": "26fc6216a40cdefe0dd91671e74ef9671746b890ef525dbfa92b7c52ab0c7a6f"
+    },
+    {
+      "path": "/home/fair/motar_tmp/camera_ros2_20261111/public_cpu_v1.log",
+      "sha256": "1fa447174152dca152f82556ee85accceae1a2d99f49d32ef5c95a0879c1f9f7"
+    }
+  ],
+  "old_core_sources_changed": [],
+  "source_target": {
+    "ros_interfaces": "Humble",
+    "px4_message_source": "v1.14.3"
+  },
+  "qualification": {
+    "ROS_graph": "NOT_TESTED",
+    "colcon_install": "NOT_TESTED",
+    "real_generated_messages": "NOT_TESTED",
+    "DDS_delivery": "NOT_TESTED",
+    "ROS_Python_policy_ABI": "NOT_TESTED",
+    "actual_FC_firmware_link": "NOT_TESTED",
+    "camera_calibration_clock": "NOT_TESTED",
+    "VIO_GNSS_mocap_localization": "NOT_TESTED",
+    "real_10Hz_latency": "NOT_TESTED",
+    "target_appearance": "NOT_TESTED",
+    "SITL": "NOT_TESTED",
+    "hardware": "NOT_TESTED",
+    "pilot_takeover": "NOT_TESTED",
+    "flight": "NOT_TESTED"
+  },
+  "s3ar": "HOLD",
+  "usage": {
+    "status": "USAGE_UNKNOWN",
+    "source": null,
+    "remaining_percent": null
+  },
+  "git": {
+    "branch": "camonly/dev",
+    "base": "eefb832e1c4fc6de8e597e990aa9cd58f2228079",
+    "head": "eefb832e1c4fc6de8e597e990aa9cd58f2228079",
+    "new_commit": null,
+    "push": false,
+    "merge": false
+  }
+}

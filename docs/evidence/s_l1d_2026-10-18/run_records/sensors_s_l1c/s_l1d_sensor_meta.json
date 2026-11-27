@@ -1,0 +1,25 @@
+{
+ "camera_far_m": 20.0,
+ "camera_offset": [
+  0.10000000149011612,
+  0.0,
+  0.029999999329447746
+ ],
+ "el0_classes": [
+  "NONE",
+  "RANGE_EXIT",
+  "FOV_EXIT",
+  "SCALE_LOSS",
+  "FULL",
+  "CENTRE_ONLY",
+  "PARTIAL",
+  "VISIBLE"
+ ],
+ "lineage_flag": "s_l1c_v1",
+ "min_target_pixels": 2,
+ "mode": "s_l1c",
+ "peak_allocated_bytes": 112229376,
+ "perception_s_l1c": true,
+ "perception_s_l1d": false,
+ "target_radius": 0.15
+}

@@ -1,0 +1,591 @@
+{
+ "label_semantics": "DECLARED_SYNTHETIC_FIXTURE_LABEL_NOT_A_SIMULATOR_OUTCOME",
+ "dwell_decisions": 5,
+ "summary": {
+  "BOIA": {
+   "decisions": 241,
+   "scenarios": 10,
+   "trigger_count": 0,
+   "unnecessary_triggers": 0,
+   "unnecessary_trigger_scenarios": [],
+   "warranted_scenarios": 4,
+   "missed_trigger_scenarios": [
+    "S2_long_occlusion_detour",
+    "S4_target_leaves_fov",
+    "S8_ambiguous_reappearance",
+    "S9_occlusion_growing_covariance"
+   ],
+   "trigger_latency_s": [],
+   "abstain_count": 164,
+   "invalid_input_rejections": 8,
+   "loss_decisions": 132,
+   "loss_decisions_with_candidate": 93,
+   "runtime_s": {
+    "median": 0.07828800496645272,
+    "p95": 0.11287590698339045,
+    "max": 0.17461673798970878
+   },
+   "label_semantics": "DECLARED_SYNTHETIC_FIXTURE_LABEL_NOT_A_SIMULATOR_OUTCOME"
+  },
+  "F0": {
+   "decisions": 241,
+   "scenarios": 10,
+   "trigger_count": 0,
+   "unnecessary_triggers": 0,
+   "unnecessary_trigger_scenarios": [],
+   "warranted_scenarios": 4,
+   "missed_trigger_scenarios": [
+    "S2_long_occlusion_detour",
+    "S4_target_leaves_fov",
+    "S8_ambiguous_reappearance",
+    "S9_occlusion_growing_covariance"
+   ],
+   "trigger_latency_s": [],
+   "abstain_count": 164,
+   "invalid_input_rejections": 8,
+   "loss_decisions": 132,
+   "loss_decisions_with_candidate": 93,
+   "runtime_s": {
+    "median": 0.07857924606651068,
+    "p95": 0.11342537496238947,
+    "max": 0.17810704396106303
+   },
+   "label_semantics": "DECLARED_SYNTHETIC_FIXTURE_LABEL_NOT_A_SIMULATOR_OUTCOME"
+  },
+  "H1": {
+   "decisions": 241,
+   "scenarios": 10,
+   "trigger_count": 22,
+   "unnecessary_triggers": 0,
+   "unnecessary_trigger_scenarios": [],
+   "warranted_scenarios": 4,
+   "missed_trigger_scenarios": [
+    "S8_ambiguous_reappearance",
+    "S9_occlusion_growing_covariance"
+   ],
+   "trigger_latency_s": [
+    0.4,
+    0.4
+   ],
+   "abstain_count": 142,
+   "invalid_input_rejections": 8,
+   "loss_decisions": 132,
+   "loss_decisions_with_candidate": 93,
+   "runtime_s": {
+    "median": 0.07823585590813309,
+    "p95": 0.11316399893257767,
+    "max": 0.17521681496873498
+   },
+   "label_semantics": "DECLARED_SYNTHETIC_FIXTURE_LABEL_NOT_A_SIMULATOR_OUTCOME"
+  },
+  "H2": {
+   "decisions": 241,
+   "scenarios": 10,
+   "trigger_count": 0,
+   "unnecessary_triggers": 0,
+   "unnecessary_trigger_scenarios": [],
+   "warranted_scenarios": 4,
+   "missed_trigger_scenarios": [
+    "S2_long_occlusion_detour",
+    "S4_target_leaves_fov",
+    "S8_ambiguous_reappearance",
+    "S9_occlusion_growing_covariance"
+   ],
+   "trigger_latency_s": [],
+   "abstain_count": 164,
+   "invalid_input_rejections": 8,
+   "loss_decisions": 132,
+   "loss_decisions_with_candidate": 93,
+   "runtime_s": {
+    "median": 0.0778986340155825,
+    "p95": 0.1137610609875992,
+    "max": 0.17862473893910646
+   },
+   "label_semantics": "DECLARED_SYNTHETIC_FIXTURE_LABEL_NOT_A_SIMULATOR_OUTCOME"
+  },
+  "H3": {
+   "decisions": 241,
+   "scenarios": 10,
+   "trigger_count": 21,
+   "unnecessary_triggers": 0,
+   "unnecessary_trigger_scenarios": [],
+   "warranted_scenarios": 4,
+   "missed_trigger_scenarios": [
+    "S4_target_leaves_fov",
+    "S9_occlusion_growing_covariance"
+   ],
+   "trigger_latency_s": [
+    0.1,
+    0.1
+   ],
+   "abstain_count": 143,
+   "invalid_input_rejections": 8,
+   "loss_decisions": 132,
+   "loss_decisions_with_candidate": 93,
+   "runtime_s": {
+    "median": 0.0782222910784185,
+    "p95": 0.11282453301828355,
+    "max": 0.17498511506710202
+   },
+   "label_semantics": "DECLARED_SYNTHETIC_FIXTURE_LABEL_NOT_A_SIMULATOR_OUTCOME"
+  }
+ },
+ "per_scenario": {
+  "S1_brief_occlusion": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 4
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 4
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 4
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 4
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 4
+   }
+  },
+  "S2_long_occlusion_detour": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   },
+   "H1": {
+    "proposals": 16,
+    "first_proposal_s": 1.5,
+    "abstain": 9
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   },
+   "H3": {
+    "proposals": 19,
+    "first_proposal_s": 1.2000000000000002,
+    "abstain": 6
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   }
+  },
+  "S3_long_occlusion_no_plan": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 25
+   }
+  },
+  "S4_target_leaves_fov": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H1": {
+    "proposals": 6,
+    "first_proposal_s": 2.4000000000000004,
+    "abstain": 9
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   }
+  },
+  "S4b_target_teleport": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   }
+  },
+  "S5_detector_miss_clear_los": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   }
+  },
+  "S6_sensor_dropout": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 9
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 9
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 9
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 9
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 9
+   }
+  },
+  "S7_never_acquired": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 15
+   }
+  },
+  "S8_ambiguous_reappearance": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 16
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 16
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 16
+   },
+   "H3": {
+    "proposals": 2,
+    "first_proposal_s": 1.2000000000000002,
+    "abstain": 14
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 16
+   }
+  },
+  "S9_occlusion_growing_covariance": {
+   "F0": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "H1": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "H2": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "H3": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   },
+   "BOIA": {
+    "proposals": 0,
+    "first_proposal_s": null,
+    "abstain": 20
+   }
+  }
+ },
+ "q01_replay": {
+  "status": "REPLAYED_READ_ONLY",
+  "raw_unchanged": true,
+  "records": [
+   {
+    "frame": 0,
+    "policy": "F0",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1089
+   },
+   {
+    "frame": 0,
+    "policy": "H1",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1092
+   },
+   {
+    "frame": 0,
+    "policy": "H2",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1058
+   },
+   {
+    "frame": 0,
+    "policy": "H3",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1073
+   },
+   {
+    "frame": 0,
+    "policy": "BOIA",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1065
+   },
+   {
+    "frame": 1,
+    "policy": "F0",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1087
+   },
+   {
+    "frame": 1,
+    "policy": "H1",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.109
+   },
+   {
+    "frame": 1,
+    "policy": "H2",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1097
+   },
+   {
+    "frame": 1,
+    "policy": "H3",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1096
+   },
+   {
+    "frame": 1,
+    "policy": "BOIA",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.11
+   },
+   {
+    "frame": 2,
+    "policy": "F0",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.107
+   },
+   {
+    "frame": 2,
+    "policy": "H1",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1075
+   },
+   {
+    "frame": 2,
+    "policy": "H2",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1055
+   },
+   {
+    "frame": 2,
+    "policy": "H3",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1056
+   },
+   {
+    "frame": 2,
+    "policy": "BOIA",
+    "decision": "ABSTAIN",
+    "reasons": [
+     "NOT_PREVIOUSLY_ACQUIRED"
+    ],
+    "hypothesis": "TARGET_VISIBLE",
+    "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+    "map_accepted": true,
+    "runtime_s": 0.1072
+   }
+  ]
+ }
+}

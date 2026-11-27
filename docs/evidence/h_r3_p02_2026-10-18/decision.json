@@ -1,0 +1,25 @@
+{
+  "schema": "motar.hr3p02-final-decision.v1",
+  "run_status": "COMPLETED_12_PROCESSES",
+  "analysis_integrity": "FAIL",
+  "confirmatory_readiness": "NO_GO",
+  "hypothesis_status": "H-R3 PROVISIONAL_NOT_CONFIRMED",
+  "causal_effect_status": "INVALID_INTEGRITY_FAILURE",
+  "counts": {
+    "triggers": 246,
+    "matched": 203,
+    "primary_candidates": 56,
+    "primary_prefix_failures": 14,
+    "FULL": 44,
+    "CENTRE_ONLY": 12,
+    "PARTIAL": 0,
+    "FOV_EXIT": 181
+  },
+  "source_commit": "d64cf84185018ab720040f266a4a481929cfa62b",
+  "result_commit": "b98b400",
+  "analysis_sha256": "6ffc0a81a23100ccf4a71eac1a975c16b85329cb7ae562cc339e4640b13594cd",
+  "review_sha256": "b4bdba4be72f8a9ec9833d16ff799400ed2d3b53243d649dc51ca8b73d904721",
+  "review_status": "COMPLETED_FOCUSED_LIMITED_SCOPE",
+  "additional_gpu_started": false,
+  "confirmation_plan": "HOLD"
+}

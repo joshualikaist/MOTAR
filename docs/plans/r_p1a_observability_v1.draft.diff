@@ -1,0 +1,163 @@
+# PROPOSED ONLY / NOT APPLIED / NOT READY TO APPLY. Review artifact for R-P1a.
+# Only standalone event core is drafted. See /tmp/r_p1a_proposed.README.md for integration gaps.
+--- /dev/null
++++ b/motar_eval/recovery_events.py
+@@ -0,0 +1,158 @@
++"""PROPOSED / NOT APPLIED: evaluation-only post-acquisition event intervals.
++
++No simulator, tensors, RNG, controller, tracker or writer dependencies. Runtime adapters pass
++copied scalar records. Geometry fields are evaluator-only and never supervisor inputs.
++"""
++from dataclasses import dataclass
++import math
++from typing import Dict, Optional
++
++CONTRACT = "MOTAR_RECOVERY_EVENTS_P1A_V1_PROPOSED"
++NOT_RECORDED = "NOT_RECORDED"
++
++
++@dataclass(frozen=True)
++class FrameStamp:
++    episode_id: str
++    frame_index: int
++    state_time_s: float
++    capture_time_s: Optional[float] = None
++
++
++@dataclass(frozen=True)
++class SensorFrame:
++    camera_valid: bool
++    lidar_valid: Optional[bool]
++    fused_valid: bool
++    track_active: bool
++    track_age_s: Optional[float]
++    track_memory_s: float = 5.0
++    # Set only after the adapter verifies final diagnostics semantics for this lineage.
++    fused_sources_contract: Optional[str] = None
++    # Existing final validity cannot reveal individual noise/rejection mechanisms.
++    camera_loss_cause: str = NOT_RECORDED
++
++
++@dataclass(frozen=True)
++class EvaluationGeometry:
++    # Actual camera pose + exact scene-mesh centre ray, with a versioned contract.
++    # These are independent of detector output. None means unsupported/unmeasured.
++    target_center_in_fov: Optional[bool]
++    target_center_in_range: Optional[bool]
++    center_los_blocked: Optional[bool]
++    geometry_contract: str
++    rendered_target_visible_pixels: Optional[int] = None
++    # A blocked centre ray is NOT synonymous with full silhouette occlusion.
++    full_visual_occlusion: str = NOT_RECORDED
++
++
++class RecoveryEpisodeEvents:
++    """One episode, one invocation per consumed observation, before its action.
++
++    The adapter resets the instance per environment/episode. It stages immutable snapshots
++    after perception and invokes observe once immediately before the action. Duplicate frame
++    IDs are rejected, not silently counted again. Unknown geometry splits/censors a known run.
++    """
++
++    def __init__(self, episode_id: str):
++        self.episode_id = episode_id
++        self.ever_acquired = False
++        self.camera_started = False
++        self.last_index = -1
++        self.last_time = None
++        self.previous_track = False
++        self.open_runs: Dict = {}
++        self.rows = []
++        self.frames = 0
++        self.closed = False
++
++    def _end_run(self, name, time_s, boundary):
++        start = self.open_runs.pop(name, None)
++        if start is None:
++            return
++        self.rows.append({"event": name, "episode_id": self.episode_id,
++                          "start_frame": start[0], "start_time_s": start[1],
++                          "end_time_s": time_s, "duration_s": time_s - start[1],
++                          "boundary": boundary, "censored": boundary != "observed_end"})
++
++    def observe(self, stamp: FrameStamp, sensor: SensorFrame, geometry: EvaluationGeometry):
++        if self.closed or stamp.episode_id != self.episode_id:
++            raise ValueError("episode is closed or frame belongs to a different episode")
++        if stamp.frame_index != self.last_index + 1:
++            raise ValueError("consumed frame indices must be consecutive and never duplicated")
++        if not math.isfinite(stamp.state_time_s) or (
++                self.last_time is not None and stamp.state_time_s <= self.last_time):
++            raise ValueError("state times must be finite and strictly increasing")
++        if sensor.fused_sources_contract == "MOTAR_FROZEN_F_FINAL_DIAGNOSTICS_V1":
++            if sensor.lidar_valid is None:
++                raise ValueError("verified final diagnostics contract requires a recorded LiDAR flag")
++            if sensor.fused_valid != (sensor.camera_valid or sensor.lidar_valid):
++                raise ValueError("fused validity disagrees with its verified final sensor sources")
++        eligible = self.ever_acquired  # evaluated BEFORE this frame can establish a first track
++        signals = {"camera_measurement_loss": not sensor.camera_valid,
++                   "fused_measurement_loss": not sensor.fused_valid,
++                   "track_inactive": not sensor.track_active,
++                   "fov_exit": (None if geometry.target_center_in_fov is None
++                                else not geometry.target_center_in_fov),
++                   "range_exit": (None if geometry.target_center_in_range is None
++                                  else not geometry.target_center_in_range),
++                   "center_los_occlusion": (None if geometry.target_center_in_fov is None
++                       or geometry.center_los_blocked is None else
++                       geometry.target_center_in_fov and geometry.center_los_blocked)}
++        for name, value in signals.items():
++            if not eligible or value is None:
++                self._end_run(name, stamp.state_time_s, "geometry_unknown" if value is None
++                              else "ineligible")
++            elif value:
++                self.open_runs.setdefault(name, (stamp.frame_index, stamp.state_time_s))
++            else:
++                self._end_run(name, stamp.state_time_s, "observed_end")
++        if eligible and self.previous_track and not sensor.track_active:
++            expiry_consistent = (sensor.track_age_s is not None
++                                 and math.isfinite(sensor.track_age_s)
++                                 and sensor.track_age_s > sensor.track_memory_s)
++            self.rows.append({"event": ("track_expiry_transition" if expiry_consistent
++                                        else "track_deactivation"),
++                              "episode_id": self.episode_id, "frame_index": stamp.frame_index,
++                              "time_s": stamp.state_time_s, "actual_track_age_s": sensor.track_age_s,
++                              "actual_track_memory_s": sensor.track_memory_s,
++                              "reason": "AGE_GT_MEMORY" if expiry_consistent else "UNKNOWN"})
++        if eligible and sensor.fused_valid and sensor.track_active:
++            # This confirms sensor/track resumption, not persistent physical target identity.
++            if "fused_measurement_loss" in self.open_runs:
++                raise RuntimeError("valid frame left an open fused loss interval")
++        self.camera_started |= sensor.camera_valid and sensor.track_active
++        self.ever_acquired |= self.camera_started and sensor.fused_valid and sensor.track_active
++        self.previous_track = sensor.track_active
++        self.last_index, self.last_time = stamp.frame_index, stamp.state_time_s
++        self.frames += 1
++        return {"contract": CONTRACT, "episode_id": self.episode_id,
++                "frame_index": stamp.frame_index, "state_time_s": stamp.state_time_s,
++                "capture_time_s": stamp.capture_time_s, "eligible_before_frame": eligible,
++                "camera_valid": sensor.camera_valid, "lidar_valid": sensor.lidar_valid,
++                "fused_valid": sensor.fused_valid, "track_active": sensor.track_active,
++                "track_age_s": sensor.track_age_s, "camera_loss_cause": sensor.camera_loss_cause,
++                "fused_sources_contract": sensor.fused_sources_contract,
++                "geometry_contract": geometry.geometry_contract,
++                "rendered_target_visible_pixels": geometry.rendered_target_visible_pixels,
++                "full_visual_occlusion": geometry.full_visual_occlusion, **signals}
++
++    def finish(self, terminal_time_s: float, outcome: Optional[str] = None,
++               *, terminal_kind: str = "episode_end"):
++        if self.closed or terminal_kind not in ("episode_end", "run_shutdown"):
++            raise ValueError("episode already closed or unsupported terminal kind")
++        if terminal_kind == "episode_end" and outcome not in ("capture", "crash", "timeout"):
++            raise ValueError("episode_end requires the actual resolved task outcome")
++        if terminal_kind == "run_shutdown" and outcome is not None:
++            raise ValueError("run shutdown cannot invent an episode outcome")
++        if not math.isfinite(terminal_time_s) or (self.last_time is not None
++                                                 and terminal_time_s < self.last_time):
++            raise ValueError("terminal state time precedes the consumed observation")
++        boundary = "terminal_" + outcome if terminal_kind == "episode_end" else "run_shutdown"
++        for name in list(self.open_runs):
++            self._end_run(name, terminal_time_s, boundary)
++        self.closed = True
++        return {"contract": CONTRACT, "episode_id": self.episode_id, "frames": self.frames,
++                "ever_acquired": self.ever_acquired, "outcome": outcome,
++                "terminal_kind": terminal_kind,
++                "safe_abort": NOT_RECORDED, "intervals": list(self.rows)}

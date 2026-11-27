@@ -1,0 +1,300 @@
+{
+ "unit": "S3b v0",
+ "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__205bars__seed4501",
+ "params": {
+  "MC_ROLLRATE_P": 0.013,
+  "MC_ROLLRATE_I": 0.017,
+  "MC_ROLLRATE_D": 0.00026,
+  "MC_PITCHRATE_P": 0.013,
+  "MC_PITCHRATE_I": 0.017,
+  "MC_PITCHRATE_D": 0.00026,
+  "MPC_XY_VEL_P_ACC": 2.5,
+  "MPC_XY_VEL_I_ACC": 0.1,
+  "MPC_XY_VEL_D_ACC": 0.0,
+  "THR_MDL_FAC": 1.0
+ },
+ "ode_iters": 100,
+ "episodes": [
+  {
+   "episode": 0,
+   "env": 0,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_00",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9850000000000136,
+    "ekf_alt_m": 0.9974954128265381,
+    "ekf_minus_truth_xy_m": 0.025727778322387086,
+    "truth_from_spawn_xy_m": 0.10979349354396212,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 0.9999930064372566,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.11824235964279856,
+    "max": 0.18476376823770987
+   },
+   "outcome": "capture",
+   "steps": 31,
+   "min_dist_m": 0.44537136226764046,
+   "compute_ms_median": 3.6988782943920846,
+   "compute_ms_max": 7.05113740524874,
+   "isaac_steps": 31,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 1,
+   "env": 1,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_01",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9879999999999995,
+    "ekf_alt_m": 0.9989993572235107,
+    "ekf_minus_truth_xy_m": 0.03910381108089175,
+    "truth_from_spawn_xy_m": 0.1225457891316965,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 0.9999090885736979,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.15615964230840315,
+    "max": 0.210652154642825
+   },
+   "outcome": "capture",
+   "steps": 52,
+   "min_dist_m": 0.46567637131073714,
+   "compute_ms_median": 10.319530420299934,
+   "compute_ms_max": 17.784451164073324,
+   "isaac_steps": 47,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 2,
+   "env": 2,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_02",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9840000000000373,
+    "ekf_alt_m": 0.9903485178947449,
+    "ekf_minus_truth_xy_m": 0.03407364933044616,
+    "truth_from_spawn_xy_m": 0.10259128671201778,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.0020119563054066,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.1260506759572172,
+    "max": 0.2249925607060503
+   },
+   "outcome": "capture",
+   "steps": 58,
+   "min_dist_m": 0.42134933059996144,
+   "compute_ms_median": 25.58026798881084,
+   "compute_ms_max": 27.96675074647292,
+   "isaac_steps": 53,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 3,
+   "env": 3,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_03",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.004000000000019,
+    "ekf_alt_m": 1.0122836828231812,
+    "ekf_minus_truth_xy_m": 0.04710987327493722,
+    "truth_from_spawn_xy_m": 0.1353310332632505,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.0015568964067365,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.07805049087654795,
+    "max": 0.20963806589041534
+   },
+   "outcome": "capture",
+   "steps": 75,
+   "min_dist_m": 0.45471601183145705,
+   "compute_ms_median": 11.040350168984087,
+   "compute_ms_max": 15.646694074697539,
+   "isaac_steps": 63,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 4,
+   "env": 4,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_04",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9850000000000136,
+    "ekf_alt_m": 0.9999805688858032,
+    "ekf_minus_truth_xy_m": 0.03272824853794326,
+    "truth_from_spawn_xy_m": 0.10979349354396212,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.0023938625048723,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.08839361847695905,
+    "max": 0.2081099275815508
+   },
+   "outcome": "capture",
+   "steps": 47,
+   "min_dist_m": 0.43001884608753005,
+   "compute_ms_median": 26.118256732438354,
+   "compute_ms_max": 28.867625956134493,
+   "isaac_steps": 34,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 5,
+   "env": 5,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_05",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9979999999999905,
+    "ekf_alt_m": 0.9976018071174622,
+    "ekf_minus_truth_xy_m": 0.027223683334011626,
+    "truth_from_spawn_xy_m": 0.10979349354396212,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.0032924054628947,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.15480186706612986,
+    "max": 0.23917775242280215
+   },
+   "outcome": "capture",
+   "steps": 50,
+   "min_dist_m": 0.4646245108159683,
+   "compute_ms_median": 32.389791581469964,
+   "compute_ms_max": 35.71899816899305,
+   "isaac_steps": 52,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 6,
+   "env": 6,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_06",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9660000000000082,
+    "ekf_alt_m": 0.9864076375961304,
+    "ekf_minus_truth_xy_m": 0.03220421642987449,
+    "truth_from_spawn_xy_m": 0.10259128671201778,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.0003721641563665,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.12158079246414491,
+    "max": 0.24185985415939634
+   },
+   "outcome": "capture",
+   "steps": 37,
+   "min_dist_m": 0.4604041099912804,
+   "compute_ms_median": 4.763428293438033,
+   "compute_ms_max": 8.791323419875013,
+   "isaac_steps": 35,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 7,
+   "env": 7,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_07",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9979999999999905,
+    "ekf_alt_m": 1.00582754611969,
+    "ekf_minus_truth_xy_m": 0.04068173691361844,
+    "truth_from_spawn_xy_m": 0.10035808738714203,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.003053356997473,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.1210729749573887,
+    "max": 0.2338173543391862
+   },
+   "outcome": "capture",
+   "steps": 49,
+   "min_dist_m": 0.2517429495222635,
+   "compute_ms_median": 16.868669818798217,
+   "compute_ms_max": 18.760899668570026,
+   "isaac_steps": 57,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 8,
+   "env": 8,
+   "isaac_outcome": "crash",
+   "world": "motar_s3b_08",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9979999999999905,
+    "ekf_alt_m": 1.002508282661438,
+    "ekf_minus_truth_xy_m": 0.053989318509296606,
+    "truth_from_spawn_xy_m": 0.12231441915821789,
+    "command_yaw": "truth"
+   },
+   "crash_reason": "bar",
+   "real_time_factor": 0.9985123608450763,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.11720092678555166,
+    "max": 0.18279709445420853
+   },
+   "outcome": "crash",
+   "steps": 18,
+   "min_dist_m": 6.570322354433899,
+   "compute_ms_median": 5.481197983525734,
+   "compute_ms_max": 6.9816996086684,
+   "isaac_steps": 17,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  },
+  {
+   "episode": 9,
+   "env": 9,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_09",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 0.9979999999999905,
+    "ekf_alt_m": 1.0048930644989014,
+    "ekf_minus_truth_xy_m": 0.032431683859215694,
+    "truth_from_spawn_xy_m": 0.10259128671201778,
+    "command_yaw": "truth"
+   },
+   "real_time_factor": 1.0009125446249598,
+   "ekf_vs_truth_xy_err_m": {
+    "median": 0.1390850755620531,
+    "max": 0.1923740786013387
+   },
+   "outcome": "capture",
+   "steps": 37,
+   "min_dist_m": 0.4595260074148872,
+   "compute_ms_median": 35.321634332683985,
+   "compute_ms_max": 37.84658601927678,
+   "isaac_steps": 38,
+   "target_source": "zero_action_cell",
+   "target_frames": 600
+  }
+ ]
+}

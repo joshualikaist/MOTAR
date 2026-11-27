@@ -1,0 +1,44 @@
+{
+  "unit": "U5",
+  "status": "CPU_TESTS_PASS",
+  "tests": {
+    "run": 16,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 0.021
+  },
+  "base_sha": "a678b34cb7f08e04be4f87a1a1f9402885fe6b07",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/candidates.py",
+    "motar_eval/boia/safety.py",
+    "tests/test_boia_candidates_safety.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/safety.py": "7cc77a9b0893ab006b8614e55394e0f428fb489fd25015aa557b6eec2bdce7ab",
+    "tests/test_boia_candidates_safety.py": "4c5c2948275cb40793d54271d8fced79969e316a4b2bfb0f66bf46337f9b3e11"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/candidates.py": 94,
+    "motar_eval/boia/safety.py": 72,
+    "tests/test_boia_candidates_safety.py": 257
+  },
+  "public_cpu": {
+    "profile": "PUBLIC_CPU",
+    "status": "FAIL",
+    "ran": 2815,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "interpretation": "CPU unit evidence only; no performance/calibration/simulator/GPU qualification",
+  "note": "K20 exact F, inactive fallback and minimum-clear arcs PASS. Swept-segment hard/unknown and reaction-inclusive stopping checks PASS;0.55m gap .6m/s accepted and2m/s rejected;2m/s0.8m stop rejected. Soft.398m diagnostic kept separate from1m cost. PUBLIC_CPU retains four existing errors only.",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9353748480
+}

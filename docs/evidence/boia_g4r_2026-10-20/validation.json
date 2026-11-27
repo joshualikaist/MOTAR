@@ -1,0 +1,913 @@
+{
+  "schema": "motar.boia.g4r.validation.v1",
+  "base_sha": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "source_state": "UNCOMMITTED_USER_REVIEW_NO_COMMIT_AUTHORITY",
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "0041a40ddb599c400c2e5d0ac7c7a0517d6ffbefa8a7f019c1905a6ab6c883f8",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd"
+  },
+  "new_test_sha256": {
+    "tests/test_boia_c02_geometry.py": "78752dde05832c1e32013e4abdcadc8733bb28eea7ffc39972dad9b97d5562c0",
+    "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e"
+  },
+  "tests": {
+    "boia_final": {
+      "status": "PASS",
+      "ran": 189,
+      "new": 29,
+      "old": 160,
+      "failures": 0,
+      "errors": 0,
+      "seconds": 13.384,
+      "receipt": "boia_final_tests.txt"
+    },
+    "public_cpu_before_timing_guard": {
+      "status": "FAIL",
+      "ran": 2927,
+      "failures": 0,
+      "errors": 4,
+      "skipped": 10,
+      "excluded": 5,
+      "seconds": 156.488,
+      "source_binding": "public_cpu_build.json",
+      "receipt": "public_cpu_before_timing_guard.txt",
+      "scope_note": "Not rerun after final opt-in timing guard; final complete BOIA run verifies final source. Unrelated public errors unchanged."
+    },
+    "finite_geometry_falsification": {
+      "kind": "FINITE_FALSIFICATION_NOT_CONTINUUM_PROOF",
+      "seed": 20261020,
+      "capsules": 96,
+      "model_safe": 44,
+      "witness_checks": 92928,
+      "false_safe_witnesses": [],
+      "query_seconds": 0.006443388003390282,
+      "physical_qualification": "PHYSICAL_QUALIFICATION_NOT_AVAILABLE",
+      "source_sha256": {
+        "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+        "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77"
+      }
+    },
+    "test_results": [
+      {
+        "id": "test_boia_access.AccessTest.test_all_forbidden_mutations_leave_output_bitwise_equal",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_copies_detach_and_do_not_alias_or_change_source",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_exact_shapes_calibration_and_raw_lidar_contract",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_lidar_method_called_once_and_never_rendered",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_read_preserves_global_rng_dtype_and_tf32_flag",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_reader_does_not_write_any_source_tensor",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_reads_actual_calibration_not_parameter_defaults",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_rejects_invalid_calibration_scan_and_quaternion",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_rejects_nonfinite_and_wrong_flag_dtype",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_rejects_wrong_shapes_and_missing_names_without_fallback",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_repeated_reads_are_independent",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_static_guard_rejects_forbidden_reads_and_computed_access",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_static_whitelist_source_and_literal_audit_exception",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_access.AccessTest.test_yaw_matches_independent_rotated_forward_vector",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_all_infeasible_has_zero_advantage_and_actual_fallback_previous_action",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_alternating_advantage_does_not_flap",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_below_on_threshold_does_not_intervene",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_explicit_threshold_frozen_state_purity_and_missing_threshold",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_fallback_brakes_and_uses_only_active_belief_yaw",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_minimum_five_engaged_decisions_release_on_sixth_not_fifth",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_receding_argmin_may_return_f_during_hold_without_forcing_worse_action",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_safety_override_bypasses_dwell_and_checks_stop_feasibility",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_terminal_step_never_intervenes_even_when_all_candidates_fail",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ArbitrationTest.test_visible_intercept_never_and_unlocalized_allow_only_safety",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.CostTest.test_infeasible_is_inf_and_empty_obstacle_clearance_cost_is_zero",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.CostTest.test_singular_and_non_pd_covariances_fail_explicitly_without_hidden_floor",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.CostTest.test_source_imports_no_mutable_runtime_globals_or_implicit_rng",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.CostTest.test_terms_and_mode_weights_match_independent_scalar_oracle",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ModeTest.test_intercept_precedence_strict_forecast_threshold_and_loss_boundaries",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ModeTest.test_short_forecast_and_camera_miss_clock_ignore_lidar_recency",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_arbitration.ModeTest.test_terminal_reset_ignores_postreset_camera_and_does_not_latch_next_live_step",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_batched_q_and_source_tensors_are_not_modified",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_cholesky_retries_are_per_environment_and_recorded",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_covariance_and_probability_validation_fail_closed",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_float32_path_and_invalid_shapes_counts",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_fractional_update_matches_bpod_adaptation_and_psd",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_mixed_zero_probability_does_not_invert_its_singular_scene",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_prediction_does_not_assume_each_variance_increases",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_prediction_matches_independent_scalar_cv_oracle",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_probability_one_matches_independent_joseph_update",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_sampling_dt_keyword_applies_before_first_future_output",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_sampling_matches_future_cv_mean_and_covariance",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_sampling_uses_explicit_generator_and_preserves_global_state",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_tracker_q_matches_frozen_source_constants_without_import",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_belief.BeliefTest.test_zero_probability_exactly_preserves_given_prediction",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_arc_interior_stationary_distance_and_segment_intersection",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_body_radius_subtraction_does_not_handle_radial_steps",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_center_only_false_safe_and_exact_radial_step_distance",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_disk_capsule_against_independent_convex_endpoint_theorem",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_dtype_purity_rng_and_physical_status",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_invalid_grid_is_invalid_not_model_safe",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_narrow_gap_model_exact_origin_disk_and_radius_tradeoff",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_nonconvex_notch_all_box_corners_pass_but_face_fails",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_nonfinite_query_and_context_isolation",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_roundoff_scale_positive_margin_and_step_tangency_abstain",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_sector_crossing_between_free_endpoints_is_rejected",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_uniform_disk_has_no_artificial_internal_ray_boundary",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_yaw_translation_reversal_and_per_env_radius_broadcast",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_geometry.CapsuleGeometryTest.test_zero_radius_zero_length_and_unknown_only_model",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_center_only_false_safe_and_sector_boundary_penetration",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_curved_prefix_uses_current_velocity_for_direction_preserving_backup",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_float32_body_floor_rounddown_cannot_create_a_point_certificate",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_legacy_functions_policy_inputs_and_default_path_are_unchanged",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_mismatched_prefix_time_grid_is_invalid_without_poisoning_other_env",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_missing_bounds_and_supplied_unsupported_bounds_are_explicit",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_narrow_gap_low_high_speed_and_declared_radius_allowance",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_nonconvex_free_space_corners_are_not_a_containment_oracle",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_original_raw_row2_bin25_horizon_pass_next_cycle_fail",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_per_environment_invalid_isolation_and_batch_independence",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_repeatability_and_no_global_rng_contamination",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_sample_cap_has_a_complete_acceleration_saturated_remainder",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_shapes_and_cpu_only_transport_fail_explicitly",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_vertical_fov_blindspot_and_real_rotor_shape_remain_unqualified",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_c02_safety.NextCycleOracleTest.test_zero_speed_near_boundary_and_unknown_only_environment",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_arc_first_clear_offset_uses_independent_line_distance_fixture",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_arc_no_clear_path_returns_zero_offsets_with_false_diagnostics",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_coincident_active_belief_is_finite_and_explicitly_abstains",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_inactive_nan_belief_uses_velocity_then_yaw_without_virtual_goal",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_inputs_are_not_mutated_and_global_rng_is_unchanged",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_invalid_f_is_rejected_instead_of_silently_clipped",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_lattice_speeds_bearings_and_frame_rotation_independently",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.CandidateTest.test_twenty_families_and_exact_policy_f_preservation",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_narrow_gap_accepts_low_speed_but_rejects_latency_margin_at_high_speed",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_public_shapes_multiple_candidates_horizons_and_cpu_purity",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_static_pure_import_and_distance_contract",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_stop_is_exact_segment_not_endpoint_test",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_stop_two_mps_point_eight_ahead_rejected_and_reaction_added_once",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_swept_crossing_rejected_even_when_substep_endpoints_are_clear",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_unknown_blocks_even_when_visibility_ablation_is_off",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_candidates_safety.SafetyTest.test_zero_velocity_empty_scan_and_invalid_points_are_well_defined",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.BrakingTableTest.test_knots_interpolation_and_reaction_exactly_once",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.BrakingTableTest.test_piecewise_extension_continuity_and_invalid_table",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.GovernorTest.test_moved_pose_point_corridor_is_explicitly_geometry_not_new_scan",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.GovernorTest.test_original_normal_import_chain_is_not_executed",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.GovernorTest.test_policy_f_values_are_declared_and_riskcap_does_not_force_braking",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.GovernorTest.test_raw_corridor_and_riskcap_bitwise_against_original_subprocess",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.RolloutTest.test_clip_acceleration_bound_and_altitude_zero_authority",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.RolloutTest.test_current_yaw_rerotation_matches_independent_complex_closed_form",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.RolloutTest.test_prior_braking_target_miss_is_limited_validity_not_retuned",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.RolloutTest.test_rollout_determinism_batch_and_rng_noninterference",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_dynamics.RolloutTest.test_yaw_lag_requires_explicit_rate_and_matches_scalar_solution",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_belief_gate_abstains_without_identity_and_preserves_all_hits",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_distance_zero_length_and_query_dimensions",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_exact_segment_detects_short_unknown_sector_missed_by_coarse_checks",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_float32_boundary_below_rounding_point_checks_both_neighbor_sectors",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_known_free_far_bound_translation_and_yaw_wrap",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_known_free_row_and_neighbor_minimum",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_known_free_zero_length_reversal_and_boundary_ray",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_lidar_rows_angles_world_rotation_and_validity",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.GeometryTest.test_segment_dist_against_independent_dense_brute_force",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_adjacent_nested_clear_events_independence_underestimates_visibility",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_batch_chunking_matches_individual_environments_and_is_pure",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_clear_and_blocked_forecast_and_invalid_point",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_degenerate_covariance_and_endpoint_gradients_are_finite",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_fixed_generator_repeatability_and_global_rng_preservation",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_invalid_sample_is_blocked_without_nan_in_both_modes",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_outside_fov_and_range_are_zero",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_parameters_are_explicit_and_frozen",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_same_path_horizon_union_not_product_of_marginals",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_single_occluder_1024_antithetic_mc_agrees_with_linearized_analytic",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_static_import_information_and_rng_boundaries",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_geometry_visibility.VisibilityTest.test_tf32_backend_flag_does_not_change_cpu_distance_result",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ContextInputCounterexamples.test_invalid_context_row_never_certifies_point_or_segment",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ContextInputCounterexamples.test_nonfinite_or_nonpositive_far_never_certifies_free",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_camera_lidar_depth_mismatch_is_conservatively_preserved",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_eq1d_style_bar_point53m_before_belief_is_preserved",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_false_association_on_bar_has_no_identity_privilege",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_large_belief_covariance_cannot_erase_far_foreground",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_near_foreground_bar_is_not_erased_by_zero_covariance_gate",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_positive_actual_target_is_retained_with_abstention_tradeoff",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.ExclusionCounterexamples.test_return_order_invalid_mask_and_source_arrays_are_preserved",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.HorizontalFreeCounterexamples.test_default_declared_four_rows_use_horizontal_first_hit",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.HorizontalFreeCounterexamples.test_explicit_zero_and_positive_negative_elevations",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.HorizontalFreeCounterexamples.test_invalid_and_nearzero_ranges_cannot_expand_free_space",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.HorizontalFreeCounterexamples.test_row_minimum_is_taken_after_projection_not_before",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.HorizontalFreeCounterexamples.test_undeclared_nonstandard_rows_fail_closed",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.IndependentHelperChecks.test_fov_and_camera_transform_use_declared_yaw_frame",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.IndependentHelperChecks.test_normal_clearance_matches_scalar_gaussian_and_strict_zero",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.IndependentHelperChecks.test_sector_helper_uses_minimum_on_boundary",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.IndependentHelperChecks.test_union_is_computed_per_joint_path_before_averaging",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.VisibilityOriginsAndModelLimits.test_camera_offset_los_counterexample_forecast_and_bpod",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.VisibilityOriginsAndModelLimits.test_segment_distance_zero_length_and_partition_independent_examples",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.VisibilityOriginsAndModelLimits.test_six_metre_target_with_first_hit5p8_remains_blocked",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.VisibilityOriginsAndModelLimits.test_sparse_scan_sectors_are_not_a_physical_free_certificate",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_geometry.VisibilityOriginsAndModelLimits.test_yaw_rotated_camera_origin_and_no_double_offset",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_expected_update_matches_independent_scalar_and_does_not_calibrate",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o01_mixed_terminal_nan_blocks_unrelated_live_row",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o02_other_terminal_mask_reassigns_live_env_samples",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o03_detect_resolution_is_not_part_of_current_accessor",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o03_primary_gate_ignores_copied_camera_pixel_threshold",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o04_active_and_fused_age_are_not_identity_or_timestamp",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o05_candidate19_translates_and_intercept_never_decline_gain",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_o10_overwritten_vertical_action_changes_smoothness_cost",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_online.OnlineAdversarialAudit.test_sha_standard_vectors_and_trace_copy_remain_isolated",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_cap_floor_is_not_a_minimum_commanded_velocity",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_empirical_helper_reaction_once_and_telemetry_is_a_distinct_model",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_low_speed_stop_tail_cannot_contradict_own_zero_command_response",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_saturated_braking_tail_is_screened_against_independent_scalar_steps",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_stop_envelope_reaction_is_once_in_each_branch_before_maximum",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_stopping_surrogate_requires_valid_parameters_and_resolved_substeps",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.BrakingInterpretationTest.test_zero_command_is_not_an_instantaneous_stop_and_prior_errors_remain",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_configured_smaller_radii_cannot_shrink_physical_floor",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_independent_transformed_vertices_are_bounded_at_arbitrary_attitudes",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_known_free_centerline_does_not_certify_body_containment",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_larger_declared_radius_and_low_speed_gap_remain_meaningful",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_level_yaw_corner_inside_box_is_not_clear_at_rest",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_negative_delay_cannot_undo_the_physical_floor",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_old_xy_radius_is_insufficient_even_when_explicitly_configured",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_physical_floor_plus_existing_delay_at_all_six_speeds",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_purity_float32_float64_and_no_random_state_changes",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_source_box_and_orientation_independent_default",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_stop_tail_retains_full_footprint_at_all_six_speeds",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_p0_safety.PhysicalFootprintTest.test_tilted_corner_collision_all_six_speeds",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.HorizonTest.test_recursive_expected_covariance_matches_independent_axis_equations",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.InventoryTest.test_bad_headers_fail_and_missing_raw_is_not_promoted",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.InventoryTest.test_header_only_forged_huge_shape_never_allocates_or_reads_array",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_128_step_synthetic_replay_clear_never_overrides",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_all_terminal_bypasses_access_model_priors_and_rng",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_bar_safety_override_and_inactive_belief_does_not_delete_obstacles",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_forbidden_mutation_firewall_at_planner_and_trace_level",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_missing_priors_generator_and_unavailable_yaw_rate_fail_closed",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_mode_coverage_including_history_and_known_model_pre_trigger",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_no_source_write_global_rng_or_implicit_planner_state",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_package_imports_and_forbidden_attribute_names",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_partial_terminal_observation_is_not_evaluated_or_logged",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.PlannerTest.test_three_scenes_deterministic_shapes_and_no_nan",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.TraceTest.test_digest_matches_canonical_bytes_and_sensitive_allowed_fields",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.TraceTest.test_sha256_matches_hashlib_and_padding_boundaries",
+        "status": "PASS"
+      },
+      {
+        "id": "test_boia_planner.TraceTest.test_trace_arrays_are_copies_and_have_no_evaluator_fields",
+        "status": "PASS"
+      }
+    ]
+  },
+  "commands": [
+    "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_boia*.py' -v",
+    "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py",
+    "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B docs/evidence/boia_g4r_2026-10-20/adversarial_geometry_check.py --output /tmp/codex_occ/g4r/adversarial_geometry.json",
+    "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 /home/fair/miniconda3/envs/aerialgym/bin/python -B docs/evidence/boia_g4r_2026-10-20/collect_model_receipt.py --output /tmp/codex_occ/g4r/model_receipt.json",
+    "git diff --check",
+    "git diff --name-status",
+    "git diff --stat",
+    "git status --short",
+    "python -B tools/check_public_docs.py",
+    "Independent AST/source/hash, JSON and relative-link checks recorded in integrity.json/validation.json"
+  ],
+  "physical_qualification": "PHYSICAL_QUALIFICATION_NOT_AVAILABLE",
+  "B03": "BLOCKED",
+  "B04": "BLOCKED",
+  "C02": "PASS_CPU_MODEL_ONLY",
+  "G5": "HOLD",
+  "mission_effect": "NOT_TESTED",
+  "new_arbitrator": "DESIGN_ONLY_NOT_IMPLEMENTED",
+  "novelty": "NOVELTY_NOT_VERIFIED",
+  "gpu": "NOT_RUN",
+  "isaac_physics": "NOT_RUN",
+  "raw_calibration": "NOT_RUN",
+  "document_checks": {
+    "public_docs": "PASS",
+    "new_markdown_links": "PASS",
+    "relative_paths_checked": 21,
+    "new_json_parse": "PASS",
+    "new_markdown_whitespace_fences": "PASS",
+    "git_diff_check": "PASS",
+    "exact_source_receipt_bindings": "PASS"
+  },
+  "preservation": "integrity.json",
+  "changed_files": [
+    "WORKLOG.md",
+    "docs/evidence/boia_g4r_2026-10-20/C02_SOURCE_DIFF.patch",
+    "docs/evidence/boia_g4r_2026-10-20/CPU_VALIDATION_PROTOCOL.md",
+    "docs/evidence/boia_g4r_2026-10-20/EVIDENCE_MANIFEST.json",
+    "docs/evidence/boia_g4r_2026-10-20/HANDOFF.md",
+    "docs/evidence/boia_g4r_2026-10-20/IMPLEMENTATION_REPORT.md",
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry.json",
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry_check.py",
+    "docs/evidence/boia_g4r_2026-10-20/boia_before_timing_guard.txt",
+    "docs/evidence/boia_g4r_2026-10-20/boia_final_tests.txt",
+    "docs/evidence/boia_g4r_2026-10-20/collect_model_receipt.py",
+    "docs/evidence/boia_g4r_2026-10-20/integrity.json",
+    "docs/evidence/boia_g4r_2026-10-20/model_receipt.json",
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_before_timing_guard.txt",
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_build.json",
+    "docs/evidence/boia_g4r_2026-10-20/validation.json",
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/ALGORITHM_PROPOSAL.md",
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/EXPERIMENT_DRAFT.md",
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/NOVELTY_REVIEW.md",
+    "motar_eval/boia/geometry.py",
+    "motar_eval/boia/safety.py",
+    "motar_eval/boia/types.py",
+    "tests/test_boia_c02_geometry.py",
+    "tests/test_boia_c02_safety.py"
+  ],
+  "protected_untracked_paths": [
+    "results/mt_p1_precision_v1",
+    "results/occlusion_pilot_v1"
+  ],
+  "working_tree_porcelain": [
+    " M WORKLOG.md",
+    " M motar_eval/boia/geometry.py",
+    " M motar_eval/boia/safety.py",
+    " M motar_eval/boia/types.py",
+    "?? docs/evidence/boia_g4r_2026-10-20/C02_SOURCE_DIFF.patch",
+    "?? docs/evidence/boia_g4r_2026-10-20/CPU_VALIDATION_PROTOCOL.md",
+    "?? docs/evidence/boia_g4r_2026-10-20/EVIDENCE_MANIFEST.json",
+    "?? docs/evidence/boia_g4r_2026-10-20/HANDOFF.md",
+    "?? docs/evidence/boia_g4r_2026-10-20/IMPLEMENTATION_REPORT.md",
+    "?? docs/evidence/boia_g4r_2026-10-20/adversarial_geometry.json",
+    "?? docs/evidence/boia_g4r_2026-10-20/adversarial_geometry_check.py",
+    "?? docs/evidence/boia_g4r_2026-10-20/boia_before_timing_guard.txt",
+    "?? docs/evidence/boia_g4r_2026-10-20/boia_final_tests.txt",
+    "?? docs/evidence/boia_g4r_2026-10-20/collect_model_receipt.py",
+    "?? docs/evidence/boia_g4r_2026-10-20/integrity.json",
+    "?? docs/evidence/boia_g4r_2026-10-20/model_receipt.json",
+    "?? docs/evidence/boia_g4r_2026-10-20/public_cpu_before_timing_guard.txt",
+    "?? docs/evidence/boia_g4r_2026-10-20/public_cpu_build.json",
+    "?? docs/evidence/boia_g4r_2026-10-20/validation.json",
+    "?? docs/research/occlusion_algorithm_v1/g4r_2026-10-20/ALGORITHM_PROPOSAL.md",
+    "?? docs/research/occlusion_algorithm_v1/g4r_2026-10-20/EXPERIMENT_DRAFT.md",
+    "?? docs/research/occlusion_algorithm_v1/g4r_2026-10-20/NOVELTY_REVIEW.md",
+    "?? results/mt_p1_precision_v1",
+    "?? results/occlusion_pilot_v1",
+    "?? tests/test_boia_c02_geometry.py",
+    "?? tests/test_boia_c02_safety.py"
+  ]
+}

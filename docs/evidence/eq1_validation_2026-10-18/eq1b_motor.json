@@ -1,0 +1,240 @@
+{
+ "M1_named_method_algebra": {
+  "gate": "|production - classical RK4| <= 1e-12",
+  "production": {
+   "note": "k2..k4 evaluate e + dt k/2: the error grows instead of shrinking; gain is the e^h - 1 series",
+   "status": "FAIL"
+  },
+  "rows": [
+   {
+    "abs_error_vs_classical_rk4": 0.040133333333333354,
+    "backward_euler_intended_tau": 0.19999999999999998,
+    "classical_rk4_same_ode": 0.18126666666666666,
+    "dt": 0.01,
+    "exact_intended_tau": 0.22119921692859512,
+    "exact_same_ode": 0.18126924692201818,
+    "h": 0.2,
+    "k": 20.0,
+    "production_closed_form": 0.2214,
+    "production_effective_tau_s": 0.03995878749662978,
+    "production_gain": 0.2214,
+    "tau": 0.04
+   },
+   {
+    "abs_error_vs_classical_rk4": 0.012358380328201996,
+    "backward_euler_intended_tau": 0.11111111111111112,
+    "classical_rk4_same_ode": 0.10516054463242391,
+    "dt": 0.005,
+    "exact_intended_tau": 0.11750309741540454,
+    "exact_same_ode": 0.10516068318563021,
+    "h": 0.1111111111111111,
+    "k": 22.22222222222222,
+    "production_closed_form": 0.11751892496062591,
+    "production_effective_tau_s": 0.03999426158520391,
+    "production_gain": 0.11751892496062591,
+    "tau": 0.04
+   },
+   {
+    "abs_error_vs_classical_rk4": 0.003461205365516848,
+    "backward_euler_intended_tau": 0.058823529411764705,
+    "classical_rk4_same_ode": 0.057126850333049976,
+    "dt": 0.0025,
+    "exact_intended_tau": 0.06058693718652419,
+    "exact_same_ode": 0.05712685614512503,
+    "h": 0.058823529411764705,
+    "k": 23.52941176470588,
+    "production_closed_form": 0.060588055698566824,
+    "production_effective_tau_s": 0.03999923799814497,
+    "production_gain": 0.060588055698566824,
+    "tau": 0.04
+   },
+   {
+    "abs_error_vs_classical_rk4": 0.25520833333333337,
+    "backward_euler_intended_tau": 0.5,
+    "classical_rk4_same_ode": 0.39322916666666663,
+    "dt": 0.04,
+    "exact_intended_tau": 0.6321205588285577,
+    "exact_same_ode": 0.3934693402873666,
+    "h": 0.5,
+    "k": 12.5,
+    "production_closed_form": 0.6484375,
+    "production_effective_tau_s": 0.03826404542894133,
+    "production_gain": 0.6484375,
+    "tau": 0.04
+   },
+   {
+    "abs_error_vs_classical_rk4": 0.5318964320422047,
+    "backward_euler_intended_tau": 0.7142857142857143,
+    "classical_rk4_same_ode": 0.5090760794113564,
+    "dt": 0.1,
+    "exact_intended_tau": 0.9179150013761012,
+    "exact_same_ode": 0.5104583404430469,
+    "h": 0.7142857142857143,
+    "k": 7.142857142857142,
+    "production_closed_form": 1.040972511453561,
+    "production_effective_tau_s": null,
+    "production_gain": 1.040972511453561,
+    "tau": 0.04
+   },
+   {
+    "abs_error_vs_classical_rk4": 0.11213991769547327,
+    "backward_euler_intended_tau": 0.33333333333333337,
+    "classical_rk4_same_ode": 0.2834362139917696,
+    "dt": 0.01,
+    "exact_intended_tau": 0.3934693402873666,
+    "exact_same_ode": 0.28346868942621073,
+    "h": 0.33333333333333337,
+    "k": 33.333333333333336,
+    "production_closed_form": 0.39557613168724287,
+    "production_effective_tau_s": 0.019861779554550672,
+    "production_gain": 0.39557613168724287,
+    "tau": 0.02
+   }
+  ]
+ },
+ "M2_convergence": {
+  "classical_rk4_intended_ode_errors": [
+   -1.3516409859137823e-06,
+   -7.607897523076446e-08,
+   -4.513078022405637e-09,
+   -2.748087313264591e-10
+  ],
+  "classical_rk4_observed_orders": [
+   4.151070379501999,
+   4.075314188212782,
+   4.037611972331078
+  ],
+  "exact_fraction": 0.9932620530009145,
+  "gate": "observed order >= 3.5",
+  "horizon_s": 0.2,
+  "observed_orders": [
+   2.8424373136673,
+   2.912516583099957,
+   2.9535651387487567
+  ],
+  "production": {
+   "note": "global order 3: with x = dt/tau the gain is x - x^2/2 + x^3/6 + x^4/24 against 1 - exp(-x); the sign error and k = 1/(dt + tau) cancel through x^3, local error x^4/12",
+   "status": "FAIL"
+  },
+  "proposed_correction": {
+   "note": "exact for a constant reference at every dt",
+   "status": "PASS"
+  },
+  "proposed_correction_errors": [
+   {
+    "dt": 0.01,
+    "error": 0.0
+   },
+   {
+    "dt": 0.005,
+    "error": 0.0
+   },
+   {
+    "dt": 0.0025,
+    "error": 0.0
+   },
+   {
+    "dt": 0.00125,
+    "error": 2.220446049250313e-16
+   }
+  ],
+  "rows": [
+   {
+    "dt": 0.01,
+    "error": 3.4657319392006336e-05,
+    "production_fraction": 0.9932967103203065,
+    "thrust_N": 1.986615887686878
+   },
+   {
+    "dt": 0.005,
+    "error": 4.832101814566947e-06,
+    "production_fraction": 0.9932668851027291,
+    "thrust_N": 1.986556437623568
+   },
+   {
+    "dt": 0.0025,
+    "error": 6.417726751140052e-07,
+    "production_fraction": 0.9932626947735896,
+    "thrust_N": 1.9865480851880362
+   },
+   {
+    "dt": 0.00125,
+    "error": 8.28456140355982e-08,
+    "production_fraction": 0.9932621358465286,
+    "thrust_N": 1.9865469710997326
+   }
+  ]
+ },
+ "M3_fixed_timestep_preservation": {
+  "candidates": {
+   "backward_euler_discrete_coefficient": {
+    "effective_tau_s": 0.04481420117724551,
+    "gain_dt_0.01": 0.19999999999999998,
+    "relative_change": -0.09665763324299925,
+    "status": "FAIL"
+   },
+   "classical_rk4_continuous_coefficient": {
+    "effective_tau_s": 0.04000160471390253,
+    "gain_dt_0.01": 0.22119140625,
+    "relative_change": -0.0009421578590786961,
+    "status": "PASS"
+   },
+   "naive_sign_flip_keep_coefficient": {
+    "effective_tau_s": 0.050000787893924585,
+    "gain_dt_0.01": 0.18126666666666666,
+    "relative_change": -0.18127070159590497,
+    "status": "FAIL"
+   },
+   "zoh_exact_nominal_tau": {
+    "effective_tau_s": 0.04,
+    "gain_dt_0.01": 0.22119921692859512,
+    "relative_change": -0.0009068792746381726,
+    "status": "PASS"
+   }
+  },
+  "gate": "|gain / production - 1| <= 0.005",
+  "production_effective_tau_s": 0.03995878749662978,
+  "production_gain_dt_0.01": 0.2214
+ },
+ "M4_rate_limited": {
+  "expected": 0.5,
+  "increment": 0.5,
+  "note": "not exercised by Policy F: the largest rate is below max_thrust_rate",
+  "production": {
+   "note": "saturated stages are exact",
+   "status": "PASS"
+  }
+ },
+ "composite_response_note": "at dt = 0.01 s the production gain 0.2214 implies tau_eff = 0.03996 s, within 0.1 % of the nominal 0.04 s: the frozen OCC plant behaves like the intended lag at its own timestep (a third-order-accurate composite by cancellation), but the routine named rk4 is not classical RK4 for its ODE; the naive sign flip gives a 0.05 s motor",
+ "config": {
+  "dt_s": 0.01,
+  "integration_scheme": "rk4 (default)",
+  "largest_rate_rps_per_s": 9293.222781730074,
+  "max_thrust_N": 2.0,
+  "max_thrust_rate": 100000.0,
+  "rate_limit_active_in_policy_f": false,
+  "tau_s": 0.04,
+  "use_discrete_approximation": true,
+  "use_rps": true
+ },
+ "k_T_cancellation": {
+  "equal": true,
+  "fractions": [
+   0.9932967103203065,
+   0.993296710320307
+  ]
+ },
+ "package": "EQ-1B motor integrator (CPU, validation only)",
+ "schema": "motar.eq1b-motor.v1",
+ "source": {
+  "files_sha256": {
+   "aerial_gym/config/robot_config/base_quad_config.py": "7fd5ecab0f2264d3fd6a06c2d05c5ec1f56d4b9a55a48659fc61425e74559975",
+   "aerial_gym/config/robot_config/navrl_quad_config.py": "a76f8a3dd1ce7a39614a989ecf3b6a493e7703f2f4cbaa7f77132a9e6322223e",
+   "aerial_gym/config/sim_config/base_sim_config.py": "a555a9c3cd4908277ffec78b5000a03bcec5f03608c9204c338a8f5405adad3a",
+   "aerial_gym/control/motor_model.py": "1463e22cbeac24474755d1ece5b7757f52af25c67062f26701f503aeeb5f79c3"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}

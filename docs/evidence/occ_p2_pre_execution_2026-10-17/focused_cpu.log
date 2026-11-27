@@ -1,0 +1,33 @@
+test_exact_matrix_independence_and_no_shared_output (test_occlusion_confirmatory.DesignTest) ... ok
+test_no_output_overwrite (test_occlusion_confirmatory.DesignTest) ... ok
+test_scene_reuse_is_detected_without_resampling (test_occlusion_confirmatory.DesignTest) ... ok
+test_censored_short_interval_is_unknown_not_short (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_competing_fov_crash_and_restoration_partition_mass (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_constant_contrast_is_not_silently_given_a_valid_t_test (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_end_to_end_seed_weighting_and_fixed_decision_family (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_holm_family_cannot_select_favorable_subset (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_paired_t_matches_scipy_and_uses_fourteen_seeds (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_preexisting_cpu_event_contract_is_unchanged (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_zero_intervals_remains_not_estimable (test_occlusion_confirmatory.StatisticalTest) ... ok
+test_disk_crossing_kills_child_and_keeps_partial_file (test_occlusion_confirmatory.SupervisionTest) ... ok
+test_first_failure_stops_matrix_and_writes_manifest (test_occlusion_confirmatory.SupervisionTest) ... {"completed": 1, "total": 112, "cell": "static/A1/E0_static__70bars__seed4301", "seconds": 0.1, "issues": ["launcher exit 17"], "free_disk_gb": 20.0}
+{
+  "run_id": "OCC-P2",
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "stop_reason": "FIRST_FAILED_CELL: static/A1/E0_static__70bars__seed4301",
+  "verdict": "STOPPED",
+  "code_and_worklog_frozen": true,
+  "wall_hours": 1.8824777928077511e-07,
+  "free_disk_gb_after": 20.0,
+  "checkpoint_sha256_after": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+  "finished_at": "2026-10-17T06:14:31.435110+00:00"
+}
+ok
+test_nonzero_child_exit_recorded (test_occlusion_confirmatory.SupervisionTest) ... ok
+test_term_ignoring_grandchild_dies_when_group_leader_exits (test_occlusion_confirmatory.SupervisionTest) ... ok
+test_wall_cap_terminates_instead_of_hanging (test_occlusion_confirmatory.SupervisionTest) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.522s
+
+OK

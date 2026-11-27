@@ -1,0 +1,237 @@
+{
+  "schema": "motar.occlusion-papers-manifest.v1",
+  "built": "2026-10-19",
+  "count": 25,
+  "identity_counts": {
+    "IDENTICAL_TO_USER_COPY": 19,
+    "DIFFERENT_VERSION": 4,
+    "NOT_AVAILABLE": 2
+  },
+  "items": [
+    {
+      "key": "Adaptive Tracking and Perching",
+      "user_inventory_sha256": "d22709ab18b007b6be6e3fb53219d27588b78f607d9b0b76f6778a8b6b0cd23a",
+      "source": "arXiv:2312.11866v2",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/AdaptivePerching__2312.11866v2.pdf",
+      "pages": 20,
+      "sha256": "d22709ab18b007b6be6e3fb53219d27588b78f607d9b0b76f6778a8b6b0cd23a",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Aerial Gym Simulator",
+      "user_inventory_sha256": "5c73cafa8c22f042be02a8fc6729f3cb6de510c054e3646a2aade76e60b5ecd0",
+      "source": "user local copy",
+      "path": "/home/fair/Downloads/Aerial Gym Simulator: A Framework for Highly Parallelized.pdf",
+      "pages": 8,
+      "sha256": "5c73cafa8c22f042be02a8fc6729f3cb6de510c054e3646a2aade76e60b5ecd0",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Deep-PANTHER",
+      "user_inventory_sha256": "ebd98093f2a37de7f09a19ee25fe707b38b20a95201dc46057396b8de254ca59",
+      "source": "arXiv:2209.01268v2",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/DeepPANTHER__2209.01268v2.pdf",
+      "pages": 9,
+      "sha256": "ebd98093f2a37de7f09a19ee25fe707b38b20a95201dc46057396b8de254ca59",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "EGO-Planner",
+      "user_inventory_sha256": "0d316681d1ae9ecd22a589f6b3e7e8c1b93b3d66a1f309d2a6b0e2686f88b7c7",
+      "source": "arXiv:2008.08835v2",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/EGOPlanner__2008.08835v2.pdf",
+      "pages": 8,
+      "sha256": "a3960f4bd97e2737dccb288aee724b9f6e1cdf00dcc552afc51d53deceef5813",
+      "identity": "DIFFERENT_VERSION"
+    },
+    {
+      "key": "Elastic Tracker",
+      "user_inventory_sha256": "fd07679698aacf19a9dbe94bbf1422bfd8ddde072f41709ae997272d31509f2b",
+      "source": "earlier Claude web-fetch cache",
+      "path": "/home/fair/.claude/projects/-home-fair-workspaces-aerial-gym-ws/626171c0-3144-45d9-ba31-4e1386f262dc/tool-results/webfetch-1789740878632-4s1lxh.pdf",
+      "pages": 7,
+      "sha256": "fd07679698aacf19a9dbe94bbf1422bfd8ddde072f41709ae997272d31509f2b",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Eva-Tracker",
+      "user_inventory_sha256": "7a828519abb5ee73dd0ce0c9b148c8e39b9810a935d58a843d4fd715ce63ca6e",
+      "source": "arXiv:2602.12549v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/EvaTracker__2602.12549v1.pdf",
+      "pages": 8,
+      "sha256": "7a828519abb5ee73dd0ce0c9b148c8e39b9810a935d58a843d4fd715ce63ca6e",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "FASTER",
+      "user_inventory_sha256": "f31547f387a29588f4e177b07f811b7d71209f9e2191fa75f936a23e64d38590",
+      "source": "arXiv:1903.03558v3",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/FASTER__1903.03558v3.pdf",
+      "pages": 7,
+      "sha256": "f31547f387a29588f4e177b07f811b7d71209f9e2191fa75f936a23e64d38590",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Lee SE3",
+      "user_inventory_sha256": "a664bdd644e82db8b49ee6005baaeb05879c66ccb128a9a73396407928db1ce5",
+      "source": "arXiv:1003.2005v1 (8-page arXiv version; user has 6-page CDC version)",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/LeeSE3__1003.2005v1.pdf",
+      "pages": 8,
+      "sha256": "977ae50eb51f7801bf44c4ad5a7479a6b47d0926e615104312197411cd08f789",
+      "identity": "DIFFERENT_VERSION"
+    },
+    {
+      "key": "OA-VAT",
+      "user_inventory_sha256": "359b64b75bc57720f2767bd917c1ee2b6bf5ec7bbfa0252f490051f613b35a7d",
+      "source": "user local copy",
+      "path": "/home/fair/Downloads/Instance-level Visual Active Tracking with Occlusion-Aware Planning.pdf",
+      "pages": 15,
+      "sha256": "359b64b75bc57720f2767bd917c1ee2b6bf5ec7bbfa0252f490051f613b35a7d",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "ORTrack",
+      "user_inventory_sha256": "b5087dfe88af15238f24257bbb70d8b5f9450bc95cf5db498b07f2ba630c835d",
+      "source": "arXiv:2504.09228v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/ORTrack__2504.09228v1.pdf",
+      "pages": 11,
+      "sha256": "a0b634037b96340b149b9e7590ea0a3c9ed5a2bca06dcdaab296f6646505d434",
+      "identity": "DIFFERENT_VERSION"
+    },
+    {
+      "key": "NavRL++",
+      "user_inventory_sha256": "4d79836c6854ffa4df73e110ac93dd92bf06167c219bf7af4b0a1c985f51d25e",
+      "source": "user local copy",
+      "path": "/home/fair/Downloads/NavRL++: A System-Level Framework for Improving Sim-to-Real Transfer in Reinforcement Learning-Based Robot Navigation.pdf",
+      "pages": 18,
+      "sha256": "4d79836c6854ffa4df73e110ac93dd92bf06167c219bf7af4b0a1c985f51d25e",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Open-World DAT",
+      "user_inventory_sha256": "a54dc19d3e832df004bc6e35cb1a0036e332f1d039270529a98295c82a4fd0c3",
+      "source": "user local copy",
+      "path": "/home/fair/Downloads/Open-World Drone Active Tracking with Goal-Centered Rewards.pdf",
+      "pages": 36,
+      "sha256": "a54dc19d3e832df004bc6e35cb1a0036e332f1d039270529a98295c82a4fd0c3",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "PANTHER",
+      "user_inventory_sha256": "c0f83fff0ac6f54ffdd6906f7942653b8958f365db634d90ed6710edb8ca7986",
+      "source": "arXiv:2103.06372v3",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/PANTHER__2103.06372v3.pdf",
+      "pages": 16,
+      "sha256": "c0f83fff0ac6f54ffdd6906f7942653b8958f365db634d90ed6710edb8ca7986",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Perception-Aware Time-Optimal",
+      "user_inventory_sha256": "a9eaf4809b30e32ad2a6a69de4161af25e113422ac10dd8b3d4195a0479ca47a",
+      "source": "arXiv:2603.04305v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/PATimeOptimal__2603.04305v1.pdf",
+      "pages": 21,
+      "sha256": "a9eaf4809b30e32ad2a6a69de4161af25e113422ac10dd8b3d4195a0479ca47a",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Perception-aware Unknown Feature-limited",
+      "user_inventory_sha256": "97639b6c620f6ee4c202118dd6ef707fd3789e97c8641f551c3413d5500504de",
+      "source": "arXiv:2503.15273v2",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/PAUnknownFeatureLimited__2503.15273v2.pdf",
+      "pages": 8,
+      "sha256": "97639b6c620f6ee4c202118dd6ef707fd3789e97c8641f551c3413d5500504de",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "BPOD",
+      "user_inventory_sha256": "e94a8e4112f9a7f38e509b6f5dbaf3e2a90669c547eae656dc6ba1774daeb257",
+      "source": "arXiv:2306.06363v2",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/BPOD__2306.06363v2.pdf",
+      "pages": 8,
+      "sha256": "e94a8e4112f9a7f38e509b6f5dbaf3e2a90669c547eae656dc6ba1774daeb257",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "RAPTOR",
+      "user_inventory_sha256": "208a3f0ec3ee23bfb06895d9e276393f94a6e3fa20f8b08845dfca4384df3d01",
+      "source": "arXiv:2007.03465v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/RAPTOR__2007.03465v1.pdf",
+      "pages": 16,
+      "sha256": "208a3f0ec3ee23bfb06895d9e276393f94a6e3fa20f8b08845dfca4384df3d01",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "OCTrack",
+      "user_inventory_sha256": "95e0f1d08a2a2c6acf52031a91a708da2ebeb797f1b8261239c54044b37d33fe",
+      "source": "NOT_AVAILABLE: not found on arXiv/CVF; user PDF not on this machine",
+      "path": null,
+      "pages": null,
+      "sha256": null,
+      "identity": "NOT_AVAILABLE"
+    },
+    {
+      "key": "Star-Convex",
+      "user_inventory_sha256": "7f80eef8c37662f038de55a70b166b8b70f20864c17a5d6fb6a23a6249655ab0",
+      "source": "arXiv:2204.04393v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/StarConvex__2204.04393v1.pdf",
+      "pages": 7,
+      "sha256": "7a940d4c7d72addc874a0f887ebb946c01cfc64dab0c1bb102b827ccaaf44c0c",
+      "identity": "DIFFERENT_VERSION"
+    },
+    {
+      "key": "TrackVLA",
+      "user_inventory_sha256": "c27d8f435b32a831408a0aa346821286c63272ff27bdf86151d3b7d874bace34",
+      "source": "arXiv:2505.23189v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/TrackVLA__2505.23189v1.pdf",
+      "pages": 25,
+      "sha256": "c27d8f435b32a831408a0aa346821286c63272ff27bdf86151d3b7d874bace34",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "TrackVLA++",
+      "user_inventory_sha256": "7f7de4b53d6d75033edf7cda575e01914cfcae6464f4715d2a7b34c1c934b365",
+      "source": "arXiv:2510.07134v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/TrackVLApp__2510.07134v1.pdf",
+      "pages": 9,
+      "sha256": "7f7de4b53d6d75033edf7cda575e01914cfcae6464f4715d2a7b34c1c934b365",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "UAST",
+      "user_inventory_sha256": "e19a723113bdc7636b1b370c530c8ab6aa33990e33f18563135769cf7b79d5a2",
+      "source": "CVF open access CVPR 2026",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/UAST__CVPR2026_Qin.pdf",
+      "pages": 10,
+      "sha256": "e19a723113bdc7636b1b370c530c8ab6aa33990e33f18563135769cf7b79d5a2",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "Visibility-aware Traj Opt",
+      "user_inventory_sha256": "a7a3b8bb697ee4032a3ef3ed1cd899ab6ac035cb97d14525ddb50f5231135653",
+      "source": "arXiv:2103.06742v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/VisAwareTrajOpt__2103.06742v1.pdf",
+      "pages": 8,
+      "sha256": "a7a3b8bb697ee4032a3ef3ed1cd899ab6ac035cb97d14525ddb50f5231135653",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "YOPOv2-Tracker",
+      "user_inventory_sha256": "a7e0d432aed878492d23cb3ec34048a53d744bb937451ac2a34cca672e8110d9",
+      "source": "arXiv:2505.06923v1",
+      "path": "/home/fair/workspaces/aerial_gym_ws/reference/papers_occlusion_v1/downloaded/YOPOv2Tracker__2505.06923v1.pdf",
+      "pages": 19,
+      "sha256": "a7e0d432aed878492d23cb3ec34048a53d744bb937451ac2a34cca672e8110d9",
+      "identity": "IDENTICAL_TO_USER_COPY"
+    },
+    {
+      "key": "YOPO",
+      "user_inventory_sha256": null,
+      "source": "NOT_AVAILABLE: IEEE RA-L 10528860 only (paywalled); no arXiv; user PDF not on this machine",
+      "path": null,
+      "pages": null,
+      "sha256": null,
+      "identity": "NOT_AVAILABLE"
+    }
+  ]
+}

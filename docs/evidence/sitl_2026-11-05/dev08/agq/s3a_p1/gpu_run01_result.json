@@ -1,0 +1,888 @@
+{
+ "protocol": "docs/plans/prereg_sitl_s3a_policy_precision_v1_2026-11-06.md",
+ "inputs": {
+  "obs_70": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/obs_dump_70bars_seed4501.npz",
+   "sha256": "e74b9de30c1cf5341802a433de3c5eef846870f6089a523f84550b29cc15fb2f"
+  },
+  "obs_205": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/obs_dump_205bars_seed4501.npz",
+   "sha256": "c50299d4b9074cf6afc2d6fd8a3e8722781dc23e411edd7823936590e806a461"
+  },
+  "state_70": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/state_record_70bars_seed4501.npz",
+   "sha256": "0cb6897114d22f6e6f11c9a272366aec123a8ac7c015574ba35bf9b5878a9fe9"
+  },
+  "state_205": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/state_record_205bars_seed4501.npz",
+   "sha256": "ae25c2c9b3cf6305c36ffa14649ddba9364b10c8e8c294ead4a6d9807f935c92"
+  },
+  "receipt_70": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/receipt.json",
+   "sha256": "9de38dae0cceb1cf1eef64c51bba1aa0682e3bfb712caa566d358f12e9d6123b"
+  },
+  "receipt_205": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__205bars__seed4501/receipt.json",
+   "sha256": "d2e977b419102c4c2d3d858495ce7be79959046637aaf3f91dd7c0bd14aee6c8"
+  }
+ },
+ "policy_f": {
+  "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+  "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+ },
+ "torch": "2.4.1+cu121",
+ "cuda_available": true,
+ "densities": {
+  "70": {
+   "cpu_vs_recorded": {
+    "finite": true,
+    "max": 0.0017202496528625488,
+    "argmax_call_env_dim": [
+     79,
+     119,
+     1
+    ],
+    "mean": 5.6620109247552096e-05,
+    "n_above_tol": 8453,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "controls": {
+    "positive_true_pairing": {
+     "finite": true,
+     "max": 0.0017202496528625488,
+     "argmax_call_env_dim": [
+      79,
+      119,
+      1
+     ],
+     "mean": 5.6620109247552096e-05,
+     "n_above_tol": 8453,
+     "n": 43008,
+     "tol": 0.0001
+    },
+    "negative_shifted_pairing": {
+     "finite": true,
+     "max": 1.9315916299819946,
+     "argmax_call_env_dim": [
+      62,
+      98,
+      1
+     ],
+     "mean": 0.04452887012766759,
+     "n_above_tol": 41677,
+     "n": 42496,
+     "tol": 0.0001
+    },
+    "ok": true
+   },
+   "schema_policy": "squashed_gaussian",
+   "navrl_env_cpu": {
+    "NAVRL_ACTION_MU_SCALE": "1.0,0.4,1.0,1.0",
+    "NAVRL_ACTION_POLICY": "squashed_gaussian",
+    "NAVRL_ACTION_STD": "0.35,0.35,0.05,0.08",
+    "NAVRL_ALT_HOLD_VMAX": "2.5",
+    "NAVRL_ARENA_XY": "40",
+    "NAVRL_ARENA_Z": "3",
+    "NAVRL_BAR_POOL": "bars_h3",
+    "NAVRL_BAR_X_MAX": "1.0",
+    "NAVRL_BAR_X_MIN": "0.0",
+    "NAVRL_BULK_EVAL": "1",
+    "NAVRL_BULK_EVAL_JSON": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/result.json",
+    "NAVRL_CORRIDOR_TOKENS": "0",
+    "NAVRL_DENSITY_CURRICULUM": "0",
+    "NAVRL_DENSITY_FINAL": "70",
+    "NAVRL_DENSITY_START": "70",
+    "NAVRL_DEPTH_NOISE_STD": "0.02",
+    "NAVRL_DETECTION_DROPOUT": "0.3",
+    "NAVRL_DETECTOR_THRESHOLD": "0.55",
+    "NAVRL_EPISODE_LEDGER": "1",
+    "NAVRL_EPISODE_LEN_STEPS": "600",
+    "NAVRL_EPISODE_QUOTA_PER_ENV": "1",
+    "NAVRL_EVAL_CHECKPOINT": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "NAVRL_EVAL_CV_INITIAL_HEADING": "random",
+    "NAVRL_EVAL_RUN_NONCE": "d1b3201879a17ddb15f61ad6215b21bfe77da4f1121ea6383b106080e0466490",
+    "NAVRL_GENERAL_GOAL_DIST_MAX": "28",
+    "NAVRL_GENERAL_GOAL_DIST_MIN": "6",
+    "NAVRL_GENERAL_TRAIN": "1",
+    "NAVRL_KROC2027_ARM": "A3",
+    "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10.0",
+    "NAVRL_KROC2027_INITIAL_VIEW": "visible",
+    "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+    "NAVRL_KROC2027_PROTOCOL_SHA256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+    "NAVRL_KROC2027_RECORDER": "1",
+    "NAVRL_KROC2027_RUN_ID": "SITL-G8",
+    "NAVRL_LIDAR_HBEAMS": "72",
+    "NAVRL_LIDAR_RANGE": "12",
+    "NAVRL_LIDAR_VBEAMS": "4",
+    "NAVRL_MAX_BARS": "300",
+    "NAVRL_MAX_OBSTACLES": "8",
+    "NAVRL_MAX_TILT_DEG": "45",
+    "NAVRL_MAX_VELOCITY": "2.5",
+    "NAVRL_NUM_BARS": "70",
+    "NAVRL_OBSTACLE_CLUSTER_GAP_M": "0.45",
+    "NAVRL_OBSTACLE_FOV_DEG": "240",
+    "NAVRL_OBSTACLE_SECTORS": "8",
+    "NAVRL_OBSTACLE_SELECTOR": "cluster_sector",
+    "NAVRL_OBSTACLE_SUPPRESS_DEG": "10",
+    "NAVRL_OBSTACLE_TTC_IDLE_S": "30",
+    "NAVRL_OBSTACLE_TTC_MIN_SPEED": "0.15",
+    "NAVRL_OBS_DUMP": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/obs_dump_70bars_seed4501.npz",
+    "NAVRL_OBS_DUMP_MAX": "80000",
+    "NAVRL_OBS_DUMP_STRIDE": "1",
+    "NAVRL_OOB_MARGIN": "1.0",
+    "NAVRL_PERCEPTION": "1",
+    "NAVRL_PERCEPTION_PERTURB": "0",
+    "NAVRL_PLACEMENT_GAP_M": "1.6",
+    "NAVRL_PLACEMENT_MODE": "navrl_band",
+    "NAVRL_PLACEMENT_TOUCH_M": "0.4",
+    "NAVRL_PLAYER_GAMES_CAP": "1000000000",
+    "NAVRL_RGB_NOISE_STD": "0.015",
+    "NAVRL_SEED": "4501",
+    "NAVRL_SENSOR_ABLATION": "full",
+    "NAVRL_SENSOR_ABLATION_RECEIPT": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/sensor_ablation_receipt.json",
+    "NAVRL_SPEED_GOVERNOR": "riskcap",
+    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "2.9608856678",
+    "NAVRL_SPEED_GOVERNOR_FIXED_MPS": "2.0",
+    "NAVRL_SPEED_GOVERNOR_FREE_MPS": "3.53553390593",
+    "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_MARGIN_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_REACTION_S": "0.1",
+    "NAVRL_SPEED_GOVERNOR_RELEASE_M": "5.0",
+    "NAVRL_SPEED_GOVERNOR_SLOW_M": "3.0",
+    "NAVRL_SPEED_GOVERNOR_TTC_S": "1.2",
+    "NAVRL_TARGET_BEHAVIOR_LEVEL": "e2_obstacle_aware",
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_TARGET_DYNAMICS": "bounded",
+    "NAVRL_TARGET_PATTERN": "waypoint",
+    "NAVRL_TARGET_ROUTE_MODE": "off",
+    "NAVRL_TARGET_SPEED_FINAL": "1.5",
+    "NAVRL_TARGET_SPEED_MIN": "0.3",
+    "NAVRL_TARGET_SPEED_RAMP_EPOCHS": "300",
+    "NAVRL_TILT_COMP": "1",
+    "NAVRL_TRUNCATED_DMIN": "0.01",
+    "NAVRL_V2_PROFILE": "main",
+    "NAVRL_VISION": "1",
+    "NAVRL_YAW_RATE_MAX": "3.0"
+   },
+   "navrl_env_gpu": {
+    "NAVRL_ACTION_MU_SCALE": "1.0,0.4,1.0,1.0",
+    "NAVRL_ACTION_POLICY": "squashed_gaussian",
+    "NAVRL_ACTION_STD": "0.35,0.35,0.05,0.08",
+    "NAVRL_ALT_HOLD_VMAX": "2.5",
+    "NAVRL_ARENA_XY": "40",
+    "NAVRL_ARENA_Z": "3",
+    "NAVRL_BAR_POOL": "bars_h3",
+    "NAVRL_BAR_X_MAX": "1.0",
+    "NAVRL_BAR_X_MIN": "0.0",
+    "NAVRL_BULK_EVAL": "1",
+    "NAVRL_BULK_EVAL_JSON": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/result.json",
+    "NAVRL_CORRIDOR_TOKENS": "0",
+    "NAVRL_DENSITY_CURRICULUM": "0",
+    "NAVRL_DENSITY_FINAL": "70",
+    "NAVRL_DENSITY_START": "70",
+    "NAVRL_DEPTH_NOISE_STD": "0.02",
+    "NAVRL_DETECTION_DROPOUT": "0.3",
+    "NAVRL_DETECTOR_THRESHOLD": "0.55",
+    "NAVRL_EPISODE_LEDGER": "1",
+    "NAVRL_EPISODE_LEN_STEPS": "600",
+    "NAVRL_EPISODE_QUOTA_PER_ENV": "1",
+    "NAVRL_EVAL_CHECKPOINT": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "NAVRL_EVAL_CV_INITIAL_HEADING": "random",
+    "NAVRL_EVAL_RUN_NONCE": "d1b3201879a17ddb15f61ad6215b21bfe77da4f1121ea6383b106080e0466490",
+    "NAVRL_GENERAL_GOAL_DIST_MAX": "28",
+    "NAVRL_GENERAL_GOAL_DIST_MIN": "6",
+    "NAVRL_GENERAL_TRAIN": "1",
+    "NAVRL_KROC2027_ARM": "A3",
+    "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10.0",
+    "NAVRL_KROC2027_INITIAL_VIEW": "visible",
+    "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+    "NAVRL_KROC2027_PROTOCOL_SHA256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+    "NAVRL_KROC2027_RECORDER": "1",
+    "NAVRL_KROC2027_RUN_ID": "SITL-G8",
+    "NAVRL_LIDAR_HBEAMS": "72",
+    "NAVRL_LIDAR_RANGE": "12",
+    "NAVRL_LIDAR_VBEAMS": "4",
+    "NAVRL_MAX_BARS": "300",
+    "NAVRL_MAX_OBSTACLES": "8",
+    "NAVRL_MAX_TILT_DEG": "45",
+    "NAVRL_MAX_VELOCITY": "2.5",
+    "NAVRL_NUM_BARS": "70",
+    "NAVRL_OBSTACLE_CLUSTER_GAP_M": "0.45",
+    "NAVRL_OBSTACLE_FOV_DEG": "240",
+    "NAVRL_OBSTACLE_SECTORS": "8",
+    "NAVRL_OBSTACLE_SELECTOR": "cluster_sector",
+    "NAVRL_OBSTACLE_SUPPRESS_DEG": "10",
+    "NAVRL_OBSTACLE_TTC_IDLE_S": "30",
+    "NAVRL_OBSTACLE_TTC_MIN_SPEED": "0.15",
+    "NAVRL_OBS_DUMP": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/obs_dump_70bars_seed4501.npz",
+    "NAVRL_OBS_DUMP_MAX": "80000",
+    "NAVRL_OBS_DUMP_STRIDE": "1",
+    "NAVRL_OOB_MARGIN": "1.0",
+    "NAVRL_PERCEPTION": "1",
+    "NAVRL_PERCEPTION_PERTURB": "0",
+    "NAVRL_PLACEMENT_GAP_M": "1.6",
+    "NAVRL_PLACEMENT_MODE": "navrl_band",
+    "NAVRL_PLACEMENT_TOUCH_M": "0.4",
+    "NAVRL_PLAYER_GAMES_CAP": "1000000000",
+    "NAVRL_RGB_NOISE_STD": "0.015",
+    "NAVRL_SEED": "4501",
+    "NAVRL_SENSOR_ABLATION": "full",
+    "NAVRL_SENSOR_ABLATION_RECEIPT": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/sensor_ablation_receipt.json",
+    "NAVRL_SPEED_GOVERNOR": "riskcap",
+    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "2.9608856678",
+    "NAVRL_SPEED_GOVERNOR_FIXED_MPS": "2.0",
+    "NAVRL_SPEED_GOVERNOR_FREE_MPS": "3.53553390593",
+    "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_MARGIN_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_REACTION_S": "0.1",
+    "NAVRL_SPEED_GOVERNOR_RELEASE_M": "5.0",
+    "NAVRL_SPEED_GOVERNOR_SLOW_M": "3.0",
+    "NAVRL_SPEED_GOVERNOR_TTC_S": "1.2",
+    "NAVRL_TARGET_BEHAVIOR_LEVEL": "e2_obstacle_aware",
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_TARGET_DYNAMICS": "bounded",
+    "NAVRL_TARGET_PATTERN": "waypoint",
+    "NAVRL_TARGET_ROUTE_MODE": "off",
+    "NAVRL_TARGET_SPEED_FINAL": "1.5",
+    "NAVRL_TARGET_SPEED_MIN": "0.3",
+    "NAVRL_TARGET_SPEED_RAMP_EPOCHS": "300",
+    "NAVRL_TILT_COMP": "1",
+    "NAVRL_TRUNCATED_DMIN": "0.01",
+    "NAVRL_V2_PROFILE": "main",
+    "NAVRL_VISION": "1",
+    "NAVRL_YAW_RATE_MAX": "3.0"
+   },
+   "flags_after_construction": {
+    "cuda_matmul_allow_tf32": true,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "high"
+   },
+   "flags_on": {
+    "cuda_matmul_allow_tf32": true,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "high"
+   },
+   "flags_off": {
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "highest"
+   },
+   "gpu_on_vs_recorded": {
+    "finite": true,
+    "max": 0.0,
+    "argmax_call_env_dim": [
+     0,
+     0,
+     0
+    ],
+    "mean": 0.0,
+    "n_above_tol": 0,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_off_vs_recorded": {
+    "finite": true,
+    "max": 0.001719847321510315,
+    "argmax_call_env_dim": [
+     79,
+     119,
+     1
+    ],
+    "mean": 5.661067704007142e-05,
+    "n_above_tol": 8451,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_off_vs_cpu": {
+    "finite": true,
+    "max": 2.3543834686279297e-06,
+    "argmax_call_env_dim": [
+     22,
+     58,
+     0
+    ],
+    "mean": 5.546041272791193e-08,
+    "n_above_tol": 0,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_on_vs_cpu": {
+    "finite": true,
+    "max": 0.0017202496528625488,
+    "argmax_call_env_dim": [
+     79,
+     119,
+     1
+    ],
+    "mean": 5.6620109247552096e-05,
+    "n_above_tol": 8453,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_on_vs_gpu_off": {
+    "finite": true,
+    "max": 0.001719847321510315,
+    "argmax_call_env_dim": [
+     79,
+     119,
+     1
+    ],
+    "mean": 5.661067704007142e-05,
+    "n_above_tol": 8451,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "device": "cuda:0",
+   "device_name": "NVIDIA GeForce RTX 3070"
+  },
+  "205": {
+   "cpu_vs_recorded": {
+    "finite": true,
+    "max": 0.0017296969890594482,
+    "argmax_call_env_dim": [
+     28,
+     34,
+     1
+    ],
+    "mean": 5.7057762129994604e-05,
+    "n_above_tol": 8468,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "controls": {
+    "positive_true_pairing": {
+     "finite": true,
+     "max": 0.0017296969890594482,
+     "argmax_call_env_dim": [
+      28,
+      34,
+      1
+     ],
+     "mean": 5.7057762129994604e-05,
+     "n_above_tol": 8468,
+     "n": 43008,
+     "tol": 0.0001
+    },
+    "negative_shifted_pairing": {
+     "finite": true,
+     "max": 1.932861864566803,
+     "argmax_call_env_dim": [
+      66,
+      124,
+      1
+     ],
+     "mean": 0.0627088265880679,
+     "n_above_tol": 41875,
+     "n": 42496,
+     "tol": 0.0001
+    },
+    "ok": true
+   },
+   "schema_policy": "squashed_gaussian",
+   "navrl_env_cpu": {
+    "NAVRL_ACTION_MU_SCALE": "1.0,0.4,1.0,1.0",
+    "NAVRL_ACTION_POLICY": "squashed_gaussian",
+    "NAVRL_ACTION_STD": "0.35,0.35,0.05,0.08",
+    "NAVRL_ALT_HOLD_VMAX": "2.5",
+    "NAVRL_ARENA_XY": "40",
+    "NAVRL_ARENA_Z": "3",
+    "NAVRL_BAR_POOL": "bars_h3",
+    "NAVRL_BAR_X_MAX": "1.0",
+    "NAVRL_BAR_X_MIN": "0.0",
+    "NAVRL_BULK_EVAL": "1",
+    "NAVRL_BULK_EVAL_JSON": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/result.json",
+    "NAVRL_CORRIDOR_TOKENS": "0",
+    "NAVRL_DENSITY_CURRICULUM": "0",
+    "NAVRL_DENSITY_FINAL": "70",
+    "NAVRL_DENSITY_START": "70",
+    "NAVRL_DEPTH_NOISE_STD": "0.02",
+    "NAVRL_DETECTION_DROPOUT": "0.3",
+    "NAVRL_DETECTOR_THRESHOLD": "0.55",
+    "NAVRL_EPISODE_LEDGER": "1",
+    "NAVRL_EPISODE_LEN_STEPS": "600",
+    "NAVRL_EPISODE_QUOTA_PER_ENV": "1",
+    "NAVRL_EVAL_CHECKPOINT": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "NAVRL_EVAL_CV_INITIAL_HEADING": "random",
+    "NAVRL_EVAL_RUN_NONCE": "d1b3201879a17ddb15f61ad6215b21bfe77da4f1121ea6383b106080e0466490",
+    "NAVRL_GENERAL_GOAL_DIST_MAX": "28",
+    "NAVRL_GENERAL_GOAL_DIST_MIN": "6",
+    "NAVRL_GENERAL_TRAIN": "1",
+    "NAVRL_KROC2027_ARM": "A3",
+    "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10.0",
+    "NAVRL_KROC2027_INITIAL_VIEW": "visible",
+    "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+    "NAVRL_KROC2027_PROTOCOL_SHA256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+    "NAVRL_KROC2027_RECORDER": "1",
+    "NAVRL_KROC2027_RUN_ID": "SITL-G8",
+    "NAVRL_LIDAR_HBEAMS": "72",
+    "NAVRL_LIDAR_RANGE": "12",
+    "NAVRL_LIDAR_VBEAMS": "4",
+    "NAVRL_MAX_BARS": "300",
+    "NAVRL_MAX_OBSTACLES": "8",
+    "NAVRL_MAX_TILT_DEG": "45",
+    "NAVRL_MAX_VELOCITY": "2.5",
+    "NAVRL_NUM_BARS": "70",
+    "NAVRL_OBSTACLE_CLUSTER_GAP_M": "0.45",
+    "NAVRL_OBSTACLE_FOV_DEG": "240",
+    "NAVRL_OBSTACLE_SECTORS": "8",
+    "NAVRL_OBSTACLE_SELECTOR": "cluster_sector",
+    "NAVRL_OBSTACLE_SUPPRESS_DEG": "10",
+    "NAVRL_OBSTACLE_TTC_IDLE_S": "30",
+    "NAVRL_OBSTACLE_TTC_MIN_SPEED": "0.15",
+    "NAVRL_OBS_DUMP": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/obs_dump_70bars_seed4501.npz",
+    "NAVRL_OBS_DUMP_MAX": "80000",
+    "NAVRL_OBS_DUMP_STRIDE": "1",
+    "NAVRL_OOB_MARGIN": "1.0",
+    "NAVRL_PERCEPTION": "1",
+    "NAVRL_PERCEPTION_PERTURB": "0",
+    "NAVRL_PLACEMENT_GAP_M": "1.6",
+    "NAVRL_PLACEMENT_MODE": "navrl_band",
+    "NAVRL_PLACEMENT_TOUCH_M": "0.4",
+    "NAVRL_PLAYER_GAMES_CAP": "1000000000",
+    "NAVRL_RGB_NOISE_STD": "0.015",
+    "NAVRL_SEED": "4501",
+    "NAVRL_SENSOR_ABLATION": "full",
+    "NAVRL_SENSOR_ABLATION_RECEIPT": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/sensor_ablation_receipt.json",
+    "NAVRL_SPEED_GOVERNOR": "riskcap",
+    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "2.9608856678",
+    "NAVRL_SPEED_GOVERNOR_FIXED_MPS": "2.0",
+    "NAVRL_SPEED_GOVERNOR_FREE_MPS": "3.53553390593",
+    "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_MARGIN_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_REACTION_S": "0.1",
+    "NAVRL_SPEED_GOVERNOR_RELEASE_M": "5.0",
+    "NAVRL_SPEED_GOVERNOR_SLOW_M": "3.0",
+    "NAVRL_SPEED_GOVERNOR_TTC_S": "1.2",
+    "NAVRL_TARGET_BEHAVIOR_LEVEL": "e2_obstacle_aware",
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_TARGET_DYNAMICS": "bounded",
+    "NAVRL_TARGET_PATTERN": "waypoint",
+    "NAVRL_TARGET_ROUTE_MODE": "off",
+    "NAVRL_TARGET_SPEED_FINAL": "1.5",
+    "NAVRL_TARGET_SPEED_MIN": "0.3",
+    "NAVRL_TARGET_SPEED_RAMP_EPOCHS": "300",
+    "NAVRL_TILT_COMP": "1",
+    "NAVRL_TRUNCATED_DMIN": "0.01",
+    "NAVRL_V2_PROFILE": "main",
+    "NAVRL_VISION": "1",
+    "NAVRL_YAW_RATE_MAX": "3.0"
+   },
+   "navrl_env_gpu": {
+    "NAVRL_ACTION_MU_SCALE": "1.0,0.4,1.0,1.0",
+    "NAVRL_ACTION_POLICY": "squashed_gaussian",
+    "NAVRL_ACTION_STD": "0.35,0.35,0.05,0.08",
+    "NAVRL_ALT_HOLD_VMAX": "2.5",
+    "NAVRL_ARENA_XY": "40",
+    "NAVRL_ARENA_Z": "3",
+    "NAVRL_BAR_POOL": "bars_h3",
+    "NAVRL_BAR_X_MAX": "1.0",
+    "NAVRL_BAR_X_MIN": "0.0",
+    "NAVRL_BULK_EVAL": "1",
+    "NAVRL_BULK_EVAL_JSON": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/result.json",
+    "NAVRL_CORRIDOR_TOKENS": "0",
+    "NAVRL_DENSITY_CURRICULUM": "0",
+    "NAVRL_DENSITY_FINAL": "70",
+    "NAVRL_DENSITY_START": "70",
+    "NAVRL_DEPTH_NOISE_STD": "0.02",
+    "NAVRL_DETECTION_DROPOUT": "0.3",
+    "NAVRL_DETECTOR_THRESHOLD": "0.55",
+    "NAVRL_EPISODE_LEDGER": "1",
+    "NAVRL_EPISODE_LEN_STEPS": "600",
+    "NAVRL_EPISODE_QUOTA_PER_ENV": "1",
+    "NAVRL_EVAL_CHECKPOINT": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "NAVRL_EVAL_CV_INITIAL_HEADING": "random",
+    "NAVRL_EVAL_RUN_NONCE": "d1b3201879a17ddb15f61ad6215b21bfe77da4f1121ea6383b106080e0466490",
+    "NAVRL_GENERAL_GOAL_DIST_MAX": "28",
+    "NAVRL_GENERAL_GOAL_DIST_MIN": "6",
+    "NAVRL_GENERAL_TRAIN": "1",
+    "NAVRL_KROC2027_ARM": "A3",
+    "NAVRL_KROC2027_INITIAL_DISTANCE_M": "10.0",
+    "NAVRL_KROC2027_INITIAL_VIEW": "visible",
+    "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+    "NAVRL_KROC2027_PROTOCOL_SHA256": "ad706d7121fc213360b179796e45c70227f82b1afedff50fcc0fe60cf6e0c803",
+    "NAVRL_KROC2027_RECORDER": "1",
+    "NAVRL_KROC2027_RUN_ID": "SITL-G8",
+    "NAVRL_LIDAR_HBEAMS": "72",
+    "NAVRL_LIDAR_RANGE": "12",
+    "NAVRL_LIDAR_VBEAMS": "4",
+    "NAVRL_MAX_BARS": "300",
+    "NAVRL_MAX_OBSTACLES": "8",
+    "NAVRL_MAX_TILT_DEG": "45",
+    "NAVRL_MAX_VELOCITY": "2.5",
+    "NAVRL_NUM_BARS": "70",
+    "NAVRL_OBSTACLE_CLUSTER_GAP_M": "0.45",
+    "NAVRL_OBSTACLE_FOV_DEG": "240",
+    "NAVRL_OBSTACLE_SECTORS": "8",
+    "NAVRL_OBSTACLE_SELECTOR": "cluster_sector",
+    "NAVRL_OBSTACLE_SUPPRESS_DEG": "10",
+    "NAVRL_OBSTACLE_TTC_IDLE_S": "30",
+    "NAVRL_OBSTACLE_TTC_MIN_SPEED": "0.15",
+    "NAVRL_OBS_DUMP": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/obs_dump_70bars_seed4501.npz",
+    "NAVRL_OBS_DUMP_MAX": "80000",
+    "NAVRL_OBS_DUMP_STRIDE": "1",
+    "NAVRL_OOB_MARGIN": "1.0",
+    "NAVRL_PERCEPTION": "1",
+    "NAVRL_PERCEPTION_PERTURB": "0",
+    "NAVRL_PLACEMENT_GAP_M": "1.6",
+    "NAVRL_PLACEMENT_MODE": "navrl_band",
+    "NAVRL_PLACEMENT_TOUCH_M": "0.4",
+    "NAVRL_PLAYER_GAMES_CAP": "1000000000",
+    "NAVRL_RGB_NOISE_STD": "0.015",
+    "NAVRL_SEED": "4501",
+    "NAVRL_SENSOR_ABLATION": "full",
+    "NAVRL_SENSOR_ABLATION_RECEIPT": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501/sensor_ablation_receipt.json",
+    "NAVRL_SPEED_GOVERNOR": "riskcap",
+    "NAVRL_SPEED_GOVERNOR_BRAKE_MPS2": "2.9608856678",
+    "NAVRL_SPEED_GOVERNOR_FIXED_MPS": "2.0",
+    "NAVRL_SPEED_GOVERNOR_FREE_MPS": "3.53553390593",
+    "NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_MARGIN_M": "0.45",
+    "NAVRL_SPEED_GOVERNOR_REACTION_S": "0.1",
+    "NAVRL_SPEED_GOVERNOR_RELEASE_M": "5.0",
+    "NAVRL_SPEED_GOVERNOR_SLOW_M": "3.0",
+    "NAVRL_SPEED_GOVERNOR_TTC_S": "1.2",
+    "NAVRL_TARGET_BEHAVIOR_LEVEL": "e2_obstacle_aware",
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_TARGET_DYNAMICS": "bounded",
+    "NAVRL_TARGET_PATTERN": "waypoint",
+    "NAVRL_TARGET_ROUTE_MODE": "off",
+    "NAVRL_TARGET_SPEED_FINAL": "1.5",
+    "NAVRL_TARGET_SPEED_MIN": "0.3",
+    "NAVRL_TARGET_SPEED_RAMP_EPOCHS": "300",
+    "NAVRL_TILT_COMP": "1",
+    "NAVRL_TRUNCATED_DMIN": "0.01",
+    "NAVRL_V2_PROFILE": "main",
+    "NAVRL_VISION": "1",
+    "NAVRL_YAW_RATE_MAX": "3.0"
+   },
+   "flags_after_construction": {
+    "cuda_matmul_allow_tf32": true,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "high"
+   },
+   "flags_on": {
+    "cuda_matmul_allow_tf32": true,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "high"
+   },
+   "flags_off": {
+    "cuda_matmul_allow_tf32": false,
+    "cudnn_allow_tf32": false,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "float32_matmul_precision": "highest"
+   },
+   "gpu_on_vs_recorded": {
+    "finite": true,
+    "max": 0.0,
+    "argmax_call_env_dim": [
+     0,
+     0,
+     0
+    ],
+    "mean": 0.0,
+    "n_above_tol": 0,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_off_vs_recorded": {
+    "finite": true,
+    "max": 0.0017296373844146729,
+    "argmax_call_env_dim": [
+     28,
+     34,
+     1
+    ],
+    "mean": 5.7049761269406795e-05,
+    "n_above_tol": 8467,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_off_vs_cpu": {
+    "finite": true,
+    "max": 1.4901161193847656e-06,
+    "argmax_call_env_dim": [
+     51,
+     62,
+     1
+    ],
+    "mean": 5.659900620138441e-08,
+    "n_above_tol": 0,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_on_vs_cpu": {
+    "finite": true,
+    "max": 0.0017296969890594482,
+    "argmax_call_env_dim": [
+     28,
+     34,
+     1
+    ],
+    "mean": 5.7057762129994604e-05,
+    "n_above_tol": 8468,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "gpu_on_vs_gpu_off": {
+    "finite": true,
+    "max": 0.0017296373844146729,
+    "argmax_call_env_dim": [
+     28,
+     34,
+     1
+    ],
+    "mean": 5.7049761269406795e-05,
+    "n_above_tol": 8467,
+    "n": 43008,
+    "tol": 0.0001
+   },
+   "device": "cuda:0",
+   "device_name": "NVIDIA GeForce RTX 3070"
+  }
+ },
+ "reading": "TF32_EXPLAINS_POLICY_RESIDUAL",
+ "density_readings": {
+  "70": "TF32_EXPLAINS_POLICY_RESIDUAL",
+  "205": "TF32_EXPLAINS_POLICY_RESIDUAL"
+ },
+ "loaded_module_files": {
+  "aerial_gym.rl_training.rl_games.navrl_action_models": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/navrl_action_models.py",
+   "sha256": "234e13f2895c1f04e3d4266b5175ea40eab9082b73d463077206cc595ea48e1f"
+  },
+  "aerial_gym.rl_training.rl_games.navrl_mode_probe": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/navrl_mode_probe.py",
+   "sha256": "0d265de5706a0c63690ea8bac0f6986e1c1f2a48bbae3c7cdbd8726be1663a29"
+  },
+  "aerial_gym.rl_training.rl_games.navrl_players": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/navrl_players.py",
+   "sha256": "ee5c7d1310bcba9d70ce05e8e15e294aabaa382aa4e8f98ecbbf3deb25d7c076"
+  },
+  "aerial_gym.rl_training.rl_games.navrl_transformer_network": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/navrl_transformer_network.py",
+   "sha256": "eaa67b3ce0690fa32c871b6d19603d781d0eb9195b16050a930357c78af9422e"
+  },
+  "aerial_gym.rl_training.rl_games.ppo_update_safety": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/ppo_update_safety.py",
+   "sha256": "e8c78d74b591dcfe0c2441f39f243cdc1ca7efd27af5ec0fd83edd425cff7556"
+  },
+  "aerial_gym.task.navrl_task.navrl_corridor": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/navrl_corridor.py",
+   "sha256": "6388ad2f59486b50c186054fdbecc1ca6001f0c9877c778b4bd217547237ebcf"
+  },
+  "aerial_gym.task.navrl_task.navrl_detector": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/navrl_detector.py",
+   "sha256": "8f634f225bbb0242aa287bcce5f7f12ebc13bc40a25ef900df84355c286b121b"
+  },
+  "aerial_gym.task.navrl_task.navrl_perception": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/navrl_perception.py",
+   "sha256": "c107d96b29c3810b6b7cc275748cda9ca75dc42e21ba1684feff9c06a13dd4a6"
+  },
+  "aerial_gym.task.navrl_task.navrl_search_state": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/navrl_search_state.py",
+   "sha256": "9236c4656cde1c1ae2c2ccecb07183c8058c721cf35ad03ee6ffc7da0471a41d"
+  },
+  "aerial_gym.task.navrl_task.speed_governor": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/task/navrl_task/speed_governor.py",
+   "sha256": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847"
+  },
+  "aerial_gym.utils.math": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/utils/math.py",
+   "sha256": "545e98acf1fbcc83c40b4d613343302ae3c59bcbcfa6f61fe9934e5dd1a5aec5"
+  },
+  "rl_games": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/__init__.py",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "rl_games.algos_torch": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/__init__.py",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "rl_games.algos_torch.d2rl": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/d2rl.py",
+   "sha256": "9cbe2efea126690f3fbe6eceac8d0eceb866e217f1a553e5ba91a0d07bbd4a4f"
+  },
+  "rl_games.algos_torch.layers": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/layers.py",
+   "sha256": "4f43d09b171cc5e7a72399ee77a90973049f13a72fe3632ec6570ea21d14fd45"
+  },
+  "rl_games.algos_torch.model_builder": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/model_builder.py",
+   "sha256": "148ba1c1e2d419d8f2bdeb80e2b008ac93435afc9af065b7b03ea0e76a707303"
+  },
+  "rl_games.algos_torch.models": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/models.py",
+   "sha256": "da4755621135546b94e254aef65cabbf0dc1a4a506012a712fea9f16006314bf"
+  },
+  "rl_games.algos_torch.moving_mean_std": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/moving_mean_std.py",
+   "sha256": "5200435734bc883e124737ca63f08a7ca0d6e870daf1c4164946c7903babc7a6"
+  },
+  "rl_games.algos_torch.network_builder": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/network_builder.py",
+   "sha256": "5055582dd9ceeb83f9ff90e40f0f0d576e97182df41c8064346d2a77071f7246"
+  },
+  "rl_games.algos_torch.players": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/players.py",
+   "sha256": "13cb386cb2da6e13d86bfbccc9a45abcc0c0b27ed94b9c5cefefec8d63483a77"
+  },
+  "rl_games.algos_torch.running_mean_std": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/running_mean_std.py",
+   "sha256": "3025c1f63ea0144eb38abb4748985b611416813db6cb90d10c90e642d2e95edc"
+  },
+  "rl_games.algos_torch.sac_helper": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/sac_helper.py",
+   "sha256": "7f1309126849886531d70b39cd5ad8efdbd0072e35e41d64f96a2f13b1c8eae3"
+  },
+  "rl_games.algos_torch.spatial_softmax": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/spatial_softmax.py",
+   "sha256": "dc4c2bfdc204b542a79ab5352f3666d54bef4c924e6e6712957edcd01cebadaa"
+  },
+  "rl_games.algos_torch.torch_ext": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/algos_torch/torch_ext.py",
+   "sha256": "1eaef4411d79f97fea8a207c8deeb217b46a5d90755a80bfa936e7cbf3774544"
+  },
+  "rl_games.common": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/__init__.py",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "rl_games.common.common_losses": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/common_losses.py",
+   "sha256": "194927b2b005670ec37b602fd0dbd680461b90afe992782ccdcdfa1d9623d89f"
+  },
+  "rl_games.common.divergence": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/divergence.py",
+   "sha256": "3b0ec78faa97460f739091c237de0ba385f4ac07d0e4a4d6fcf3f0f78805e139"
+  },
+  "rl_games.common.env_configurations": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/env_configurations.py",
+   "sha256": "6a3b45d4555e161c370bfcac94c0e0580e8e0fde09d1e012d7a2deb809f0a2d9"
+  },
+  "rl_games.common.extensions": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/extensions/__init__.py",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "rl_games.common.extensions.distributions": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/extensions/distributions.py",
+   "sha256": "e438eba1425d2e114281520ff41e1eeecf580c8af6d2b315619b94d855989cf5"
+  },
+  "rl_games.common.gym_compat": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/gym_compat.py",
+   "sha256": "f2b4de92f4d51d270d665e091425fe8e62a9492058de2b78b57c5c99789a86cc"
+  },
+  "rl_games.common.ivecenv": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/ivecenv.py",
+   "sha256": "b27b45c3a566219625e09ca21346b21960c05e1a8b800a804427c80104f7aa36"
+  },
+  "rl_games.common.layers": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/layers/__init__.py",
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "rl_games.common.layers.recurrent": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/layers/recurrent.py",
+   "sha256": "50822ceede7dee014a5e0719e6c9d51cf2973532704abf26970cc29a4e1ffa66"
+  },
+  "rl_games.common.layers.value": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/layers/value.py",
+   "sha256": "9dd98ffcb8191e59b61da280d6e76d5cf5f704de8b5f7fff9b42630ecb9682e3"
+  },
+  "rl_games.common.object_factory": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/object_factory.py",
+   "sha256": "d310b283f72eaf9056e8f98cae5ec9216131f7e891320c4f01a0e4cad75f9768"
+  },
+  "rl_games.common.player": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/player.py",
+   "sha256": "34a03270ed45762b6e5657211ef691a03807a862174852d83c18ecc232a55416"
+  },
+  "rl_games.common.tr_helpers": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/tr_helpers.py",
+   "sha256": "4a8da52119a4c13f76f9f4cfd73a82e86925e18cd4635e0665aef11472377c60"
+  },
+  "rl_games.common.vecenv": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/vecenv.py",
+   "sha256": "7a2f26370a4d3c2c35b18986acc53d082a9ea8d3ef216a1276f90dc5e892c866"
+  },
+  "rl_games.common.wrappers": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/common/wrappers.py",
+   "sha256": "2a377f9f7f302b6ff7473a688d92d5f0d0c70bfd5d8bcbd88c05fcefb9952bfe"
+  },
+  "rl_games.envs": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/__init__.py",
+   "sha256": "113d83ddb0dde6667937155044c4a6b82d825a7acdeb609365aa317e40c5824a"
+  },
+  "rl_games.envs.brax": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/brax.py",
+   "sha256": "1aed99f6b46a06534d61e5fd509d9891189b87acaa6f65fff8f2eb4415c8787f"
+  },
+  "rl_games.envs.cule": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/cule.py",
+   "sha256": "bbf8c6b31a7cfb2b7917d2ed9f23802e6dda95d891280c61165a8d2eec37e7fa"
+  },
+  "rl_games.envs.envpool": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/envpool.py",
+   "sha256": "f421c80c32d0b9a1078b00fc4dd89b8f3d9d4b5c6056394eaa552ea6f2725adb"
+  },
+  "rl_games.envs.maniskill": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/maniskill.py",
+   "sha256": "46c9708c18ec061fbeedd36b67d650267d277202cccbb3828799ce9eb128a2a3"
+  },
+  "rl_games.envs.test": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/test/__init__.py",
+   "sha256": "075d499a35c74c30112b63af67cb63d11e9184f9842be18d3caf19f29f839460"
+  },
+  "rl_games.envs.test_network": {
+   "path": "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/rl_games/envs/test_network.py",
+   "sha256": "2ca8837406d614bfcd3ab3a0e63ad51ce8bace92530c48c204bcac7296431b5e"
+  }
+ },
+ "aerial_gym_path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym",
+ "actions_npz": {
+  "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/gpu_run01/result.npz",
+  "sha256": "21d6aaca187f2d8498bdfe2c31b4ed3f75c2854f4d2c9cf502d9c0798b14887e"
+ },
+ "approval": {
+  "approved_by": "user",
+  "approved_at": "2026-11-06",
+  "recorded_at": "2026-11-06T02:40:03.856760+00:00",
+  "commit": "f286e29e4d0bd90842f896411dbbac00bfa2349c",
+  "scope": "S3a-P1 policy precision: stored G8 r2 observations, Frozen F, CPU vs GPU TF32 ON vs GPU TF32 OFF (one GPU process)",
+  "approval_file": {
+   "path": "/home/fair/motar_tmp/s3a_policy_precision_20261106/execution_approval.json",
+   "sha256": "94f176088f45906f7b983106347e715360e51800f83cc53a46eeff904adb8905"
+  }
+ },
+ "git": {
+  "head": "f286e29e4d0bd90842f896411dbbac00bfa2349c",
+  "dirty": ""
+ },
+ "wall_s": 4.6797850131988525,
+ "run_dir": "/home/fair/motar_tmp/s3a_policy_precision_20261106/gpu_run01",
+ "kernel_faults_start": 0,
+ "kernel_faults_end": 0,
+ "fault_check_error": null,
+ "environment": {
+  "CUDA_VISIBLE_DEVICES": "0",
+  "PYTHONNOUSERSITE": "1",
+  "OMP_NUM_THREADS": "1",
+  "MKL_NUM_THREADS": "1"
+ },
+ "affinity": [
+  6,
+  7,
+  12,
+  13
+ ],
+ "nice": 10
+}

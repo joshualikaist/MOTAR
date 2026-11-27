@@ -1,0 +1,142 @@
+{
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+ "runner_sha256": "f60f5be6e8c05dc943a3d01ae0a6c136a1c898148d3851c2b0a15078c4f82cbc",
+ "analysis_sha256": "f9d709fff699488e3ec3fabb61aa228ddef0b385bdf1660776e66e2f9305a409",
+ "results": {
+  "c1_pass": {
+   "rc": 0,
+   "verdict": "C1_IDENTITY_PASS",
+   "error": null,
+   "calls": [
+    {
+     "level": "full",
+     "density": 205,
+     "seed": 4501,
+     "scale": null,
+     "quota": 16,
+     "run_id": "CAMONLY-C1",
+     "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_camonly_arms.sh",
+     "ckpt_sha": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+     "extra": {
+      "NAVRL_SENSOR_ABLATION": "full",
+      "CAMONLY_PY": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/camonly_python"
+     }
+    },
+    {
+     "level": "no_lidar",
+     "density": 205,
+     "seed": 4501,
+     "scale": null,
+     "quota": 16,
+     "run_id": "CAMONLY-C1",
+     "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_camonly_arms.sh",
+     "ckpt_sha": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+     "extra": {
+      "NAVRL_SENSOR_ABLATION": "no_lidar",
+      "CAMONLY_PY": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/camonly_python"
+     }
+    }
+   ]
+  },
+  "c2": {
+   "rc": 0,
+   "verdict": "COMPLETE",
+   "n_calls": 60,
+   "error": null
+  },
+  "analysis_ok": {
+   "rc": 0,
+   "reading": "REPORTED",
+   "stderr": "",
+   "binding": {
+    "c1_identity_pass": true,
+    "c1_same_commit": true,
+    "c2_complete": true,
+    "gr0_complete": true,
+    "gr0_dir_same_in_c1_c2": true,
+    "env_allowlisted_same_c1_c2": true,
+    "gr0_s00_cells_match_manifest": true,
+    "complete_grid_B_in": true,
+    "complete_grid_B_out": true,
+    "complete_grid_C": true,
+    "complete_grid_C_gL": true,
+    "complete_grid_B_in_gL": true,
+    "ablation_receipts_match": true,
+    "cells_differ_from_full": true,
+    "conditions_equal_gr0": true,
+    "snapshots_differ_only_in_expected_keys": true,
+    "governor_ablation_engaged": true,
+    "c1_no_lidar_equals_c2": true
+   },
+   "labels": {
+    "total": [
+     "LOWER",
+     "HIGHER",
+     -28.845
+    ],
+    "in_fov": [
+     "LOWER",
+     "HIGHER",
+     -4.81
+    ],
+    "out_fov": [
+     "LOWER",
+     "HIGHER",
+     -9.66
+    ],
+    "interaction": [
+     "LOWER",
+     "HIGHER",
+     -14.376
+    ],
+    "obs_in": [
+     "SMALL_LOWER",
+     "SMALL_HIGHER",
+     -1.929
+    ],
+    "gov_in": [
+     "SMALL_LOWER",
+     "HIGHER",
+     -2.881
+    ],
+    "gov_all": [
+     "LOWER",
+     "HIGHER",
+     -9.721
+    ],
+    "obs_all": [
+     "LOWER",
+     "HIGHER",
+     -19.124
+    ]
+   }
+  },
+  "independent_capture_means": {
+   "total": -28.84521484375,
+   "in_fov": -4.8095703125,
+   "out_fov": -9.659830729166666,
+   "interaction": -14.375813802083334,
+   "obs_in": -1.9287109375,
+   "gov_in": -2.880859375,
+   "gov_all": -9.720865885416666,
+   "obs_all": -19.124348958333332
+  }
+ },
+ "checks": {
+  "c1_pass": true,
+  "c1_no_effect_fails": true,
+  "c1_missing_receipt_fails": true,
+  "c2_needs_c1": true,
+  "c2_wrong_condition_stops": true,
+  "c2_complete_and_ordered": true,
+  "analysis_known_good": true,
+  "analysis_bad_receipt": true,
+  "analysis_identical_cell": true,
+  "analysis_dead_governor": true,
+  "analysis_unexpected_snapshot_key": true,
+  "analysis_c1_c2_mismatch": true,
+  "analysis_fake_gr0": true,
+  "c2_env_mismatch_refused": true
+ },
+ "pass": true
+}

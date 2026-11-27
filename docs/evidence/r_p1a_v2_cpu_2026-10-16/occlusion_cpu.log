@@ -1,0 +1,32 @@
+test_cell_intervals_parity_and_censoring (test_occlusion_analysis.EndToEndTest) ... ok
+test_pilot_groups_seeds_and_sweep_uses_recorded_layouts (test_occlusion_analysis.EndToEndTest) ... ok
+test_cumulative_incidence_partitions_ends (test_occlusion_events.EstimatorTest) ... ok
+test_kaplan_meier_hand_values (test_occlusion_events.EstimatorTest) ... ok
+test_summary_and_bootstrap (test_occlusion_events.EstimatorTest) ... ok
+test_after_acquisition_restored_and_censored (test_occlusion_events.IntervalTest) ... ok
+test_gaps_and_bad_terminal_are_refused (test_occlusion_events.IntervalTest) ... ok
+test_reacquisition (test_occlusion_events.IntervalTest) ... ok
+test_deterministic_and_labelled (test_occlusion_events.SweepTest) ... ok
+test_empty_layout_never_blocks (test_occlusion_events.SweepTest) ... ok
+test_static_pursuit_never_reoccludes_but_lateral_motion_can (test_occlusion_events.SweepTest) ... ok
+test_agrees_with_torch_recorder_geometry (test_occlusion_geometry.CrossCheckTest) ... ok
+test_rotated_box_equals_rotated_world (test_occlusion_geometry.CrossCheckTest) ... ok
+test_blocked_clear_grazing_and_above (test_occlusion_geometry.HandCaseTest) ... ok
+test_frustum_and_range (test_occlusion_geometry.HandCaseTest) ... ok
+test_full_versus_partial_occlusion (test_occlusion_geometry.HandCaseTest) ... ok
+test_match_ignores_episodes_beyond_quota_and_reports_new_keys (test_occlusion_pilot_stage.HistoricalMatchTest) ... ok
+test_mismatch_lists_fields_without_identity_claim (test_occlusion_pilot_stage.HistoricalMatchTest) ... ok
+test_trace_problems_on_missing_trace (test_occlusion_pilot_stage.HistoricalMatchTest) ... ok
+test_matrix_and_historical_counterparts (test_occlusion_pilot_stage.PilotCellsTest) ... ok
+test_refuses_draft_and_missing_backup_and_writes_nothing (test_occlusion_pilot_stage.PilotCellsTest) ... ok
+test_compact_recovery_keeps_episode_records_only_and_probe_columns (test_occlusion_trace.RecorderIntegrationTest) ... ok
+test_flags_fail_closed (test_occlusion_trace.RecorderIntegrationTest) ... ok
+test_off_on_existing_outputs_task_and_rng_unchanged (test_occlusion_trace.RecorderIntegrationTest) ... ok
+test_trace_class_never_assigns_task_state (test_occlusion_trace.RecorderIntegrationTest) ... ok
+test_record_size_budget (test_occlusion_trace.StorageTest) ... ok
+test_round_trip_dedupe_and_tamper (test_occlusion_trace.StorageTest) ... ok
+
+----------------------------------------------------------------------
+Ran 27 tests in 0.489s
+
+OK

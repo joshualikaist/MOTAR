@@ -1,0 +1,168 @@
+{
+ "schema": "motar.occlusion-pilot-plan.v2",
+ "status": "APPROVED_2026-10-17",
+ "supersedes": "docs/plans/occlusion_pilot_v1.json (draft; 2 seeds, 1 h budget cap)",
+ "authority": "user, 2026-10-17: the 30 GPU-hour budget no longer constrains design; G0 strengthened; OCC-P1 widened to seeds 4201-4207; G0 pass allows OCC-P1 to follow without a further approval; OCC-P2 and planner work need their own preregistration",
+ "purpose": "measure how often and how long a once-acquired target is geometrically occluded by bars, by obstacle density and target motion; exploratory even with seven seeds (no confirmatory label; OCC-P2 with fresh seeds is the confirmatory step)",
+ "groups": {
+  "static": {
+   "arm": "A1",
+   "target_model": "E0_static",
+   "lineage": "E0_static",
+   "view": "visible",
+   "extra_env": {},
+   "historical": {
+    "run_id": "KROC27-A-M01",
+    "commit": "bbf530b0b4079d3bde9ce3d4d75990612b643065",
+    "cells": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/A1",
+    "raw_manifest": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json",
+    "manifest_prefix": "A1/"
+   }
+  },
+  "moving": {
+   "arm": "A3",
+   "target_model": "E2_obstacle_aware",
+   "lineage": "E2_direct_l2_v1",
+   "view": "visible",
+   "extra_env": {
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_KROC2027_PACKETS": "1",
+    "NAVRL_KROC2027_PACKET_SCHEMA": "full_v2",
+    "NAVRL_KROC2027_ON_VIOLATION": "stop"
+   },
+   "historical": {
+    "run_id": "KROC27-A-M02",
+    "commit": "ea677289cecf637ebe8d3d473d29cd0b20cc47d9",
+    "cells": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/E2_direct_l2_v1/A3",
+    "raw_manifest": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json",
+    "manifest_prefix": "E2_direct_l2_v1/A3/"
+   }
+  }
+ },
+ "densities": [
+  70,
+  115,
+  160,
+  205
+ ],
+ "num_envs": 128,
+ "quota_per_env": 4,
+ "telemetry_env": {
+  "NAVRL_KROC2027_OCCLUSION_TRACE": "1",
+  "NAVRL_KROC2027_RECOVERY_EVENTS": "1",
+  "NAVRL_KROC2027_RECOVERY_TRACE": "compact"
+ },
+ "indicators": [
+  "fused_loss",
+  "center_occlusion_in_view",
+  "geometric_full_in_view",
+  "out_of_view",
+  "rendered_full_in_view"
+ ],
+ "duration_thresholds_s": [
+  0.5,
+  1.0,
+  2.0,
+  3.0
+ ],
+ "secondary_threshold_s": 5.0,
+ "analysis": "tools/occlusion_analysis.py pilot; Kaplan-Meier with its independent-censoring caveat plus Aalen-Johansen cumulative incidence by end cause; rates per post-acquisition exposure second; episode-cluster bootstrap and per-seed values",
+ "geometry_only": "tools/occlusion_analysis.py sweep over the pilot's recorded layouts, three scripted families (static_pursuit, static_crossing, moving_pursuit at 1.5 m/s), collisions ignored, labelled GEOMETRY_ONLY_KINEMATIC_BASELINE and reported apart from the whole-system pilot. Straight pursuit of a static target cannot re-occlude after a clear sight line, so static post-acquisition occlusion in the pilot can only come from detours or lateral motion",
+ "safety": {
+  "min_free_disk_gb": 8.0,
+  "disk_rule": "refuse to start and stop before the next cell below 8 GB free",
+  "expected_cell_seconds": 180,
+  "overrun_factor": 2.0,
+  "overrun_rule": "a cell slower than overrun_factor x expected is recorded with its ratio, outcome counts and disk state; the run continues unless the wall-clock cap is hit",
+  "integrity": "every historical cell re-verified against its RAW_MANIFEST before launch; Policy F SHA-256 checked before and after; new run ids; existing results never overwritten",
+  "external_backup": "NOT_COMPLETED; recorded, not a blocking condition for this run"
+ },
+ "g0": {
+  "run_id": "OCC-G0",
+  "output_root": "results/occlusion_pilot_v1/OCC-G0",
+  "seeds": [
+   4201
+  ],
+  "pairs": 8,
+  "design": "each (group, density) runs twice on the same commit: OFF = recorder + trajectory digest + actor-observation dump, no telemetry; ON = the same plus the telemetry variables. Both runs are compared, and ON is also compared with the historical cell",
+  "noninterference_checks": [
+   "result.json equal except the run nonce",
+   "trajectory digest sha256 and step count equal, steps > 0",
+   "ledger rows_sha256 equal",
+   "every actor-observation row sampled by both runs bitwise equal (observation_gate, unmodified helper)",
+   "recorder episode records equal field by field",
+   "ON equals the historical cell on the first four episodes per environment (ledger fields)"
+  ],
+  "renderer_parity_checks": {
+   "probe_vs_offline_center_ray_agreement_min": 0.995,
+   "rendered_zero_pixels_while_geometrically_clear_in_view_max": 0.01,
+   "rendered_pixels_while_geometric_full_occlusion_max": 0.01,
+   "needs": "probe frames present and render alignment ZERO_LATENCY_RENDER_DELIVERY; otherwise NOT_TESTED"
+  },
+  "scene_confirmation": "counts of frames that are visible (in view, clear, rendered pixels > 0), partial (centre blocked, rim not all blocked or pixels > 0) and full (geometric full proxy, and rendered zero pixels when the probe ran); at least one of each among the ON cells, with episode keys",
+  "timestamp_rule": "when render alignment is not verified, camera-versus-geometry comparisons are UNKNOWN and rendered_full_in_view stays NOT_RECORDED",
+  "pass": "noninterference PASS on all 8 pairs AND parity PASS or NOT_TESTED-with-reason AND scenes PRESENT; a noninterference failure blocks OCC-P1",
+  "expected_hours": [
+   0.35,
+   0.6
+  ],
+  "wall_clock_safety_cap_hours": 2.0
+ },
+ "pilot": {
+  "run_id": "OCC-P1",
+  "output_root": "results/occlusion_pilot_v1/OCC-P1",
+  "seeds": [
+   4201,
+   4202,
+   4203,
+   4204,
+   4205,
+   4206,
+   4207
+  ],
+  "cells": 56,
+  "primary_episodes": 28672,
+  "requires": "g0 report at the same commit with noninterference PASS",
+  "expected_hours": [
+   1.3,
+   1.8
+  ],
+  "wall_clock_safety_cap_hours": 5.0,
+  "expected_output_gb": [
+   0.6,
+   0.85
+  ]
+ },
+ "g0_noninterference": {
+  "rule": "per cell, the first 4 episodes of every environment equal the historical cell: ledger fields exactly and every recorder field present in both",
+  "ledger_fields": [
+   "episode_id",
+   "outcome",
+   "capture",
+   "crash",
+   "timeout",
+   "completion_step",
+   "completion_rank",
+   "min_relative_distance_m"
+  ],
+  "on_mismatch": "stop the run at that cell, keep everything, report the differing fields; no identity claim",
+  "scope": "telemetry on versus historical telemetry off, different source commits with identical simulation code paths; a mismatch alone does not say which difference caused it"
+ },
+ "reporting": [
+  "geometric occlusion share of acquired episodes and rate per observation second",
+  "duration distribution and KM at 0.5/1/2/3 s, 5 s secondary with risk-set size",
+  "cumulative incidence by end cause (restored / capture / crash / timeout)",
+  "reacquisition after restored occlusion",
+  "fused loss reported separately and never called occlusion",
+  "per-seed values and episode-cluster bootstrap",
+  "exposure time per density (what crash and capture leave to observe)",
+  "GPU seconds and output bytes per cell"
+ ],
+ "not_authorized": [
+  "OCC-P2",
+  "Recovery Planner",
+  "PPO",
+  "R-P1b scene injection",
+  "push"
+ ]
+}

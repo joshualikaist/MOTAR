@@ -1,0 +1,193 @@
+launch 2026-11-05T02:05:31+09:00 host_faults=0
+== T-LOAD run 01 L0a ('full', 205, 4501) 2026-11-05T02:05:32.037530+09:00
+== full E2_obstacle_aware__205bars__seed4501 2026-11-05T02:05:32.037702+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/01_L0a/full
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 175s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 1867, 'crash': 181, 'timeout': 0} 176s []
+   ablation full OK
+   OK eq_L0a=None ref=True load_ok=True cores=None wall=176s
+== T-LOAD run 02 L1 ('full', 205, 4501) 2026-11-05T02:08:32.672107+09:00
+== full E2_obstacle_aware__205bars__seed4501 2026-11-05T02:08:32.775716+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/02_L1/full
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 203s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 1867, 'crash': 181, 'timeout': 0} 203s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=3.99 wall=203s
+== T-LOAD run 03 L2 ('full', 205, 4501) 2026-11-05T02:12:14.291318+09:00
+== full E2_obstacle_aware__205bars__seed4501 2026-11-05T02:12:14.291979+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/03_L2/full
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 275s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 1867, 'crash': 181, 'timeout': 0} 275s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=16.84 wall=275s
+== T-LOAD run 04 L3 ('full', 205, 4501) 2026-11-05T02:16:54.529042+09:00
+== full E2_obstacle_aware__205bars__seed4501 2026-11-05T02:16:54.529383+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/04_L3/full
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 166s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 1867, 'crash': 181, 'timeout': 0} 166s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=1.0 wall=166s
+== T-LOAD run 05 L0b ('full', 205, 4501) 2026-11-05T02:19:41.020733+09:00
+== full E2_obstacle_aware__205bars__seed4501 2026-11-05T02:19:41.020969+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/05_L0b/full
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 167s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 1867, 'crash': 181, 'timeout': 0} 168s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=None wall=168s
+== T-LOAD run 06 L0a ('no_lidar', 205, 4501) 2026-11-05T02:22:28.958281+09:00
+== no_lidar E2_obstacle_aware__205bars__seed4501 2026-11-05T02:22:28.958542+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/06_L0a/no_lidar
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 171s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 804, 'crash': 1244, 'timeout': 0} 172s []
+   ablation no_lidar OK
+   OK eq_L0a=None ref=True load_ok=True cores=None wall=172s
+== T-LOAD run 07 L1 ('no_lidar', 205, 4501) 2026-11-05T02:25:25.587658+09:00
+== no_lidar E2_obstacle_aware__205bars__seed4501 2026-11-05T02:25:25.937394+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/07_L1/no_lidar
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 213s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 804, 'crash': 1244, 'timeout': 0} 213s []
+   ablation no_lidar OK
+   OK eq_L0a=True ref=None load_ok=True cores=4.0 wall=213s
+== T-LOAD run 08 L2 ('no_lidar', 205, 4501) 2026-11-05T02:29:07.243310+09:00
+== no_lidar E2_obstacle_aware__205bars__seed4501 2026-11-05T02:29:07.243752+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/08_L2/no_lidar
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 295s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 804, 'crash': 1244, 'timeout': 0} 296s []
+   ablation no_lidar OK
+   OK eq_L0a=True ref=None load_ok=True cores=16.86 wall=296s
+== T-LOAD run 09 L3 ('no_lidar', 205, 4501) 2026-11-05T02:34:08.095321+09:00
+== no_lidar E2_obstacle_aware__205bars__seed4501 2026-11-05T02:34:08.095678+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/09_L3/no_lidar
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 169s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 804, 'crash': 1244, 'timeout': 0} 169s []
+   ablation no_lidar OK
+   OK eq_L0a=True ref=None load_ok=True cores=1.0 wall=169s
+== T-LOAD run 10 L0b ('no_lidar', 205, 4501) 2026-11-05T02:36:57.663912+09:00
+== no_lidar E2_obstacle_aware__205bars__seed4501 2026-11-05T02:36:57.664155+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=205 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/10_L0b/no_lidar
+======== (1/1) E2_obstacle_aware__205bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__205bars__seed4501 in 169s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 804, 'crash': 1244, 'timeout': 0} 169s []
+   ablation no_lidar OK
+   OK eq_L0a=True ref=None load_ok=True cores=None wall=169s
+== T-LOAD run 11 L0a ('full', 70, 4501) 2026-11-05T02:39:46.702348+09:00
+== full E2_obstacle_aware__70bars__seed4501 2026-11-05T02:39:46.702568+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=70 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/11_L0a/full
+======== (1/1) E2_obstacle_aware__70bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__70bars__seed4501 in 106s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 2020, 'crash': 28, 'timeout': 0} 106s []
+   ablation full OK
+   OK eq_L0a=None ref=None load_ok=True cores=None wall=106s
+== T-LOAD run 12 L1 ('full', 70, 4501) 2026-11-05T02:41:38.023372+09:00
+== full E2_obstacle_aware__70bars__seed4501 2026-11-05T02:41:38.023712+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=70 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/12_L1/full
+======== (1/1) E2_obstacle_aware__70bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__70bars__seed4501 in 134s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 2020, 'crash': 28, 'timeout': 0} 135s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=4.0 wall=135s
+== T-LOAD run 13 L2 ('full', 70, 4501) 2026-11-05T02:44:05.671307+09:00
+== full E2_obstacle_aware__70bars__seed4501 2026-11-05T02:44:05.671723+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=70 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/13_L2/full
+======== (1/1) E2_obstacle_aware__70bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__70bars__seed4501 in 169s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 2020, 'crash': 28, 'timeout': 0} 169s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=16.72 wall=169s
+== T-LOAD run 14 L3 ('full', 70, 4501) 2026-11-05T02:46:59.783295+09:00
+== full E2_obstacle_aware__70bars__seed4501 2026-11-05T02:46:59.783622+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=70 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/14_L3/full
+======== (1/1) E2_obstacle_aware__70bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__70bars__seed4501 in 107s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 2020, 'crash': 28, 'timeout': 0} 107s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=1.0 wall=107s
+== T-LOAD run 15 L0b ('full', 70, 4501) 2026-11-05T02:48:46.769695+09:00
+== full E2_obstacle_aware__70bars__seed4501 2026-11-05T02:48:46.769931+09:00
+[arms] commit=812f6b1bb9404600a6cae96269851174f1319511 dirty=0 ckpt=f702213936601860...
+[arms] arms=E2_obstacle_aware
+[arms] densities=70 seeds=4501 games/cell=2048 envs=128
+[arms] out=/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/tload_v1/15_L0b/full
+======== (1/1) E2_obstacle_aware__70bars__seed4501 ========
+[arms] (1/1) done E2_obstacle_aware__70bars__seed4501 in 107s
+[arms] ALL_CELLS_ATTEMPTED
+   OK {'capture': 2020, 'crash': 28, 'timeout': 0} 107s []
+   ablation full OK
+   OK eq_L0a=True ref=None load_ok=True cores=None wall=107s
+{
+ "unit": "T-LOAD",
+ "reading": "LOAD_INVARIANT",
+ "arm_state": {
+  "L1": "EQUAL",
+  "L2": "EQUAL",
+  "L3": "EQUAL"
+ },
+ "commit": "812f6b1bb9404600a6cae96269851174f1319511",
+ "dry_run": false
+}
+exit=0 end 2026-11-05T02:50:33+09:00 host_faults=0

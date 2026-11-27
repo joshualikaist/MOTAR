@@ -1,0 +1,48 @@
+{
+  "schema": "motar.g4r3.research.integrity.v1",
+  "checked_utc": "2026-10-20T08:43:18.036350+00:00",
+  "checks": {
+    "branch": true,
+    "head": true,
+    "parent": true,
+    "index_empty": true,
+    "review_hashes_match": true,
+    "oracle_hashes_match": true,
+    "c02_sources_unchanged": true,
+    "old_tests_unchanged": true,
+    "old_g4r_artifacts_unchanged": true,
+    "old_manifest_unchanged": true,
+    "main_head": true,
+    "main_wip": true,
+    "stash": true,
+    "policy_checkpoint": true,
+    "protected_symlinks": true,
+    "only_worklog_tracked_delta": true,
+    "worklog_append_only": true,
+    "tracked_diff_whitespace": true,
+    "no_online_callers_rg": true,
+    "pure_package_imports": true,
+    "exact_39_commit_scope": true,
+    "disk_above_3GB": true
+  },
+  "head": "8689efcd066d64e7b49cecf011e3bd8675380cdb",
+  "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "stash_sha": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+  "policy_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "protected_symlinks": {
+    "results/mt_p1_precision_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1",
+    "results/occlusion_pilot_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1"
+  },
+  "disk_free_bytes": 9193627648,
+  "stop_below_bytes": 3000000000,
+  "raw_full_rehash": "NOT_RUN",
+  "external_backup": "NOT_CREATED",
+  "owned_test_processes_remaining": [],
+  "host_process_inventory_claim": "No claim about unrelated user processes",
+  "G5": "HOLD"
+}

@@ -1,0 +1,14 @@
+{
+ "status": "ABORTED",
+ "reason": "TypeError: Object of type bytearray is not JSON serializable",
+ "scenarios_recorded": 0,
+ "scenarios_scheduled": 3,
+ "kernel_faults_before": 0,
+ "kernel_faults_after": 0,
+ "finished": 1794292394.1916945,
+ "git_after": {
+  "head": "ede0a14f85c5b6ca49be235fae10e9325fee28be",
+  "branch": "camonly/dev",
+  "dirty": ""
+ }
+}

@@ -1,0 +1,55 @@
+test_01_identical_measurement_different_worlds (test_boia_research.TestBoiaResearch) ... ok
+test_02_foreground_target_first_hit_is_preserved (test_boia_research.TestBoiaResearch) ... ok
+test_03_incorrect_association_retained_and_uncovered_option_refused (test_boia_research.TestBoiaResearch) ... ok
+test_04_missing_evidence_abstains (test_boia_research.TestBoiaResearch) ... ok
+test_05_unsupported_calibration_abstains (test_boia_research.TestBoiaResearch) ... ok
+test_06_positive_robust_paired_benefit (test_boia_research.TestBoiaResearch) ... ok
+test_07_negative_worst_world_refuses_intervention (test_boia_research.TestBoiaResearch) ... ok
+test_08_switching_cost_reverses_positive_gain (test_boia_research.TestBoiaResearch) ... ok
+test_09_early_opportunity_changes_reactive_decision (test_boia_research.TestBoiaResearch) ... ok
+test_10_late_opportunity_changes_immediate_threshold (test_boia_research.TestBoiaResearch) ... ok
+test_11_unsafe_wait_prefix_cannot_be_bridged (test_boia_research.TestBoiaResearch) ... ok
+test_12_safe_f_unsafe_high_gain_alternative (test_boia_research.TestBoiaResearch) ... ok
+test_13_unsafe_f_current_viable_backup_precedes_utility (test_boia_research.TestBoiaResearch) ... ok
+test_14_no_certified_backup_is_failure_not_stop_success (test_boia_research.TestBoiaResearch) ... ok
+test_15_endgame_and_no_search_do_not_bypass_safety (test_boia_research.TestBoiaResearch) ... ok
+test_16_candidate_permutation_and_wait_ties (test_boia_research.TestBoiaResearch) ... ok
+test_17_environment_reset_isolation_and_terminal_no_loss_read (test_boia_research.TestBoiaResearch) ... ok
+test_18_gt_schema_import_firewall_and_no_actions (test_boia_research.TestBoiaResearch) ... ok
+test_19_pairing_is_scenario_path_context_exact_not_shape_only (test_boia_research.TestBoiaResearch) ... ok
+test_20_paired_regret_not_independent_worst_case (test_boia_research.TestBoiaResearch) ... ok
+test_21_missing_allowances_and_f_continuation_refuse (test_boia_research.TestBoiaResearch) ... ok
+test_22_mc_bound_counts_all_options_scenarios_and_independent_paths (test_boia_research.TestBoiaResearch) ... ok
+test_23_nan_huge_int_overflow_are_option_local (test_boia_research.TestBoiaResearch) ... ok
+test_24_domain_mismatch_is_option_local (test_boia_research.TestBoiaResearch) ... ok
+test_25_hysteresis_never_retains_harmful_unsafe_or_unsupported_owner (test_boia_research.TestBoiaResearch) ... ok
+test_26_no_rng_mutation_repeatability_and_immutable_inputs (test_boia_research.TestBoiaResearch) ... ok
+test_27_probability_timestamp_grid_flags_fail_closed (test_boia_research.TestBoiaResearch) ... ok
+test_28_unsupported_comparison_abstains_without_poisoning_siblings (test_boia_research.TestBoiaResearch) ... ok
+test_29_conflicting_duplicate_backup_ids_cannot_certify_one_choice (test_boia_research.TestBoiaResearch) ... ok
+test_30_duplicate_and_stale_ids_do_not_advance_state_or_reuse_proof (test_boia_research.TestBoiaResearch) ... ok
+test_01_current_safety_stale_utility_may_override (test_boia_research_safety.TestIndependentSafety) ... ok
+test_02_stale_safety_current_utility_refused (test_boia_research_safety.TestIndependentSafety) ... ok
+test_03_candidate_binding (test_boia_research_safety.TestIndependentSafety) ... ok
+test_04_episode_binding (test_boia_research_safety.TestIndependentSafety) ... ok
+test_05_decision_binding (test_boia_research_safety.TestIndependentSafety) ... ok
+test_06_missing_safety_is_not_minted_from_boolean (test_boia_research_safety.TestIndependentSafety) ... ok
+test_07_insufficient_F_current_alternative (test_boia_research_safety.TestIndependentSafety) ... ok
+test_08_insufficient_F_all_alternatives_unverified (test_boia_research_safety.TestIndependentSafety) ... ok
+test_09_missing_utility_never_authorizes_F_or_blocks_backup (test_boia_research_safety.TestIndependentSafety) ... ok
+test_10_normal_wait_and_intervene (test_boia_research_safety.TestIndependentSafety) ... ok
+test_11_order_independence (test_boia_research_safety.TestIndependentSafety) ... ok
+test_12_env_state_and_RNG_isolation (test_boia_research_safety.TestIndependentSafety) ... ok
+test_13_env_binding_and_version_binding (test_boia_research_safety.TestIndependentSafety) ... ok
+test_14_time_nan_future_measurement_and_age (test_boia_research_safety.TestIndependentSafety) ... ok
+test_15_prefix_backup_refs_qualification_and_provenance (test_boia_research_safety.TestIndependentSafety) ... ok
+test_16_baseline_also_requires_fresh_proof_before_keep_wait_endgame (test_boia_research_safety.TestIndependentSafety) ... ok
+test_17_future_proof_covers_wait_and_issuance_age (test_boia_research_safety.TestIndependentSafety) ... ok
+test_18_boolean_veto_and_future_not_current_backup (test_boia_research_safety.TestIndependentSafety) ... ok
+test_19_unsafe_or_unknown_candidate_cannot_win_utility (test_boia_research_safety.TestIndependentSafety) ... ok
+test_20_safety_helpers_never_read_utility_or_privileged_records (test_boia_research_safety.TestIndependentSafety) ... ok
+
+----------------------------------------------------------------------
+Ran 50 tests in 0.015s
+
+OK

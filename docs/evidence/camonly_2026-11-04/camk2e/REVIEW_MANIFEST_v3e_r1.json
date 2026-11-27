@@ -1,0 +1,46 @@
+{
+  "root": "/home/fair/motar_tmp/camk2v3e_20261110/review_results_r1",
+  "scope": "All independent review r1 artifacts except this manifest itself. External inputs bound in input_manifest.json and original raw manifests.",
+  "files": {
+    "REVIEW.md": {
+      "sha256": "499e4a25b141f06046ce5cf5cc0d7a8dcd9538fe08e71ccb3bcc54d7415d7e12",
+      "bytes": 9906
+    },
+    "SUMMARY.json": {
+      "sha256": "d7e0ba64c529b959cf80010fc3c537d44b44ed1cb37098b289158072b77b9afb",
+      "bytes": 14218
+    },
+    "finalize_review.py": {
+      "sha256": "e04f38c52b3a26cd7c7e2549d6f26c870c67388e16f54a710af8d54b5b64db45",
+      "bytes": 6072
+    },
+    "input_manifest.json": {
+      "sha256": "8d7a17be4122288ff6fb217e82cec617134addb112fabf4efeafaa034263dd76",
+      "bytes": 187936
+    },
+    "probe.log": {
+      "sha256": "b197cf1bade03019260b4ea276f05b8c8bdc7b6da1ac78893bb337ecd85e73a0",
+      "bytes": 444
+    },
+    "probe.py": {
+      "sha256": "7ffe2ec5b8b47cf909f8ba018e386b18a5a386a77ebaff8899db83be19dd623b",
+      "bytes": 27857
+    },
+    "probe_r0.log": {
+      "sha256": "97584d2c545f030c1bd2e75a3a3b25d2ff1f4bade0ddd8c0225ff95ab482df96",
+      "bytes": 547
+    },
+    "prose_review.json": {
+      "sha256": "9853bf8fe0a523b6c586ca8f3f14e3cc56d3447af2a33722a47a6b339bbe7c3c",
+      "bytes": 1602
+    },
+    "recomputed.json": {
+      "sha256": "9473bc9b1b791c6342262b3af994d360d9612e32e5351bfb6dd10cea7415afb6",
+      "bytes": 499552
+    },
+    "recomputed_probe_r0.json": {
+      "sha256": "2b331363d7c7af95df9644c47ef21c5a5e29c08182fb1e7b48e517c219c60232",
+      "bytes": 438180
+    }
+  }
+}

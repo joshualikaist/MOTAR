@@ -1,0 +1,102 @@
+{
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+ "runner_sha256": "c000e0220046f74e0968d3bb61fdb3c8cb140d3f3cec8a198da47cb01b111f69",
+ "analysis_sha256": "af80c8d346915220fa4f4e8586a1b7cec1ef9cbdb4d737d41606232873ab7276",
+ "results": {
+  "c1_pass": {
+   "rc": 0,
+   "verdict": "C1_IDENTITY_PASS",
+   "error": null,
+   "calls": [
+    {
+     "level": "full",
+     "density": 205,
+     "seed": 4501,
+     "scale": null,
+     "quota": 16,
+     "run_id": "CAMONLY-C1",
+     "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_camonly_arms.sh",
+     "ckpt_sha": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+     "extra": {
+      "NAVRL_SENSOR_ABLATION": "full",
+      "CAMONLY_PY": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/camonly_python"
+     }
+    },
+    {
+     "level": "no_lidar",
+     "density": 205,
+     "seed": 4501,
+     "scale": null,
+     "quota": 16,
+     "run_id": "CAMONLY-C1",
+     "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_camonly_arms.sh",
+     "ckpt_sha": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+     "extra": {
+      "NAVRL_SENSOR_ABLATION": "no_lidar",
+      "CAMONLY_PY": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/camonly_python"
+     }
+    }
+   ]
+  },
+  "c2": {
+   "rc": 0,
+   "verdict": "COMPLETE",
+   "n_calls": 60,
+   "error": null
+  },
+  "analysis_ok": {
+   "rc": 0,
+   "reading": "REPORTED",
+   "stderr": "",
+   "labels": {
+    "total": [
+     "LOWER",
+     "HIGHER",
+     -28.85
+    ],
+    "in_fov": [
+     "NO_DETECTED_CHANGE",
+     "NO_DETECTED_CHANGE",
+     0.0
+    ],
+    "out_fov": [
+     "NO_DETECTED_CHANGE",
+     "NO_DETECTED_CHANGE",
+     0.0
+    ],
+    "interaction": [
+     "LOWER",
+     "HIGHER",
+     -28.85
+    ],
+    "obs_in": [
+     "NO_DETECTED_CHANGE",
+     "NO_DETECTED_CHANGE",
+     0.0
+    ],
+    "gov_in": [
+     "NO_DETECTED_CHANGE",
+     "NO_DETECTED_CHANGE",
+     0.0
+    ],
+    "gov_all": [
+     "LOWER",
+     "HIGHER",
+     -28.85
+    ]
+   }
+  }
+ },
+ "checks": {
+  "c1_pass": true,
+  "c1_no_effect_fails": true,
+  "c1_missing_receipt_fails": true,
+  "c2_needs_c1": true,
+  "c2_wrong_condition_stops": true,
+  "c2_complete_and_ordered": true,
+  "analysis_known_good": true,
+  "analysis_bad_receipt": true,
+  "analysis_identical_cell": true
+ },
+ "pass": true
+}

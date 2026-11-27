@@ -1,0 +1,14 @@
+{
+  "cell_issues": 0,
+  "cells": 28,
+  "checkpoint_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "note": "integrity record only; outcomes are analysed once after C-PP (prereg \u00a78)",
+  "output_bytes": 1307427307,
+  "raw_manifest_sha256": "4e80dbaaf0a99653d20215e6e6ed8d0f0055d837f9255f88349932fad0b4e82a",
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/C-PN",
+  "schema": "motar.b1r-stage-record.v1",
+  "source_commit": "386d95ed3985aaa9b03b65b34d7dd147675fe7a0",
+  "stage": "C-PN",
+  "verdict": "COMPLETE",
+  "wall_hours": 3.0745045439244456
+}

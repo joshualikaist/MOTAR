@@ -1,0 +1,50 @@
+{
+ "unit": "S3b formal v1 preparation",
+ "date": "2026-11-06",
+ "measurement": "NOT_RUN",
+ "reviewed_bytes": {
+  "tools/sitl_s3b_formal.py": "9066269288694b0241a6c3fb44b353745c28bebb6189df7c2841f7551eea1945",
+  "tests/test_sitl_s3b_formal.py": "eccff2151c9de4a20b05a54d56556eb4ef0645aeb3d33f5209cf10a54fa9acc9",
+  "docs/plans/prereg_sitl_s3b_formal_v1_2026-11-06.md": "bf6a6b871a996d0c2d54b81c99e230e8656baaade9e89369f8b40a64a5c88f87"
+ },
+ "reviews": {
+  "r1": "FAIL",
+  "r2": "FAIL",
+  "r3": "PASS_WITH_LIMITS",
+  "reviewer": "Claude Opus 5.5 (claude-opus-5-5), fresh context, read-only",
+  "external_dirs": [
+   "/home/fair/motar_tmp/s3b_formal_20261106/review_r1",
+   "/home/fair/motar_tmp/s3b_formal_20261106/review_r2",
+   "/home/fair/motar_tmp/s3b_formal_20261106/review_r3"
+  ]
+ },
+ "focused_tests": {
+  "command": "CUDA_VISIBLE_DEVICES='' PYTHONNOUSERSITE=1 OMP_NUM_THREADS=1 python -B tests/test_sitl_s3b_formal.py",
+  "ran": 33,
+  "result": "OK"
+ },
+ "check": {
+  "command": "taskset -c 6,7,12,13 nice -n 10 python -B tools/sitl_s3b_formal.py --check",
+  "input_problems": [],
+  "schedule_counts": {
+   "A": 122,
+   "B": 30,
+   "C": 10
+  },
+  "environment_problems": []
+ },
+ "public_cpu": {
+  "command": "CUDA_VISIBLE_DEVICES='' PYTHONNOUSERSITE=1 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 nice -n 10 python -B tools/run_tests.py",
+  "status": "PASS",
+  "ran": 3538,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 10,
+  "excluded": 5,
+  "log": "/home/fair/motar_tmp/s3b_formal_20261106/public_cpu_v2.log",
+  "log_sha256": "da98972edf7e1e7c2ec725a6966337e170df67ee29f3f9bf5c1eb04d954d7c41",
+  "kernel_faults_before": 0,
+  "kernel_faults_after": 0,
+  "note": "An earlier run without OMP_NUM_THREADS=1/MKL_NUM_THREADS=1 (public_cpu_prep.log) had 3 errors in existing dev08/AGQ tests that require one thread (reproduced standalone: error without, OK with), 2 index failures from unstaged files and 2 failures from test edits made during that run; it is superseded by this run on the staged bytes."
+ }
+}

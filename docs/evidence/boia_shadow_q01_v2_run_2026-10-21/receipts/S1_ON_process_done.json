@@ -1,0 +1,710 @@
+{
+  "G5": "HOLD",
+  "actions": 30,
+  "checkpoint": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "cold_first_observer_ms": 6.55246595852077,
+  "compute_calls": 30,
+  "config_sha": "be1c22e4e8e8c66edc655e7c81481f1431de98adccabe1ec43b5412c051ea3e8",
+  "ended_episodes": 1,
+  "full_planner": "SKIPPED_UNSUPPORTED",
+  "hooks_after": {
+    "contact_chain": false,
+    "detector.render_raw_rgbd": false,
+    "perception.observe": false,
+    "sim_env.post_reward_calculation_step": false,
+    "task.compute_state_reward_and_terminations": false,
+    "task.reset_idx": false,
+    "task.step": false,
+    "task.transform_action_to_command": false,
+    "warp_sensor.capture": false
+  },
+  "hooks_before": {
+    "contact_chain": false,
+    "detector.render_raw_rgbd": false,
+    "perception.observe": false,
+    "sim_env.post_reward_calculation_step": false,
+    "task.compute_state_reward_and_terminations": false,
+    "task.reset_idx": false,
+    "task.step": false,
+    "task.transform_action_to_command": false,
+    "warp_sensor.capture": false
+  },
+  "hooks_during": {
+    "contact_chain": true,
+    "detector.render_raw_rgbd": true,
+    "perception.observe": true,
+    "sim_env.post_reward_calculation_step": true,
+    "task.compute_state_reward_and_terminations": true,
+    "task.reset_idx": true,
+    "task.step": true,
+    "task.transform_action_to_command": true,
+    "warp_sensor.capture": true
+  },
+  "host_instrumentation": "READ_ONLY_HOST_TRACE_PRESENT",
+  "host_rows": 31,
+  "latency_scope": "HOST_SYNC_COPY_SCHEMA_DIAGNOSTIC_SHA_LOG; native physics/inference excluded from observer; no CUDA kernel-only claim",
+  "lidar_calls": 32,
+  "loop_ms": [
+    745.1154610607773,
+    45.27707095257938,
+    45.244954992085695,
+    47.001124010421336,
+    44.07816508319229,
+    47.67665499821305,
+    42.702834005467594,
+    46.28803301602602,
+    43.46345504745841,
+    43.777122045867145,
+    46.129842987284064,
+    43.284737039357424,
+    43.15966193098575,
+    42.99417801667005,
+    42.874753940850496,
+    49.687901977449656,
+    45.118543901480734,
+    43.83125400636345,
+    45.34432105720043,
+    42.321228072978556,
+    43.492811964824796,
+    44.19241601135582,
+    42.92635200545192,
+    45.06210202816874,
+    43.598412070423365,
+    43.8144690124318,
+    44.42229797132313,
+    43.17198495846242,
+    44.440205907449126,
+    355.207611923106
+  ],
+  "observe_calls": 31,
+  "observer": true,
+  "observer_phase_times": [
+    {
+      "binding_diagnostic_log_ms": 3.375731990672648,
+      "boundary_hash_log_ms": 0.7827680092304945,
+      "command_copy_ms": 0.2880929969251156,
+      "copy_ms": 1.0113139869645238,
+      "key": {
+        "action": 0,
+        "decision": 0,
+        "env": 0,
+        "episode": 0,
+        "observation": 0
+      },
+      "premask_copy_ms": 0.17371797002851963,
+      "sampled": true,
+      "state_hash_terminal_log_ms": 0.9208410046994686,
+      "total_observer_ms": 6.55246595852077
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1819219216704369,
+      "boundary_hash_log_ms": 0.7398310117423534,
+      "command_copy_ms": 0.07078994531184435,
+      "copy_ms": 0.8772389264777303,
+      "key": {
+        "action": 1,
+        "decision": 1,
+        "env": 0,
+        "episode": 0,
+        "observation": 1
+      },
+      "premask_copy_ms": 0.2115009119734168,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8729849942028522,
+      "total_observer_ms": 3.954267711378634
+    },
+    {
+      "binding_diagnostic_log_ms": 1.2149680405855179,
+      "boundary_hash_log_ms": 0.7452530553564429,
+      "command_copy_ms": 0.0734629575163126,
+      "copy_ms": 0.8342460496351123,
+      "key": {
+        "action": 2,
+        "decision": 2,
+        "env": 0,
+        "episode": 0,
+        "observation": 2
+      },
+      "premask_copy_ms": 0.12125098146498203,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 1.0832089465111494,
+      "total_observer_ms": 4.072390031069517
+    },
+    {
+      "binding_diagnostic_log_ms": 1.3580149970948696,
+      "boundary_hash_log_ms": 0.6994890281930566,
+      "command_copy_ms": 0.07494993042200804,
+      "copy_ms": 0.8395949844270945,
+      "key": {
+        "action": 3,
+        "decision": 3,
+        "env": 0,
+        "episode": 0,
+        "observation": 3
+      },
+      "premask_copy_ms": 0.11287699453532696,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8213410619646311,
+      "total_observer_ms": 3.9062669966369867
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1534480145201087,
+      "boundary_hash_log_ms": 0.7351989625021815,
+      "command_copy_ms": 0.07268204353749752,
+      "copy_ms": 0.7585430284962058,
+      "key": {
+        "action": 4,
+        "decision": 4,
+        "env": 0,
+        "episode": 0,
+        "observation": 4
+      },
+      "premask_copy_ms": 0.101338024251163,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.7874839939177036,
+      "total_observer_ms": 3.60869406722486
+    },
+    {
+      "binding_diagnostic_log_ms": 3.097989014349878,
+      "boundary_hash_log_ms": 0.7302110316231847,
+      "command_copy_ms": 0.07565505802631378,
+      "copy_ms": 0.9776520309969783,
+      "key": {
+        "action": 5,
+        "decision": 5,
+        "env": 0,
+        "episode": 0,
+        "observation": 5
+      },
+      "premask_copy_ms": 0.10901002679020166,
+      "sampled": true,
+      "state_hash_terminal_log_ms": 0.8410169975832105,
+      "total_observer_ms": 5.831534159369767
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1863471008837223,
+      "boundary_hash_log_ms": 0.6906379712745547,
+      "command_copy_ms": 0.07398601155728102,
+      "copy_ms": 0.7872460409998894,
+      "key": {
+        "action": 6,
+        "decision": 6,
+        "env": 0,
+        "episode": 0,
+        "observation": 6
+      },
+      "premask_copy_ms": 0.10094395838677883,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8242910262197256,
+      "total_observer_ms": 3.663452109321952
+    },
+    {
+      "binding_diagnostic_log_ms": 1.138947089202702,
+      "boundary_hash_log_ms": 0.722767086699605,
+      "command_copy_ms": 0.12209091801196337,
+      "copy_ms": 0.7178289815783501,
+      "key": {
+        "action": 7,
+        "decision": 7,
+        "env": 0,
+        "episode": 0,
+        "observation": 7
+      },
+      "premask_copy_ms": 0.11962198186665773,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8989539928734303,
+      "total_observer_ms": 3.7202100502327085
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1886750580742955,
+      "boundary_hash_log_ms": 0.7117290515452623,
+      "command_copy_ms": 0.07207796443253756,
+      "copy_ms": 0.7951270090416074,
+      "key": {
+        "action": 8,
+        "decision": 8,
+        "env": 0,
+        "episode": 0,
+        "observation": 8
+      },
+      "premask_copy_ms": 0.103021040558815,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8517560781911016,
+      "total_observer_ms": 3.7223862018436193
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1553260264918208,
+      "boundary_hash_log_ms": 0.716181006282568,
+      "command_copy_ms": 0.07197295781224966,
+      "copy_ms": 0.7844639476388693,
+      "key": {
+        "action": 9,
+        "decision": 9,
+        "env": 0,
+        "episode": 0,
+        "observation": 9
+      },
+      "premask_copy_ms": 0.11206197086721659,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.9188220137730241,
+      "total_observer_ms": 3.7588279228657484
+    },
+    {
+      "binding_diagnostic_log_ms": 2.9721109895035625,
+      "boundary_hash_log_ms": 0.7197500672191381,
+      "command_copy_ms": 0.07413106504827738,
+      "copy_ms": 0.7802189793437719,
+      "key": {
+        "action": 10,
+        "decision": 10,
+        "env": 0,
+        "episode": 0,
+        "observation": 10
+      },
+      "premask_copy_ms": 0.22482103668153286,
+      "sampled": true,
+      "state_hash_terminal_log_ms": 0.8601300651207566,
+      "total_observer_ms": 5.631162202917039
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1734099825844169,
+      "boundary_hash_log_ms": 0.713453977368772,
+      "command_copy_ms": 0.07666100282222033,
+      "copy_ms": 0.7877419702708721,
+      "key": {
+        "action": 11,
+        "decision": 11,
+        "env": 0,
+        "episode": 0,
+        "observation": 11
+      },
+      "premask_copy_ms": 0.11634803377091885,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8571760263293982,
+      "total_observer_ms": 3.7247909931465983
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1748629622161388,
+      "boundary_hash_log_ms": 0.7142999675124884,
+      "command_copy_ms": 0.07739709690213203,
+      "copy_ms": 0.7851310074329376,
+      "key": {
+        "action": 12,
+        "decision": 12,
+        "env": 0,
+        "episode": 0,
+        "observation": 12
+      },
+      "premask_copy_ms": 0.10848196689039469,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8676309371367097,
+      "total_observer_ms": 3.7278039380908012
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1630610097199678,
+      "boundary_hash_log_ms": 0.7082460215315223,
+      "command_copy_ms": 0.07280800491571426,
+      "copy_ms": 0.7864820072427392,
+      "key": {
+        "action": 13,
+        "decision": 13,
+        "env": 0,
+        "episode": 0,
+        "observation": 13
+      },
+      "premask_copy_ms": 0.1016310416162014,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.7902459474280477,
+      "total_observer_ms": 3.6224740324541926
+    },
+    {
+      "binding_diagnostic_log_ms": 1.173835014924407,
+      "boundary_hash_log_ms": 0.7135749328881502,
+      "command_copy_ms": 0.07095292676240206,
+      "copy_ms": 0.7494339952245355,
+      "key": {
+        "action": 14,
+        "decision": 14,
+        "env": 0,
+        "episode": 0,
+        "observation": 14
+      },
+      "premask_copy_ms": 0.11255987919867039,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8982809958979487,
+      "total_observer_ms": 3.718637744896114
+    },
+    {
+      "binding_diagnostic_log_ms": 1.6722959699109197,
+      "boundary_hash_log_ms": 1.1637330753728747,
+      "command_copy_ms": 0.07045106031000614,
+      "copy_ms": 0.7734529208391905,
+      "key": {
+        "action": 15,
+        "decision": 15,
+        "env": 0,
+        "episode": 0,
+        "observation": 15
+      },
+      "premask_copy_ms": 0.12422213330864906,
+      "sampled": true,
+      "state_hash_terminal_log_ms": 0.930320005863905,
+      "total_observer_ms": 4.734475165605545
+    },
+    {
+      "binding_diagnostic_log_ms": 1.2488880893215537,
+      "boundary_hash_log_ms": 0.704411999322474,
+      "command_copy_ms": 0.07633003406226635,
+      "copy_ms": 0.7966880220919847,
+      "key": {
+        "action": 16,
+        "decision": 16,
+        "env": 0,
+        "episode": 0,
+        "observation": 16
+      },
+      "premask_copy_ms": 0.10461593046784401,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8251670515164733,
+      "total_observer_ms": 3.756101126782596
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1435539927333593,
+      "boundary_hash_log_ms": 0.694330083206296,
+      "command_copy_ms": 0.07371592801064253,
+      "copy_ms": 0.7457149913534522,
+      "key": {
+        "action": 17,
+        "decision": 17,
+        "env": 0,
+        "episode": 0,
+        "observation": 17
+      },
+      "premask_copy_ms": 0.09945104829967022,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.795542960986495,
+      "total_observer_ms": 3.5523090045899153
+    },
+    {
+      "binding_diagnostic_log_ms": 1.153548015281558,
+      "boundary_hash_log_ms": 0.7177720544859767,
+      "command_copy_ms": 0.07367203943431377,
+      "copy_ms": 0.7425859803333879,
+      "key": {
+        "action": 18,
+        "decision": 18,
+        "env": 0,
+        "episode": 0,
+        "observation": 18
+      },
+      "premask_copy_ms": 0.11227803770452738,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.9234530152752995,
+      "total_observer_ms": 3.7233091425150633
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1574809905141592,
+      "boundary_hash_log_ms": 0.6828820332884789,
+      "command_copy_ms": 0.07151893805712461,
+      "copy_ms": 0.7635570364072919,
+      "key": {
+        "action": 19,
+        "decision": 19,
+        "env": 0,
+        "episode": 0,
+        "observation": 19
+      },
+      "premask_copy_ms": 0.09990297257900238,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8027559379115701,
+      "total_observer_ms": 3.578097908757627
+    },
+    {
+      "binding_diagnostic_log_ms": 1.6753280069679022,
+      "boundary_hash_log_ms": 0.7634559879079461,
+      "command_copy_ms": 0.07449893746525049,
+      "copy_ms": 0.7243050495162606,
+      "key": {
+        "action": 20,
+        "decision": 20,
+        "env": 0,
+        "episode": 0,
+        "observation": 20
+      },
+      "premask_copy_ms": 0.11411297600716352,
+      "sampled": true,
+      "state_hash_terminal_log_ms": 0.8593599777668715,
+      "total_observer_ms": 4.211060935631394
+    },
+    {
+      "binding_diagnostic_log_ms": 1.2284020194783807,
+      "boundary_hash_log_ms": 0.6947770016267896,
+      "command_copy_ms": 0.07209798786789179,
+      "copy_ms": 0.8310569683089852,
+      "key": {
+        "action": 21,
+        "decision": 21,
+        "env": 0,
+        "episode": 0,
+        "observation": 21
+      },
+      "premask_copy_ms": 0.10298693086951971,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.85622095502913,
+      "total_observer_ms": 3.785541863180697
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1497989762574434,
+      "boundary_hash_log_ms": 0.7206330774351954,
+      "command_copy_ms": 0.06995105650275946,
+      "copy_ms": 0.7581319659948349,
+      "key": {
+        "action": 22,
+        "decision": 22,
+        "env": 0,
+        "episode": 0,
+        "observation": 22
+      },
+      "premask_copy_ms": 0.1439510378986597,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.9838250698521733,
+      "total_observer_ms": 3.8262911839410663
+    },
+    {
+      "binding_diagnostic_log_ms": 1.148720970377326,
+      "boundary_hash_log_ms": 0.7141989190131426,
+      "command_copy_ms": 0.07200893014669418,
+      "copy_ms": 0.7742560701444745,
+      "key": {
+        "action": 23,
+        "decision": 23,
+        "env": 0,
+        "episode": 0,
+        "observation": 23
+      },
+      "premask_copy_ms": 0.10573805775493383,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8649789961054921,
+      "total_observer_ms": 3.6799019435420632
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1562940198928118,
+      "boundary_hash_log_ms": 0.9497778955847025,
+      "command_copy_ms": 0.0707629369571805,
+      "copy_ms": 0.770878978073597,
+      "key": {
+        "action": 24,
+        "decision": 24,
+        "env": 0,
+        "episode": 0,
+        "observation": 24
+      },
+      "premask_copy_ms": 0.1048319973051548,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.7882820209488273,
+      "total_observer_ms": 3.840827848762274
+    },
+    {
+      "binding_diagnostic_log_ms": 1.7081010155379772,
+      "boundary_hash_log_ms": 0.7042830111458898,
+      "command_copy_ms": 0.07305294275283813,
+      "copy_ms": 0.8159100543707609,
+      "key": {
+        "action": 25,
+        "decision": 25,
+        "env": 0,
+        "episode": 0,
+        "observation": 25
+      },
+      "premask_copy_ms": 0.10328995995223522,
+      "sampled": true,
+      "state_hash_terminal_log_ms": 0.8044469868764281,
+      "total_observer_ms": 4.209083970636129
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1560990242287517,
+      "boundary_hash_log_ms": 0.6991931004449725,
+      "command_copy_ms": 0.071141985245049,
+      "copy_ms": 0.7651060586795211,
+      "key": {
+        "action": 26,
+        "decision": 26,
+        "env": 0,
+        "episode": 0,
+        "observation": 26
+      },
+      "premask_copy_ms": 0.10893796570599079,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8592900121584535,
+      "total_observer_ms": 3.6597681464627385
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1505410075187683,
+      "boundary_hash_log_ms": 0.7099099457263947,
+      "command_copy_ms": 0.07105397526174784,
+      "copy_ms": 0.7648550672456622,
+      "key": {
+        "action": 27,
+        "decision": 27,
+        "env": 0,
+        "episode": 0,
+        "observation": 27
+      },
+      "premask_copy_ms": 0.11442904360592365,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8635680424049497,
+      "total_observer_ms": 3.6743570817634463
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1566999601200223,
+      "boundary_hash_log_ms": 0.6971280090510845,
+      "command_copy_ms": 0.07157900836318731,
+      "copy_ms": 0.7858850294724107,
+      "key": {
+        "action": 28,
+        "decision": 28,
+        "env": 0,
+        "episode": 0,
+        "observation": 28
+      },
+      "premask_copy_ms": 0.09892403613775969,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.8053560741245747,
+      "total_observer_ms": 3.615572117269039
+    },
+    {
+      "binding_diagnostic_log_ms": 1.1380939977243543,
+      "boundary_hash_log_ms": 0.7402659393846989,
+      "command_copy_ms": 0.07030495908111334,
+      "copy_ms": 0.7438210304826498,
+      "key": {
+        "action": 29,
+        "decision": 29,
+        "env": 0,
+        "episode": 0,
+        "observation": 29
+      },
+      "premask_copy_ms": 0.10715494863688946,
+      "sampled": false,
+      "state_hash_terminal_log_ms": 0.866925111040473,
+      "total_observer_ms": 3.6665659863501787
+    }
+  ],
+  "origins": {
+    "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+    "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+  },
+  "peak_torch_allocated_bytes": 15986688,
+  "physical_safety": "NOT_QUALIFIED",
+  "physics_step_callback_type": "NoneType",
+  "profile": {
+    "N": true,
+    "actor": true,
+    "appearance_off": true,
+    "bars": true,
+    "camera_mount": true,
+    "episode_cap": true,
+    "governor": true,
+    "inference": true,
+    "initial_view": true,
+    "latency": true,
+    "lidar": true,
+    "lineage": true,
+    "native_lidar_geometry": true,
+    "native_lidar_noise_off": true,
+    "no_empirical_model": true,
+    "no_manual": true,
+    "no_other_recorder": true,
+    "no_supervisor": true,
+    "perturbations": true,
+    "physics_dt": true,
+    "physics_substeps": true,
+    "pose_error": true,
+    "raster": true,
+    "step_dt": true,
+    "target_backend": true,
+    "target_dynamics": true,
+    "target_level": true,
+    "target_proxy_radii": true,
+    "task_seed": true,
+    "vision": true
+  },
+  "qualification_scope": {
+    "boia_utility": "ABSTAIN",
+    "diagnose_reads_sensor_values": false,
+    "diagnostic_only_latency": "MEASURED_NOT_INFORMATIVE_FOR_FULL_PLANNER",
+    "full_planner_latency": "NOT_MEASURED",
+    "mission_utility_or_capture_gain": "NOT_CLAIMED",
+    "packet_validity": "MEASURED",
+    "physical_safety": "NOT_ASSESSED",
+    "safety_certificate": "UNAVAILABLE",
+    "sensor_acquisition": "MEASURED",
+    "wait_intervene_computation": "NOT_QUALIFIED"
+  },
+  "rgbd_calls": 31,
+  "rms_end": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+  "rms_start": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+  "runtime_attestation_end": {
+    "cuda": "12.1",
+    "cudnn": 90100,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "deterministic_algorithms": false,
+    "device_capability": [
+      8,
+      6
+    ],
+    "device_name": "NVIDIA GeForce RTX 3070",
+    "float32_matmul_precision": "high",
+    "matmul_allow_tf32": true,
+    "torch": "2.4.1+cu121"
+  },
+  "runtime_attestation_start": {
+    "cuda": "12.1",
+    "cudnn": 90100,
+    "cudnn_allow_tf32": true,
+    "cudnn_benchmark": true,
+    "cudnn_deterministic": false,
+    "deterministic_algorithms": false,
+    "device_capability": [
+      8,
+      6
+    ],
+    "device_name": "NVIDIA GeForce RTX 3070",
+    "float32_matmul_precision": "high",
+    "matmul_allow_tf32": true,
+    "torch": "2.4.1+cu121"
+  },
+  "runtime_parity": "PENDING_SUPERVISOR_VERIFY",
+  "shadow": true,
+  "shadow_diagnostic_only_ms": [
+    0.040255021303892136,
+    0.02648599911481142,
+    0.02637400757521391,
+    0.025675981305539608,
+    0.02504198346287012,
+    0.02631696406751871
+  ],
+  "shadow_latency_scope": "DIAGNOSTIC_ONLY_NOT_INFORMATIVE_FOR_FULL_PLANNER",
+  "snapshots": 3,
+  "source": "f6a0ce6b17f46c28a4477df2b914cfac1eb5d2d7",
+  "stage": "S1_ON",
+  "status": "COMPLETED",
+  "transform_calls": 30,
+  "wall_s": 6.794190509011969,
+  "warm_full_step_ms": {
+    "P50": 44.07816508319229,
+    "P95": 48.88340318575501,
+    "P99": 269.6620931383219,
+    "maximum": 355.207611923106,
+    "n": 29
+  },
+  "warm_observer_ms": {
+    "P50": 3.7247909931465983,
+    "P95": 5.27248738799244,
+    "P99": 5.775430011563003,
+    "maximum": 5.831534159369767,
+    "n": 29
+  }
+}

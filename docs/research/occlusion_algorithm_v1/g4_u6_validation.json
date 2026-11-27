@@ -1,0 +1,38 @@
+{
+  "unit": "U6",
+  "status": "CPU_TESTS_PASS",
+  "tests": {
+    "run": 17,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 0.035
+  },
+  "base_sha": "b3dff79407a6663465d76e6e6932fe2033536476",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/cost.py",
+    "motar_eval/boia/arbitration.py",
+    "motar_eval/boia/fallback.py",
+    "motar_eval/boia/terminal.py",
+    "tests/test_boia_arbitration.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "tests/test_boia_arbitration.py": "7fc8ad95c738854fd069a8ebe054d2f8f74c2d61bd6fc8b1abb8c09ed50dede6"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/cost.py": 57,
+    "motar_eval/boia/arbitration.py": 142,
+    "motar_eval/boia/fallback.py": 17,
+    "motar_eval/boia/terminal.py": 17,
+    "tests/test_boia_arbitration.py": 310
+  },
+  "public_cpu": null,
+  "interpretation": "CPU unit evidence only; no performance/calibration/simulator/GPU qualification",
+  "note": "Focused17PASS; independent cost oracle, exact engaged-step dwell, safety/terminal/mode handling PASS. Independent review MEDIUM advantage direct-call bug fixed with regression. Separate specification-conforming target-return known-free counterexample is NOT_CORRECTED (motar-3p3.13); G5 calibrated visibility/supervisor qualification blocked, not a CPU software gate failure.",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9351548928
+}

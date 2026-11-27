@@ -1,0 +1,63 @@
+{
+ "unit": "S3b v0",
+ "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/A/F_SHADOW/E2_obstacle_aware__205bars__seed4301",
+ "params": {
+  "MC_ROLLRATE_P": 0.013,
+  "MC_ROLLRATE_I": 0.017,
+  "MC_ROLLRATE_D": 0.00026,
+  "MC_PITCHRATE_P": 0.013,
+  "MC_PITCHRATE_I": 0.017,
+  "MC_PITCHRATE_D": 0.00026,
+  "MPC_XY_VEL_P_ACC": 2.5,
+  "MPC_XY_VEL_I_ACC": 0.1,
+  "MPC_XY_VEL_D_ACC": 0.0,
+  "THR_MDL_FAC": 1.0
+ },
+ "episodes": [
+  {
+   "episode": 0,
+   "env": 0,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_00",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.350999999999999,
+    "ekf_minus_truth_xy_m": 0.5735817948478122
+   },
+   "outcome": "HARNESS_INVALID",
+   "error": "RuntimeError: HARNESS_INVALID start state {'armed': True, 'offboard': True, 'truth_alt_m': 1.350999999999999, 'ekf_minus_truth_xy_m': 0.5735817948478122}",
+   "isaac_steps": 56
+  },
+  {
+   "episode": 1,
+   "env": 1,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_01",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.3910000000000196,
+    "ekf_minus_truth_xy_m": 0.6866745099293708
+   },
+   "outcome": "HARNESS_INVALID",
+   "error": "RuntimeError: HARNESS_INVALID start state {'armed': True, 'offboard': True, 'truth_alt_m': 1.3910000000000196, 'ekf_minus_truth_xy_m': 0.6866745099293708}",
+   "isaac_steps": 36
+  },
+  {
+   "episode": 2,
+   "env": 2,
+   "isaac_outcome": "capture",
+   "world": "motar_s3b_02",
+   "start_check": {
+    "armed": true,
+    "offboard": true,
+    "truth_alt_m": 1.386000000000024,
+    "ekf_minus_truth_xy_m": 0.6370978360170478
+   },
+   "outcome": "HARNESS_INVALID",
+   "error": "RuntimeError: HARNESS_INVALID start state {'armed': True, 'offboard': True, 'truth_alt_m': 1.386000000000024, 'ekf_minus_truth_xy_m': 0.6370978360170478}",
+   "isaac_steps": 55
+  }
+ ]
+}

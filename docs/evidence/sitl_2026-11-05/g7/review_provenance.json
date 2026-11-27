@@ -1,0 +1,33 @@
+{
+  "reviewer": "Claude Opus 5.5 fresh context",
+  "model_requested": "claude-opus-5-5",
+  "actual_model_metadata": {
+    "inputTokens": 64,
+    "outputTokens": 73461,
+    "cacheReadInputTokens": 3003704,
+    "cacheCreationInputTokens": 158009,
+    "webSearchRequests": 0,
+    "costUSD": 3.3342888000000004,
+    "contextWindow": 1000000,
+    "maxOutputTokens": 128000,
+    "thinkingTokens": 28331,
+    "canonicalModel": "claude-opus-5-5",
+    "provider": "firstParty",
+    "costBasis": "list"
+  },
+  "cli_duration_ms": 676170,
+  "response_sha256": "eb4647e08e4009e5aa2b116d9db21cb43d0cbfd500c84ad6d7e75310c76dad8d",
+  "full_response_path": "/home/fair/motar_tmp/g7_20261105/opus_results_review/response.json",
+  "review_sha256": "2f75941c36bfb771a2a6ea2768b6efad27bfcc2804f5743c3a4e000f47ae4b68",
+  "analysis_sha256": "ea315727e707107d92258d1f297245860ac660e8fc251745c6f647b2093f0853",
+  "rerun_sha256": "ea315727e707107d92258d1f297245860ac660e8fc251745c6f647b2093f0853",
+  "rerun_byte_equal": true,
+  "permission_denial_count": 5,
+  "measurement_integrity_review": "PASS with stated scope/limitations",
+  "scientific_readings": {
+    "k1d1": "TOLERANT",
+    "k2d0": "INCONCLUSIVE",
+    "k4d0": "HARMFUL"
+  },
+  "overall_scientific_gate": "NOT_DEFINED; use per-arm preregistered readings"
+}

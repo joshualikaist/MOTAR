@@ -1,0 +1,31 @@
+{
+ "actor_obs_dim": 898,
+ "detector_lineage_enabled": true,
+ "files": [
+  {
+   "bytes": 123176,
+   "file": "v3_trajectory.npz",
+   "sha256": "b204d4c8a0a12acf122cd61be7ea8e175725aca665c5039f688e3e7c220b73ed"
+  },
+  {
+   "bytes": 1270,
+   "file": "v3_meta.json",
+   "sha256": "4553ba2f6448c913dce43eb569c52a1c5d74e4d5440edc5aa6bd94fefa45770b"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 25392128,
+ "perception_lineage_enabled": true,
+ "process": "static_on_p2",
+ "process_spec": {
+  "arm": "P2",
+  "batch": "V3",
+  "config": "static",
+  "id": "static_on_p2",
+  "num_envs": 8,
+  "seed": 4501,
+  "steps": 600,
+  "variant": "on_p2"
+ },
+ "wall_s": 47.11258411407471
+}

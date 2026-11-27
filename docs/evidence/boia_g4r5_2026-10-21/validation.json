@@ -1,0 +1,281 @@
+{
+  "schema": "motar.boia.g4r5.readiness.v1",
+  "checked_UTC": "2026-10-20T21:09:44.644846+00:00",
+  "branch": "codex/mt-p1",
+  "base_SHA": "45a7b6839e9b3855cf0a847b362d18dac29af315",
+  "source_snapshot_SHA": "45a7b6839e9b3855cf0a847b362d18dac29af315",
+  "scope": "STATIC_SOURCE_AUDIT_CPU_SCHEMA_AND_SHADOW_DESIGN_ONLY",
+  "request_start_KST": "2026-10-21 03:04:37 KST",
+  "quota_deadline": "UNKNOWN",
+  "earlier_conservative_wrapup_KST": "2026-10-21 04:04 KST; short unit, not assumed quota reset",
+  "continuation_clock_KST": "2026-10-21 06:08; finalize existing unit only",
+  "tests": {
+    "tier1_final_probe": {
+      "schema": "motar.g4r5.cpu-probe.v1",
+      "status": "PASS",
+      "ran": 14,
+      "failures": 0,
+      "errors": 0,
+      "names": [
+        "test01_missing_clocks_never_become_now",
+        "test02_frame_depth_and_stale_mismatch",
+        "test03_reset_phase_never_joined_to_old_episode",
+        "test04_source_layout_and_lineage_binding",
+        "test05_declared_complete_header_still_abstains",
+        "test06_observer_copy_cannot_mutate_F_input_or_output",
+        "test07_privileged_values_do_not_change_permitted_copy",
+        "test08_repeated_reader_preserves_rng_inputs_and_history",
+        "test09_far_invalid_cannot_be_observed_free",
+        "test10_B03_between_ray_counterexample",
+        "test11_B04_actual_LiDAR_sphere_and_foreground_same_firsthit",
+        "test12_seed_only_not_complete_continuation",
+        "test13_contact_capture_alias_semantics",
+        "test14_shadow_abstention_does_not_relabel_selector_or_F_safety"
+      ],
+      "source_sha256": {
+        "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+        "tests/test_boia_access.py": "a5665da273dae1a20e4caeebda8fa7f92a3a13fd6873d32dd8dd370e919c53ff",
+        "docs/evidence/boia_g4r5_2026-10-21/shadow_readiness_probe.py": "0814c69706afa26643f1e0bd00c48d73d81c802bac80add06732590fb11e8f35"
+      },
+      "production_sensor_or_simulator_imported": false,
+      "actual_sensor_packets": "NOT_TESTED",
+      "GPU": "NOT_RUN",
+      "mission_gain": "NOT_TESTED",
+      "runtime_shadow_parity": "NOT_TESTED",
+      "G5": "HOLD"
+    },
+    "tier2": "Related access/research tests included in the single Tier3 run, not duplicated",
+    "tier3_BOIA": {
+      "command": "python -B unittest discovery tests/test_boia*.py",
+      "tests": 252,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "elapsed_s": 15.095166145008989,
+      "status": "PASS",
+      "scope": "BOIA combined CPU only; PUBLIC_CPU NOT_RERUN"
+    },
+    "PUBLIC_CPU": "NOT_RERUN; four existing errors motar-6nn.5 remain unresolved",
+    "initial_receipt_writer": "14 test assertions passed, process exited1 on relative path serialization; resolved path fixed, final execution exit0",
+    "review": {
+      "scope": "read-only agent, pre-final identifier-format delta only",
+      "receipt": {
+        "schema": "motar.g4r5.cpu-probe.v1",
+        "status": "PASS",
+        "ran": 14,
+        "failures": 0,
+        "errors": 0,
+        "names": [
+          "test01_missing_clocks_never_become_now",
+          "test02_frame_depth_and_stale_mismatch",
+          "test03_reset_phase_never_joined_to_old_episode",
+          "test04_source_layout_and_lineage_binding",
+          "test05_declared_complete_header_still_abstains",
+          "test06_observer_copy_cannot_mutate_F_input_or_output",
+          "test07_privileged_values_do_not_change_permitted_copy",
+          "test08_repeated_reader_preserves_rng_inputs_and_history",
+          "test09_far_invalid_cannot_be_observed_free",
+          "test10_B03_between_ray_counterexample",
+          "test11_B04_actual_LiDAR_sphere_and_foreground_same_firsthit",
+          "test12_seed_only_not_complete_continuation",
+          "test13_contact_capture_alias_semantics",
+          "test14_shadow_abstention_does_not_relabel_selector_or_F_safety"
+        ],
+        "source_sha256": {
+          "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+          "tests/test_boia_access.py": "a5665da273dae1a20e4caeebda8fa7f92a3a13fd6873d32dd8dd370e919c53ff",
+          "docs/evidence/boia_g4r5_2026-10-21/shadow_readiness_probe.py": "2e9c7a33a43e10611117950e1c06a8bc1bcc03e43195df6c5ab9617d45e99d1e"
+        },
+        "production_sensor_or_simulator_imported": false,
+        "actual_sensor_packets": "NOT_TESTED",
+        "GPU": "NOT_RUN",
+        "mission_gain": "NOT_TESTED",
+        "runtime_shadow_parity": "NOT_TESTED",
+        "G5": "HOLD"
+      },
+      "additional_controls_reported_PASS": [
+        "future_capture",
+        "negative_host_clock",
+        "NaN_age_policy",
+        "bool_decision",
+        "missing_capture_pose",
+        "format_valid_digest_not_binding",
+        "matching_branch_digest_not_restore"
+      ],
+      "followup": "USAGE_LIMIT; final Git40/config64 format delta NOT_INDEPENDENTLY_REREVIEWED; root final14 PASS"
+    }
+  },
+  "reproduce_probe_command": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 TMPDIR=/tmp/codex_occ /home/fair/miniconda3/envs/aerialgym/bin/python -B docs/evidence/boia_g4r5_2026-10-21/shadow_readiness_probe.py --output /tmp/NEW_UNIQUE_R5_RECEIPT.json",
+  "source_sha256": {
+    "aerial_gym/config/env_config/navrl_bars_env.py": "990cc63edfd635d4b3461bebd98d9981d23b9eb6e44f027f7c295e80530848f8",
+    "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py": "8892f6f04853290e44a0de578734dcd0617c45d71225bc8dd6735aad996f9697",
+    "aerial_gym/config/sim_config/base_sim_config.py": "a555a9c3cd4908277ffec78b5000a03bcec5f03608c9204c338a8f5405adad3a",
+    "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+    "aerial_gym/control/controllers/base_lee_controller.py": "5722b0111a735ac4273fc7087ab18327ff8abe53e7a8d65df39bfa042d23cb14",
+    "aerial_gym/control/motor_model.py": "1463e22cbeac24474755d1ece5b7757f52af25c67062f26701f503aeeb5f79c3",
+    "aerial_gym/env_manager/IGE_env_manager.py": "2b447a215e55d53f8e711a4ca63224484d7f10eff3720a3d46d33468e56c5fc9",
+    "aerial_gym/env_manager/env_manager.py": "8802061db7102db1dd98d67d554ddd7e28351b8a40fe69dbc4d768c9fecf16c8",
+    "aerial_gym/env_manager/warp_env_manager.py": "83e43b8785d75e6ed8524c4ad6e9e55b089bec19ab71090c10fb025d7bb3ec9d",
+    "aerial_gym/rl_training/rl_games/navrl_transformer_network.py": "eaa67b3ce0690fa32c871b6d19603d781d0eb9195b16050a930357c78af9422e",
+    "aerial_gym/robots/base_multirotor.py": "90aa24dc6b19b9833954ac7abd0bf976062fcf29e2009e72286482835bd4f24c",
+    "aerial_gym/robots/base_robot.py": "a1659179927899fd8f6fa8212319d21799911cb0cb05e248f185513ccacd64ec",
+    "aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be",
+    "aerial_gym/sensors/warp/warp_lidar.py": "8e2aef1e67d9fad2886543a322fffe7772940120b2639e14a817bdaaa423f2ed",
+    "aerial_gym/sensors/warp/warp_sensor.py": "a47906ec19109b54c8a193dccbf1504e7c8cfc91fc86e0c69b0980bd63252e84",
+    "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+    "aerial_gym/task/navrl_task/navrl_detector.py": "8f634f225bbb0242aa287bcce5f7f12ebc13bc40a25ef900df84355c286b121b",
+    "aerial_gym/task/navrl_task/navrl_perception.py": "c107d96b29c3810b6b7cc275748cda9ca75dc42e21ba1684feff9c06a13dd4a6",
+    "aerial_gym/task/navrl_task/navrl_sensor_lineage.py": "3e5ece3e8ab4e7cb32c96c59a9d05630aededd5f81bf0d212f22c824a2e884da",
+    "aerial_gym/task/navrl_task/navrl_task.py": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d",
+    "aerial_gym/task/navrl_task/speed_governor.py": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847",
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "b2638ca46324be01858de38144b4a259b425c33970cfb22dc8c58283d3363b1c",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd",
+    "motar_eval/boia_research/__init__.py": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "motar_eval/boia_research/benefit.py": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "motar_eval/boia_research/decision.py": "a7c4ab115711f20417467b96b7bd498bc9bb6f3ede8644d67c65cbc71ccf0c7a",
+    "motar_eval/boia_research/evidence.py": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "motar_eval/boia_research/safety.py": "8e49ed723adb020122f874a4d0040a16db224aaa01d759bcdd76f9d07debda73",
+    "motar_eval/boia_research/types.py": "77bddb5fed05f090b09bffd930872d7f1679e0ac4d629e3cdf8b7a76d0c472a9",
+    "motar_eval/e_l0.py": "611dc539d828252a6cb74fcbad343102bc94997bcffe8d2f6022b7b25c5f3eb2",
+    "motar_eval/eq1d_telemetry.py": "1bfff3d3cfbbd4577e0fe357d86bc0ce3358dc81cf58b40a7437345c5932d5ce",
+    "tools/eq1d_fixture_launcher.py": "eff84cf9edc4e66f0cf54cd6f37e45fbc0792e82cb44806fa701970793fe0fb0",
+    "tools/h_r3_env_isolation.py": "68574cfac96bbc1748e258ae3b900d8073d72d3732c6f634affd16f2ddeb48b4",
+    "tools/h_r3_p02_rng.py": "ef9a98d85b4b40b5af26623d7c15682eca64c38bcdaa89d04a46cc76732cf4e0",
+    "tools/h_r3_p03_analysis.py": "b4c220f81d4c7b80f6cf299a29bf1507c4ae2e6c67cf67653eaeb8b1e688e6a3",
+    "tools/h_r3_p03_launcher.py": "578fba171bb8f5be4bcaaf5ea6aaf3538f294b922c23aeb66b36d7cb2bc95d20"
+  },
+  "evidence_sha256": {
+    "docs/evidence/boia_g4r5_2026-10-21/SHADOW_READINESS.md": "b73934e133fcdff2974741529eada99838236d2e6aca54e90a695e3fe770a1ab",
+    "docs/evidence/boia_g4r5_2026-10-21/shadow_readiness_probe.py": "0814c69706afa26643f1e0bd00c48d73d81c802bac80add06732590fb11e8f35",
+    "docs/evidence/boia_g4r5_2026-10-21/HANDOFF.md": "61f97e25c4e424ccf9072da9c9cbfc99e9db076ccce1125bbcba21f60c9b9ece"
+  },
+  "numeric_counterexamples": {
+    "B03_6m_5deg_chord_m": 0.523432648384032,
+    "B04_target_center_m": 6.0,
+    "LiDAR_proxy_radius_m": 0.2,
+    "LiDAR_surface_m": 5.8,
+    "RGBD_proxy_radius_m": 0.15,
+    "camera_offset_m": [
+      0.1,
+      0.0,
+      0.03
+    ],
+    "claim": "single LiDAR return ambiguity; not equality of full sensor packets"
+  },
+  "preservation": {
+    "checks": {
+      "branch_and_head": true,
+      "main_head": true,
+      "main_wip_sha256": true,
+      "stash": true,
+      "protected_symlinks": true,
+      "checkpoint_sha256": true,
+      "boia_packages_unchanged": true,
+      "historical_source_evidence_unchanged": true,
+      "index_empty_before_staging": true,
+      "main_visible_raw_3474": true,
+      "main_tracked_wip_exact": true,
+      "main_index_empty": true,
+      "disk_above_3GB": true
+    },
+    "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+    "main_WIP_sha256": {
+      ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+      "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+      "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+    },
+    "stash_SHA": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+    "PolicyF_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "protected_symlinks": {
+      "results/mt_p1_precision_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1",
+      "results/occlusion_pilot_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1"
+    },
+    "visible_historical_raw_files": 3474,
+    "main_status_paths": 3556,
+    "raw_full_rehash": "NOT_RUN",
+    "external_raw_backup": "NOT_CREATED",
+    "no_data_write_or_deletion": "No authorized task operation wrote/deleted raw/checkpoints; raw byte equality not rehashed"
+  },
+  "resource": {
+    "initial_free_bytes": 9162805248,
+    "checked_free_bytes": 9163948032,
+    "stop_below_bytes": 3000000000,
+    "GPU": "NOT_RUN",
+    "Isaac": "NOT_RUN",
+    "raw_replay": "NOT_RUN",
+    "owned_processes_remaining": []
+  },
+  "readiness": {
+    "actual_sensor_packets": "NOT_TESTED",
+    "runtime_observer": "NOT_IMPLEMENTED",
+    "runtime_parity": "NOT_TESTED",
+    "new_profile_F_continuation": "NOT_QUALIFIED",
+    "physical_C02": "UNQUALIFIED",
+    "mission_gain": "NOT_TESTED",
+    "utility": "ABSTAIN_WHERE_UNSUPPORTED",
+    "GPU_Shadow": "HOLD_PENDING_EVALUATOR_IMPLEMENTATION_AND_SEPARATE_APPROVAL",
+    "G5": "HOLD",
+    "online_control": "NOT_AUTHORIZED"
+  },
+  "proposed_gpu_only_not_executed": {
+    "run": "BOIA-SHADOW-Q01",
+    "N": 1,
+    "seed": 4901,
+    "smoke_actions": 20,
+    "OFF_ON_actions_each": 200,
+    "wall_cap_min_total": 12,
+    "raw_log_cap_bytes": 256000000,
+    "VRAM": "NOT_MEASURED; planning ceiling min(6.5GiB,totalVRAM-.75GiB)",
+    "preregistration": "NOT_YET_COMMITTED; design only"
+  },
+  "beads": {
+    "design": "motar-3p3.19",
+    "next_approval_required": "motar-3p3.21",
+    "unresolved_B04": "motar-3p3.13",
+    "unresolved_B03_physicalC02": "motar-3p3.15"
+  },
+  "git_scope": {
+    "exact_approved_files": [
+      "WORKLOG.md",
+      "docs/research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md",
+      "docs/evidence/boia_g4r5_2026-10-21/SHADOW_READINESS.md",
+      "docs/evidence/boia_g4r5_2026-10-21/shadow_readiness_probe.py",
+      "docs/evidence/boia_g4r5_2026-10-21/validation.json",
+      "docs/evidence/boia_g4r5_2026-10-21/HANDOFF.md"
+    ],
+    "local_commit_required": true,
+    "remote_push": "NO",
+    "main_merge": "NO",
+    "self_commit_SHA": "Use the containing commit; omitted to avoid self-reference"
+  },
+  "document_validation": {
+    "strict_JSON": "PASS",
+    "source_and_evidence_hashes": "PASS",
+    "WORKLOG_append_only": "PASS",
+    "relative_links_checked": 11,
+    "source_AST_no_simulator_import": "PASS",
+    "credential_pattern_scan": "PASS",
+    "scope": [
+      "WORKLOG.md",
+      "docs/research/occlusion_algorithm_v1/BOIA_RESEARCH_MASTER_PLAN.md",
+      "docs/evidence/boia_g4r5_2026-10-21/SHADOW_READINESS.md",
+      "docs/evidence/boia_g4r5_2026-10-21/shadow_readiness_probe.py",
+      "docs/evidence/boia_g4r5_2026-10-21/validation.json",
+      "docs/evidence/boia_g4r5_2026-10-21/HANDOFF.md"
+    ],
+    "validation_scope_note": "WORKLOG new append only; historical prose links untouched"
+  }
+}

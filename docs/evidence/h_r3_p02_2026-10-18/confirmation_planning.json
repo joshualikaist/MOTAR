@@ -1,0 +1,1239 @@
+{
+  "schema": "motar.h-r3-p02-confirmation-planning.v1",
+  "status": "PLAN_ONLY_NOT_AUTHORIZED",
+  "observed_yield": [
+    {
+      "seed": 4601,
+      "geometric_events": 31
+    },
+    {
+      "seed": 4602,
+      "geometric_events": 25
+    }
+  ],
+  "seed_clusters": 2,
+  "population_uncertainty": "NOT_ESTIMABLE from two clusters; no reliable pilot ICC or population power estimate",
+  "method": "Normal-approximation paired discordance effective-n with conservative Bonferroni alpha .05/3, then equal-cluster DE=1+(m-1)*rho; future analysis Holm3 contrasts",
+  "power": "80% per contrast under assumptions, NOT 80% joint-all-three power; correlated shared-B3 contrasts require registered simulation before final sample fixation",
+  "assumptions": "Positive minimum effects10/15/20pp are design scenarios, not validated clinical/practical margins; q and rho are assumed grids, not fitted from two seeds; P01 p-values unused",
+  "proposal": {
+    "new_seed_range_if_approved": [
+      4701,
+      4732
+    ],
+    "seed_count": 32,
+    "events_if_20_per_seed": 640,
+    "conditions": "Example for15pp,q<=.4,rho<=.1,yield>=20; grid sensitivity can require more (e.g.q=.6). User review and independently justified final assumptions required; no automatic enrollment/extra seed.",
+    "analysis": "paired scene outcomes; seed as independent cluster, equal-seed contrasts B3-B2/B4/B5, Holm; cluster-robust or seed-randomization inference with enough clusters, retain all matched events and terminal failures; no event-only McNemar confirmation",
+    "registration": "fix geometry population/identity rule, all-arm common prefix, fixed exposure, sham/nominal-budget controls, effect margins, cluster count, max scenes, yield/futility and missing-data rules before new confirmatory data; P01/P02 excluded from confirmation"
+  },
+  "sensitivity_15pp_20_events_per_seed": [
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 5,
+      "events_approx": 100
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 6,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 9,
+      "events_approx": 180
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 14,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 10,
+      "events_approx": 200
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 11,
+      "events_approx": 220
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 18,
+      "events_approx": 360
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 27,
+      "events_approx": 540
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 14,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 17,
+      "events_approx": 340
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 28,
+      "events_approx": 560
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 41,
+      "events_approx": 820
+    }
+  ],
+  "grid": [
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 11,
+      "events_approx": 220
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 13,
+      "events_approx": 260
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 21,
+      "events_approx": 420
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 31,
+      "events_approx": 620
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 7,
+      "events_approx": 210
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 9,
+      "events_approx": 270
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 17,
+      "events_approx": 510
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 27,
+      "events_approx": 810
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 6,
+      "events_approx": 240
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 8,
+      "events_approx": 320
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 16,
+      "events_approx": 640
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.2,
+      "paired_effective_n": 207,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 26,
+      "events_approx": 1040
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 21,
+      "events_approx": 420
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 25,
+      "events_approx": 500
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 41,
+      "events_approx": 820
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 61,
+      "events_approx": 1220
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 14,
+      "events_approx": 420
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 18,
+      "events_approx": 540
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 35,
+      "events_approx": 1050
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 55,
+      "events_approx": 1650
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 11,
+      "events_approx": 440
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 15,
+      "events_approx": 600
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 31,
+      "events_approx": 1240
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.4,
+      "paired_effective_n": 417,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 52,
+      "events_approx": 2080
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 32,
+      "events_approx": 640
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 38,
+      "events_approx": 760
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 62,
+      "events_approx": 1240
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 91,
+      "events_approx": 1820
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 21,
+      "events_approx": 630
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 27,
+      "events_approx": 810
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 52,
+      "events_approx": 1560
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 82,
+      "events_approx": 2460
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 16,
+      "events_approx": 640
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 22,
+      "events_approx": 880
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 47,
+      "events_approx": 1880
+    },
+    {
+      "effect_pp": 10.0,
+      "discordance": 0.6,
+      "paired_effective_n": 626,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 77,
+      "events_approx": 3080
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 5,
+      "events_approx": 100
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 6,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 9,
+      "events_approx": 180
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 14,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 4,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 4,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 8,
+      "events_approx": 240
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 12,
+      "events_approx": 360
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 3,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 4,
+      "events_approx": 160
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 7,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.2,
+      "paired_effective_n": 91,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 12,
+      "events_approx": 480
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 10,
+      "events_approx": 200
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 11,
+      "events_approx": 220
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 18,
+      "events_approx": 360
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 27,
+      "events_approx": 540
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 7,
+      "events_approx": 210
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 8,
+      "events_approx": 240
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 16,
+      "events_approx": 480
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 24,
+      "events_approx": 720
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 5,
+      "events_approx": 200
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 7,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 14,
+      "events_approx": 560
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.4,
+      "paired_effective_n": 184,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 23,
+      "events_approx": 920
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 14,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 17,
+      "events_approx": 340
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 28,
+      "events_approx": 560
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 41,
+      "events_approx": 820
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 10,
+      "events_approx": 300
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 12,
+      "events_approx": 360
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 23,
+      "events_approx": 690
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 37,
+      "events_approx": 1110
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 7,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 10,
+      "events_approx": 400
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 21,
+      "events_approx": 840
+    },
+    {
+      "effect_pp": 15.0,
+      "discordance": 0.6,
+      "paired_effective_n": 277,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 34,
+      "events_approx": 1360
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 3,
+      "events_approx": 60
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 3,
+      "events_approx": 60
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 5,
+      "events_approx": 100
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 8,
+      "events_approx": 160
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 2,
+      "events_approx": 60
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 3,
+      "events_approx": 90
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 5,
+      "events_approx": 150
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 7,
+      "events_approx": 210
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 2,
+      "events_approx": 80
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 2,
+      "events_approx": 80
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 4,
+      "events_approx": 160
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.2,
+      "paired_effective_n": 50,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 7,
+      "events_approx": 280
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 6,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 7,
+      "events_approx": 140
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 10,
+      "events_approx": 200
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 15,
+      "events_approx": 300
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 4,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 5,
+      "events_approx": 150
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 9,
+      "events_approx": 270
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 14,
+      "events_approx": 420
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 3,
+      "events_approx": 120
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 4,
+      "events_approx": 160
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 8,
+      "events_approx": 320
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.4,
+      "paired_effective_n": 102,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 13,
+      "events_approx": 520
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 20,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 8,
+      "events_approx": 160
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 20,
+      "icc_assumed": 0.01,
+      "design_effect": 1.19,
+      "seed_count_approx": 10,
+      "events_approx": 200
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 20,
+      "icc_assumed": 0.05,
+      "design_effect": 1.9500000000000002,
+      "seed_count_approx": 16,
+      "events_approx": 320
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 20,
+      "icc_assumed": 0.1,
+      "design_effect": 2.9000000000000004,
+      "seed_count_approx": 23,
+      "events_approx": 460
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 30,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 6,
+      "events_approx": 180
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 30,
+      "icc_assumed": 0.01,
+      "design_effect": 1.29,
+      "seed_count_approx": 7,
+      "events_approx": 210
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 30,
+      "icc_assumed": 0.05,
+      "design_effect": 2.45,
+      "seed_count_approx": 13,
+      "events_approx": 390
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 30,
+      "icc_assumed": 0.1,
+      "design_effect": 3.9000000000000004,
+      "seed_count_approx": 21,
+      "events_approx": 630
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 40,
+      "icc_assumed": 0,
+      "design_effect": 1,
+      "seed_count_approx": 4,
+      "events_approx": 160
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 40,
+      "icc_assumed": 0.01,
+      "design_effect": 1.3900000000000001,
+      "seed_count_approx": 6,
+      "events_approx": 240
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 40,
+      "icc_assumed": 0.05,
+      "design_effect": 2.95,
+      "seed_count_approx": 12,
+      "events_approx": 480
+    },
+    {
+      "effect_pp": 20.0,
+      "discordance": 0.6,
+      "paired_effective_n": 155,
+      "events_per_seed": 40,
+      "icc_assumed": 0.1,
+      "design_effect": 4.9,
+      "seed_count_approx": 19,
+      "events_approx": 760
+    }
+  ],
+  "limits": [
+    "IID effective event counts alone are not an executable cluster sample size.",
+    "Unequal scene yields/cluster sizes and treatment-dependent effort require further design validation.",
+    "Two exploratory seeds never confirm H-R3; current run cap remains two seeds irrespective of planning output."
+  ]
+}

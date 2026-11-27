@@ -1,0 +1,56 @@
+{
+ "out": "mask_library_v1.npz",
+ "sha256": "55c781136c3ce26635cab61d11c2e5fe4cbdcd28a7433cb6c315f858c603a351",
+ "frames": 1849,
+ "shape": [
+  1849,
+  234,
+  312
+ ],
+ "invalid_fraction_all": 0.14740088049205244,
+ "invalid_fraction_below_band": 0.10937851330884728,
+ "scenes": {
+  "044318_rotate": {
+   "frames": 481,
+   "kept": 444,
+   "invalid_below_band_median_kept": 0.031436011904761904,
+   "invalid_below_band_p95_kept": 0.2413697630494499,
+   "top_band_invalid_fraction": 0.999105762567301
+  },
+  "050447_walk": {
+   "frames": 592,
+   "kept": 519,
+   "invalid_below_band_median_kept": 0.09316334706959707,
+   "invalid_below_band_p95_kept": 0.3504807692307692,
+   "top_band_invalid_fraction": 0.9989794481981982
+  },
+  "050939_wall": {
+   "frames": 293,
+   "kept": 277,
+   "invalid_below_band_median_kept": 0.276685554029304,
+   "invalid_below_band_p95_kept": 0.4885016025641026,
+   "top_band_invalid_fraction": 0.9994563314955807
+  },
+  "051922_poles": {
+   "frames": 209,
+   "kept": 202,
+   "invalid_below_band_median_kept": 0.05169700091575091,
+   "invalid_below_band_p95_kept": 0.36905548878205124,
+   "top_band_invalid_fraction": 0.9990338608759661
+  },
+  "052033_floor": {
+   "frames": 172,
+   "kept": 171,
+   "invalid_below_band_median_kept": 0.016683836996336996,
+   "invalid_below_band_p95_kept": 0.17007926968864467,
+   "top_band_invalid_fraction": 0.998362030411449
+  },
+  "052146_target": {
+   "frames": 237,
+   "kept": 236,
+   "invalid_below_band_median_kept": 0.027615613553113552,
+   "invalid_below_band_p95_kept": 0.07002275068681318,
+   "top_band_invalid_fraction": 0.9995280212052364
+  }
+ }
+}

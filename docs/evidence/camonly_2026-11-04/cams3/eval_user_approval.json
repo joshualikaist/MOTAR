@@ -1,0 +1,17 @@
+{
+ "user_words": "오케이 너가 하자고 하는대로 한번 해보자.",
+ "recorded_at": "2026-11-27T22:40:01+09:00",
+ "answers": "review r1 P1-1 request (main-session message listing the scope)",
+ "scope_as_shown_to_user": "CAM-S3-E: 205 bars, P_S (delay 0.1-0.2 s, vehicle/gain randomisation, altitude 1.5 m), seeds 4501-4503, 1,024 episodes per cell; arms W (S3-W ep18000, 90 deg/s, measured masks, sector k=24, bars_h3; bar crash<=20 %, capture>=70 %, timeout<=10 %), WT (W on bars_h3_thin), S0 (S2b-FT recorded cells reused, S0ID identity rerun at 4501), S0T (S2b-FT on bars_h3_thin), S0M (S2b-FT + measured masks); S2b-FT at its own 60 deg/s; expected ~1.4 h GPU, cap 2.0 h within the ~2.4 h left of the 6 h conditional approval; any overrun or rerun needs a new approval; review r1 P2 fixes (amendment 1) and re-review before launch",
+ "package_commit_reviewed": "8fbf950",
+ "not_approved": [
+  "push",
+  "merge",
+  "S3-M GPU",
+  "GPU beyond the stated cap"
+ ],
+ "user_words_followup": {
+  "words": "승인",
+  "recorded_at": "2026-11-27T22:40:04+09:00"
+ }
+}

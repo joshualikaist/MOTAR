@@ -1,0 +1,946 @@
+{
+ "note": "training-rollout statistics printed by the runner, under exploration noise; not an evaluation",
+ "reference_gr1_ctrl_s1": {
+  "blocks": 1000,
+  "launcher_log": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/gain_randomization_gr1_v1/train_ctrl/launcher.log",
+  "launcher_log_sha256": "56095947b8d9d3170cbf744437c7c62907176c86a9d9bbb3940bad4a7f82ac1a",
+  "what": "GR-1 ctrl seed 1: camera + LiDAR, 87 deg camera, F's reward weights, same 205-bar contract, epochs 25001..26000",
+  "windows": [
+   {
+    "blocks": 100,
+    "capture_pct": 80.72,
+    "crash_pct": 16.32,
+    "episodes": 2739,
+    "epochs": [
+     25001,
+     25100
+    ],
+    "mean_ep_length_mean": 139.32,
+    "mean_reward_mean": 48.109,
+    "timeout_pct": 2.96
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 80.79,
+    "crash_pct": 16.8,
+    "episodes": 2863,
+    "epochs": [
+     25101,
+     25200
+    ],
+    "mean_ep_length_mean": 144.53,
+    "mean_reward_mean": 46.999,
+    "timeout_pct": 2.41
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 81.09,
+    "crash_pct": 16.21,
+    "episodes": 2776,
+    "epochs": [
+     25201,
+     25300
+    ],
+    "mean_ep_length_mean": 146.68,
+    "mean_reward_mean": 45.778,
+    "timeout_pct": 2.7
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 79.01,
+    "crash_pct": 19.23,
+    "episodes": 2902,
+    "epochs": [
+     25301,
+     25400
+    ],
+    "mean_ep_length_mean": 142.25,
+    "mean_reward_mean": 42.911,
+    "timeout_pct": 1.76
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 79.97,
+    "crash_pct": 17.96,
+    "episodes": 2956,
+    "epochs": [
+     25401,
+     25500
+    ],
+    "mean_ep_length_mean": 138.17,
+    "mean_reward_mean": 45.957,
+    "timeout_pct": 2.06
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 80.69,
+    "crash_pct": 16.39,
+    "episodes": 2880,
+    "epochs": [
+     25501,
+     25600
+    ],
+    "mean_ep_length_mean": 142.29,
+    "mean_reward_mean": 44.416,
+    "timeout_pct": 2.92
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 78.37,
+    "crash_pct": 18.02,
+    "episodes": 2742,
+    "epochs": [
+     25601,
+     25700
+    ],
+    "mean_ep_length_mean": 148.52,
+    "mean_reward_mean": 37.671,
+    "timeout_pct": 3.61
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 78.34,
+    "crash_pct": 18.87,
+    "episodes": 2899,
+    "epochs": [
+     25701,
+     25800
+    ],
+    "mean_ep_length_mean": 140.95,
+    "mean_reward_mean": 41.934,
+    "timeout_pct": 2.79
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 78.09,
+    "crash_pct": 18.01,
+    "episodes": 2770,
+    "epochs": [
+     25801,
+     25900
+    ],
+    "mean_ep_length_mean": 148.09,
+    "mean_reward_mean": 39.94,
+    "timeout_pct": 3.9
+   },
+   {
+    "blocks": 100,
+    "capture_pct": 79.84,
+    "crash_pct": 17.23,
+    "episodes": 2768,
+    "epochs": [
+     25901,
+     26000
+    ],
+    "mean_ep_length_mean": 148.43,
+    "mean_reward_mean": 39.991,
+    "timeout_pct": 2.93
+   }
+  ]
+ },
+ "script_sha256": "cabcfbeb34ef72b9b07e7c97989d41a0ea498cacb3ff739dabd2a43e7df34890",
+ "seeds": {
+  "1": {
+   "blocks": 3000,
+   "first_epoch": 25001,
+   "last_epoch": 28000,
+   "launcher_log": "/home/fair/motar_tmp/camk1_20261106/train_s1/launcher.log",
+   "launcher_log_sha256": "5f30fbac493f96abfeb2201c180414b5a3fe98eec6ba6610a49a09a71af0d242",
+   "train_report_sha256": "96bb20b7eee3e09580baa6e38c171969cd3ad9aa3ae3148547b0ec6fdc0ed7bc",
+   "windows": [
+    {
+     "blocks": 100,
+     "capture_pct": 8.45,
+     "crash_pct": 91.55,
+     "episodes": 6423,
+     "epochs": [
+      25001,
+      25100
+     ],
+     "mean_ep_length_mean": 62.49,
+     "mean_reward_mean": -49.85,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 8.31,
+     "crash_pct": 91.69,
+     "episodes": 7497,
+     "epochs": [
+      25101,
+      25200
+     ],
+     "mean_ep_length_mean": 54.81,
+     "mean_reward_mean": -40.566,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 8.68,
+     "crash_pct": 91.32,
+     "episodes": 7836,
+     "epochs": [
+      25201,
+      25300
+     ],
+     "mean_ep_length_mean": 52.3,
+     "mean_reward_mean": -36.865,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 8.71,
+     "crash_pct": 91.27,
+     "episodes": 8170,
+     "epochs": [
+      25301,
+      25400
+     ],
+     "mean_ep_length_mean": 50.44,
+     "mean_reward_mean": -36.136,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 9.06,
+     "crash_pct": 90.94,
+     "episodes": 8727,
+     "epochs": [
+      25401,
+      25500
+     ],
+     "mean_ep_length_mean": 46.92,
+     "mean_reward_mean": -33.826,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 9.26,
+     "crash_pct": 90.73,
+     "episodes": 9124,
+     "epochs": [
+      25501,
+      25600
+     ],
+     "mean_ep_length_mean": 44.77,
+     "mean_reward_mean": -32.807,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 10.07,
+     "crash_pct": 89.93,
+     "episodes": 9338,
+     "epochs": [
+      25601,
+      25700
+     ],
+     "mean_ep_length_mean": 43.93,
+     "mean_reward_mean": -29.67,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 12.36,
+     "crash_pct": 87.64,
+     "episodes": 8769,
+     "epochs": [
+      25701,
+      25800
+     ],
+     "mean_ep_length_mean": 46.59,
+     "mean_reward_mean": -28.011,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 12.74,
+     "crash_pct": 87.26,
+     "episodes": 8687,
+     "epochs": [
+      25801,
+      25900
+     ],
+     "mean_ep_length_mean": 46.97,
+     "mean_reward_mean": -26.478,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 13.91,
+     "crash_pct": 86.09,
+     "episodes": 8615,
+     "epochs": [
+      25901,
+      26000
+     ],
+     "mean_ep_length_mean": 47.6,
+     "mean_reward_mean": -23.994,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 14.65,
+     "crash_pct": 85.35,
+     "episodes": 8367,
+     "epochs": [
+      26001,
+      26100
+     ],
+     "mean_ep_length_mean": 48.97,
+     "mean_reward_mean": -23.397,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 16.5,
+     "crash_pct": 83.5,
+     "episodes": 8128,
+     "epochs": [
+      26101,
+      26200
+     ],
+     "mean_ep_length_mean": 50.25,
+     "mean_reward_mean": -22.197,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 17.63,
+     "crash_pct": 82.37,
+     "episodes": 8077,
+     "epochs": [
+      26201,
+      26300
+     ],
+     "mean_ep_length_mean": 50.62,
+     "mean_reward_mean": -21.268,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 18.67,
+     "crash_pct": 81.33,
+     "episodes": 7975,
+     "epochs": [
+      26301,
+      26400
+     ],
+     "mean_ep_length_mean": 51.35,
+     "mean_reward_mean": -20.393,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 18.41,
+     "crash_pct": 81.59,
+     "episodes": 7900,
+     "epochs": [
+      26401,
+      26500
+     ],
+     "mean_ep_length_mean": 52.02,
+     "mean_reward_mean": -19.44,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 19.27,
+     "crash_pct": 80.73,
+     "episodes": 8026,
+     "epochs": [
+      26501,
+      26600
+     ],
+     "mean_ep_length_mean": 51.02,
+     "mean_reward_mean": -18.242,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 19.19,
+     "crash_pct": 80.81,
+     "episodes": 7962,
+     "epochs": [
+      26601,
+      26700
+     ],
+     "mean_ep_length_mean": 51.62,
+     "mean_reward_mean": -19.014,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 19.82,
+     "crash_pct": 80.17,
+     "episodes": 7928,
+     "epochs": [
+      26701,
+      26800
+     ],
+     "mean_ep_length_mean": 51.59,
+     "mean_reward_mean": -18.794,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 21.03,
+     "crash_pct": 78.97,
+     "episodes": 7567,
+     "epochs": [
+      26801,
+      26900
+     ],
+     "mean_ep_length_mean": 54.17,
+     "mean_reward_mean": -18.21,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 22.08,
+     "crash_pct": 77.92,
+     "episodes": 7372,
+     "epochs": [
+      26901,
+      27000
+     ],
+     "mean_ep_length_mean": 55.55,
+     "mean_reward_mean": -18.307,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 21.89,
+     "crash_pct": 78.09,
+     "episodes": 7431,
+     "epochs": [
+      27001,
+      27100
+     ],
+     "mean_ep_length_mean": 54.94,
+     "mean_reward_mean": -16.801,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 21.68,
+     "crash_pct": 78.32,
+     "episodes": 7698,
+     "epochs": [
+      27101,
+      27200
+     ],
+     "mean_ep_length_mean": 53.37,
+     "mean_reward_mean": -17.034,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 21.21,
+     "crash_pct": 78.79,
+     "episodes": 7610,
+     "epochs": [
+      27201,
+      27300
+     ],
+     "mean_ep_length_mean": 53.74,
+     "mean_reward_mean": -16.82,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 21.99,
+     "crash_pct": 78.01,
+     "episodes": 7572,
+     "epochs": [
+      27301,
+      27400
+     ],
+     "mean_ep_length_mean": 54.33,
+     "mean_reward_mean": -17.963,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 22.84,
+     "crash_pct": 77.15,
+     "episodes": 7399,
+     "epochs": [
+      27401,
+      27500
+     ],
+     "mean_ep_length_mean": 55.67,
+     "mean_reward_mean": -15.637,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 23.12,
+     "crash_pct": 76.85,
+     "episodes": 7254,
+     "epochs": [
+      27501,
+      27600
+     ],
+     "mean_ep_length_mean": 56.4,
+     "mean_reward_mean": -16.506,
+     "timeout_pct": 0.03
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 24.01,
+     "crash_pct": 75.97,
+     "episodes": 7354,
+     "epochs": [
+      27601,
+      27700
+     ],
+     "mean_ep_length_mean": 55.67,
+     "mean_reward_mean": -14.757,
+     "timeout_pct": 0.01
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 23.18,
+     "crash_pct": 76.82,
+     "episodes": 7287,
+     "epochs": [
+      27701,
+      27800
+     ],
+     "mean_ep_length_mean": 56.19,
+     "mean_reward_mean": -14.563,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 24.51,
+     "crash_pct": 75.49,
+     "episodes": 7022,
+     "epochs": [
+      27801,
+      27900
+     ],
+     "mean_ep_length_mean": 58.47,
+     "mean_reward_mean": -14.844,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.29,
+     "crash_pct": 73.7,
+     "episodes": 6703,
+     "epochs": [
+      27901,
+      28000
+     ],
+     "mean_ep_length_mean": 60.87,
+     "mean_reward_mean": -15.723,
+     "timeout_pct": 0.01
+    }
+   ]
+  },
+  "2": {
+   "blocks": 3000,
+   "first_epoch": 25001,
+   "last_epoch": 28000,
+   "launcher_log": "/home/fair/motar_tmp/camk1_20261106/train_s2/launcher.log",
+   "launcher_log_sha256": "4a9c2914ef0bcf2d189634a78fe39d92c4c98f0fc7fe9f6443d8180d4072a218",
+   "train_report_sha256": "29d17c423f8a4a64242c90ea464f9405f58458976d76e2a91384e485b6ad4eda",
+   "windows": [
+    {
+     "blocks": 100,
+     "capture_pct": 7.79,
+     "crash_pct": 92.2,
+     "episodes": 6588,
+     "epochs": [
+      25001,
+      25100
+     ],
+     "mean_ep_length_mean": 60.97,
+     "mean_reward_mean": -50.571,
+     "timeout_pct": 0.02
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 8.06,
+     "crash_pct": 91.94,
+     "episodes": 8066,
+     "epochs": [
+      25101,
+      25200
+     ],
+     "mean_ep_length_mean": 51.28,
+     "mean_reward_mean": -38.97,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 7.68,
+     "crash_pct": 92.32,
+     "episodes": 8760,
+     "epochs": [
+      25201,
+      25300
+     ],
+     "mean_ep_length_mean": 46.95,
+     "mean_reward_mean": -35.59,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 8.7,
+     "crash_pct": 91.3,
+     "episodes": 8877,
+     "epochs": [
+      25301,
+      25400
+     ],
+     "mean_ep_length_mean": 46.12,
+     "mean_reward_mean": -33.236,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 9.01,
+     "crash_pct": 90.99,
+     "episodes": 8877,
+     "epochs": [
+      25401,
+      25500
+     ],
+     "mean_ep_length_mean": 46.14,
+     "mean_reward_mean": -33.575,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 8.71,
+     "crash_pct": 91.29,
+     "episodes": 9413,
+     "epochs": [
+      25501,
+      25600
+     ],
+     "mean_ep_length_mean": 43.45,
+     "mean_reward_mean": -31.13,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 9.54,
+     "crash_pct": 90.46,
+     "episodes": 9518,
+     "epochs": [
+      25601,
+      25700
+     ],
+     "mean_ep_length_mean": 43.0,
+     "mean_reward_mean": -29.578,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 9.15,
+     "crash_pct": 90.85,
+     "episodes": 9280,
+     "epochs": [
+      25701,
+      25800
+     ],
+     "mean_ep_length_mean": 44.32,
+     "mean_reward_mean": -31.316,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 9.93,
+     "crash_pct": 90.07,
+     "episodes": 9239,
+     "epochs": [
+      25801,
+      25900
+     ],
+     "mean_ep_length_mean": 44.32,
+     "mean_reward_mean": -28.966,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 10.71,
+     "crash_pct": 89.29,
+     "episodes": 9406,
+     "epochs": [
+      25901,
+      26000
+     ],
+     "mean_ep_length_mean": 43.59,
+     "mean_reward_mean": -27.772,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 12.15,
+     "crash_pct": 87.85,
+     "episodes": 9253,
+     "epochs": [
+      26001,
+      26100
+     ],
+     "mean_ep_length_mean": 44.16,
+     "mean_reward_mean": -24.752,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 13.45,
+     "crash_pct": 86.55,
+     "episodes": 8904,
+     "epochs": [
+      26101,
+      26200
+     ],
+     "mean_ep_length_mean": 45.97,
+     "mean_reward_mean": -24.344,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 14.83,
+     "crash_pct": 85.17,
+     "episodes": 8552,
+     "epochs": [
+      26201,
+      26300
+     ],
+     "mean_ep_length_mean": 47.95,
+     "mean_reward_mean": -22.537,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 14.67,
+     "crash_pct": 85.33,
+     "episodes": 8455,
+     "epochs": [
+      26301,
+      26400
+     ],
+     "mean_ep_length_mean": 48.13,
+     "mean_reward_mean": -21.983,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 17.17,
+     "crash_pct": 82.83,
+     "episodes": 8061,
+     "epochs": [
+      26401,
+      26500
+     ],
+     "mean_ep_length_mean": 50.8,
+     "mean_reward_mean": -20.497,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 18.4,
+     "crash_pct": 81.6,
+     "episodes": 7832,
+     "epochs": [
+      26501,
+      26600
+     ],
+     "mean_ep_length_mean": 52.44,
+     "mean_reward_mean": -20.992,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 18.92,
+     "crash_pct": 81.08,
+     "episodes": 7676,
+     "epochs": [
+      26601,
+      26700
+     ],
+     "mean_ep_length_mean": 53.08,
+     "mean_reward_mean": -20.68,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 19.82,
+     "crash_pct": 80.18,
+     "episodes": 7675,
+     "epochs": [
+      26701,
+      26800
+     ],
+     "mean_ep_length_mean": 53.35,
+     "mean_reward_mean": -18.675,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 20.89,
+     "crash_pct": 79.11,
+     "episodes": 7510,
+     "epochs": [
+      26801,
+      26900
+     ],
+     "mean_ep_length_mean": 54.51,
+     "mean_reward_mean": -18.99,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 22.2,
+     "crash_pct": 77.8,
+     "episodes": 7288,
+     "epochs": [
+      26901,
+      27000
+     ],
+     "mean_ep_length_mean": 56.26,
+     "mean_reward_mean": -16.711,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 24.25,
+     "crash_pct": 75.75,
+     "episodes": 6964,
+     "epochs": [
+      27001,
+      27100
+     ],
+     "mean_ep_length_mean": 58.76,
+     "mean_reward_mean": -16.077,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 24.0,
+     "crash_pct": 76.0,
+     "episodes": 6901,
+     "epochs": [
+      27101,
+      27200
+     ],
+     "mean_ep_length_mean": 59.39,
+     "mean_reward_mean": -16.505,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 23.74,
+     "crash_pct": 76.26,
+     "episodes": 7018,
+     "epochs": [
+      27201,
+      27300
+     ],
+     "mean_ep_length_mean": 58.03,
+     "mean_reward_mean": -16.33,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 23.97,
+     "crash_pct": 76.03,
+     "episodes": 6899,
+     "epochs": [
+      27301,
+      27400
+     ],
+     "mean_ep_length_mean": 59.65,
+     "mean_reward_mean": -15.686,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 23.58,
+     "crash_pct": 76.42,
+     "episodes": 6751,
+     "epochs": [
+      27401,
+      27500
+     ],
+     "mean_ep_length_mean": 60.58,
+     "mean_reward_mean": -18.137,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.87,
+     "crash_pct": 74.1,
+     "episodes": 6316,
+     "epochs": [
+      27501,
+      27600
+     ],
+     "mean_ep_length_mean": 65.04,
+     "mean_reward_mean": -16.783,
+     "timeout_pct": 0.03
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.81,
+     "crash_pct": 74.19,
+     "episodes": 6342,
+     "epochs": [
+      27601,
+      27700
+     ],
+     "mean_ep_length_mean": 64.76,
+     "mean_reward_mean": -17.361,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 26.13,
+     "crash_pct": 73.87,
+     "episodes": 6614,
+     "epochs": [
+      27701,
+      27800
+     ],
+     "mean_ep_length_mean": 62.22,
+     "mean_reward_mean": -14.634,
+     "timeout_pct": 0.0
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.63,
+     "crash_pct": 74.34,
+     "episodes": 6488,
+     "epochs": [
+      27801,
+      27900
+     ],
+     "mean_ep_length_mean": 62.83,
+     "mean_reward_mean": -16.456,
+     "timeout_pct": 0.03
+    },
+    {
+     "blocks": 100,
+     "capture_pct": 25.55,
+     "crash_pct": 74.45,
+     "episodes": 6572,
+     "epochs": [
+      27901,
+      28000
+     ],
+     "mean_ep_length_mean": 62.33,
+     "mean_reward_mean": -15.514,
+     "timeout_pct": 0.0
+    }
+   ]
+  }
+ },
+ "window_epochs": 100,
+ "written_by": "/home/fair/motar_tmp/camk1_20261106/make_camk1_record.py"
+}

@@ -1,0 +1,93 @@
+{
+ "arms": {
+  "delay1": {
+   "capture_diff_pp": -7.5,
+   "crash_diff_pp": 7.5,
+   "invalid": {},
+   "isaac_capture_pct": 100.0,
+   "isaac_crash_pct": 0.0,
+   "isaac_same_envs": {
+    "capture": 40
+   },
+   "outcome_agreement": 37,
+   "scheduled": 40,
+   "sitl": {
+    "capture": 37,
+    "crash": 3
+   },
+   "sitl_capture_pct": 92.5,
+   "sitl_crash_pct": 7.5,
+   "valid": 40,
+   "vs_s3b_same_scenes": {
+    "arm_capture": 37,
+    "arm_crash": 3,
+    "pairs": 40,
+    "s3b_capture": 40,
+    "s3b_crash": 0,
+    "same_outcome": 37
+   }
+  },
+  "iris": {
+   "capture_diff_pp": 0.0,
+   "crash_diff_pp": 0.0,
+   "invalid": {},
+   "iris_footprint_reported": {
+    "episodes": 40,
+    "half_span_m": 0.235,
+    "steps_missing": 0,
+    "within_half_span": 0
+   },
+   "isaac_capture_pct": 100.0,
+   "isaac_crash_pct": 0.0,
+   "isaac_same_envs": {
+    "capture": 40
+   },
+   "outcome_agreement": 40,
+   "scheduled": 40,
+   "sitl": {
+    "capture": 40
+   },
+   "sitl_capture_pct": 100.0,
+   "sitl_crash_pct": 0.0,
+   "valid": 40,
+   "vs_s3b_same_scenes": {
+    "arm_capture": 40,
+    "arm_crash": 0,
+    "pairs": 40,
+    "s3b_capture": 40,
+    "s3b_crash": 0,
+    "same_outcome": 40
+   }
+  }
+ },
+ "attempt_reason": null,
+ "attempt_status": "COMPLETE",
+ "integrity_problems": [],
+ "protocol": "s3c-v1",
+ "s3b_reference": {
+  "path": "/home/fair/motar_tmp/s3b_formal_20261106/attempt01/episodes.jsonl",
+  "reading": "FEASIBLE_IN_SITL",
+  "sha256": "97b94dfd6d0c67ff01077787697aa87eee64e540b0195edaa3a78731a482e4fa",
+  "status": "BOUND"
+ },
+ "timing_and_state": {
+  "delay1": {
+   "compute_ms_max": 11.63172721862793,
+   "ekf_xy_err_max_m": 14.29740665664385,
+   "late_max_s": 0.023999999999993804,
+   "param_problem_episodes": 0,
+   "rtf_max": 1.0026346453205595,
+   "rtf_min": 0.9964502088612182,
+   "truth_age_max_s": 0.018703699111938477
+  },
+  "iris": {
+   "compute_ms_max": 45.8984375,
+   "ekf_xy_err_max_m": 0.5350826859095221,
+   "late_max_s": 0.023999999999993804,
+   "param_problem_episodes": 0,
+   "rtf_max": 1.0050836098983187,
+   "rtf_min": 0.9984449770375757,
+   "truth_age_max_s": 0.012994050979614258
+  }
+ }
+}

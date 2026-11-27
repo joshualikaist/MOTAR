@@ -1,0 +1,201 @@
+{
+ "cells": {
+  "k1d0/205": {
+   "bytes": 1118450,
+   "capture_pct": 91.162109375,
+   "counts": {
+    "capture": 1867,
+    "crash": 181
+   },
+   "crash_pct": 8.837890625,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2609,
+   "sha256": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  },
+  "k1d1/205": {
+   "bytes": 1517792,
+   "capture_pct": 88.4765625,
+   "counts": {
+    "capture": 1812,
+    "crash": 234,
+    "timeout": 2
+   },
+   "crash_pct": 11.42578125,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 3533,
+   "sha256": "987f3cd7f128ec3c976808a58c708698f7f06cd33fd9f589f7d879c984df0289",
+   "summary_counts_ok": true,
+   "summary_rows_sha_ok": true
+  },
+  "k1d1/70": {
+   "bytes": 1004466,
+   "capture_pct": 98.193359375,
+   "counts": {
+    "capture": 2011,
+    "crash": 37
+   },
+   "crash_pct": 1.806640625,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2360,
+   "sha256": "ccf004775acb33f2ae55f00e6ccf271e86319a8b9b49c2e9b61784c574be72bc",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  },
+  "k2d0/205": {
+   "bytes": 1204654,
+   "capture_pct": 87.939453125,
+   "counts": {
+    "capture": 1801,
+    "crash": 247
+   },
+   "crash_pct": 12.060546875,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2809,
+   "sha256": "1e9991e791cbfb2093e37cde01856af231c10029571265675318b0afb72d8117",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  },
+  "k2d0/70": {
+   "bytes": 1046457,
+   "capture_pct": 97.8515625,
+   "counts": {
+    "capture": 2004,
+    "crash": 44
+   },
+   "crash_pct": 2.1484375,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2458,
+   "sha256": "ef1f01721d831a06ce3c067dd611d0114686bb412a98b5e4e8a9ca5c5d74feed",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  },
+  "k4d0/205": {
+   "bytes": 1146288,
+   "capture_pct": 73.73046875,
+   "counts": {
+    "capture": 1510,
+    "crash": 538
+   },
+   "crash_pct": 26.26953125,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2676,
+   "sha256": "0cbece7b7a6dfbb4cc2c98214af3e32a7b6ebfced32f926c4d49bbbf85a1a9ba",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  },
+  "k4d0/70": {
+   "bytes": 1519977,
+   "capture_pct": 95.068359375,
+   "counts": {
+    "capture": 1947,
+    "crash": 100,
+    "timeout": 1
+   },
+   "crash_pct": 4.8828125,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 3562,
+   "sha256": "2f82ca993b2f32438a66721ffa66b50a6c92528c745eff87dcd140c087af219b",
+   "summary_counts_ok": true,
+   "summary_rows_sha_ok": true
+  }
+ },
+ "identity": {
+  "bytes_equal": true,
+  "parsed_equal": true
+ },
+ "reference": {
+  "205": {
+   "bytes": 1118450,
+   "capture_pct": 91.162109375,
+   "counts": {
+    "capture": 1867,
+    "crash": 181
+   },
+   "crash_pct": 8.837890625,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2609,
+   "sha256": "8899856375b19c6d1865e0f807827e479077325045bf82f1c44ab3113f77e6ad",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  },
+  "70": {
+   "bytes": 1022067,
+   "capture_pct": 98.6328125,
+   "counts": {
+    "capture": 2020,
+    "crash": 28
+   },
+   "crash_pct": 1.3671875,
+   "envs": 128,
+   "ids_unique": true,
+   "outcome_exclusive": true,
+   "per_env_quota": [
+    16
+   ],
+   "quota_is_first16": true,
+   "quota_rows": 2048,
+   "rows": 2401,
+   "sha256": "11e7ec818586df7b6f6859c2dacdc0a167882650e3e8e5a4e22f5dc316389543",
+   "summary_counts_ok": false,
+   "summary_rows_sha_ok": true
+  }
+ }
+}

@@ -1,0 +1,18 @@
+{
+ "files": [
+  {
+   "bytes": 7999,
+   "file": "v1_labels.npz",
+   "sha256": "f54998471166406e93f5d9443b6a5156c722395141dcdcc68fde8ee0dfa754df"
+  },
+  {
+   "bytes": 5427,
+   "file": "v1_meta.json",
+   "sha256": "1f1a5493362a3a7cc67f26f35c36609967f63618a6786860adcb625c38727999"
+  }
+ ],
+ "max_memory_allocated_bytes": 64753152,
+ "nan_fields": [],
+ "process": "v1_scenes",
+ "wall_s": 5.213606119155884
+}

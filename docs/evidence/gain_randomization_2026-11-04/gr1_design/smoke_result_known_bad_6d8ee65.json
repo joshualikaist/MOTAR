@@ -1,0 +1,59 @@
+{
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-gainrand",
+ "gr_run_sha256": "397e5512aa0de5427f0a7c0b19554b7c8ee53123754312810f8307562c564d99",
+ "results": {
+  "repro_ok": {
+   "rc": "EXCEPTION",
+   "verdict": null,
+   "calls": null,
+   "error": "AttributeError: 'Namespace' object has no attribute 'policy'"
+  },
+  "repro_perturbed": {
+   "rc": "EXCEPTION",
+   "verdict": null,
+   "error": "AttributeError: 'Namespace' object has no attribute 'policy'"
+  },
+  "eval_no_train_report": {
+   "rc": 2,
+   "error": null
+  },
+  "eval_no_repro": {
+   "rc": 2,
+   "error": null
+  },
+  "eval_rand40": {
+   "rc": 2,
+   "verdict": null,
+   "n_calls": 0,
+   "policy": null,
+   "sha": null,
+   "error": null,
+   "first_call": null
+  },
+  "eval_ctrl": {
+   "rc": 2,
+   "verdict": null,
+   "n_calls": 0,
+   "policy": null,
+   "sha": null,
+   "error": null,
+   "first_call": null
+  },
+  "eval_cell_fail": {
+   "rc": 2,
+   "verdict": null,
+   "n_calls": 0,
+   "error": null
+  }
+ },
+ "checks": {
+  "repro_ok": false,
+  "repro_perturbed": false,
+  "eval_no_train_report": true,
+  "eval_no_repro": true,
+  "eval_rand40": false,
+  "eval_ctrl": false,
+  "eval_cell_fail": false
+ },
+ "pass": false
+}

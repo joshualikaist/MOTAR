@@ -1,0 +1,146 @@
+{
+  "schema": "motar.mt-p1-precision-plan.v1",
+  "status": "CPU_IMPLEMENTATION_ONLY; GPU_VALIDITY_NOT_TESTED; NO_GPU_AUTHORIZATION",
+  "historical_lineages": [
+    "H_historical",
+    "E0_static",
+    "E1_cv",
+    "E2_obstacle_aware"
+  ],
+  "new_lineages": {
+    "E1_direct_l2_v1": {
+      "launcher_arm_alias": "E1_cv",
+      "pattern": "cv",
+      "backend": "direct_l2_v1"
+    },
+    "E2_direct_l2_v1": {
+      "launcher_arm_alias": "E2_obstacle_aware",
+      "pattern": "waypoint",
+      "backend": "direct_l2_v1"
+    }
+  },
+  "motion_model": "bounded_planar_drone_v1_rollout_direct_l2_v1",
+  "backend_env": "NAVRL_TARGET_DISTANCE_BACKEND",
+  "default_backend": "legacy_cdist",
+  "approved_current_scope": "CPU source, contracts, regression tests, static asset preparation with original bytes preserved, new report and future-run specification only",
+  "static_execution_preparation": {
+    "execution_root": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1",
+    "asset_report": "docs/plans/mt_p1_asset_preflight_v1.json",
+    "asset_report_sha256": "182d60ad1126060fb10fa21ae4d3d42c6b1fa105a1245d629aff51a162ca1ad1",
+    "checkpoint_copy": "exclusive-create; original preserved; 8869844 bytes; frozen SHA verified on source and destination",
+    "scope": "PathFinder origins and file bytes only; runtime imports, GPU and simulator NOT_TESTED"
+  },
+  "cpu_verification": {
+    "tool": "tools/kroc2027_motion_verify.py",
+    "record": "docs/plans/mt_p1_cpu_validation_v1.json",
+    "record_sha256": "9ffd0bb2e8c2d2723071c3d0824d1a1d3d432b223d8d3e8467e5b4de3f8087d6",
+    "device": "cpu",
+    "synthetic_densities": [
+      0,
+      40,
+      70,
+      80,
+      115,
+      120,
+      160,
+      205
+    ],
+    "historical_experiment_densities": [
+      70,
+      115,
+      160,
+      205
+    ],
+    "turn_signs": [
+      1,
+      -1
+    ],
+    "steps_per_fixture": 80,
+    "oracle": "float64 difference norm; direct candidate ranking compared with legacy executor using this independent distance oracle",
+    "swept_geometry": "continuous 2D segment-to-closed-rectangle distance, including corner crossing",
+    "old_packets": {
+      "relative_root": "results/kroc2027_moving_target_packets_v1",
+      "count": 606,
+      "historical_tf32_batch2_matches": 598,
+      "historical_unresolved": 8,
+      "historical_unresolved_status": "UNRESOLVED_INPUTS",
+      "interpretation": "598/606 is an imported frozen GPU measurement, not recomputed by this CPU tool; old packets lack full ordered bars, original batch/strides, sign and candidate scores"
+    }
+  },
+  "future_run": {
+    "run_id": "MT-P2-C01",
+    "authorization": "SEPARATE_EXPLICIT_USER_APPROVAL_REQUIRED",
+    "preregistration": "commit this final reviewed plan and source before requesting the GPU run",
+    "source_commit": "EXECUTION_HEAD_IN_EXTERNAL_LAUNCH_RECEIPT",
+    "source_tree_hash": "EXECUTION_TREE_AND_SOURCE_MANIFEST_IN_EXTERNAL_LAUNCH_RECEIPT",
+    "checkpoint_rel": "aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+    "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_target_behavior_arms.sh",
+    "launcher_sha256": "4077e2718c73c3177cdf1f775cc11a6b50cb18d591e352382e175c45fb14f7ec",
+    "gpu": "exactly one NVIDIA GeForce RTX 3070 8GB",
+    "seed": 4190,
+    "seed_role": "reused diagnostic canary; not fresh confirmatory evidence",
+    "arms": [
+      "A3_visible",
+      "A4_hidden"
+    ],
+    "lineages": [
+      "E1_direct_l2_v1",
+      "E2_direct_l2_v1"
+    ],
+    "densities": [
+      70,
+      115,
+      160,
+      205
+    ],
+    "cells": 16,
+    "num_envs": 128,
+    "quota_per_env": 4,
+    "primary_episodes": 8192,
+    "episode_actions": 600,
+    "rl_dt_s": 0.1,
+    "packet_schema": "full_v2",
+    "on_violation": "stop",
+    "expected_gpu_hours": [
+      0.75,
+      1.5
+    ],
+    "hard_budget_gpu_hours": 2.0,
+    "budget_is_prediction": true,
+    "output_root": "results/mt_p1_precision_v1/MT-P2-C01",
+    "must_record": [
+      "new lineage ID and actual backend",
+      "source commit, tracked tree and source manifest SHA",
+      "checkpoint and launcher SHA",
+      "actual runner TF32/matmul state without changing it",
+      "device and library versions",
+      "environment IDs, obstacle slot order, tensor shape/stride/storage offset",
+      "full executor tensors, turn sign, all ordered bars, output and certificate",
+      "G1/G2, swept clearance, walls, nonfinite, initial validity",
+      "per-environment quota and sidecar/ledger hashes",
+      "elapsed wall time per cell"
+    ],
+    "acceptance": [
+      "all 16 exact cells complete on one reviewed source",
+      "all 128 environments contribute exactly first 4 quota episodes",
+      "actual backend direct_l2_v1 and named new model in every receipt",
+      "zero G1/G2/nonfinite/wall/swept clearance violations",
+      "no input origin, hash, schema, full-packet or quota violation"
+    ],
+    "stopping": [
+      "stop first failed/incomplete cell; no silent continuation",
+      "stop on first motion or swept-clearance failure after retaining full_v2 inputs",
+      "stop on 2.0h cumulative GPU wall budget",
+      "never replace seeds, alter thresholds or relabel failed historical cells"
+    ],
+    "not_claimed": [
+      "rigid-body physical UAV target",
+      "full collision safety beyond canary",
+      "restored H-A2",
+      "repaired historical evidence",
+      "automatic authorization for main A or recovery R0-R3"
+    ],
+    "source_binding": "Commit this reviewed plan unchanged; bind HEAD, tracked source manifest and plan SHA in a new launch receipt before execution. Do not edit a committed preregistration to insert its own commit hash."
+  }
+}

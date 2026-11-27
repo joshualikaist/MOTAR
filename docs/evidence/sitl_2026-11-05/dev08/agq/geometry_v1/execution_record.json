@@ -1,0 +1,371 @@
+{
+ "schema": "motar.agq-geometry-v1.execution-record.v1",
+ "protocol": "agq-geometry-v1",
+ "prereg": "docs/plans/prereg_sitl_agq_geometry_v1_2026-11-06.md",
+ "source_commit": "f286e29e4d0bd90842f896411dbbac00bfa2349c",
+ "approval": {
+  "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/execution_approval.json",
+  "sha256": "cdc7f242c7847741163ca72a541514cce053785c6a00f0c76994a6fa1a711bf6",
+  "bytes": 365,
+  "approved_by": "user",
+  "approved_at": "2026-11-06",
+  "scope": "AGQ geometry-v1: 4 fixed development members (205/env5 native gains: native then training-box collision; 205/env2 candidate gains: training-box then native collision)",
+  "skip_max_s": 0.15
+ },
+ "process": {
+  "phase": "ENDED",
+  "exit_code": 0,
+  "started_at": "2026-11-06T02:54:42.725235+00:00",
+  "ended_at": "2026-11-06T02:57:56.048834+00:00",
+  "kernel_faults_before": 0,
+  "kernel_faults_after": 0,
+  "head_after": "f286e29e4d0bd90842f896411dbbac00bfa2349c",
+  "dirty_after": "",
+  "command": [
+   "timeout",
+   "-s",
+   "TERM",
+   "-k",
+   "120",
+   "1200",
+   "nice",
+   "-n",
+   "10",
+   "taskset",
+   "-c",
+   "6,7,12,13",
+   "/home/fair/miniconda3/envs/aerialgym/bin/python",
+   "-B",
+   "tools/sitl_agq_geometry_diag.py",
+   "--execute",
+   "--approval-file",
+   "/home/fair/motar_tmp/agq_geometry_diag_20261106/execution_approval.json",
+   "--attempt-dir",
+   "/home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01"
+  ],
+  "rlimit_as_bytes": 17179869184,
+  "env": {
+   "CUDA_VISIBLE_DEVICES": "",
+   "PYTHONNOUSERSITE": "1",
+   "OMP_NUM_THREADS": "1",
+   "MKL_NUM_THREADS": "1",
+   "PYTHONPATH": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly"
+  }
+ },
+ "process_record": {
+  "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/run01/execution_process_record.json",
+  "sha256": "2b65c92dc5c10bdee8f9ba001b0a8b5e7e2937d0940823cb53f5d4afb334b01a",
+  "bytes": 2857
+ },
+ "final": {
+  "status": "COMPLETE",
+  "reason": null,
+  "recorded": 4,
+  "unrun": [],
+  "kernel_faults_start": 0,
+  "kernel_faults_end": 0,
+  "fault_check_error": null,
+  "last_record_sha256": "b3b3b3f687fe294c9e583e7441a4682e6a77d7a1e1c3df202f13005af58d45b2",
+  "wall_end": 1793933875.7135756,
+  "elapsed_s": 188.5207644290058
+ },
+ "ledger": {
+  "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01/ledger.jsonl",
+  "sha256": "c34940442998be5de3b2948f51b7d9e424715150e02781651e3f18ce688dc41f",
+  "bytes": 180221,
+  "records": 4
+ },
+ "analyzer": {
+  "command": "PYTHONPATH=<worktree> /home/fair/miniconda3/envs/px4/bin/python -B tools/sitl_agq_geometry_diag.py --analyze /home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01 --out /home/fair/motar_tmp/agq_geometry_diag_20261106/analysis_v1/reading.json",
+  "reading": {
+   "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/analysis_v1/reading.json",
+   "sha256": "027105fdf177d4383c6c39cfa1976e636ac50268aa2bb136d9cb6207f318c847",
+   "bytes": 46835
+  },
+  "committed_copy": "reading_attempt01.json"
+ },
+ "pair_readings": [
+  {
+   "scene": "205/env5",
+   "native": 0,
+   "training_box": 1,
+   "reading": "INCONCLUSIVE_NOT_REPRODUCED",
+   "first_rotor_bar_contact_s": null,
+   "rate_onsets_s": [],
+   "excursion_in_progress_at_contact": false,
+   "cross_clock_order": "SUPPORTED"
+  },
+  {
+   "scene": "205/env2",
+   "native": 3,
+   "training_box": 2,
+   "reading": "INCONCLUSIVE_NOT_REPRODUCED",
+   "first_rotor_bar_contact_s": 2.763999999999996,
+   "rate_onsets_s": [],
+   "excursion_in_progress_at_contact": false,
+   "cross_clock_order": "SUPPORTED"
+  }
+ ],
+ "members": {
+  "0": {
+   "name": "00_diag_205bars_env5_native_native",
+   "collision_model": "native",
+   "operational_status": "VALID",
+   "evaluable": true,
+   "outcome": "capture",
+   "crash_reason": null,
+   "final_elapsed_s": 4.52,
+   "first_bar_contact": null,
+   "contact_windows_s": [],
+   "rate5_s": null,
+   "z_below_0p8_s": null,
+   "error_above_0p5_s": null
+  },
+  "1": {
+   "name": "01_diag_205bars_env5_native_training_box",
+   "collision_model": "training-box",
+   "operational_status": "VALID",
+   "evaluable": true,
+   "outcome": "capture",
+   "crash_reason": null,
+   "final_elapsed_s": 4.52,
+   "first_bar_contact": null,
+   "contact_windows_s": [],
+   "rate5_s": null,
+   "z_below_0p8_s": null,
+   "error_above_0p5_s": null
+  },
+  "2": {
+   "name": "02_diag_205bars_env2_candidate_training_box",
+   "collision_model": "training-box",
+   "operational_status": "VALID",
+   "evaluable": true,
+   "outcome": "capture",
+   "crash_reason": null,
+   "final_elapsed_s": 7.504,
+   "first_bar_contact": {
+    "vehicle_part": "base",
+    "vehicle_collision": "navrl_quad::base_link::base_link_inertia_collision",
+    "bar": 169,
+    "elapsed_s": 2.768,
+    "messages": 2,
+    "force_max_n": 46.66,
+    "depth_max_m": 0.00473
+   },
+   "contact_windows_s": [
+    [
+     2.768,
+     2.772
+    ],
+    [
+     8.476,
+     8.492
+    ]
+   ],
+   "rate5_s": 2.776,
+   "z_below_0p8_s": 3.8,
+   "error_above_0p5_s": null
+  },
+  "3": {
+   "name": "03_diag_205bars_env2_candidate_native",
+   "collision_model": "native",
+   "operational_status": "VALID",
+   "evaluable": true,
+   "outcome": "capture",
+   "crash_reason": null,
+   "final_elapsed_s": 5.616,
+   "first_bar_contact": {
+    "vehicle_part": "rotor",
+    "vehicle_collision": "navrl_quad::rotor_0::rotor_0_collision",
+    "bar": 169,
+    "elapsed_s": 2.764,
+    "messages": 6,
+    "force_max_n": 4.19,
+    "depth_max_m": 0.00338
+   },
+   "contact_windows_s": [
+    [
+     2.764,
+     2.784
+    ]
+   ],
+   "rate5_s": null,
+   "z_below_0p8_s": null,
+   "error_above_0p5_s": null
+  }
+ },
+ "descriptive_within_pair_paths": {
+  "205/env5": {
+   "native": "00_diag_205bars_env5_native_native",
+   "training_box": "01_diag_205bars_env5_native_training_box",
+   "p_true_distance_k0_m": 0.007,
+   "p_true_distance_max_m": 0.383,
+   "at_checkpoint": 42,
+   "checkpoints_compared": 46
+  },
+  "205/env2": {
+   "native": "03_diag_205bars_env2_candidate_native",
+   "training_box": "02_diag_205bars_env2_candidate_training_box",
+   "p_true_distance_k0_m": 0.0171,
+   "p_true_distance_max_m": 5.355,
+   "at_checkpoint": 56,
+   "checkpoints_compared": 57
+  }
+ },
+ "descriptive_historical_dev08_comparison": {
+  "0": {
+   "new_member": "00_diag_205bars_env5_native_native",
+   "historical_member": "33_main_205bars_env5_native",
+   "historical_outcome": "crash",
+   "historical_crash_reason": "altitude",
+   "new_outcome": "capture",
+   "checkpoints_compared": 46,
+   "p_true_distance_k0_m": 0.0319,
+   "action_max_abs_difference_k0": 0.1105,
+   "first_checkpoint_p_true_distance_above_0p5_m": 28,
+   "p_true_distance_max_m": 3.188,
+   "note": "same scene inputs, gains and collision model; descriptive, not part of the preregistered reading"
+  },
+  "3": {
+   "new_member": "03_diag_205bars_env2_candidate_native",
+   "historical_member": "27_main_205bars_env2_candidate",
+   "historical_outcome": "crash",
+   "historical_crash_reason": "bar",
+   "new_outcome": "capture",
+   "checkpoints_compared": 57,
+   "p_true_distance_k0_m": 0.0321,
+   "action_max_abs_difference_k0": 0.0294,
+   "first_checkpoint_p_true_distance_above_0p5_m": 33,
+   "p_true_distance_max_m": 9.088,
+   "note": "same scene inputs, gains and collision model; descriptive, not part of the preregistered reading"
+  }
+ },
+ "descriptive_gate_start_offsets_vs_dev08": {
+  "0": {
+   "new_member": "00_diag_205bars_env5_native_native",
+   "historical_member": "33_main_205bars_env5_native",
+   "p_true_new_minus_historical_k0_m": [
+    0.0308,
+    0.0076,
+    -0.004
+   ],
+   "sim_s_k0_new": 35.788,
+   "sim_s_k0_historical": 35.516,
+   "target_position_k0_equal": true
+  },
+  "1": {
+   "new_member": "01_diag_205bars_env5_native_training_box",
+   "historical_member": "33_main_205bars_env5_native",
+   "p_true_new_minus_historical_k0_m": [
+    0.0308,
+    0.0076,
+    -0.011
+   ],
+   "sim_s_k0_new": 35.784,
+   "sim_s_k0_historical": 35.516,
+   "target_position_k0_equal": true
+  },
+  "2": {
+   "new_member": "02_diag_205bars_env2_candidate_training_box",
+   "historical_member": "27_main_205bars_env2_candidate",
+   "p_true_new_minus_historical_k0_m": [
+    0.0251,
+    -0.0018,
+    -0.008
+   ],
+   "sim_s_k0_new": 35.78,
+   "sim_s_k0_historical": 35.7,
+   "target_position_k0_equal": true
+  },
+  "3": {
+   "new_member": "03_diag_205bars_env2_candidate_native",
+   "historical_member": "27_main_205bars_env2_candidate",
+   "p_true_new_minus_historical_k0_m": [
+    0.0293,
+    -0.0121,
+    0.005
+   ],
+   "sim_s_k0_new": 35.788,
+   "sim_s_k0_historical": 35.7,
+   "target_position_k0_equal": true
+  }
+ },
+ "descriptive_rate_peaks": {
+  "0": {
+   "member": "00_diag_205bars_env5_native_native",
+   "peak_any_axis_rad_s": 3.5,
+   "at_elapsed_s": 4.448,
+   "ulog": {
+    "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01/00_diag_205bars_env5_native_native/rootfs/log/2026-11-06/02_54_50.ulg",
+    "sha256": "35f73615b2275505263bee3b517d3f347e70d598075de161c05560fda4310ed2",
+    "bytes": 8578945
+   }
+  },
+  "1": {
+   "member": "01_diag_205bars_env5_native_training_box",
+   "peak_any_axis_rad_s": 2.62,
+   "at_elapsed_s": 0.236,
+   "ulog": {
+    "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01/01_diag_205bars_env5_native_training_box/rootfs/log/2026-11-06/02_55_36.ulg",
+    "sha256": "950c62baea6fcee583881eed42f4a32ab1c55a95eb179c3bc62a1a1a1de529e8",
+    "bytes": 8588863
+   }
+  },
+  "2": {
+   "member": "02_diag_205bars_env2_candidate_training_box",
+   "peak_any_axis_rad_s": 12.26,
+   "at_elapsed_s": 2.796,
+   "ulog": {
+    "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01/02_diag_205bars_env2_candidate_training_box/rootfs/log/2026-11-06/02_56_22.ulg",
+    "sha256": "7ee9220a388938076fd5527fbc72f07165604e253cd58fa6c8039e846e6fc961",
+    "bytes": 9211848
+   }
+  },
+  "3": {
+   "member": "03_diag_205bars_env2_candidate_native",
+   "peak_any_axis_rad_s": 4.31,
+   "at_elapsed_s": 3.068,
+   "ulog": {
+    "path": "/home/fair/motar_tmp/agq_geometry_diag_20261106/attempt01/03_diag_205bars_env2_candidate_native/rootfs/log/2026-11-06/02_57_11.ulg",
+    "sha256": "529cfb677a9dc40b2d8f68b23df3817347c1ef999e2849e4fc9bfb1bcb30b9de",
+    "bytes": 8808448
+   }
+  }
+ },
+ "descriptive_dev08_encounters": {
+  "33_main_205bars_env5_native": {
+   "first_physical_footprint_overlap_proxy_s": 5.728,
+   "bar": 168
+  },
+  "27_main_205bars_env2_candidate": {
+   "first_physical_footprint_overlap_proxy_s": 2.736,
+   "bar": 169
+  },
+  "source": {
+   "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/evidence/sitl_2026-11-05/dev08/agq/diagnosis.json",
+   "sha256": "50aebcef568280f5f3f28159c6561a90585a599ffbb11bd3f188c200ad58ae9b",
+   "bytes": 66330
+  }
+ },
+ "descriptive_env2_bar169_clearance": {
+  "member_3_native": {
+   "clearance_at_checkpoint_28_m": 0.311,
+   "minimum_clearance_m": 0.311,
+   "at_checkpoint": 28
+  },
+  "member_2_training_box": {
+   "clearance_at_checkpoint_28_m": 0.185,
+   "minimum_clearance_m": 0.185,
+   "at_checkpoint": 28
+  },
+  "dev08_27_native": {
+   "clearance_at_checkpoint_28_m": 0.199,
+   "minimum_clearance_m": 0.199,
+   "at_checkpoint": 28
+  },
+  "bar": 169,
+  "checkpoint": 28,
+  "definition": "runner box_hit distance from p_true to the bar rectangle"
+ },
+ "limits": "one boot per member and one pair per scene: a mechanism diagnostic, not a treatment effect, gain ranking, S3b acceptance or flight-readiness result"
+}

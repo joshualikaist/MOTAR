@@ -1,0 +1,111 @@
+{
+  "schema": "motar.s-l1c-plan.v1",
+  "created_date_kst": "2026-10-18",
+  "authority": "User message 'MOTAR - Unattended Autonomous S-L1B/C/D Research Execution' (2026-10-18); S-L1C starts only after the recorded S-L1B GO decision",
+  "base_sha": "2389a41e9d483dfef0058a72756fce736205d4fb",
+  "switch": {
+    "name": "NAVRL_SENSOR_LINEAGE",
+    "values": {
+      "unset": "legacy",
+      "off": "legacy",
+      "s_l1a_v1": "S-L1A",
+      "s_l1b_v1": "S-L1A + S-L1B",
+      "s_l1c_v1": "S-L1A + S-L1B + S-L1C (cumulative)"
+    },
+    "unknown": "fail closed (ValueError)"
+  },
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "references": {
+    "s_l1b_plan": "docs/plans/s_l1b_v1.json",
+    "s_l1b_amendment": "docs/plans/s_l1b_v1_amendment1.json",
+    "s_l1b_source": "a1f97e93af57f97b9778e395ffa8d38f7365e989",
+    "s_l1b_run": "../aerial_gym_simulator/results/s_l1b_v1/SL1B-C01",
+    "s_l1b_run_manifest_sha256": "11aab182827ec04a22a12036bd77ace60e080a91c6232c4ba8d4e6499bd15169",
+    "s_l1a_run": "../aerial_gym_simulator/results/s_l1a_v1/SL1A-C01",
+    "e_l0_plan": "docs/plans/e_l0_evaluation_lineage_v1.json",
+    "eq1d_plan": "docs/plans/eq1d_qualification_v1.json",
+    "eq1d_d2_n2": "7/7 target-absent bar returns accepted (EQ1D-R1)",
+    "eq1c_t4": "Policy F range return cuts tangential variance 1.0 -> 0.022 and vertical 1.0 -> 0.038",
+    "s_l1b_review": "docs/evidence/s_l1b_2026-10-18/REVIEW_ADDENDUM.md (GO-WITH-NOTES)"
+  },
+  "definitions": {
+    "camera_measurement": "identity-bearing: the current RGB-D detection (appearance + depth)",
+    "lidar_association": "range-only and identity-free: a LiDAR return gated against the predicted track; never resets the identity clock",
+    "fused_recency_age": "existing tracker age: time since the last accepted fused update; the 5 s expiry contract is unchanged",
+    "identity_age": "new diagnostic: time since the last camera (identity-bearing) update; LiDAR-only updates never reset it; not an actor input",
+    "update_source": "per step: none, camera or lidar_range (evaluator-facing diagnostic)",
+    "reacquisition": "identity-confirmed reacquisition = a camera update after identity_age > 0.5 s; a lidar_range update alone is fused-valid, not reacquisition"
+  },
+  "corrections": {
+    "C1_radius": "LiDAR association uses the LiDAR proxy radius 0.20 m: predicted surface = predicted centre range - 0.20; centre = measured surface + 0.20 (EQ-1A A4). Camera centre-range (A7) unchanged and still a Known FAIL",
+    "C2_row_eligibility": "only LiDAR rows whose elevation lies within asin(0.20 / predicted centre range) of the predicted target elevation (vehicle frame) can measure the target; the measured surface is the minimum over eligible rows of the bearing-nearest column; no eligible row means no association",
+    "C3_shape_consistency": "reject when an adjacent row (e +- 1) at the same column returns a horizontal range within 0.10 m of the matched return's horizontal range (a vertically extended surface the 0.20 m proxy cannot produce beyond 1.15 m), or when the predicted centre range is below 0.20/sin(10 deg) = 1.152 m (inconclusive)",
+    "C4_range_only_model": "measurement point = LiDAR origin + (measured surface + 0.20) * u, u = unit vector to the predicted centre; R = 0.08^2 u u^T + 50^2 (I - u u^T) (EKF H = u^T)",
+    "C5_identity_clock": "tracker keeps fused recency age (unchanged expiry) and adds identity_age plus update_source diagnostics",
+    "unchanged": "camera detection and measurement, S-L1A depth, S-L1B fusion and carve, obstacle tokens, association gate width rule, tracker process model, 898-D schema, E-L0"
+  },
+  "fixtures": {
+    "negative": "the 7 EQ-1D D2-N2 bar-only scenes N1, N2, N3, N5, N6, N7, N8 with the track primed at the bar front + 0.15 m along association_beam_deg, camera lost",
+    "positive": "every D2/extra target scene whose bearing-nearest LiDAR column has an oracle-eligible row hitting the 0.20 m proxy unoccluded, with predicted centre >= 1.152 m; track primed at the true centre (and at +-0.15 m range offsets), camera lost",
+    "cpu_exact": "analytic LiDAR scans from the float64 oracle: tall bars at 2-11 m and bearings 0/20/90/180 deg; target spheres at 1.5-11.5 m including a target 0.3 m in front of a bar and a target between two bars; range-only covariance cases at bearings 0/45/90 deg and elevations 0/8 deg"
+  },
+  "gates": {
+    "C-NEG": "0 of 7 bar-only negatives accepted (CPU oracle scans and GPU rendered scans); legacy 7/7 reported",
+    "C-POS": "every eligible positive accepted (recall 100% on the preregistered eligible set) on CPU and GPU, with centre error <= 1e-3 m for beam-centred targets; ineligible cases reported",
+    "C-COV": "after one range-only update, posterior variance along the two directions orthogonal to u is >= 0.99 of the prior (CPU and GPU probe) and the variance along u decreases",
+    "C-PROV": "update_source and identity_age: camera updates reset identity_age, lidar_range updates never do; fused age contract unchanged (expiry on the 51st miss as EQ-1C T2); evaluator-only",
+    "C-RADIUS": "beam-centred analytic target: centre range error <= 1e-4 m (CPU); GPU beam-centred targets <= 1e-3 m",
+    "C-REGRESSION": "CPU: unset/off, s_l1a_v1, s_l1b_v1 perception bitwise equal to source a1f97e9. GPU: off = EL0-R1 P2, s_l1a = SL1A-C01 on_p2, s_l1b = SL1B-C01 s_l1b_p2 (14 keys, 600 steps, static 4501 / moving 4502)",
+    "C-EL0": "s_l1c_v1 E-L0 P1 and P2 closed-loop digests identical",
+    "C-FIREWALL": "association/shape/clock code reads only LiDAR ranges, the camera visibility flag, the tracker's own state and declared constants (AST/signature test); the GT target pose/semantic id is used only by the evaluator and the fixture priming; actor 898",
+    "C-INTEGRITY": "checkpoint, RMS, 898-D, import origins, source SHA, frozen tree, raw manifest valid; no NaN/Inf",
+    "C-RESOURCE": "characterisation only",
+    "verdict": "S-L1C QUALIFIED only if C-NEG, C-POS, C-COV, C-PROV, C-RADIUS, C-REGRESSION, C-EL0, C-FIREWALL and C-INTEGRITY all pass; one metric improving while another fails is NO-GO"
+  },
+  "reported_not_gated": [
+    "rejected false matches and legitimate recall on the full fixture sets per mode",
+    "closed-loop LiDAR accepts, identity_age distribution, update_source counts per mode (off/s_l1b/s_l1c)",
+    "ON closed-loop observation/action/trajectory/outcome changes (no performance claim)"
+  ],
+  "run": {
+    "run_id": "SL1C-C01",
+    "output_root": "../aerial_gym_simulator/results/s_l1c_v1",
+    "disk_min_free_gb": 8.0,
+    "output_max_gb": 2.0,
+    "oom_reserve_mib": 512,
+    "poll_s": 5,
+    "total_wall_cap_s": 7200,
+    "process_wall_cap_s": 900,
+    "sensor_modes": [
+      "legacy",
+      "s_l1b",
+      "s_l1c"
+    ],
+    "sensor_num_envs": 43,
+    "sensor_seed": 4401,
+    "closed_loop_variants": [
+      "off",
+      "s_l1a",
+      "s_l1b",
+      "s_l1c_p1",
+      "s_l1c_p2"
+    ],
+    "closed_loop_num_envs": 8,
+    "closed_loop_steps": 600,
+    "closed_loop_density": 160,
+    "closed_loop_seed_by_config": {
+      "static": 4501,
+      "moving": 4502
+    },
+    "configs": [
+      "static",
+      "moving E2_direct_l2_v1"
+    ],
+    "no_retry": true
+  },
+  "inherited_limitations": [
+    "s_l1b_v1 carve retains about 82% of target-centre LiDAR returns as obstacles (pixel-sampled anchor biased high; zero tolerance below s_L); no S-L1C gate depends on the carve",
+    "GPU sensor-fixture attitude passes are identical yaw-only inputs; unique counts are one third of totals and are reported as such",
+    "camera centre-range A7 bias unchanged"
+  ]
+}

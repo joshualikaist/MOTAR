@@ -1,0 +1,69 @@
+{
+  "authorization_note": "Separate GPU authorization provenance is not inferred from amendment text, code or receipt flags.",
+  "backup_classification": "same-filesystem archives, not external backup",
+  "copied_files": [
+    {
+      "bytes": 18633,
+      "copy": "MT-P2-C01/RAW_MANIFEST.json",
+      "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json"
+    },
+    {
+      "bytes": 1923,
+      "copy": "MT-P2-C01/launch_receipt.json",
+      "sha256": "b383383ee20804c108559f5685b7213d2af0e31ebfdb529ae5a3426d676537c7",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/launch_receipt.json"
+    },
+    {
+      "bytes": 2898,
+      "copy": "MT-P2-C01/mt_canary_report.json",
+      "sha256": "e0e4598abc4b097e46503ef5ef18922b11bf0e103a4d50179c7b7735f5bed2e5",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/mt_canary_report.json"
+    },
+    {
+      "bytes": 14903,
+      "copy": "MT-P2-C01/run_summary.json",
+      "sha256": "d7bfe3f7f36417b2f19fb8a6fdb1badb7701224d44ad176302f1cc6df36f25e9",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/run_summary.json"
+    },
+    {
+      "bytes": 66645,
+      "copy": "KROC27-A-M02/RAW_MANIFEST.json",
+      "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json"
+    },
+    {
+      "bytes": 9797,
+      "copy": "KROC27-A-M02/analysis.json",
+      "sha256": "af7ad5b5864c4da8123493d71109948213f1ea3fc17610255310c92d91bc0401",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/analysis.json"
+    },
+    {
+      "bytes": 4589,
+      "copy": "KROC27-A-M02/launch_receipt.json",
+      "sha256": "1892ccf7463a8e2ea4540b25d13e965727297214fd9edf31456b5df30d588162",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/launch_receipt.json"
+    },
+    {
+      "bytes": 7849,
+      "copy": "KROC27-A-M02/run_report.json",
+      "sha256": "5dbb2f47d05237df5f529c216513f224b13d0cc6bd90dd51a586cecda9df07eb",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/run_report.json"
+    },
+    {
+      "bytes": 50892,
+      "copy": "KROC27-A-M02/run_summary.json",
+      "sha256": "fb335d7b3d83a3c5a45403624e01a0b43110d969e55fe8a32c8a501b02ed5ca4",
+      "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/run_summary.json"
+    }
+  ],
+  "local_reports": {
+    "README.md": "e8420ce66f045dff7a7a76ad9d8e7d24136f40d0ff84e39a12cd0bb8e72e51c8",
+    "numerical_audit.json": "3ca2f6c08b9a7d716d115726fea71002e4592d7389a41109abcf0ed2f810b5e7",
+    "preservation_audit.json": "ecf9b00c0719fd4bea7fdc15d5d2c0166b69af5f1fedc68489ef874a1de70b06"
+  },
+  "raw_retention": "Keep physical main-checkout raw directories and untracked worktree symlink unchanged; compact copies are not a replacement for raw data.",
+  "schema": "motar.mt-precision-review-package.v1",
+  "scope": "compact byte-identical evidence copies and independent CPU audits; no result mutation, GPU, simulator or commit",
+  "source_head": "c038ba5"
+}

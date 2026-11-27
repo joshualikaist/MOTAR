@@ -1,0 +1,202 @@
+{
+  "schema": "motar.hr3-p03-preparation-qualification.v1",
+  "base_sha": "ce3d10aacad9358bc888a53edb6c5e6cf4a904cc",
+  "authority": "2026-10-19 user P03 Preparation & Controlled Evaluation: implementation/CPU/boundedGPU only; no largepilot/confirmation/push",
+  "status": "H-R3 PROVISIONAL; CONFIRMATION HOLD",
+  "run": {
+    "run_id": "HR3-P03-Q01",
+    "output_root": "../aerial_gym_simulator/results/h_r3_p03_qualification_v1",
+    "seed": 4801,
+    "num_envs": 128,
+    "density": 160,
+    "closed_loop_density": 160,
+    "config": "moving",
+    "total_wall_cap_s": 3600,
+    "process_wall_cap_s": 600,
+    "disk_min_free_gb": 8.0,
+    "output_max_gb": 5.0,
+    "oom_reserve_mib": 512,
+    "poll_s": 5,
+    "no_retry": true
+  },
+  "processes": [
+    {
+      "id": "short_normal",
+      "steps": 16,
+      "hr3_arm": "B0",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 180
+    },
+    {
+      "id": "short_forced",
+      "steps": 16,
+      "hr3_arm": "B0",
+      "isolation_mode": "runtime",
+      "force_reset": true,
+      "evaluator": true,
+      "cap_s": 180
+    },
+    {
+      "id": "long_B0",
+      "steps": 600,
+      "hr3_arm": "B0",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_forced",
+      "steps": 600,
+      "hr3_arm": "B0",
+      "isolation_mode": "runtime",
+      "force_reset": true,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_noeval",
+      "steps": 600,
+      "hr3_arm": "B0",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": false,
+      "cap_s": 600
+    },
+    {
+      "id": "long_audit",
+      "steps": 600,
+      "hr3_arm": "B0",
+      "isolation_mode": "audit",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_B1",
+      "steps": 600,
+      "hr3_arm": "B1",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_B2",
+      "steps": 600,
+      "hr3_arm": "B2",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_B3",
+      "steps": 600,
+      "hr3_arm": "B3",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_B4",
+      "steps": 600,
+      "hr3_arm": "B4",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    },
+    {
+      "id": "long_B5",
+      "steps": 600,
+      "hr3_arm": "B5",
+      "isolation_mode": "runtime",
+      "force_reset": false,
+      "evaluator": true,
+      "cap_s": 600
+    }
+  ],
+  "force": {
+    "step": 2,
+    "env": 127,
+    "baseline_natural_reset_required": []
+  },
+  "diagnostic_windows": {
+    "long": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      38,
+      39,
+      40,
+      41,
+      42,
+      598,
+      599
+    ],
+    "short": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      14,
+      15
+    ],
+    "initial": true
+  },
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "sensor_lineage": "off SAME_AS_P02_AND_ISO_Q02; RGB-D+LiDAR remains on",
+  "intervention": {
+    "window_steps": 20,
+    "dt_s": 0.1,
+    "prefix": "last valid pre-loss input before loss-producing simulation step; same perenv frozen schedule in B3/B4/B5",
+    "schedule": "constant20-step abs lateral derived from maximumabs eligible nonzero candidate in commonpreloss candidate set, independent ofbestvisibility score; oldgain/cap andmaxnorm cap; nonefeasible=>0. Directioninvalid=>0 action andretained denominator.",
+    "sham": "hash(seed,environment,episode,event,decision) independent of all RNG/reset order",
+    "zero_lateral": "retain every eligible event including0 and direction-invalid",
+    "realized_feedback": "NONE; fixed prelossreference and diagnosticsonly; never reverse safetyattenuation"
+  },
+  "primary": {
+    "metric": "spatially identity-correct reobservation within2s; terminalfirst; oldP01 diagnosticonly",
+    "population": [
+      "FULL",
+      "CENTRE_ONLY",
+      "PARTIAL"
+    ],
+    "separate": [
+      "FOV_EXIT",
+      "VISIBLE",
+      "NONE",
+      "RANGE_EXIT",
+      "SCALE_LOSS"
+    ],
+    "matching": "allarm complete preintervention state/sensor/history digests and event schedules exact; any mismatchglobalNO_GO, no salvage",
+    "scope": "qualification and descriptive one-seed diagnostics only; no populationp/CI/confirmation"
+  },
+  "gates": {
+    "isolation": "short16 thenlong600 B0normal/forced exclude127 only, everyframe exact separate RGB/depth/LiDAR/root/history/action digests; fullnumeric registeredwindows",
+    "modes": "longaudit/runtime all128 everyframe exact and snapshot numeric parity",
+    "evaluator": "longON/OFF all128 everyframe exact and snapshot numeric parity",
+    "reset": "step2 only127forced, no baseline natural resets; selectedgeometry/refit/physics maintained",
+    "budget": "B3/B4/B5 commonprefix schedules exact; directionvalid nominalnormerror<=1e-6m/s; directioninvalid nominalcommandsallzero andlog/retaincoverage; no sensor/state tolerance",
+    "geometry": "exact device bit checks eachframe/reset; no unselected mutation; topology/map/pointers failclosed",
+    "firewall": "GT evaluationonly; controls ownstate/permittedbelief/LiDAR; actor898/FrozenF/RMS unchanged",
+    "failure": "any qualificationfailure stops additionalGPU; no autoremigationretry, no thresholdsweakened"
+  },
+  "diagnostics": {
+    "stall_speed_mps": 0.1,
+    "realized_balance_relative_margin": 0.1,
+    "balance_definition": "mean paired abs(a-b)/((abs(a)+abs(b))/2) across all geometric candidates for path, meanactualspeed, actualspeed\u00b2integral; zero both retained equality; onezero disagreement2",
+    "attribution": "margin is descriptive engineeringdiagnostic, not formal equivalencetest; if anyimbalance/nonfinite/insufficientevents, pureviewpoint INCONCLUSIVE; even pass is not populationcausal confirmation",
+    "control_effort": "command\u00b2 integral and acceleration\u00b2 integral are proxies; mechanicalenergy NOT_RECORDED",
+    "insufficient": "zero geometriccandidate events OR zero nonzero-lateral exposure ->pureviewpoint INCONCLUSIVE; zerozero motionpairs retained equality"
+  },
+  "preservation": "new optin files/output only; originalsource/raw/prereg/manifests/WIP/stash/symlinks/main unchanged; no backup/bundle requested",
+  "stop": "no largeP03pilot orconfirmatoryrun aftersmoke; nopush/mainmerge/PPO/planner/sensorlineage change"
+}

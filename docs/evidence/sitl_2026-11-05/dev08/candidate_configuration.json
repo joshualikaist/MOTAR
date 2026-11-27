@@ -1,0 +1,167 @@
+{
+  "candidate_params": {
+    "MC_PITCHRATE_D": 0.00026,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_P": 0.013,
+    "MC_YAWRATE_I": 0.1,
+    "MC_YAWRATE_P": 0.2,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_P_ACC": 2.0,
+    "THR_MDL_FAC": 1.0
+  },
+  "cells": {
+    "205": {
+      "env_episode_index": 0,
+      "envs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "historical_comparator": "docs/evidence/sitl_2026-11-05/s3b_dev/dev07_205_s3b_report.json",
+      "target_cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/zero/E2_obstacle_aware__205bars__seed4501",
+      "target_frames_in_historical_report": {
+        "0": 600,
+        "1": 600,
+        "2": 600,
+        "3": 600,
+        "4": 600,
+        "5": 600,
+        "6": 600,
+        "7": 600,
+        "8": 600,
+        "9": 600
+      },
+      "trace_cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__205bars__seed4501",
+      "trace_payload_verified": false
+    },
+    "70": {
+      "env_episode_index": 0,
+      "envs": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "historical_comparator": "docs/evidence/sitl_2026-11-05/s3b_dev/dev07_70_s3b_report.json",
+      "target_cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/zero/E2_obstacle_aware__70bars__seed4501",
+      "target_frames_in_historical_report": {
+        "0": 600,
+        "1": 600,
+        "2": 600,
+        "3": 600,
+        "4": 600,
+        "5": 208,
+        "6": 600,
+        "7": 600,
+        "8": 600,
+        "9": 600
+      },
+      "trace_cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/sitl_ref_v1_r2/g8/full/E2_obstacle_aware__70bars__seed4501",
+      "trace_payload_verified": false
+    }
+  },
+  "command_yaw": "truth",
+  "execution_supported": false,
+  "gain_delta": {
+    "MC_YAWRATE_I": {
+      "candidate": 0.1,
+      "native": "NOT_EXPLICITLY_OVERRIDDEN"
+    },
+    "MC_YAWRATE_P": {
+      "candidate": 0.2,
+      "native": "NOT_EXPLICITLY_OVERRIDDEN"
+    },
+    "MPC_XY_VEL_P_ACC": {
+      "candidate": 2.0,
+      "native": 2.5
+    }
+  },
+  "historical_sha256": {
+    "docs/evidence/sitl_2026-11-05/s3b_dev/dev07_205_s3b_report.json": "e7210f50730e3c4e266842d178f296f6b0187227e3cb5d86c0b6d3c13d7eaaee",
+    "docs/evidence/sitl_2026-11-05/s3b_dev/dev07_70_s3b_report.json": "e35d5d0f0909ef986c836bdbb3022f02b072fd0334f8744d4254f31144466bc8",
+    "tools/sitl_bridge.py": "f0031f114f4428ddd5f3b126067c80b1808071e1864402fb119b342259083db7",
+    "tools/sitl_s3b_closed_loop.py": "d170b0271f73822280d8c92af68ab2bb56e350bbdf598702c353d8b79f0284b4"
+  },
+  "input_readiness": "BLOCKED_INCOMPLETE_TARGET_TRACE",
+  "limits": [
+    "native parameter equality is not episode/output identity",
+    "historical dev07 is a descriptive comparator, not a concurrent randomized control",
+    "S3a NOT_EQUIVALENT; replay target and MOTAR truth-rendered sensors remain",
+    "live trace payloads, vehicle/template synchronization and real sensors are not qualified here"
+  ],
+  "measurement_status": "NOT_RUN",
+  "native_params": {
+    "MC_PITCHRATE_D": 0.00026,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_P": 0.013,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_P_ACC": 2.5,
+    "THR_MDL_FAC": 1.0
+  },
+  "runtime_requirements": [
+    "new scoped dev08 execution approval and committed runtime source/preregistration",
+    "strict trace/layout/env selection and full target coverage, no fallback or tail hold",
+    "parameter echo/readback before takeoff; persist effective values including native yaw",
+    "exclusive SITL ownership and cleanup restricted to owned descendants",
+    "fresh output/world names, source/platform/checkpoint bindings, source freeze",
+    "CUDA hidden, idle host, cores 6,7,12,13, nice10, time/memory bounds and host-fault checks",
+    "10Hz simulator-time loop, telemetry freshness/stall checks and RTF reporting"
+  ],
+  "runtime_status": "NOT_IMPLEMENTED",
+  "scope": "static configuration and historical provenance only; no S3b acceptance",
+  "selected_arm": "candidate",
+  "selected_params": {
+    "MC_PITCHRATE_D": 0.00026,
+    "MC_PITCHRATE_I": 0.017,
+    "MC_PITCHRATE_P": 0.013,
+    "MC_ROLLRATE_D": 0.00026,
+    "MC_ROLLRATE_I": 0.017,
+    "MC_ROLLRATE_P": 0.013,
+    "MC_YAWRATE_I": 0.1,
+    "MC_YAWRATE_P": 0.2,
+    "MPC_XY_VEL_D_ACC": 0.0,
+    "MPC_XY_VEL_I_ACC": 0.1,
+    "MPC_XY_VEL_P_ACC": 2.0,
+    "THR_MDL_FAC": 1.0
+  },
+  "status": "CONFIGURATION_PREPARED",
+  "target_coverage_shortfalls": [
+    {
+      "bars": 70,
+      "env": 5,
+      "recorded_frames": 208,
+      "required_frames": 600
+    }
+  ],
+  "unchanged_constants": {
+    "ALT": 1.0,
+    "CAPTURE_M": 0.5,
+    "DT": 0.1,
+    "FOOT_HALF": 0.14,
+    "MAX_STEPS": 600,
+    "ODE_ITERS": 100,
+    "OOB_MARGIN": 1.0
+  },
+  "unit": "S3b dev08 preparation v1"
+}

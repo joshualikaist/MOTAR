@@ -1,0 +1,75 @@
+{
+  "derivation": "yprime=k(r-y); e=r-y, k2=k(e-dt*k1/2), k3=k(e-dt*k2/2), k4=k(e-dt*k3); output production uses plus, giving gain h+h^2/2+h^3/6+h^4/24, rather than classical RK4 h-h^2/2+h^3/6-h^4/24. No clipping for normalized reference1,error1,k20,maxrate100000. Current use_rps maps this RPM fraction into squared thrust fraction.",
+  "cases": [
+    {
+      "dt": 0.01,
+      "tau": 0.04,
+      "k": 20.0,
+      "h": 0.2,
+      "production_increment_fraction": 0.2214,
+      "classical_RK4_same_coefficient_increment_fraction": 0.18126666666666666,
+      "exact_same_coefficient": 0.18126924692201818,
+      "backward_Euler_nominal_tau": 0.19999999999999998,
+      "exact_nominal_tau": 0.22119921692859512,
+      "effective_tau_under_prod_gain": 0.03995878749662978,
+      "positive_reference_start_zero_production_next_RPM": 0.2214,
+      "proper_sameODE_next_RPM": 0.18126666666666666
+    },
+    {
+      "dt": 0.04,
+      "tau": 0.04,
+      "k": 12.5,
+      "h": 0.5,
+      "production_increment_fraction": 0.6484375,
+      "classical_RK4_same_coefficient_increment_fraction": 0.39322916666666663,
+      "exact_same_coefficient": 0.3934693402873666,
+      "backward_Euler_nominal_tau": 0.5,
+      "exact_nominal_tau": 0.6321205588285577,
+      "effective_tau_under_prod_gain": 0.03826404542894133,
+      "positive_reference_start_zero_production_next_RPM": 0.6484375,
+      "proper_sameODE_next_RPM": 0.39322916666666663
+    },
+    {
+      "dt": 0.1,
+      "tau": 0.04,
+      "k": 7.142857142857142,
+      "h": 0.7142857142857143,
+      "production_increment_fraction": 1.040972511453561,
+      "classical_RK4_same_coefficient_increment_fraction": 0.5090760794113564,
+      "exact_same_coefficient": 0.5104583404430469,
+      "backward_Euler_nominal_tau": 0.7142857142857143,
+      "exact_nominal_tau": 0.9179150013761012,
+      "effective_tau_under_prod_gain": null,
+      "positive_reference_start_zero_production_next_RPM": 1.040972511453561,
+      "proper_sameODE_next_RPM": 0.5090760794113564
+    },
+    {
+      "dt": 0.01,
+      "tau": 0.02,
+      "k": 33.333333333333336,
+      "h": 0.33333333333333337,
+      "production_increment_fraction": 0.39557613168724287,
+      "classical_RK4_same_coefficient_increment_fraction": 0.2834362139917696,
+      "exact_same_coefficient": 0.28346868942621073,
+      "backward_Euler_nominal_tau": 0.33333333333333337,
+      "exact_nominal_tau": 0.3934693402873666,
+      "effective_tau_under_prod_gain": 0.019861779554550672,
+      "positive_reference_start_zero_production_next_RPM": 0.39557613168724287,
+      "proper_sameODE_next_RPM": 0.2834362139917696
+    },
+    {
+      "dt": 0.001,
+      "tau": 0.04,
+      "k": 24.390243902439025,
+      "h": 0.024390243902439025,
+      "production_increment_fraction": 0.024690118874172304,
+      "classical_RK4_same_coefficient_increment_fraction": 0.024095205385970955,
+      "exact_same_coefficient": 0.024095205457607793,
+      "backward_Euler_nominal_tau": 0.024390243902439025,
+      "exact_nominal_tau": 0.024690087971667385,
+      "effective_tau_under_prod_gain": 0.03999994930437452,
+      "positive_reference_start_zero_production_next_RPM": 0.024690118874172304,
+      "proper_sameODE_next_RPM": 0.024095205385970955
+    }
+  ]
+}

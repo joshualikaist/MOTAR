@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# PYTHON for play_navrl.sh in CAM-REF (tools/camref_eval_run.py, launcher eval_navrl_camref_arms.sh): runs
+# tools/camref_entry.py with the real interpreter. The entry installs, per NAVRL_CAMREF_POLICY, the switched-on protocol
+# modules (Policy F directly; CAM-K1 and CAM-S2b-FT through tools/realveh_entry.py, unchanged) and then runs runner.py
+# unchanged. play_navrl.sh calls PYTHON exactly once, for runner.py; every check before it in the launcher uses the real
+# interpreter.
+set -euo pipefail
+REAL="${CAMREF_REAL_PYTHON:?CAMREF_REAL_PYTHON is required}"
+# play_navrl.sh puts this wrapper's directory first on PATH; restore the interpreter's bin directory in front of it so the
+# tools runner.py builds with (ninja for gymtorch) are found as in a native run.
+export PATH="$(dirname "${REAL}"):${PATH}"
+exec "${REAL}" "$(dirname "$(readlink -f "$0")")/camref_entry.py" "$@"

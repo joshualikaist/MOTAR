@@ -1,0 +1,497 @@
+{
+ "cases": [
+  {
+   "gate": "<= 1e-05",
+   "name": "T1 Kalman predict/correct against the hand-derived reference",
+   "production": {
+    "note": "float32 production vs float64 reference",
+    "status": "PASS"
+   },
+   "rows": [
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 6.161799407725735e-11,
+     "t": 0,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 1.8553581467713197e-07,
+     "t": 1,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 2.89105404769423e-07,
+     "t": 2,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 2.5754529215334705e-07,
+     "t": 3,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 4.5720398238876714e-07,
+     "t": 4,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 3.4497946253330265e-07,
+     "t": 5,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 4.784160636358705e-07,
+     "t": 6,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 4.988243891043218e-07,
+     "t": 7,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 3.542492821991081e-07,
+     "t": 8,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 9,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.10000000149011612,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 10,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.20000000298023224,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 11,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.30000001192092896,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 12,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.4000000059604645,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 13,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.5,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 14,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.6000000238418579,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 15,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.7000000476837158,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 16,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.8000000715255737,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 17,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.9000000953674316,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 18,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.0000001192092896,
+     "ref_active": true,
+     "rel_err": 2.0324827694522296e-07,
+     "t": 19,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 2.7020715793423244e-07,
+     "t": 20,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 5.350592373531964e-07,
+     "t": 21,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 4.713522347632379e-07,
+     "t": 22,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.0,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 23,
+     "visible": true
+    },
+    {
+     "active": true,
+     "age": 0.10000000149011612,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 24,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.20000000298023224,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 25,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.30000001192092896,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 26,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.4000000059604645,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 27,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.5,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 28,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.6000000238418579,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 29,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.7000000476837158,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 30,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.8000000715255737,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 31,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 0.9000000953674316,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 32,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.0000001192092896,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 33,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.1000001430511475,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 34,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.2000001668930054,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 35,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.3000001907348633,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 36,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.4000002145767212,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 37,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.500000238418579,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 38,
+     "visible": false
+    },
+    {
+     "active": true,
+     "age": 1.600000262260437,
+     "ref_active": true,
+     "rel_err": 3.869616122187773e-07,
+     "t": 39,
+     "visible": false
+    }
+   ],
+   "worst_rel_err": 5.350592373531964e-07
+  },
+  {
+   "name": "T2 5 s expiry after camera acquisition (0/49/50/51/60 misses)",
+   "production": {
+    "note": "expires on the 51st miss; float32 age accumulation checked",
+    "status": "PASS"
+   },
+   "rows": [
+    {
+     "active": true,
+     "age_exact_s": 0.0,
+     "age_float32": 0.0,
+     "expected_active": true,
+     "misses": 0
+    },
+    {
+     "active": true,
+     "age_exact_s": 4.9,
+     "age_float32": 4.899997711181641,
+     "expected_active": true,
+     "misses": 49
+    },
+    {
+     "active": true,
+     "age_exact_s": 5.0,
+     "age_float32": 4.999997615814209,
+     "expected_active": true,
+     "misses": 50
+    },
+    {
+     "active": false,
+     "age_exact_s": 5.1,
+     "age_float32": 5.099997520446777,
+     "expected_active": false,
+     "misses": 51
+    },
+    {
+     "active": false,
+     "age_exact_s": 6.0,
+     "age_float32": 5.099997520446777,
+     "expected_active": false,
+     "misses": 60
+    }
+   ]
+  },
+  {
+   "age_after_s": 0.0,
+   "lidar_accepts": 100,
+   "literal_contract": {
+    "note": "age is time since the last accepted fused correction",
+    "status": "PASS"
+   },
+   "name": "T3 identity-bound clock (LiDAR-compatible bar, no camera, 10 s)",
+   "production_identity_clock": {
+    "note": "every accepted bar return resets the age; the 5 s bound is not a bound on time since a verified target view",
+    "status": "FAIL"
+   },
+   "steps": 100,
+   "track_active_after_10s": true
+  },
+  {
+   "existing_opt_in_flag": {
+    "note": "NAVRL_LIDAR_RANGE_ONLY_UPDATE=1: anisotropic R (sigma_perp 50 m); not used by Policy F",
+    "status": "PASS"
+   },
+   "name": "T4 range-only information versus the independent measurement Jacobian",
+   "production_policy_f": {
+    "note": "diagonal world-axis R [0.08, 0.15, 0.20]^2 on a 3-D point whose bearing and height are the track's own prediction",
+    "status": "FAIL"
+   },
+   "rows": [
+    {
+     "accepted": true,
+     "bearing_deg": 0.0,
+     "lidar_range_only_update": false,
+     "range_var_prod": 0.006359300576150417,
+     "range_var_ref": 0.006359300476947549,
+     "tangential_var_prod": 0.02200489118695259,
+     "tangential_var_ref": 1.0,
+     "vertical_var_prod": 0.038461536169052124,
+     "vertical_var_ref": 1.0
+    },
+    {
+     "accepted": true,
+     "bearing_deg": 90.0,
+     "lidar_range_only_update": false,
+     "range_var_prod": 0.02200489118695259,
+     "range_var_ref": 0.006359300476947549,
+     "tangential_var_prod": 0.006359300576150417,
+     "tangential_var_ref": 1.0,
+     "vertical_var_prod": 0.038461536169052124,
+     "vertical_var_ref": 1.0
+    },
+    {
+     "accepted": true,
+     "bearing_deg": 45.0,
+     "lidar_range_only_update": false,
+     "range_var_prod": 0.014182095881551502,
+     "range_var_ref": 0.006359300476947435,
+     "tangential_var_prod": 0.014182095881551506,
+     "tangential_var_ref": 1.0,
+     "vertical_var_prod": 0.038461536169052124,
+     "vertical_var_ref": 1.0
+    },
+    {
+     "accepted": true,
+     "bearing_deg": 0.0,
+     "lidar_range_only_update": true,
+     "range_var_prod": 0.006359300576150417,
+     "range_var_ref": 0.006359300476947549,
+     "tangential_var_prod": 0.9996002316474915,
+     "tangential_var_ref": 1.0,
+     "vertical_var_prod": 0.9996002316474915,
+     "vertical_var_ref": 1.0
+    },
+    {
+     "accepted": true,
+     "bearing_deg": 90.0,
+     "lidar_range_only_update": true,
+     "range_var_prod": 0.006359300576150417,
+     "range_var_ref": 0.006359300476947549,
+     "tangential_var_prod": 0.9996002316474915,
+     "tangential_var_ref": 1.0,
+     "vertical_var_prod": 0.9996002316474915,
+     "vertical_var_ref": 1.0
+    },
+    {
+     "accepted": true,
+     "bearing_deg": 45.0,
+     "lidar_range_only_update": true,
+     "range_var_prod": 0.006378546357154846,
+     "range_var_ref": 0.006359300476947435,
+     "tangential_var_prod": 0.9996000975370407,
+     "tangential_var_ref": 1.0,
+     "vertical_var_prod": 0.9996002316474915,
+     "vertical_var_ref": 1.0
+    }
+   ]
+  }
+ ],
+ "config": {
+  "camera_var_fixture": [
+   0.0025000000000000005,
+   0.004900000000000001,
+   0.0036
+  ],
+  "dt_s": 0.1,
+  "lidar_var_production": [
+   0.0064,
+   0.0225,
+   0.04000000000000001
+  ],
+  "memory_s": 5.0
+ },
+ "package": "EQ-1C tracker reference (CPU, validation only)",
+ "schema": "motar.eq1c-tracking.v1",
+ "source": {
+  "files_sha256": {
+   "aerial_gym/task/navrl_task/navrl_perception.py": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}

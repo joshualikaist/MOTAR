@@ -1,0 +1,48 @@
+{
+  "status": "NOT_A_GPU_MEASUREMENT",
+  "device": "cpu",
+  "dtype": "torch.float32",
+  "N": 128,
+  "K": 20,
+  "M": 32,
+  "H": 10,
+  "S": 10,
+  "dt_s": 0.1,
+  "threads": 1,
+  "repetitions": 1,
+  "warmup": 0,
+  "seconds": {
+    "total": 13.244873752002604,
+    "core_excluding_trace": 10.720962113002315,
+    "trace_total": 2.523911639000289,
+    "canonical_serialization": 0.029225001751910895,
+    "sha256": 2.4942266386933625,
+    "trace_other": 0.0004599985550157726
+  },
+  "instrumentation_calls": {
+    "trace": 1,
+    "canonical": 128,
+    "sha": 128
+  },
+  "point_distance_operations_per_decision": 235929600,
+  "rollout_substep_states": 256000,
+  "interpretation": "One instrumented cold synthetic decision. Core includes access/copy, geometry, dynamics, safety, belief, visibility, costs and arbitration. Trace includes canonicalization, pure-Python SHA and numpy copies; instrumentation overhead is not subtracted. No latency bound or GPU timing claim.",
+  "measurement_head": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "a2bef3da924aa36be5c1ed9346e6ae1192f683bdcb4010d806a1df0fdc06511d",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "0d2f200291880a3f0bb01374494740693e059d5245d1d3c065ebd605304c8da9",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "7cd7dcf2fcb34a94e91f5bb2f5dae6139182a74d8393fb0b373b7f0edae9db65",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd"
+  }
+}

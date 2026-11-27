@@ -1,0 +1,2311 @@
+{
+ "scope": "SMOKE_AND_COUNTEREXAMPLES_NOT_ACCURACY",
+ "synthetic": {
+  "F1 empty scene, belief 12 m": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "INCONCLUSIVE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "INCONCLUSIVE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 empty scene, belief 10 m": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NO_RETURN_BEYOND_OBSTACLE_FAR_PLANE",
+     "INCONCLUSIVE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NO_RETURN_BEYOND_OBSTACLE_FAR_PLANE",
+     "INCONCLUSIVE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 empty scene, belief 9 m": {
+   "v24": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 bar 8.6 m before belief 9.6 m": {
+   "v24": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_OBSTACLE_FOREGROUND",
+     "LIDAR_FOREGROUND_AGREES",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_OBSTACLE_FOREGROUND",
+     "LIDAR_FOREGROUND_AGREES",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 upsampling blend beside LOS": {
+   "v24": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F2 side bar, clear LOS": {
+   "v24": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F2 bar crossing LOS": {
+   "v24": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_OBSTACLE_FOREGROUND",
+     "LIDAR_FOREGROUND_AGREES",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_OBSTACLE_FOREGROUND",
+     "LIDAR_FOREGROUND_AGREES",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F2 bar behind belief": {
+   "v24": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F3 depth all zero": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_INPUT_UNUSABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "depth:INVALID whole frame near-clipped (all ~0): not a range image",
+     "depth_structure:INVALID depth invalid",
+     "obstacle_depth:INVALID depth invalid"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_INPUT_UNUSABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "depth:INVALID whole frame near-clipped (all ~0): not a range image",
+     "depth_structure:INVALID depth invalid",
+     "obstacle_depth:INVALID depth invalid"
+    ]
+   }
+  },
+  "F3 LiDAR all zero": {
+   "v24": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "LIDAR_INPUT_UNUSABLE",
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "lidar:INVALID whole scan near-clipped (all 0): not a range scan"
+    ]
+   },
+   "v25": {
+    "hypothesis": "DETECTION_MISS",
+    "reasons": [
+     "LIDAR_INPUT_UNUSABLE",
+     "CAMERA_LINE_OF_SIGHT_CLEAR_THROUGH_ENVELOPE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "lidar:INVALID whole scan near-clipped (all 0): not a range scan"
+    ]
+   }
+  },
+  "F4 thin bar across envelope": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "SENSOR_DISAGREEMENT_CAMERA_FOREGROUND_LIDAR_CLEAR"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "SENSOR_DISAGREEMENT_CAMERA_FOREGROUND_LIDAR_CLEAR"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F6 flag with nothing at track": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION",
+     "NO_PASTED_PIXELS_IN_IMAGE"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION",
+     "NO_PASTED_PIXELS_IN_IMAGE"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "visible target, flag set": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 8,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 8,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 8,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R1 constant disc r40 paste, no flag": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.64 of the image"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.64 of the image"
+    ]
+   }
+  },
+  "R1 disc r60 across top/bottom, no flag": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.53 of the image"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.53 of the image"
+    ]
+   }
+  },
+  "R2 F5 far case": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R2 F5 far case + bar 90 deg left at 10.3 m": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R2 F5 far case + bar behind vehicle at 10.3 m": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "FOREGROUND_COMPATIBLE_WITH_TARGET_SURFACE",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R2 F5 far case, real bar on LOS": {
+   "v24": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "LIDAR_EXTENDED_FOREGROUND",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "OCCLUDED",
+    "reasons": [
+     "CAMERA_NATIVE_NO_COVERAGE",
+     "LIDAR_EXTENDED_FOREGROUND",
+     "BELIEF_ERROR_NOT_EXCLUDED"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R3 target pasted 3 m, belief 8 m, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE",
+     "PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 44,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 44,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 44,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 44,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R3 no target, bar r0.15 at 8 m, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE",
+     "NO_PASTED_PIXELS_IN_IMAGE"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE",
+     "NO_PASTED_PIXELS_IN_IMAGE"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R3 no target, bar r0.4 at 8 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE",
+     "NO_PASTED_PIXELS_IN_IMAGE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE",
+     "NO_PASTED_PIXELS_IN_IMAGE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R4 target 0.30 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 262,
+    "pasted_at_track_range": 262,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.052 m"
+    ]
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 262,
+    "pasted_at_track_range": 262,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 14038,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.052 m"
+    ]
+   }
+  },
+  "R4 target 0.35 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 576,
+    "pasted_at_track_range": 576,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.94 of the image"
+    ]
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 576,
+    "pasted_at_track_range": 576,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 9704,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.94 of the image"
+    ]
+   }
+  },
+  "R4 target 0.40 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 592,
+    "pasted_at_track_range": 592,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.73 of the image"
+    ]
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 592,
+    "pasted_at_track_range": 592,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 6608,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.73 of the image"
+    ]
+   }
+  },
+  "R4 target 0.45 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 648,
+    "pasted_at_track_range": 648,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.61 of the image"
+    ]
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 648,
+    "pasted_at_track_range": 648,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 4826,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE PASTED_DOMINATES 0.61 of the image"
+    ]
+   }
+  },
+  "R4 target 0.50 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 618,
+    "pasted_at_track_range": 618,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 618,
+    "pasted_at_track_range": 618,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 3536,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "R4 target 0.60 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 496,
+    "pasted_at_track_range": 496,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 496,
+    "pasted_at_track_range": 496,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 2128,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "D1 target 0.265 m (contact range), flag": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_FLAG_WITH_UNUSABLE_CAMERA_INPUT"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "depth:INVALID whole frame near-clipped (all ~0): not a range image",
+     "depth_structure:INVALID depth invalid",
+     "obstacle_depth:INVALID depth invalid"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_FLAG_WITH_UNUSABLE_CAMERA_INPUT"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "depth:INVALID whole frame near-clipped (all ~0): not a range image",
+     "depth_structure:INVALID depth invalid",
+     "obstacle_depth:INVALID depth invalid"
+    ]
+   }
+  },
+  "D1 target 0.265 m (contact range), no flag": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_INPUT_UNUSABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "depth:INVALID whole frame near-clipped (all ~0): not a range image",
+     "depth_structure:INVALID depth invalid",
+     "obstacle_depth:INVALID depth invalid"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_INPUT_UNUSABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "depth:INVALID whole frame near-clipped (all ~0): not a range image",
+     "depth_structure:INVALID depth invalid",
+     "obstacle_depth:INVALID depth invalid"
+    ]
+   }
+  },
+  "D1 target 0.280 m (contact range), flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 4,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.032 m"
+    ]
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 4,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 14400,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.032 m"
+    ]
+   }
+  },
+  "D1 target 0.280 m (contact range), no flag": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.032 m"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.032 m"
+    ]
+   }
+  },
+  "D1 target 0.300 m (contact range), flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 262,
+    "pasted_at_track_range": 262,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.052 m"
+    ]
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 262,
+    "pasted_at_track_range": 262,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 14038,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.052 m"
+    ]
+   }
+  },
+  "D1 target 0.300 m (contact range), no flag": {
+   "v24": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.052 m"
+    ]
+   },
+   "v25": {
+    "hypothesis": "UNKNOWN",
+    "reasons": [
+     "CAMERA_OBSTACLE_DEPTH_UNAVAILABLE"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": true,
+    "problems": [
+     "obstacle_depth:UNAVAILABLE CONTACT_RANGE 0.052 m"
+    ]
+   }
+  },
+  "D2 target 10.0 m, track 0.5 m beside, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "D2 target 9.8 m, track 0.5 m beside, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "D2 target 9.5 m, track 0.5 m beside, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "D2 target 6.0 m, track 0.5 m beside, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 8 m, bar 0.1 m beside, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 8,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 8,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 8,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 8 m, bar 0.1 m beside, track 0.5 m off, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 8 m, bar 0.1 m beside, track 0.7 m off, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_NOT_AT_TRACKED_POSITION",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "CONTRADICTED",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 5 m, bar 0.2 m beside, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 22,
+    "pasted_at_track_range": 22,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 22,
+    "pasted_at_track_range": 22,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 22,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 5 m, bar 0.2 m beside, track 0.5 m off, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 5 m, bar 0.2 m beside, track 0.7 m off, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 3 m, bar 0.3 m beside, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 56,
+    "pasted_at_track_range": 56,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 56,
+    "pasted_at_track_range": 56,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 56,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 3 m, bar 0.3 m beside, track 0.5 m off, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "C1 target 3 m, bar 0.3 m beside, track 0.7 m off, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TRACK_FOOTPRINT_NOT_TESTABLE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 3 m, bar 1.0 m behind, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 64,
+    "pasted_at_track_range": 56,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 64,
+    "pasted_at_track_range": 56,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 56,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 3 m, bar 1.0 m behind, track 0.5 m too far, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 64,
+    "pasted_at_track_range": 64,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 64,
+    "pasted_at_track_range": 64,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 56,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 3 m, bar 1.0 m behind, track 1.0 m too far, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE",
+     "PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 64,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 56,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 64,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 56,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 2 m, bar 0.6 m behind, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 180,
+    "pasted_at_track_range": 162,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 180,
+    "pasted_at_track_range": 162,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 136,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 2 m, bar 0.6 m behind, track 0.5 m too far, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 180,
+    "pasted_at_track_range": 162,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 180,
+    "pasted_at_track_range": 162,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 136,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 2 m, bar 0.6 m behind, track 1.0 m too far, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE",
+     "PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 180,
+    "pasted_at_track_range": 44,
+    "pasted_nearer_than_track": 136,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 180,
+    "pasted_at_track_range": 44,
+    "pasted_nearer_than_track": 136,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 8 m, bar 1.0 m behind, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 8,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 8,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 8 m, bar 1.0 m behind, track 0.5 m too far, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 12,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 12,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 8,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "E1 target 8 m, bar 1.0 m behind, track 1.0 m too far, flag": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_PASTED_DEPTH_OUTSIDE_TRACK_RANGE",
+     "PASTED_DEPTH_MOSTLY_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 8,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_NEARER_THAN_TRACK"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 8,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 target 4 m, front 2 m bar corner in silhouette, correct track, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 9,
+    "pasted_nearer_than_track": 6,
+    "target_at_track_range": null,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 9,
+    "pasted_nearer_than_track": 6,
+    "target_at_track_range": 6,
+    "lidar_extended": true,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 same, track at the bar face -0.3 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 6,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_FARTHER_THAN_TRACK",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 6,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 same, track at the bar face +0.0 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 6,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_FARTHER_THAN_TRACK",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 6,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "F1 same, track at the bar face +0.3 m, flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 9,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "CAMERA_FLAG_TARGET_OUTSIDE_TRACK_RANGE",
+     "TARGET_SPHERE_FARTHER_THAN_TRACK",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "RANGE_CONTRADICTED",
+    "pasted_in_footprint": 16,
+    "pasted_at_track_range": 9,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "D7 flag, belief age 5 s": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "D7 flag, belief sigma 2 m": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "BELIEF_STALE_OR_DIFFUSE_FOOTPRINT_NOT_TESTABLE"
+    ],
+    "identity": "NOT_TESTABLE",
+    "pasted_in_footprint": 0,
+    "pasted_at_track_range": 0,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  }
+ },
+ "q01_frames": {
+  "frame0 recorded_flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 4,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 4,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 4,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "frame0 camera_flag_cleared": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 4,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 4,
+    "pasted_at_track_range": 4,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "frame1 recorded_flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 12,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE",
+     "SURFACE_AT_TRACK_RANGE_NOT_IDENTITY_EVIDENCE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 12,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 12,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "frame1 camera_flag_cleared": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 12,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 12,
+    "pasted_at_track_range": 12,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "frame2 recorded_flag": {
+   "v24": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "PASTED_DEPTH_AT_TRACK_RANGE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 14,
+    "pasted_at_track_range": 14,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CAMERA_FLAG_VISIBLE",
+     "TARGET_SPHERE_AT_TRACK_RANGE"
+    ],
+    "identity": "SUPPORTED_BY_FOOTPRINT",
+    "pasted_in_footprint": 14,
+    "pasted_at_track_range": 14,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 14,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  },
+  "frame2 camera_flag_cleared": {
+   "v24": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 14,
+    "pasted_at_track_range": 14,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": null,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   },
+   "v25": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "PASTED_TARGET_LIKE_PIXELS_IN_FOOTPRINT_WITHOUT_DETECTION"
+    ],
+    "identity": "NOT_APPLICABLE",
+    "pasted_in_footprint": 14,
+    "pasted_at_track_range": 14,
+    "pasted_nearer_than_track": 0,
+    "target_at_track_range": 0,
+    "lidar_extended": false,
+    "near_warning": false,
+    "problems": []
+   }
+  }
+ }
+}

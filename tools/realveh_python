@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# PYTHON for train_navrl.sh in the real-vehicle study (~/motar_tmp/realveh_design_20261108/SURVEY.md): runs
+# tools/realveh_entry.py with the real interpreter, which installs the opt-in vehicle randomization (the 0.5 kg
+# vehicle as a thrust cap on navrl_quad) / OAK-D Pro depth model when switched on, then the camera-only ablation and
+# the CAM-K1 FOV/reward overrides, and then runs runner.py unchanged. train_navrl.sh calls
+# PYTHON exactly once, for runner.py; every check before it in a launcher uses the real interpreter.
+set -euo pipefail
+REAL="${REALVEH_REAL_PYTHON:?REALVEH_REAL_PYTHON is required}"
+# train_navrl_v2_search.sh puts this wrapper's directory first on PATH; restore the interpreter's bin directory in
+# front of it so the tools runner.py builds with (ninja for gymtorch) are found as in a native run.
+export PATH="$(dirname "${REAL}"):${PATH}"
+exec "${REAL}" "$(dirname "$(readlink -f "$0")")/realveh_entry.py" "$@"

@@ -1,0 +1,23 @@
+{
+  "status": "PASS",
+  "preflight_binding_keys_present": [
+    "head",
+    "policy_f_sha256",
+    "rms_digest"
+  ],
+  "env_builder_actual_output": {
+    "NAVRL_SEED": "4801",
+    "NUM_ENVS": null,
+    "NAVRL_NUM_BARS": "160",
+    "NAVRL_DENSITY_START": "160",
+    "NAVRL_DENSITY_FINAL": "160",
+    "NAVRL_SENSOR_LINEAGE": "off",
+    "NAVRL_TARGET_DISTANCE_BACKEND": "direct_l2_v1",
+    "NAVRL_TARGET_DYNAMICS": "bounded",
+    "NAVRL_VISION": "1"
+  },
+  "N128_CPU_mock_initial_episodes_min": 0,
+  "N128_CPU_mock_initial_episodes_max": 0,
+  "pending_after_initial_reset": 0,
+  "scope": "Actual envbuilder/preflight fieldprobe plus existingRNG onCPU fakeN128; not realGPUreset proof"
+}

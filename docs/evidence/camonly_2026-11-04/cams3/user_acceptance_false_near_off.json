@@ -1,0 +1,7 @@
+{
+ "accepted": "S3-W without false near",
+ "user_words": "오측정 없이 S3-W 진행",
+ "recorded_at": "2026-11-27T13:45:42+09:00",
+ "context": "Answer to the status report after review r2 P1-A (cf11845): S3-W runs with NAVRL_DEPTH_MEAS_FALSE_NEAR=0; all other conditions of user_conditional_approval.json unchanged (GPU <= 6 h incl. eval; no S3-M GPU, push, merge).",
+ "commit": "cf11845"
+}

@@ -1,0 +1,397 @@
+{
+  "unit": "dev08 authorized CLI/essential CPU repair, before first live attempt",
+  "base_head": "cbf5527d1d42fe96b1a9b49b0e52afc72543c7ba",
+  "branch": "camonly/dev",
+  "source_review": "PASS_WITH_LIMITS",
+  "launcher_review": "PASS_WITH_LIMITS",
+  "focused": {
+    "command": [
+      "timeout",
+      "-s",
+      "TERM",
+      "-k",
+      "20s",
+      "240s",
+      "nice",
+      "-n",
+      "10",
+      "taskset",
+      "-c",
+      "6,7,12,13",
+      "/home/fair/miniconda3/envs/aerialgym/bin/python",
+      "-B",
+      "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v2/focused/driver.py"
+    ],
+    "cwd": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+    "source_head": "cbf5527d1d42fe96b1a9b49b0e52afc72543c7ba",
+    "source_hashes_before": {
+      "tools/sitl_dev08_attempt.py": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999",
+      "tools/sitl_s3b_dev08_prefix.py": "efc550d491cd9b935907987290cc5eb4533113dd80a1774acb45ed29517e50be",
+      "tests/test_sitl_dev08_attempt.py": "a5c16ebb022b22f3e111a98c11452581ec8d8bbb22d695b5589c742846489704",
+      "tests/test_sitl_s3b_dev08_prefix.py": "f48d27cf9002835e2e015ae9018046b59433f636fe7f9dac708b69a32d38043c",
+      "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md": "672a4906d6a4f0f3f113774beec92a8ee32d27b3fd1edb9e2f9f00196c513131"
+    },
+    "kernel_faults_before": 0,
+    "rlimit_as_bytes": 8589934592,
+    "env": {
+      "CUDA_VISIBLE_DEVICES": "",
+      "PYTHONNOUSERSITE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "PYTHONPATH": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly"
+    },
+    "exit_code": 0,
+    "elapsed_s": 58.87090537202312,
+    "kernel_faults_after": 0,
+    "source_hashes_after": {
+      "tools/sitl_dev08_attempt.py": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999",
+      "tools/sitl_s3b_dev08_prefix.py": "efc550d491cd9b935907987290cc5eb4533113dd80a1774acb45ed29517e50be",
+      "tests/test_sitl_dev08_attempt.py": "a5c16ebb022b22f3e111a98c11452581ec8d8bbb22d695b5589c742846489704",
+      "tests/test_sitl_s3b_dev08_prefix.py": "f48d27cf9002835e2e015ae9018046b59433f636fe7f9dac708b69a32d38043c",
+      "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md": "672a4906d6a4f0f3f113774beec92a8ee32d27b3fd1edb9e2f9f00196c513131"
+    },
+    "status": "PASS",
+    "test_counts": [
+      [
+        "136",
+        "58.754"
+      ]
+    ]
+  },
+  "public_cpu": {
+    "command": [
+      "timeout",
+      "-s",
+      "TERM",
+      "-k",
+      "20s",
+      "900s",
+      "nice",
+      "-n",
+      "10",
+      "taskset",
+      "-c",
+      "6,7,12,13",
+      "/home/fair/miniconda3/envs/aerialgym/bin/python",
+      "-B",
+      "tools/run_tests.py"
+    ],
+    "cwd": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly",
+    "source_head": "cbf5527d1d42fe96b1a9b49b0e52afc72543c7ba",
+    "source_hashes_before": {
+      "tools/sitl_dev08_attempt.py": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999",
+      "tools/sitl_s3b_dev08_prefix.py": "efc550d491cd9b935907987290cc5eb4533113dd80a1774acb45ed29517e50be",
+      "tests/test_sitl_dev08_attempt.py": "a5c16ebb022b22f3e111a98c11452581ec8d8bbb22d695b5589c742846489704",
+      "tests/test_sitl_s3b_dev08_prefix.py": "f48d27cf9002835e2e015ae9018046b59433f636fe7f9dac708b69a32d38043c",
+      "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md": "672a4906d6a4f0f3f113774beec92a8ee32d27b3fd1edb9e2f9f00196c513131"
+    },
+    "kernel_faults_before": 0,
+    "rlimit_as_bytes": 8589934592,
+    "env": {
+      "CUDA_VISIBLE_DEVICES": "",
+      "PYTHONNOUSERSITE": "1",
+      "OMP_NUM_THREADS": "1",
+      "MKL_NUM_THREADS": "1",
+      "PYTHONPATH": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly"
+    },
+    "exit_code": 0,
+    "elapsed_s": 295.76064305502223,
+    "kernel_faults_after": 0,
+    "source_hashes_after": {
+      "tools/sitl_dev08_attempt.py": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999",
+      "tools/sitl_s3b_dev08_prefix.py": "efc550d491cd9b935907987290cc5eb4533113dd80a1774acb45ed29517e50be",
+      "tests/test_sitl_dev08_attempt.py": "a5c16ebb022b22f3e111a98c11452581ec8d8bbb22d695b5589c742846489704",
+      "tests/test_sitl_s3b_dev08_prefix.py": "f48d27cf9002835e2e015ae9018046b59433f636fe7f9dac708b69a32d38043c",
+      "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md": "672a4906d6a4f0f3f113774beec92a8ee32d27b3fd1edb9e2f9f00196c513131"
+    },
+    "status": "PASS",
+    "test_counts": [
+      [
+        "3434",
+        "292.366"
+      ]
+    ],
+    "skipped": 10
+  },
+  "sources": {
+    "tools/sitl_owned_session.py": "e4fbdd2180de14a9aa9a944f699bc633d6ea81ebc9a2cbe941df47c493165c84",
+    "tools/sitl_dev08_link.py": "adcd73dfa996e5850a3d1207efcb9834d8dacd05bb57d780d5cda461551b2fca",
+    "tools/sitl_dev08_step.py": "9b1c9135d9e0b44c6f915bd2f0925780456c87ddfbd84551f0d5961b40ab984e",
+    "tools/sitl_dev08_attempt.py": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999",
+    "tools/sitl_s3b_dev08_prefix.py": "efc550d491cd9b935907987290cc5eb4533113dd80a1774acb45ed29517e50be",
+    "tools/sitl_dev08_prefix_contract.py": "f309dd5d2fdbfc8fb21c19fd5361a903b8fadfe525f8d246132c4ed75afc8c70",
+    "tools/sitl_s3b_dev08.py": "e63049cc92bae56afad212219e42af9f91def1f2fac88f688e69a0065a8fa3fb",
+    "tools/sitl_s3b_closed_loop.py": "d170b0271f73822280d8c92af68ab2bb56e350bbdf598702c353d8b79f0284b4",
+    "tools/sitl_bridge.py": "f0031f114f4428ddd5f3b126067c80b1808071e1864402fb119b342259083db7",
+    "tools/navrl_reflection_offline_audit.py": "70c63d6a3e2bc9468f4352ceb6fb5c77bffc0adb647d217aaf70a03be6962888",
+    "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1",
+    "aerial_gym/task/navrl_task/navrl_perception.py": "c107d96b29c3810b6b7cc275748cda9ca75dc42e21ba1684feff9c06a13dd4a6",
+    "aerial_gym/task/navrl_task/navrl_detector.py": "8f634f225bbb0242aa287bcce5f7f12ebc13bc40a25ef900df84355c286b121b",
+    "aerial_gym/task/navrl_task/speed_governor.py": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847",
+    "aerial_gym/config/task_config/navrl_task_config.py": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267",
+    "aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be",
+    "aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml": "5531b9b41933c6cd73525d8b8ebab61fc96e53d04df833d263eb8102f78225c8",
+    "aerial_gym/rl_training/rl_games/navrl_players.py": "ee5c7d1310bcba9d70ce05e8e15e294aabaa382aa4e8f98ecbbf3deb25d7c076",
+    "aerial_gym/rl_training/rl_games/navrl_transformer_network.py": "eaa67b3ce0690fa32c871b6d19603d781d0eb9195b16050a930357c78af9422e",
+    "aerial_gym/rl_training/rl_games/navrl_action_models.py": "234e13f2895c1f04e3d4266b5175ea40eab9082b73d463077206cc595ea48e1f",
+    "aerial_gym/rl_training/rl_games/ppo_update_safety.py": "e8c78d74b591dcfe0c2441f39f243cdc1ca7efd27af5ec0fd83edd425cff7556",
+    "aerial_gym/rl_training/rl_games/navrl_mode_probe.py": "0d265de5706a0c63690ea8bac0f6986e1c1f2a48bbae3c7cdbd8726be1663a29",
+    "aerial_gym/task/navrl_task/navrl_corridor.py": "6388ad2f59486b50c186054fdbecc1ca6001f0c9877c778b4bd217547237ebcf",
+    "aerial_gym/task/navrl_task/navrl_search_state.py": "9236c4656cde1c1ae2c2ccecb07183c8058c721cf35ad03ee6ffc7da0471a41d",
+    "aerial_gym/utils/math.py": "545e98acf1fbcc83c40b4d613343302ae3c59bcbcfa6f61fe9934e5dd1a5aec5",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment1_2026-11-05.md": "159fea947a4db752afa746946dd7506ae8f24ee8a62f4c3b6d08f2ac7802c014",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment2_2026-11-05.md": "17edabedb20d60f10a80e5bc3332b9e7143f0776104bb64f67cae506036267b8",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment3_2026-11-05.md": "16d6b2a4ed4843c8fdc643d4a85607f7e1788305f6de66772f2098558e4e5059",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment4_2026-11-05.md": "67b194189722af4f89e300ef49f8287ff17354cdc7de1ab0e89539ab6639c8de",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md": "672a4906d6a4f0f3f113774beec92a8ee32d27b3fd1edb9e2f9f00196c513131"
+  },
+  "external_sources": [
+    {
+      "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-cplanner/cplanner/motar/replay.py": {
+        "sha256": "922da95d5d40b104268948ac6c90497a2fbb9e57cea11fac663baadb0e47ff01",
+        "tree_head": "2837b184ea8029a8de5527d0c2c33791aac1ecae",
+        "dirty": ""
+      }
+    },
+    []
+  ],
+  "external_evidence": {
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/FINAL_STATE_CORRECTION.md": {
+      "bytes": 645,
+      "sha256": "7a5871d65502d07ef8d7aa566e9701f13e759003968e8209d98bdf610b2df00f"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/FINAL_STATE_CORRECTION.sha256": {
+      "bytes": 92,
+      "sha256": "0dbf11d6a16ea9b2b945bbfbb91af19fd76e209cdc51e8d766407f15fcdcc093"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/MANIFEST.sha256": {
+      "bytes": 587,
+      "sha256": "89fd318e04f1a0ae69fe3a9eaede261af6f5d19b29803f412f14e28ae709d21b"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/REPORT.md": {
+      "bytes": 6409,
+      "sha256": "3f45e42949eb9e6800cef71a9fa4d8730338f416aa43923df59f70ca9df78338"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/duration_storage.json": {
+      "bytes": 3876,
+      "sha256": "b2aa785499a28e942b37ada742a7e81fe2cc8ca6287e95d70554c2e25b8cf0a9"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/observations.json": {
+      "bytes": 18579,
+      "sha256": "bd3174c5ea1cc6568746c6fc8dccc746dbb4fa497708730b9db466601f275cd0"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/probe.py": {
+      "bytes": 5887,
+      "sha256": "5121d36355a3a366cd727ea9b557918ddc76affd4c0c6ed18ae314e3a46a749e"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/pymavlink_api.json": {
+      "bytes": 833,
+      "sha256": "f5b31b57da475b468beef14cb159ee5fd759926d01fea1074a826e83c092b2af"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/pymavlink_probe.py": {
+      "bytes": 1641,
+      "sha256": "802b849188a07dc54c404eaa8838ebf79bc3eed3f371c12a4bfe9853c4493c37"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/preflight/runtime_binding_static.json": {
+      "bytes": 17735,
+      "sha256": "0ebf13a08328d1c83eac0e7bf5e39ac4182a729156b3a25268bf7d3b4bed6382"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/REVIEW.md": {
+      "bytes": 10461,
+      "sha256": "ee101c5c59ff34dac7605903b318a7dfffbfbc57afd68fbf3728ba1d92092b5a"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/SHA256SUMS.json": {
+      "bytes": 2421,
+      "sha256": "dd0ea96db965bec58d9d37471c15c547ab44edbff701937105ddc3c08bbed1cf"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/probe.out": {
+      "bytes": 2886,
+      "sha256": "af7c023767be20e27e577923ef795e22dceac36d46c90a6486fc8590676200e1"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/probe.py": {
+      "bytes": 8888,
+      "sha256": "b1d6ab951e543630eca109ce02a2fd7d74faecd82d5ea70401b1ceaf1e1edc11"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/probe_results.json": {
+      "bytes": 6491,
+      "sha256": "91621a45ad784b1fa37217bd70b06d7c14dc27a650545b2c16a26c88db86440f"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/probe_v1.py": {
+      "bytes": 8784,
+      "sha256": "c15dc0afee8ceb06cd2addbea23d089b56e1ede44f4625d12eb91c73f2bc3373"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/probe_v2.out": {
+      "bytes": 4584,
+      "sha256": "809d01923003a284767f0c447994996797b869ce4ebfb56a5a205be0bf3eba17"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/scratch/ledger_retention_vduwh3xn/attempt.json": {
+      "bytes": 3,
+      "sha256": "ca3d163bab055381827226140568f3bef7eaac187cebd76878e0b63e9e442356"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/scratch/ledger_retention_vduwh3xn/final.json": {
+      "bytes": 1684,
+      "sha256": "cf08ae40b7cb87d4fb2788604629e5ad9457789d82613970b8b52bb4705b2e57"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/scratch/ledger_retention_vduwh3xn/ledger.jsonl": {
+      "bytes": 1602,
+      "sha256": "fa7af69a43482b53d54fefc68f495a72e4dfb5e7a7810c2a7dadd3d049275bf5"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/snapshot/docs/plans/prereg_sitl_dev08_candidate_gains_v1_amendment5_2026-11-05.md": {
+      "bytes": 6545,
+      "sha256": "672a4906d6a4f0f3f113774beec92a8ee32d27b3fd1edb9e2f9f00196c513131"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/snapshot/tests/test_sitl_dev08_attempt.py": {
+      "bytes": 24408,
+      "sha256": "a5c16ebb022b22f3e111a98c11452581ec8d8bbb22d695b5589c742846489704"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/snapshot/tests/test_sitl_s3b_dev08_prefix.py": {
+      "bytes": 33971,
+      "sha256": "f48d27cf9002835e2e015ae9018046b59433f636fe7f9dac708b69a32d38043c"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/snapshot/tools/sitl_dev08_attempt.py": {
+      "bytes": 23974,
+      "sha256": "d56d76c3102246aae22b033d25d77840741e5d13466da0287882f3358fd05999"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/snapshot/tools/sitl_s3b_dev08_prefix.py": {
+      "bytes": 29229,
+      "sha256": "efc550d491cd9b935907987290cc5eb4533113dd80a1774acb45ed29517e50be"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/supplemental.out": {
+      "bytes": 258,
+      "sha256": "f7d93ec35efa3586cf5c828d09c07efa2eeb61eee8ad6d70a26d7db1ab06f9b5"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/supplemental.py": {
+      "bytes": 4297,
+      "sha256": "71da3c3ebf052f3564164961381fc6eea139a728d39898914e9506cac6743b84"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/source_review_r1/supplemental_results.json": {
+      "bytes": 2316,
+      "sha256": "5b421462bfc0f0778f7b6767c95a50b744f2c615a8118f43f672e06ede16ae1f"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/REVIEW.md": {
+      "bytes": 4979,
+      "sha256": "3b928c46e07ef211dcb008438d5675af037057ff9766573c3c1265557a4d24b0"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/SHA256SUMS.json": {
+      "bytes": 1115,
+      "sha256": "9a1ca3e2c616df02a7155c8c63fa21859019b75cfd984d0b494d670de3b6fcaf"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/fixture/records/execution_approval.json": {
+      "bytes": 217,
+      "sha256": "90e20abdcf280b23f38e550c1b4d4833a8cb9b6e51bb76e249d5ab2b0bf91495"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/fixture/records/execution_process_record.json": {
+      "bytes": 1730,
+      "sha256": "81a294aa6838617c36247bd0aecb781cd8d792332f61183446b852e55aea7571"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/fixture/records/execution_state.json": {
+      "bytes": 1730,
+      "sha256": "81a294aa6838617c36247bd0aecb781cd8d792332f61183446b852e55aea7571"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/fixture/records/execution_stdout_attempt01.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/launch_authorized_snapshot.py": {
+      "bytes": 4177,
+      "sha256": "babaf0304d904abe298a5b6ba50ddd48904bad61c87707c3a2a4f8be6ded7b08"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/probe.out": {
+      "bytes": 399,
+      "sha256": "d13ca0ba382fbe5c71404a4130f75fe8aeff79536ca0b4c50ec3a10102a3245c"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/probe.py": {
+      "bytes": 5074,
+      "sha256": "fde0c32081668b46b1fe62fe02fb2a8fd5b6bbf74681a3ca1e33002cbf735997"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/launcher_review_r1/probe_results.json": {
+      "bytes": 399,
+      "sha256": "d13ca0ba382fbe5c71404a4130f75fe8aeff79536ca0b4c50ec3a10102a3245c"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/analyze_attempt.py": {
+      "bytes": 5330,
+      "sha256": "547517c258257e34778d9e764073b664a6c96576730398ac8a8bf927d3350ba0"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/launch_authorized.py": {
+      "bytes": 4177,
+      "sha256": "babaf0304d904abe298a5b6ba50ddd48904bad61c87707c3a2a4f8be6ded7b08"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/run_checks.py": {
+      "bytes": 3395,
+      "sha256": "7a5632ffd650ffaedfe52314f830a7fbd9135cce320c1bf0a79f9c68fb51ce5b"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/user_authorization.json": {
+      "bytes": 968,
+      "sha256": "1472699321ee94747f5ccd304081e00e10854d5288f01f0c5dfb4bc58b682769"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v1/focused/driver.py": {
+      "bytes": 847,
+      "sha256": "7b32a1c2f736274ab882ab27ed166868426f807f98a06ec0ccbb8a26e05e9424"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v1/focused/output.log": {
+      "bytes": 3152,
+      "sha256": "764d431cbed708a8747acd9b2d2baafeb78a6e6170aa5c35f6b1a759d6c83d8d"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v1/focused/record.json": {
+      "bytes": 2094,
+      "sha256": "e166d630e9769c8f870fa32c07e2e97bf9c3acdb0df3327ac6cf4ffa04d81eb1"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v2/focused/driver.py": {
+      "bytes": 847,
+      "sha256": "7b32a1c2f736274ab882ab27ed166868426f807f98a06ec0ccbb8a26e05e9424"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v2/focused/output.log": {
+      "bytes": 2170,
+      "sha256": "2044d6a4e40e360b36f226dcf5096a75061224cc48d73f9b9c00111825119e73"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v2/focused/record.json": {
+      "bytes": 2094,
+      "sha256": "8fde9190ceb8b9effd136f279d55bc33a45087e8809543f2344e8973b7438573"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v2/public/output.log": {
+      "bytes": 17165,
+      "sha256": "34ebb9736ebe6067fc1e6a090369939b98763de55057e1466c58c5e11308003a"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/validation_v2/public/record.json": {
+      "bytes": 2035,
+      "sha256": "91395dc9db480e6170e585ce96c787697568a3541c3113255a6719b8f0609042"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/doc_checks_prelaunch.json": {
+      "bytes": 446,
+      "sha256": "83c64077bcbd374d1222de9f582a04c8948a29db07083f7338ba5c5d1d97c2f2"
+    }
+  },
+  "review_copies": {
+    "SOURCE_REVIEW_r1.md": "ee101c5c59ff34dac7605903b318a7dfffbfbc57afd68fbf3728ba1d92092b5a",
+    "LAUNCHER_REVIEW_r1.md": "3b928c46e07ef211dcb008438d5675af037057ff9766573c3c1265557a4d24b0"
+  },
+  "prior_failed_validation": "root/validation_v1/focused retained:136 tests,1 fixture error; corrected receipt_env fixture, no runtime-source change",
+  "authorization": "D-2026-11-05-3; user_authorization.json bound above; final execution approval binds upcoming clean commit",
+  "skip_max_s": 0.15,
+  "compute_threads": 1,
+  "measurement_status": "NOT_RUN",
+  "live_verified": false,
+  "limits": [
+    "step M20",
+    "owned-session R2_N27",
+    "handler-swap/receipt windows",
+    "between-member budgets",
+    "sampled ownership/RSS",
+    "old two lost external files",
+    "stale execute docstring retained; no runtime effect"
+  ],
+  "documentation_checks": {
+    "public_docs": "PASS",
+    "experiment_index": {
+      "ran": 9,
+      "status": "OK",
+      "seconds": 0.166
+    },
+    "git_diff_check": "PASS",
+    "initial_index_failure": {
+      "status": "FAIL",
+      "reason": "nested execution directory is not an index unit; removed redundant Members item, kept explicit Lineage entry and existing top-level evidence member",
+      "raw_log": "NOT_RECORDED; tool output and corrected check documented in WORKLOG"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+ "analysis_repro_byte_equal": true,
+ "artifacts": {
+  "probe0_write_test.txt": "5e70d542eb08dcdeef053f72c8a5a742ee5a8ab4e898073888caae7d8351c00c",
+  "probe1a_ledgers.json": "636cec7d27eebbbad2c5644778064184ac3ac0ba1da8b351b8ffb623585473b1",
+  "probe1a_ledgers.py": "a271c5e84c484b6b006cad3e9b457622f92ada46afa4561e6ca8247f2158ad47",
+  "probe1b_receipts.json": "6b2614632719cb685ab10ab3e2c5c6441c3da4ad9f115990ad0d19f06f0deca2",
+  "probe1b_receipts.py": "86ee0312a4c0f87ac0f6a57018f95ebe3e856309c74774f9c85721d856cab819",
+  "probe1c_source.json": "0e595658a1b328d65aac289f5ddda3811ce6cd76803b3b43035693617a282bb5",
+  "probe1c_source.py": "4fa9aee766284a2d647edc31f849175cc8899656bfcc945a4ad75f64706edc74",
+  "probe2_stats.json": "b9c6bbc37821db7f272ccf6f7ca757200fc997c82ae92bfbb29149de73dce0ed",
+  "probe2_stats.py": "1e7e4e7948a90bf28d606d60dc497d2d3db1984cf8827b9172d11974b21197fe",
+  "repro_analysis.json": "ea315727e707107d92258d1f297245860ac660e8fc251745c6f647b2093f0853",
+  "repro_analysis.log": "01f92c19d52017c9fa02918b4ac1b25d7b64ee1fb17c5f4bcb4e0516b267a4ba"
+ },
+ "date": "2026-11-05",
+ "measured_commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+ "not_performed": [
+  "checkpoint file re-hash (tool permission refused a command naming the .pth path; relied on preflight and receipts)",
+  "tests/test_actionhold_hook.py and tests/test_actionhold_identity.py not executed",
+  "kernel log not re-read; host fields from run records plus current boot_id only",
+  "GPU exclusivity during run not independently observable",
+  "GR-0 S00 reference provenance not re-audited beyond receipts and ledger hashes",
+  "70-bar camonly-path identity versus GR-0 not tested by G7"
+ ],
+ "readings_verified": {
+  "k1d1": "TOLERANT delta 1.5137 pp CI 0.537 to 2.515",
+  "k2d0": "INCONCLUSIVE delta 2.001953125 pp (82 extra crashes of 4096; TOLERANT needs at most 81) CI 0.977 to 3.027",
+  "k4d0": "HARMFUL delta 10.4736 pp CI 9.229 to 11.743"
+ },
+ "reviewer": "Claude Opus 5.5 (claude-opus-5-5), fresh context, read-only"
+}

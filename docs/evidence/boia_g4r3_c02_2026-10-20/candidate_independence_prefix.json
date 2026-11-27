@@ -1,0 +1,576 @@
+{
+  "phase": "PRE_FIX_EXPECTED_FAILURE",
+  "archived_safety_sha256": "0041a40ddb599c400c2e5d0ac7c7a0517d6ffbefa8a7f019c1905a6ab6c883f8",
+  "status_encoding": {
+    "MODEL_SAFE": 0,
+    "MODEL_UNSAFE": 1,
+    "UNKNOWN": 2,
+    "INVALID": 3
+  },
+  "cases": {
+    "A": {
+      "shape": [
+        1,
+        20
+      ],
+      "status": [
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "expected_status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3
+        ]
+      ],
+      "required_membership_pass": false,
+      "observed_healthy_counts": [
+        0
+      ],
+      "expected_healthy_counts": [
+        19
+      ]
+    },
+    "B": {
+      "shape": [
+        3,
+        20
+      ],
+      "status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "expected_status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "required_membership_pass": false,
+      "observed_healthy_counts": [
+        20,
+        0,
+        0
+      ],
+      "expected_healthy_counts": [
+        20,
+        19,
+        18
+      ]
+    },
+    "C": {
+      "shape": [
+        1,
+        20
+      ],
+      "status": [
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "expected_status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "required_membership_pass": false,
+      "observed_healthy_counts": [
+        0
+      ],
+      "expected_healthy_counts": [
+        19
+      ]
+    },
+    "D": {
+      "shape": [
+        1,
+        20
+      ],
+      "status": [
+        [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ]
+      ],
+      "expected_status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "required_membership_pass": false,
+      "observed_healthy_counts": [
+        0
+      ],
+      "expected_healthy_counts": [
+        19
+      ]
+    },
+    "E": {
+      "shape": [
+        3,
+        20
+      ],
+      "status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ],
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "expected_status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "required_membership_pass": false,
+      "observed_healthy_counts": [
+        20,
+        0,
+        0
+      ],
+      "expected_healthy_counts": [
+        20,
+        19,
+        18
+      ],
+      "status_permutation_invariance_alone": true,
+      "interpretation": "Pure permutation is invariant, but healthy membership is poisoned; not evidence of a permutation-only defect."
+    },
+    "F": {
+      "shape": [
+        1,
+        20
+      ],
+      "status": [
+        [
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3,
+          3
+        ]
+      ],
+      "expected_status": [
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          3
+        ]
+      ],
+      "required_membership_pass": false,
+      "observed_healthy_counts": [
+        0
+      ],
+      "expected_healthy_counts": [
+        19
+      ],
+      "healthy_single_status": 0,
+      "same_candidate_batch_status": 3,
+      "single_vs_batch_exact": {
+        "status": false,
+        "prefix_ok": false,
+        "backup_ok": false,
+        "legacy_hard_ok": false,
+        "legacy_stop_ok": false,
+        "prefix_min_clearance_m": false,
+        "backup_min_clearance_m": false,
+        "backup_distance_m": false
+      }
+    }
+  }
+}

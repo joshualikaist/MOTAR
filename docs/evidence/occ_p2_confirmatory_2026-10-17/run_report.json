@@ -1,0 +1,909 @@
+{
+  "cells": {
+    "moving/A3/E2_obstacle_aware__115bars__seed4301": {
+      "free_disk_gb_after": 20.59511808,
+      "issues": [],
+      "output_bytes": 11223136,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 878,
+      "seconds": 80.26997727999697
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4302": {
+      "free_disk_gb_after": 20.447461376,
+      "issues": [],
+      "output_bytes": 29900675,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 2201,
+      "seconds": 184.6300581250107
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4303": {
+      "free_disk_gb_after": 20.366782464,
+      "issues": [],
+      "output_bytes": 11722639,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 913,
+      "seconds": 82.3062897429918
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4304": {
+      "free_disk_gb_after": 20.285227008,
+      "issues": [],
+      "output_bytes": 12417934,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 970,
+      "seconds": 86.32074218301568
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4305": {
+      "free_disk_gb_after": 20.204363776,
+      "issues": [],
+      "output_bytes": 10838894,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 836,
+      "seconds": 78.29092334298184
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4306": {
+      "free_disk_gb_after": 20.084240384,
+      "issues": [],
+      "output_bytes": 12470139,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 976,
+      "seconds": 88.32348828797694
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4307": {
+      "free_disk_gb_after": 19.989639168,
+      "issues": [],
+      "output_bytes": 22088923,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1660,
+      "seconds": 142.53012374596437
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4308": {
+      "free_disk_gb_after": 19.863076864,
+      "issues": [],
+      "output_bytes": 11667122,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 897,
+      "seconds": 84.31448341300711
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4309": {
+      "free_disk_gb_after": 19.777581056,
+      "issues": [],
+      "output_bytes": 14150694,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1077,
+      "seconds": 96.37190958496649
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4310": {
+      "free_disk_gb_after": 19.6622336,
+      "issues": [],
+      "output_bytes": 10519244,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 809,
+      "seconds": 76.28935254499083
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4311": {
+      "free_disk_gb_after": 19.562504192,
+      "issues": [],
+      "output_bytes": 10210248,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 805,
+      "seconds": 74.26121870696079
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4312": {
+      "free_disk_gb_after": 19.454676992,
+      "issues": [],
+      "output_bytes": 10915255,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 844,
+      "seconds": 76.28895761503372
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4313": {
+      "free_disk_gb_after": 19.370143744,
+      "issues": [],
+      "output_bytes": 9862407,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 798,
+      "seconds": 68.25836119899759
+    },
+    "moving/A3/E2_obstacle_aware__115bars__seed4314": {
+      "free_disk_gb_after": 19.290935296,
+      "issues": [],
+      "output_bytes": 12498120,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 962,
+      "seconds": 82.30886596499477
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4301": {
+      "free_disk_gb_after": 20.568911872,
+      "issues": [],
+      "output_bytes": 16964265,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1156,
+      "seconds": 110.36220722598955
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4302": {
+      "free_disk_gb_after": 20.4254208,
+      "issues": [],
+      "output_bytes": 14018889,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 962,
+      "seconds": 94.35141521703918
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4303": {
+      "free_disk_gb_after": 20.347375616,
+      "issues": [],
+      "output_bytes": 11076498,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 775,
+      "seconds": 76.29035548499087
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4304": {
+      "free_disk_gb_after": 20.262039552,
+      "issues": [],
+      "output_bytes": 14539437,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 995,
+      "seconds": 96.35610019299202
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4305": {
+      "free_disk_gb_after": 20.17941504,
+      "issues": [],
+      "output_bytes": 16483907,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1111,
+      "seconds": 110.41321603197139
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4306": {
+      "free_disk_gb_after": 20.060463104,
+      "issues": [],
+      "output_bytes": 15472749,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1048,
+      "seconds": 102.38256761699449
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4307": {
+      "free_disk_gb_after": 19.936858112,
+      "issues": [],
+      "output_bytes": 12297906,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 862,
+      "seconds": 86.32080631400459
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4308": {
+      "free_disk_gb_after": 19.841462272,
+      "issues": [],
+      "output_bytes": 13319563,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 912,
+      "seconds": 92.35026544198627
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4309": {
+      "free_disk_gb_after": 19.73557248,
+      "issues": [],
+      "output_bytes": 33168540,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 2204,
+      "seconds": 204.7831975480076
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4310": {
+      "free_disk_gb_after": 19.640205312,
+      "issues": [],
+      "output_bytes": 13282304,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 920,
+      "seconds": 90.34541214699857
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4311": {
+      "free_disk_gb_after": 19.541286912,
+      "issues": [],
+      "output_bytes": 12806551,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 879,
+      "seconds": 88.32413937803358
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4312": {
+      "free_disk_gb_after": 19.424161792,
+      "issues": [],
+      "output_bytes": 20686833,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1391,
+      "seconds": 128.48752711899579
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4313": {
+      "free_disk_gb_after": 19.347849216,
+      "issues": [],
+      "output_bytes": 13716429,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 938,
+      "seconds": 88.34008589299629
+    },
+    "moving/A3/E2_obstacle_aware__160bars__seed4314": {
+      "free_disk_gb_after": 19.254628352,
+      "issues": [],
+      "output_bytes": 25642949,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1715,
+      "seconds": 154.58297049201792
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4301": {
+      "free_disk_gb_after": 20.499791872,
+      "issues": [],
+      "output_bytes": 13851936,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 869,
+      "seconds": 94.32068233797327
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4302": {
+      "free_disk_gb_after": 20.40131584,
+      "issues": [],
+      "output_bytes": 14128928,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 891,
+      "seconds": 94.35112294799183
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4303": {
+      "free_disk_gb_after": 20.32205824,
+      "issues": [],
+      "output_bytes": 15480034,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 953,
+      "seconds": 102.38310281501617
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4304": {
+      "free_disk_gb_after": 20.23921664,
+      "issues": [],
+      "output_bytes": 13121925,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 831,
+      "seconds": 90.33354096795665
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4305": {
+      "free_disk_gb_after": 20.126703616,
+      "issues": [],
+      "output_bytes": 15800501,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 995,
+      "seconds": 106.40242765599396
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4306": {
+      "free_disk_gb_after": 20.037419008,
+      "issues": [],
+      "output_bytes": 13623047,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 866,
+      "seconds": 94.35248895495897
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4307": {
+      "free_disk_gb_after": 19.897790464,
+      "issues": [],
+      "output_bytes": 17329661,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1084,
+      "seconds": 112.41955370694632
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4308": {
+      "free_disk_gb_after": 19.816947712,
+      "issues": [],
+      "output_bytes": 14754653,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 917,
+      "seconds": 98.38512049498968
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4309": {
+      "free_disk_gb_after": 19.698614272,
+      "issues": [],
+      "output_bytes": 27746791,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1686,
+      "seconds": 174.66597287298646
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4310": {
+      "free_disk_gb_after": 19.596906496,
+      "issues": [],
+      "output_bytes": 33956714,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 2053,
+      "seconds": 206.80649938504212
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4311": {
+      "free_disk_gb_after": 19.487555584,
+      "issues": [],
+      "output_bytes": 17595201,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1091,
+      "seconds": 112.43131260800874
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4312": {
+      "free_disk_gb_after": 19.399626752,
+      "issues": [],
+      "output_bytes": 15074057,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 936,
+      "seconds": 94.36338146700291
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4313": {
+      "free_disk_gb_after": 19.322544128,
+      "issues": [],
+      "output_bytes": 13886001,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 877,
+      "seconds": 88.32477280701278
+    },
+    "moving/A3/E2_obstacle_aware__205bars__seed4314": {
+      "free_disk_gb_after": 19.226587136,
+      "issues": [],
+      "output_bytes": 17265614,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1075,
+      "seconds": 108.40613021998433
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4301": {
+      "free_disk_gb_after": 20.613689344,
+      "issues": [],
+      "output_bytes": 7858639,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 735,
+      "seconds": 62.20889716496458
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4302": {
+      "free_disk_gb_after": 20.484706304,
+      "issues": [],
+      "output_bytes": 8553707,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 795,
+      "seconds": 70.23949416598771
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4303": {
+      "free_disk_gb_after": 20.38587392,
+      "issues": [],
+      "output_bytes": 9050645,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 825,
+      "seconds": 70.25873947597574
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4304": {
+      "free_disk_gb_after": 20.305334272,
+      "issues": [],
+      "output_bytes": 10137598,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 924,
+      "seconds": 78.29128746897914
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4305": {
+      "free_disk_gb_after": 20.223963136,
+      "issues": [],
+      "output_bytes": 8849408,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 822,
+      "seconds": 70.2692807400017
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4306": {
+      "free_disk_gb_after": 20.105650176,
+      "issues": [],
+      "output_bytes": 10301330,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 935,
+      "seconds": 78.30041636101669
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4307": {
+      "free_disk_gb_after": 20.020539392,
+      "issues": [],
+      "output_bytes": 10574602,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 936,
+      "seconds": 80.29967531102011
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4308": {
+      "free_disk_gb_after": 19.88202496,
+      "issues": [],
+      "output_bytes": 8503111,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 775,
+      "seconds": 66.25601873896085
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4309": {
+      "free_disk_gb_after": 19.800223744,
+      "issues": [],
+      "output_bytes": 9875601,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 890,
+      "seconds": 74.27909529703902
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4310": {
+      "free_disk_gb_after": 19.680141312,
+      "issues": [],
+      "output_bytes": 10846950,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 970,
+      "seconds": 80.30721980100498
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4311": {
+      "free_disk_gb_after": 19.580633088,
+      "issues": [],
+      "output_bytes": 9007862,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 817,
+      "seconds": 70.25740173802478
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4312": {
+      "free_disk_gb_after": 19.472900096,
+      "issues": [],
+      "output_bytes": 8186925,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 756,
+      "seconds": 64.24724970001262
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4313": {
+      "free_disk_gb_after": 19.383263232,
+      "issues": [],
+      "output_bytes": 10020530,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 906,
+      "seconds": 72.27668945799815
+    },
+    "moving/A3/E2_obstacle_aware__70bars__seed4314": {
+      "free_disk_gb_after": 19.306348544,
+      "issues": [],
+      "output_bytes": 9641171,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 880,
+      "seconds": 70.2678491009865
+    },
+    "static/A1/E0_static__115bars__seed4301": {
+      "free_disk_gb_after": 20.606414848,
+      "issues": [],
+      "output_bytes": 7201652,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 642,
+      "seconds": 52.17011030699359
+    },
+    "static/A1/E0_static__115bars__seed4302": {
+      "free_disk_gb_after": 20.477427712,
+      "issues": [],
+      "output_bytes": 7253175,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 644,
+      "seconds": 52.1729278130224
+    },
+    "static/A1/E0_static__115bars__seed4303": {
+      "free_disk_gb_after": 20.37856256,
+      "issues": [],
+      "output_bytes": 7276703,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 640,
+      "seconds": 52.19705802900717
+    },
+    "static/A1/E0_static__115bars__seed4304": {
+      "free_disk_gb_after": 20.297658368,
+      "issues": [],
+      "output_bytes": 7621959,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 664,
+      "seconds": 56.20797966100508
+    },
+    "static/A1/E0_static__115bars__seed4305": {
+      "free_disk_gb_after": 20.215263232,
+      "issues": [],
+      "output_bytes": 8655804,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 758,
+      "seconds": 60.22449598298408
+    },
+    "static/A1/E0_static__115bars__seed4306": {
+      "free_disk_gb_after": 20.096765952,
+      "issues": [],
+      "output_bytes": 8838310,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 764,
+      "seconds": 60.236765946028754
+    },
+    "static/A1/E0_static__115bars__seed4307": {
+      "free_disk_gb_after": 20.011819008,
+      "issues": [],
+      "output_bytes": 8673556,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 759,
+      "seconds": 60.230722401989624
+    },
+    "static/A1/E0_static__115bars__seed4308": {
+      "free_disk_gb_after": 19.87483648,
+      "issues": [],
+      "output_bytes": 7166724,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 646,
+      "seconds": 54.20677149400581
+    },
+    "static/A1/E0_static__115bars__seed4309": {
+      "free_disk_gb_after": 19.79183104,
+      "issues": [],
+      "output_bytes": 8343966,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 736,
+      "seconds": 58.22136634105118
+    },
+    "static/A1/E0_static__115bars__seed4310": {
+      "free_disk_gb_after": 19.672817664,
+      "issues": [],
+      "output_bytes": 7268355,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 639,
+      "seconds": 54.20940436201636
+    },
+    "static/A1/E0_static__115bars__seed4311": {
+      "free_disk_gb_after": 19.572781056,
+      "issues": [],
+      "output_bytes": 7803946,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 684,
+      "seconds": 56.206961355987005
+    },
+    "static/A1/E0_static__115bars__seed4312": {
+      "free_disk_gb_after": 19.465637888,
+      "issues": [],
+      "output_bytes": 7231332,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 643,
+      "seconds": 52.196749463968445
+    },
+    "static/A1/E0_static__115bars__seed4313": {
+      "free_disk_gb_after": 19.375845376,
+      "issues": [],
+      "output_bytes": 7380555,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 642,
+      "seconds": 50.18897720897803
+    },
+    "static/A1/E0_static__115bars__seed4314": {
+      "free_disk_gb_after": 19.299033088,
+      "issues": [],
+      "output_bytes": 7280529,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 644,
+      "seconds": 52.20157274702797
+    },
+    "static/A1/E0_static__160bars__seed4301": {
+      "free_disk_gb_after": 20.585971712,
+      "issues": [],
+      "output_bytes": 9102327,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 711,
+      "seconds": 60.19944726797985
+    },
+    "static/A1/E0_static__160bars__seed4302": {
+      "free_disk_gb_after": 20.438966272,
+      "issues": [],
+      "output_bytes": 8444942,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 652,
+      "seconds": 58.21655512298457
+    },
+    "static/A1/E0_static__160bars__seed4303": {
+      "free_disk_gb_after": 20.358504448,
+      "issues": [],
+      "output_bytes": 8210666,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 651,
+      "seconds": 56.2058118719724
+    },
+    "static/A1/E0_static__160bars__seed4304": {
+      "free_disk_gb_after": 20.276641792,
+      "issues": [],
+      "output_bytes": 8551676,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 666,
+      "seconds": 58.2201404949883
+    },
+    "static/A1/E0_static__160bars__seed4305": {
+      "free_disk_gb_after": 20.195971072,
+      "issues": [],
+      "output_bytes": 8331250,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 647,
+      "seconds": 58.22213156404905
+    },
+    "static/A1/E0_static__160bars__seed4306": {
+      "free_disk_gb_after": 20.076003328,
+      "issues": [],
+      "output_bytes": 8174206,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 647,
+      "seconds": 56.20972065103706
+    },
+    "static/A1/E0_static__160bars__seed4307": {
+      "free_disk_gb_after": 19.980484608,
+      "issues": [],
+      "output_bytes": 9118594,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 722,
+      "seconds": 62.237508170015644
+    },
+    "static/A1/E0_static__160bars__seed4308": {
+      "free_disk_gb_after": 19.854864384,
+      "issues": [],
+      "output_bytes": 8158612,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 642,
+      "seconds": 58.21798084699549
+    },
+    "static/A1/E0_static__160bars__seed4309": {
+      "free_disk_gb_after": 19.768836096,
+      "issues": [],
+      "output_bytes": 8717777,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 694,
+      "seconds": 60.233660397992935
+    },
+    "static/A1/E0_static__160bars__seed4310": {
+      "free_disk_gb_after": 19.653558272,
+      "issues": [],
+      "output_bytes": 8631784,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 667,
+      "seconds": 58.22618239099393
+    },
+    "static/A1/E0_static__160bars__seed4311": {
+      "free_disk_gb_after": 19.554156544,
+      "issues": [],
+      "output_bytes": 8307803,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 647,
+      "seconds": 56.20752298895968
+    },
+    "static/A1/E0_static__160bars__seed4312": {
+      "free_disk_gb_after": 19.444903936,
+      "issues": [],
+      "output_bytes": 9730345,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 766,
+      "seconds": 62.234863680030685
+    },
+    "static/A1/E0_static__160bars__seed4313": {
+      "free_disk_gb_after": 19.361619968,
+      "issues": [],
+      "output_bytes": 8478647,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 652,
+      "seconds": 56.21278572297888
+    },
+    "static/A1/E0_static__160bars__seed4314": {
+      "free_disk_gb_after": 19.280891904,
+      "issues": [],
+      "output_bytes": 9777021,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 771,
+      "seconds": 60.233462770003825
+    },
+    "static/A1/E0_static__205bars__seed4301": {
+      "free_disk_gb_after": 20.559433728,
+      "issues": [],
+      "output_bytes": 9405935,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 679,
+      "seconds": 64.2126683749957
+    },
+    "static/A1/E0_static__205bars__seed4302": {
+      "free_disk_gb_after": 20.415565824,
+      "issues": [],
+      "output_bytes": 9737320,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 700,
+      "seconds": 64.23333534196718
+    },
+    "static/A1/E0_static__205bars__seed4303": {
+      "free_disk_gb_after": 20.337627136,
+      "issues": [],
+      "output_bytes": 9697521,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 681,
+      "seconds": 62.231636201031506
+    },
+    "static/A1/E0_static__205bars__seed4304": {
+      "free_disk_gb_after": 20.252409856,
+      "issues": [],
+      "output_bytes": 9577724,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 689,
+      "seconds": 64.24137596302899
+    },
+    "static/A1/E0_static__205bars__seed4305": {
+      "free_disk_gb_after": 20.142583808,
+      "issues": [],
+      "output_bytes": 36727358,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 2487,
+      "seconds": 204.77774691197556
+    },
+    "static/A1/E0_static__205bars__seed4306": {
+      "free_disk_gb_after": 20.051095552,
+      "issues": [],
+      "output_bytes": 9309756,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 663,
+      "seconds": 64.23794506001286
+    },
+    "static/A1/E0_static__205bars__seed4307": {
+      "free_disk_gb_after": 19.915194368,
+      "issues": [],
+      "output_bytes": 21558894,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1469,
+      "seconds": 126.58039522904437
+    },
+    "static/A1/E0_static__205bars__seed4308": {
+      "free_disk_gb_after": 19.831771136,
+      "issues": [],
+      "output_bytes": 9657778,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 688,
+      "seconds": 66.25675764703192
+    },
+    "static/A1/E0_static__205bars__seed4309": {
+      "free_disk_gb_after": 19.726430208,
+      "issues": [],
+      "output_bytes": 9073564,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 657,
+      "seconds": 60.2330001819646
+    },
+    "static/A1/E0_static__205bars__seed4310": {
+      "free_disk_gb_after": 19.630956544,
+      "issues": [],
+      "output_bytes": 9210838,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 655,
+      "seconds": 60.23645510803908
+    },
+    "static/A1/E0_static__205bars__seed4311": {
+      "free_disk_gb_after": 19.505201152,
+      "issues": [],
+      "output_bytes": 35965502,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 2445,
+      "seconds": 196.7221006610198
+    },
+    "static/A1/E0_static__205bars__seed4312": {
+      "free_disk_gb_after": 19.414757376,
+      "issues": [],
+      "output_bytes": 9412356,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 676,
+      "seconds": 60.22171095001977
+    },
+    "static/A1/E0_static__205bars__seed4313": {
+      "free_disk_gb_after": 19.336486912,
+      "issues": [],
+      "output_bytes": 11322688,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 797,
+      "seconds": 68.26444788399385
+    },
+    "static/A1/E0_static__205bars__seed4314": {
+      "free_disk_gb_after": 19.244290048,
+      "issues": [],
+      "output_bytes": 10023378,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 711,
+      "seconds": 62.23900470597437
+    },
+    "static/A1/E0_static__70bars__seed4301": {
+      "free_disk_gb_after": 20.621651968,
+      "issues": [],
+      "output_bytes": 6168758,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 640,
+      "seconds": 50.167336223006714
+    },
+    "static/A1/E0_static__70bars__seed4302": {
+      "free_disk_gb_after": 20.493328384,
+      "issues": [],
+      "output_bytes": 6424795,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 640,
+      "seconds": 52.17501472798176
+    },
+    "static/A1/E0_static__70bars__seed4303": {
+      "free_disk_gb_after": 20.395008,
+      "issues": [],
+      "output_bytes": 6248435,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 639,
+      "seconds": 50.1908565890044
+    },
+    "static/A1/E0_static__70bars__seed4304": {
+      "free_disk_gb_after": 20.315500544,
+      "issues": [],
+      "output_bytes": 6498879,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 641,
+      "seconds": 52.197526609990746
+    },
+    "static/A1/E0_static__70bars__seed4305": {
+      "free_disk_gb_after": 20.232892416,
+      "issues": [],
+      "output_bytes": 6289839,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 640,
+      "seconds": 50.190927543037105
+    },
+    "static/A1/E0_static__70bars__seed4306": {
+      "free_disk_gb_after": 20.116000768,
+      "issues": [],
+      "output_bytes": 10647304,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 1025,
+      "seconds": 74.2807025120128
+    },
+    "static/A1/E0_static__70bars__seed4307": {
+      "free_disk_gb_after": 20.03120128,
+      "issues": [],
+      "output_bytes": 6181466,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 640,
+      "seconds": 50.19595449703047
+    },
+    "static/A1/E0_static__70bars__seed4308": {
+      "free_disk_gb_after": 19.890597888,
+      "issues": [],
+      "output_bytes": 7133880,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 722,
+      "seconds": 54.20613770495402
+    },
+    "static/A1/E0_static__70bars__seed4309": {
+      "free_disk_gb_after": 19.81016064,
+      "issues": [],
+      "output_bytes": 6752230,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 658,
+      "seconds": 52.19652073999168
+    },
+    "static/A1/E0_static__70bars__seed4310": {
+      "free_disk_gb_after": 19.691044864,
+      "issues": [],
+      "output_bytes": 7525417,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 761,
+      "seconds": 56.21755890600616
+    },
+    "static/A1/E0_static__70bars__seed4311": {
+      "free_disk_gb_after": 19.589726208,
+      "issues": [],
+      "output_bytes": 7147192,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 730,
+      "seconds": 54.19872319698334
+    },
+    "static/A1/E0_static__70bars__seed4312": {
+      "free_disk_gb_after": 19.481141248,
+      "issues": [],
+      "output_bytes": 6375247,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 640,
+      "seconds": 50.18647301598685
+    },
+    "static/A1/E0_static__70bars__seed4313": {
+      "free_disk_gb_after": 19.3933312,
+      "issues": [],
+      "output_bytes": 6268457,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 645,
+      "seconds": 48.18330353102647
+    },
+    "static/A1/E0_static__70bars__seed4314": {
+      "free_disk_gb_after": 19.316043776,
+      "issues": [],
+      "output_bytes": 6468773,
+      "pilot_scene_overlap": [],
+      "scene_hashes": 639,
+      "seconds": 48.17864847101737
+    }
+  },
+  "checkpoint_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "code_and_worklog_frozen": true,
+  "finished_at": "2026-10-17T08:49:13.387063+00:00",
+  "free_disk_gb_after": 19.226587136,
+  "run_id": "OCC-P2",
+  "source_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "stop_reason": null,
+  "verdict": "COMPLETE",
+  "wall_hours": 2.4926960110841576
+}

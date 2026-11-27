@@ -1,0 +1,21 @@
+test_arc_first_clear_offset_uses_independent_line_distance_fixture (test_boia_candidates_safety.CandidateTest) ... ok
+test_arc_no_clear_path_returns_zero_offsets_with_false_diagnostics (test_boia_candidates_safety.CandidateTest) ... ok
+test_coincident_active_belief_is_finite_and_explicitly_abstains (test_boia_candidates_safety.CandidateTest) ... ok
+test_inactive_nan_belief_uses_velocity_then_yaw_without_virtual_goal (test_boia_candidates_safety.CandidateTest) ... ok
+test_inputs_are_not_mutated_and_global_rng_is_unchanged (test_boia_candidates_safety.CandidateTest) ... ok
+test_invalid_f_is_rejected_instead_of_silently_clipped (test_boia_candidates_safety.CandidateTest) ... ok
+test_lattice_speeds_bearings_and_frame_rotation_independently (test_boia_candidates_safety.CandidateTest) ... ok
+test_twenty_families_and_exact_policy_f_preservation (test_boia_candidates_safety.CandidateTest) ... ok
+test_narrow_gap_accepts_low_speed_but_rejects_latency_margin_at_high_speed (test_boia_candidates_safety.SafetyTest) ... ok
+test_public_shapes_multiple_candidates_horizons_and_cpu_purity (test_boia_candidates_safety.SafetyTest) ... ok
+test_static_pure_import_and_distance_contract (test_boia_candidates_safety.SafetyTest) ... ok
+test_stop_is_exact_segment_not_endpoint_test (test_boia_candidates_safety.SafetyTest) ... ok
+test_stop_two_mps_point_eight_ahead_rejected_and_reaction_added_once (test_boia_candidates_safety.SafetyTest) ... ok
+test_swept_crossing_rejected_even_when_substep_endpoints_are_clear (test_boia_candidates_safety.SafetyTest) ... ok
+test_unknown_blocks_even_when_visibility_ablation_is_off (test_boia_candidates_safety.SafetyTest) ... ok
+test_zero_velocity_empty_scan_and_invalid_points_are_well_defined (test_boia_candidates_safety.SafetyTest) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.021s
+
+OK

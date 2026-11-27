@@ -1,0 +1,205 @@
+"""MOTAR side of the PX4 SITL bridge (docs/plans/sitl_validation_plan_v1.md, S3a/S3b). CPU only, no Isaac Gym.
+
+Builds Policy F's observation outside the simulator with MOTAR's own production code, loaded from this tree:
+  - LiDAR 72 x 4: MOTAR's Warp LiDAR kernel through MOTAR-cplanner/cplanner/motar/replay.py (CPU device), against a
+    mesh of the episode's bars and the 0.20 m analytic target sphere; range limits and normalisation as production;
+    sensor at the robot position with the yaw-only attitude production derives from the full quaternion;
+  - RGB-D: the production renderer `NavRLTargetDetector.render_raw_rgbd` (navrl_detector.py), instantiated on the CPU
+    with a stand-in warp env that carries the same merged bar mesh;
+  - perception: the production `NavRLPerceptionModule.observe` (navrl_perception.py), one env per bridge;
+  - policy: the real `NavRLPpoPlayerContinuous` restored from Policy F's checkpoint (tools/navrl_reflection_offline_
+    audit.build_player), deterministic action.
+The package `aerial_gym` is stood in by bare packages whose __path__ points at this tree (the offline audit's pattern),
+so the real module files run unmodified and no simulator can be constructed. Environment: the cell receipt's NAVRL_*
+snapshot is applied before any production import (navrl_perception reads it at module level).
+"""
+from __future__ import annotations
+
+import importlib.util
+import math
+import os
+from pathlib import Path
+import sys
+import types
+
+ROOT = Path(__file__).resolve().parents[1]
+CPLANNER = Path("/home/fair/workspaces/aerial_gym_ws/src/MOTAR-cplanner")
+F_CKPT = ROOT / ("aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/"
+                 "nn/last_gen_ppo_ep_25000_rew_39.742134.pth")
+TRAIN_CONFIG = ROOT / "aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml"
+_STUBS = (("aerial_gym", "aerial_gym"), ("aerial_gym.task", "aerial_gym/task"),
+          ("aerial_gym.task.navrl_task", "aerial_gym/task/navrl_task"), ("aerial_gym.utils", "aerial_gym/utils"),
+          ("aerial_gym.control", "aerial_gym/control"), ("aerial_gym.rl_training", "aerial_gym/rl_training"),
+          ("aerial_gym.rl_training.rl_games", "aerial_gym/rl_training/rl_games"),
+          ("aerial_gym.config", "aerial_gym/config"), ("aerial_gym.config.task_config", "aerial_gym/config/task_config"))
+_LOADED = {}
+
+
+def _load(name, path):
+    spec = importlib.util.spec_from_file_location(name, str(path))
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def setup(env_snapshot):
+    """Apply the NAVRL_* contract, stand in the aerial_gym packages, and import the production modules once."""
+    if _LOADED:
+        return _LOADED
+    for k, v in env_snapshot.items():
+        if k.startswith("NAVRL_"):
+            os.environ[k] = str(v)
+    os.environ["NAVRL_PERCEPTION_PERTURB"] = "0"
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    for name, rel in _STUBS:
+        mod = sys.modules.get(name)
+        if mod is None or not hasattr(mod, "__path__"):
+            mod = types.ModuleType(name)
+            mod.__path__ = [str(ROOT / rel)]
+            sys.modules[name] = mod
+    sys.modules["aerial_gym"].AERIAL_GYM_DIRECTORY = str(ROOT)
+    import torch                                                       # noqa: F401
+    import warp as wp
+    wp.init()
+    _LOADED["perception"] = _load("aerial_gym.task.navrl_task.navrl_perception",
+                                  ROOT / "aerial_gym/task/navrl_task/navrl_perception.py")
+    _LOADED["detector"] = _load("aerial_gym.task.navrl_task.navrl_detector",
+                                ROOT / "aerial_gym/task/navrl_task/navrl_detector.py")
+    _LOADED["governor"] = _load("aerial_gym.task.navrl_task.speed_governor",
+                                ROOT / "aerial_gym/task/navrl_task/speed_governor.py")
+    _LOADED["task_config"] = _load("sitl_bridge_navrl_task_config",
+                                   ROOT / "aerial_gym/config/task_config/navrl_task_config.py").task_config
+    rp = _load("sitl_bridge_cplanner_replay", CPLANNER / "cplanner/motar/replay.py")
+    rp.KERNEL_FILE = ROOT / "aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py"
+    _LOADED["replay"] = rp
+    _LOADED["audit"] = _load("sitl_bridge_offline_audit", ROOT / "tools/navrl_reflection_offline_audit.py")
+    return _LOADED
+
+
+class _WarpEnvStub:
+    def __init__(self, mesh_id):
+        self.CONST_WARP_MESH_ID_LIST = [mesh_id]
+
+
+class Episode:
+    """One env, one episode: a fixed bar layout; call `observe(state)` once per 0.1 s step from the episode's start."""
+
+    def __init__(self, centers, halves, quats, step_dt=0.1):
+        import numpy as np
+        import torch
+        import warp as wp
+        M = _LOADED
+        rp = M["replay"]
+        self.torch = torch
+        self.scene = rp.Scene(np.asarray(centers, np.float64), np.asarray(halves, np.float64), np.asarray(quats, np.float64))
+        tc = M["task_config"]
+        self.tc = tc
+        self.device = torch.device("cpu")
+        # the renderer passes its device to Warp, which takes a device string (production: "cuda:0")
+        self.detector = M["detector"].NavRLTargetDetector(_WarpEnvStub(self.scene.mesh.id), 1, "cpu", tc.vision,
+                                                          step_dt)
+        self.perception = M["perception"].NavRLPerceptionModule(num_envs=1, device=self.device, cfg=tc.perception,
+                                                                step_dt=step_dt, camera_cfg=tc.vision)
+        self.perception.reset_idx(torch.tensor([0]))
+
+    def command(self, action, lidar_m):
+        """The task's action path for one env (navrl_task.py transform_action_to_command, vision mode, riskcap):
+        vehicle-frame velocity = clamp(a[0:2]) * max_velocity, then the sensor speed governor on the raw LiDAR with
+        the perception's target-like returns removed; yaw rate = clamp(a[3]) * yaw_rate_max (yaw cap off).
+        Returns (governed vx, vy in m/s, vehicle frame), yaw rate (rad/s), and prev_action for the next step's
+        observation ([governed vx, vy] / max_velocity, clamp(a_z), clamp(a_yaw)))."""
+        torch = self.torch
+        SG = _LOADED["governor"]
+        if not hasattr(self, "_gov_cfg"):
+            self._gov_cfg = SG.SpeedGovernorConfig.from_environ(os.environ)
+            self._bearings = _LOADED["perception"].lidar_bin_bearings(self.device)
+            if self._gov_cfg.yaw_cap_enabled or self._gov_cfg.lateral_channel_enabled or self._gov_cfg.open_width_enabled:
+                raise RuntimeError("bridge implements the Policy F governor contract only (no yaw cap, lateral, open width)")
+            if self._gov_cfg.mode not in ("riskcap", "off"):
+                raise RuntimeError("bridge implements riskcap or off only, got %s" % self._gov_cfg.mode)
+        a = torch.clamp(torch.as_tensor(action, dtype=torch.float32).reshape(1, -1), -1.0, 1.0)
+        vmax = float(self.tc.max_velocity)
+        cmd_xy = a[:, 0:2] * vmax
+        if self._gov_cfg.mode == "riskcap":
+            scan_m = lidar_m.reshape(1, 4, -1)
+            half = SG.speed_dependent_half_width(self._gov_cfg, cmd_xy.norm(dim=1), open_m=None)
+            clearance = SG.directional_lidar_clearance(scan_m, self._bearings, cmd_xy,
+                                                       max_range_m=float(self.tc.lidar_max_range),
+                                                       path_half_width_m=half,
+                                                       target_return_mask=self.perception.last_target_like)
+            governed, _ = SG.apply_speed_governor(cmd_xy, clearance, self._gov_cfg, lateral_clearance_m=None)
+        else:
+            governed = cmd_xy
+        yaw_rate = a[:, 3] * float(self.tc.yaw_rate_max)
+        prev = torch.cat([(governed / vmax).clamp(-1.0, 1.0), a[:, 2:3], a[:, 3:4]], dim=1)
+        return governed[0], float(yaw_rate[0]), prev[0]
+
+    def lidar_m(self, pos, full_quat, target_pos):
+        rp = _LOADED["replay"]
+        _, sq = rp.sensor_yaw(full_quat)
+        scan = self.scene.scan(pos, sq, target_pos)                         # (4, 72) normalised, < 0.2 m -> -1
+        t = self.torch.from_numpy(scan).clamp(0.0, 1.0) * float(self.tc.lidar_max_range)
+        return t.reshape(1, -1).float()
+
+    def observe(self, s, step_count=None):
+        """s: dict of 1-D float arrays: pos, vel, vquat, fquat, angvel, tpos, tquat (optional), prev_action,
+        bounds_min, bounds_max. step_count: the perception module's global history counter before this call.
+        Optional render_pos / render_vquat / render_fquat: the pose the sensors are rendered from (SITL: the
+        simulator's true pose, as a real sensor measures from the real body), while perception receives pos /
+        vquat (the estimator's pose, as onboard). Without them both are the same (Isaac replay)."""
+        torch = self.torch
+        T = lambda x: torch.as_tensor(x, dtype=torch.float32).reshape(1, -1)          # noqa: E731
+        if step_count is not None:
+            self.perception.step_count = int(step_count)
+        tq = T(s["tquat"]) if s.get("tquat") is not None else None
+        rpos = s.get("render_pos", s["pos"])
+        rvq = s.get("render_vquat", s["vquat"])
+        rfq = s.get("render_fquat", s["fquat"])
+        rgb, depth = self.detector.render_raw_rgbd(T(rpos), T(rvq), T(s["tpos"]), tq)
+        lidar = self.lidar_m(rpos, rfq, s["tpos"])
+        obs, diag = self.perception.observe(
+            rgb=rgb, depth=depth, lidar_m=lidar, drone_pos_w=T(s["pos"]), drone_vel_w=T(s["vel"]),
+            vehicle_quat=T(s["vquat"]), yaw_rate=T(s["angvel"])[:, 2] / float(self.tc.yaw_rate_max),
+            previous_action=T(s["prev_action"]), max_velocity=self.tc.max_velocity,
+            flight_altitude=self.tc.flight_altitude, training=False, env_bounds_min=T(s["bounds_min"]),
+            env_bounds_max=T(s["bounds_max"]))
+        return obs, diag, lidar
+
+
+class Policy:
+    """Policy F on the CPU: the real player, deterministic action, as navrl_players selects it."""
+
+    def __init__(self, ckpt=F_CKPT):
+        import torch
+        audit = _LOADED["audit"]
+        audit.install_cpu_only_aerial_gym_packages()
+        state = torch.load(str(ckpt), map_location="cpu", weights_only=False)
+        schema = audit.read_checkpoint_schema(state)
+        # The checkpoint's action-distribution contract (NAVRL_ACTION_MU_SCALE, _STD, _POLICY, ...) is read by the
+        # model at construction. Without this export the CPU player ran mu_scale 1 instead of F's 1.0,0.4,1.0,1.0
+        # (S3a on G8 r2: lateral action error 0.388; S3b dev01-dev06 flew that player).
+        self.schema_env = audit.apply_schema_environment(schema)
+        # rl_games' restore calls torch.load without map_location; on a CPU-only process map its storages to the
+        # CPU for the duration of the restore only
+        original_load = torch.load
+
+        def cpu_load(*a, **kw):
+            kw.setdefault("map_location", "cpu")
+            return original_load(*a, **kw)
+        torch.load = cpu_load
+        try:
+            self.player = audit.build_player(ckpt, schema, "cpu", TRAIN_CONFIG)
+        finally:
+            torch.load = original_load
+        self.audit = audit
+        self.schema = schema
+
+    def act(self, obs):
+        return self.audit.deterministic_actions(self.player, obs)
+
+
+def yaw_of(q):
+    x, y, z, w = q
+    return math.atan2(2 * (w * z + x * y), 1 - 2 * (y * y + z * z))

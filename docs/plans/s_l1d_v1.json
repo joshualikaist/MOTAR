@@ -1,0 +1,106 @@
+{
+  "schema": "motar.s-l1d-plan.v1",
+  "created_date_kst": "2026-10-18",
+  "authority": "User message 'MOTAR - Unattended Autonomous S-L1B/C/D Research Execution' (2026-10-18); S-L1D starts only after the recorded S-L1C GO decision",
+  "base_sha": "ffbbaf32296fc183c04e56043dab5948a55b4e67",
+  "switch": {
+    "name": "NAVRL_SENSOR_LINEAGE",
+    "values": {
+      "unset": "legacy",
+      "off": "legacy",
+      "s_l1a_v1": "S-L1A",
+      "s_l1b_v1": "S-L1A+B",
+      "s_l1c_v1": "S-L1A+B+C",
+      "s_l1d_v1": "S-L1A+B+C+D (cumulative)"
+    },
+    "unknown": "fail closed (ValueError)"
+  },
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "references": {
+    "s_l1c_plan": "docs/plans/s_l1c_v1.json",
+    "s_l1c_source": "4d5911d3d2fcbf0a285f395e38428dc39ef67868",
+    "s_l1c_run": "../aerial_gym_simulator/results/s_l1c_v1/SL1C-C01",
+    "s_l1c_run_manifest_sha256": "29448df8e9abd5167db624d117030dbbc90fd56475b509ea1f71f2a53fdf60dc",
+    "e_l0_evaluator": "motar_eval/e_l0.py classify/target_alone_mask/centre_in_frustum (evaluation truth, unchanged)",
+    "eq1d_d2_o1": "EQ1D-R1 D2-O1: 3/23 legacy indicator disagreements (S08 range-vs-FOV, S12 centre-visible partial, S14 rim gap)",
+    "s_l1c_review": "docs/evidence/s_l1c_2026-10-18/REVIEW_ADDENDUM.md (GO-WITH-NOTES)"
+  },
+  "principle": "S-L1D adds an evaluator-facing, sensor-inferable ONLINE validity diagnostic. It never reads evaluator classes, renderer masks, semantic ids or the simulator target pose, and it is not an actor input (898-D schema and values unchanged; s_l1d_v1 closed loop must be bitwise equal to s_l1c_v1). The evaluator keeps the E-L0 GT classes; the two are reported side by side.",
+  "online_state": {
+    "inputs": "delivered depth [N,H,W]; detector visible flag; tracker active, predicted centre (world -> vehicle with the vehicle pose) and its own position covariance; S-L1C update_source and identity_age; declared constants (S-L1B intrinsics/extrinsic, camera target radius 0.15 m, detector far 20 m, min_target_pixels, depth tolerance floor 0.05 m)",
+    "occluded_px": "predicted support pixels whose delivered depth is below the predicted sphere hit depth minus tau",
+    "centre_occluded": "delivered depth at the pixel nearest the predicted centre projection is below that pixel's predicted sphere hit depth minus tau (pixel-quantised proxy of the evaluator's exact centre ray)",
+    "classes": [
+      "NO_TRACK",
+      "DETECTED",
+      "PRED_RANGE_EXIT",
+      "PRED_FOV_EXIT",
+      "PRED_SCALE_LOSS",
+      "OCCLUSION_FULL_EVIDENCE",
+      "OCCLUSION_CENTRE_EVIDENCE",
+      "OCCLUSION_PARTIAL_EVIDENCE",
+      "UNEXPLAINED_LOSS"
+    ],
+    "rules": "NO_TRACK if the track is inactive; DETECTED if the camera reports the target; otherwise, with support = predicted support pixel count: support == 0 and predicted centre range - r >= 20 m -> PRED_RANGE_EXIT; support == 0 and predicted centre outside the frustum -> PRED_FOV_EXIT; support < min_target_pixels -> PRED_SCALE_LOSS (the detector cannot detect fewer pixels whatever the occlusion); occluded_px == support -> OCCLUSION_FULL_EVIDENCE; occluded_px > 0 and centre_occluded -> OCCLUSION_CENTRE_EVIDENCE; occluded_px > 0 -> OCCLUSION_PARTIAL_EVIDENCE; else UNEXPLAINED_LOSS",
+    "measurement_layer": "CAMERA (update_source 1), LIDAR_RANGE_ONLY (2), FUSED_LOSS (0 with an active track)",
+    "identity_layer": "IDENTITY_CONFIRMED if identity_age <= 0.5 s, else IDENTITY_UNCONFIRMED; HISTORY_ONLY = active track with no update this step; EXPIRED = track ended by the unchanged 5 s fused expiry",
+    "reacquisition": "identity-confirmed reacquisition = CAMERA after IDENTITY_UNCONFIRMED; fused-valid return = LIDAR_RANGE_ONLY after FUSED_LOSS; counted separately",
+    "occlusion_tolerance": "tau = 0.05 m + 2 * sqrt(u^T P_pos u): the track's own line-of-sight range uncertainty (u = unit vector camera -> predicted centre); sensor-inferable, not tuned",
+    "predicted_support_px": "pixel-centre rays (S-L1B pinhole table, camera pose = vehicle pose + camera translation) hitting the analytic sphere r = 0.15 m around the predicted centre before the 20 m far plane (the E-L0 target_alone_mask rule applied to the prediction)"
+  },
+  "fixtures": {
+    "sensor": "the 43 S-L1B scenes (32 EQ-1D D2 + 4 S-L1A + 7 S-L1B), scene and target-alone passes, with tracks primed at the true target centre after each pass (fixture input only, camera result as delivered)",
+    "cpu_exact": "analytic oracle cases: clear targets 2-24 m, FOV edge at 40/44/50 deg, scale loss at 12.75-23 m, full occlusion by a near bar, centre-only (centre ray blocked, rim visible), partial (one side blocked), S14-like rim gap, and a primed centre offset by 0.2 m"
+  },
+  "gates": {
+    "D-ORACLE": "production predicted_support_px equals the independent float64 oracle on CPU fixtures and, with the primed true centre, the E-L0 evaluator alone_px on every GPU fixture pass, exactly except for boundary-ambiguous pixels: |support_production - alone| <= n_ambiguous, where n_ambiguous counts pixel rays whose closest approach to the sphere centre is within 1e-6 m of the radius (oracle-computed)",
+    "D-FIXTURES": "Fixture probes prime the track at the true target centre with position covariance 1e-6 I (fixture input only) and use the delivered depth and camera result. For passes where the camera does not detect: evaluator RANGE_EXIT -> PRED_RANGE_EXIT, FOV_EXIT -> PRED_FOV_EXIT, SCALE_LOSS -> PRED_SCALE_LOSS; evaluator FULL, CENTRE_ONLY or PARTIAL with alone_px < min_target_pixels -> PRED_SCALE_LOSS; with alone_px >= min_target_pixels: FULL -> OCCLUSION_FULL_EVIDENCE, CENTRE_ONLY and PARTIAL -> OCCLUSION_CENTRE_EVIDENCE or OCCLUSION_PARTIAL_EVIDENCE, and exactly the evaluator's centre verdict on centre-robust cases (the oracle's exact centre ray and nearest-pixel ray agree). Target-alone passes never produce occlusion evidence; zero support never yields OCCLUSION_FULL_EVIDENCE. Agreement 100% on the preregistered fixture set (CPU oracle cases and GPU passes); occluders within tau of the target surface are reported, not gated",
+    "D-SEPARATION": "the online function reads none of: E-L0 classes, renderer target mask, semantic ids, simulator target pose (AST/data-flow test); evaluator and online labels are both recorded and reported as a confusion matrix in closed loop",
+    "D-REACQ": "closed loop: identity-confirmed reacquisitions and fused-valid returns are counted separately; at each identity-confirmed reacquisition the evaluator (GT) distance between the camera measurement and the true target is reported",
+    "D-REGRESSION": "GPU: off digests = EL0-R1 P2 and s_l1c digests = SL1C-C01 s_l1c_p2; s_l1d_v1 P2 digests bitwise equal to s_l1c_v1 (the diagnostic changes nothing the actor or tracker sees); 14 keys, 600 steps, static 4501 / moving 4502. CPU: off, s_l1a, s_l1b and s_l1c perception bitwise equal to the S-L1C source on identical inputs",
+    "D-EL0": "s_l1d_v1 E-L0 P1 and P2 identical",
+    "D-FIREWALL": "898-D actor unchanged; no GT reaches the actor or the online tracker",
+    "D-INTEGRITY": "checkpoint, RMS, import origins, source SHA, frozen tree, manifests valid; no NaN/Inf",
+    "verdict": "S-L1D QUALIFIED only if all gates above pass"
+  },
+  "run": {
+    "run_id": "SL1D-C01",
+    "output_root": "../aerial_gym_simulator/results/s_l1d_v1",
+    "disk_min_free_gb": 8.0,
+    "output_max_gb": 2.0,
+    "oom_reserve_mib": 512,
+    "poll_s": 5,
+    "total_wall_cap_s": 7200,
+    "process_wall_cap_s": 900,
+    "sensor_modes": [
+      "s_l1c",
+      "s_l1d"
+    ],
+    "sensor_num_envs": 43,
+    "sensor_seed": 4401,
+    "closed_loop_variants": [
+      "off",
+      "s_l1c",
+      "s_l1d_p1",
+      "s_l1d_p2"
+    ],
+    "closed_loop_num_envs": 8,
+    "closed_loop_steps": 600,
+    "closed_loop_density": 160,
+    "closed_loop_seed_by_config": {
+      "static": 4501,
+      "moving": 4502
+    },
+    "no_retry": true
+  },
+  "declared_limits": [
+    "the online state is only as good as the track prediction; closed-loop disagreement with the evaluator is reported, not assumed away",
+    "occluders closer than tau to the target surface are indistinguishable from the target in depth",
+    "occluders beyond the 10 m obstacle far plane are invisible in the obstacle depth; such cases become UNEXPLAINED_LOSS, not FULL"
+  ],
+  "inherited_limitations": [
+    "s_l1c_v1 refuses genuine LiDAR sphere returns below 1.152 m and, for centres between rows, up to 2.295 m (S-L1C review addendum); LIDAR_RANGE_ONLY states are therefore under-counted there",
+    "s_l1b_v1 carve keeps about 82% of target-centre LiDAR returns as obstacles",
+    "GPU attitude passes are identical yaw-only inputs; unique counts are one third of totals"
+  ]
+}

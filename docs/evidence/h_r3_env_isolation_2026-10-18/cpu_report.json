@@ -1,0 +1,131 @@
+{
+  "status": "PASS",
+  "scope": "CPU actual Warp 1.0.0 mesh/refit/ray query; no GPU/historical cause proof",
+  "large_pose_negative_and_fixed": [
+    {
+      "mode": "legacy_audit",
+      "unselected_env0_changed_vertices": 8,
+      "unselected_env0_max_vertex_change_m": 4.247335433959961,
+      "unselected_env0_actual_bvh_ray_y4_m": -1.0,
+      "fresh_root_oracle_ray_y4_m": 4.4524082175064645,
+      "selected_env1_vertex_max_abs_error_float64_m": 0.0,
+      "selected_env1_bvh_ray_m": 7.5,
+      "event": {
+        "mode": "legacy_audit",
+        "env_ids": [
+          1
+        ],
+        "write_vertex_ranges": [
+          [
+            0,
+            16
+          ],
+          [
+            16,
+            24
+          ],
+          [
+            24,
+            29
+          ]
+        ],
+        "refit_env_ids": [
+          1
+        ],
+        "refit_mesh_ids": [
+          1044772544
+        ],
+        "vertices": [
+          {
+            "env": 0,
+            "before_sha256": "0bf2c62d1fde6fa2e53ad13619892943a3ae93da5f73cc3902d9c9c4c9acb1e8",
+            "after_sha256": "58df894ab00060950bc6c2615b5e1dcc4bbf8b5266faffa9016cf95ccdc19d86",
+            "changed_vertices": 8,
+            "max_abs_delta": 4.247335433959961
+          },
+          {
+            "env": 1,
+            "before_sha256": "605cc413fc0a395dac7a6556d327cd0b3e69fa6ccf927554dca7cd5aa6b58bb5",
+            "after_sha256": "6d6d2fae304fea84272168f30bbf814f9cd7b3f1d45f3257b3434fc103cbc73a",
+            "changed_vertices": 8,
+            "max_abs_delta": 2.0
+          },
+          {
+            "env": 2,
+            "before_sha256": "00523a31073a1a31dfca9e47b3e6f72e29d2cb27641affb4154705ba5d231532",
+            "after_sha256": "00523a31073a1a31dfca9e47b3e6f72e29d2cb27641affb4154705ba5d231532",
+            "changed_vertices": 0,
+            "max_abs_delta": 0.0
+          }
+        ],
+        "actor_root_sha256": "908831d84c33a6d26757dc79eb6452520ff95b093081c2cb751abbdbca7245bb"
+      }
+    },
+    {
+      "mode": "selected",
+      "unselected_env0_changed_vertices": 0,
+      "unselected_env0_max_vertex_change_m": 0.0,
+      "unselected_env0_actual_bvh_ray_y4_m": -1.0,
+      "fresh_root_oracle_ray_y4_m": 4.4524082175064645,
+      "selected_env1_vertex_max_abs_error_float64_m": 0.0,
+      "selected_env1_bvh_ray_m": 7.5,
+      "event": {
+        "mode": "selected",
+        "env_ids": [
+          1
+        ],
+        "write_vertex_ranges": [
+          [
+            16,
+            24
+          ]
+        ],
+        "refit_env_ids": [
+          1
+        ],
+        "refit_mesh_ids": [
+          1143260880
+        ],
+        "vertices": [
+          {
+            "env": 0,
+            "before_sha256": "0bf2c62d1fde6fa2e53ad13619892943a3ae93da5f73cc3902d9c9c4c9acb1e8",
+            "after_sha256": "0bf2c62d1fde6fa2e53ad13619892943a3ae93da5f73cc3902d9c9c4c9acb1e8",
+            "changed_vertices": 0,
+            "max_abs_delta": 0.0
+          },
+          {
+            "env": 1,
+            "before_sha256": "605cc413fc0a395dac7a6556d327cd0b3e69fa6ccf927554dca7cd5aa6b58bb5",
+            "after_sha256": "6d6d2fae304fea84272168f30bbf814f9cd7b3f1d45f3257b3434fc103cbc73a",
+            "changed_vertices": 8,
+            "max_abs_delta": 2.0
+          },
+          {
+            "env": 2,
+            "before_sha256": "00523a31073a1a31dfca9e47b3e6f72e29d2cb27641affb4154705ba5d231532",
+            "after_sha256": "00523a31073a1a31dfca9e47b3e6f72e29d2cb27641affb4154705ba5d231532",
+            "changed_vertices": 0,
+            "max_abs_delta": 0.0
+          }
+        ],
+        "actor_root_sha256": "908831d84c33a6d26757dc79eb6452520ff95b093081c2cb751abbdbca7245bb"
+      }
+    }
+  ],
+  "small_quaternion_normalization_legacy_negative": {
+    "unselected_changed_vertices": 8,
+    "max_abs_vertex_change_m": 9.5367431640625e-07,
+    "ray_before_m": [
+      4.4998459815979
+    ],
+    "ray_after_m": [
+      4.499845504760742
+    ],
+    "max_abs_ray_change_m": 4.76837158203125e-07
+  },
+  "se3_1000_random_points_float32_vs_float64_max_abs_m": 6.343943792508355e-07,
+  "se3_1000_random_points_mean_abs_m": 7.442558035928212e-08,
+  "tests": 11,
+  "command": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p test_h_r3_env_isolation.py -v"
+}

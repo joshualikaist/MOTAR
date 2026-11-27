@@ -1,0 +1,519 @@
+{
+ "unit": "G9",
+ "commit": "06383eba74134a594bd38ba933cb5e0512f1d342",
+ "dirty": false,
+ "aerial_gym_origin": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/__init__.py",
+ "host_faults_before": 0,
+ "phys_dt_s": 0.01,
+ "substeps_per_action": 10,
+ "num_envs": 4,
+ "controller": "lee_velocity_control_navrl",
+ "robot": "navrl_quad",
+ "alt_target_m": 1.0,
+ "A3": {
+  "x": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "median_over_envs": {
+     "overshoot_pct": 0.9174227714538574,
+     "settling_5pct_s": 0.8599999999999817,
+     "rise_10_90_s": 0.6199999999999868,
+     "final_mean": 0.9958937561511993,
+     "onset_latency_s": 0.08999999999999808,
+     "envs": 4
+    },
+    "per_env": [
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9071826934814453,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9959046804904937
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9101510047912598,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9958803582191468
+     },
+     {
+      "rise_10_90_s": 0.609999999999987,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9249687194824219,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9958937561511993
+     },
+     {
+      "rise_10_90_s": 0.609999999999987,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9174227714538574,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9958732914924622
+     }
+    ]
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "median_over_envs": {
+     "overshoot_pct": 0.5651632944742913,
+     "settling_5pct_s": 0.8699999999999815,
+     "rise_10_90_s": 0.6199999999999868,
+     "final_mean": 2.4897880077362062,
+     "onset_latency_s": 0.0799999999999983,
+     "envs": 4
+    },
+    "per_env": [
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.0799999999999983,
+      "overshoot_pct": 0.5653222401936775,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 2.4897880077362062
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.0799999999999983,
+      "overshoot_pct": 0.5651632944742913,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 2.4897832012176515
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.0799999999999983,
+      "overshoot_pct": 0.5635420481364006,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 2.4897827911376953
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.0799999999999983,
+      "overshoot_pct": 0.5622545878092522,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 2.489790177345276
+     }
+    ]
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "median_over_envs": {
+     "overshoot_pct": 1.0848264396190688,
+     "settling_5pct_s": 0.8699999999999815,
+     "rise_10_90_s": 0.6199999999999868,
+     "final_mean": 0.0005012560286559165,
+     "onset_latency_s": 0.06999999999999851,
+     "envs": 4
+    },
+    "per_env": [
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.06999999999999851,
+      "overshoot_pct": 1.084159612655644,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 0.0005413499072892591
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.06999999999999851,
+      "overshoot_pct": 1.0848264396190688,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 0.0005012560286559165
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.06999999999999851,
+      "overshoot_pct": 1.085137352347365,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 0.0004494032234651968
+     },
+     {
+      "rise_10_90_s": 0.6199999999999868,
+      "onset_latency_s": 0.06999999999999851,
+      "overshoot_pct": 1.0847251862287521,
+      "settling_5pct_s": 0.8699999999999815,
+      "final_mean": 0.0004197150975232944
+     }
+    ]
+   }
+  ],
+  "y": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "median_over_envs": {
+     "overshoot_pct": 0.9094595909118652,
+     "settling_5pct_s": 0.8599999999999817,
+     "rise_10_90_s": 0.609999999999987,
+     "final_mean": 0.9958023715019226,
+     "onset_latency_s": 0.08999999999999808,
+     "envs": 4
+    },
+    "per_env": [
+     {
+      "rise_10_90_s": 0.609999999999987,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9088277816772461,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9958017468452454
+     },
+     {
+      "rise_10_90_s": 0.609999999999987,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9127140045166016,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9958023715019226
+     },
+     {
+      "rise_10_90_s": 0.609999999999987,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.9094595909118652,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9957831668853759
+     },
+     {
+      "rise_10_90_s": 0.609999999999987,
+      "onset_latency_s": 0.08999999999999808,
+      "overshoot_pct": 0.909113883972168,
+      "settling_5pct_s": 0.8599999999999817,
+      "final_mean": 0.9958178687095642
+     }
+    ]
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "median_over_envs": {
+     "overshoot_pct": 0.5643844604492188,
+     "settling_5pct_s": 0.870000000000136,
+     "rise_10_90_s": 0.6200000000000969,
+     "final_mean": 2.48980233669281,
+     "onset_latency_s": 0.0800000000000125,
+     "envs": 4
+    },
+    "per_env": [
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.0800000000000125,
+      "overshoot_pct": 0.5639553070068359,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 2.48980233669281
+     },
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.0800000000000125,
+      "overshoot_pct": 0.5643844604492188,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 2.4897864294052123
+     },
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.0800000000000125,
+      "overshoot_pct": 0.5652745564778572,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 2.489766082763672
+     },
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.0800000000000125,
+      "overshoot_pct": 0.5637168884277344,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 2.489807014465332
+     }
+    ]
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "median_over_envs": {
+     "overshoot_pct": 1.084319949150081,
+     "settling_5pct_s": 0.870000000000136,
+     "rise_10_90_s": 0.6200000000000969,
+     "final_mean": 0.0004052536576637067,
+     "onset_latency_s": 0.07000000000001094,
+     "envs": 4
+    },
+    "per_env": [
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.07000000000001094,
+      "overshoot_pct": 1.084319949150081,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 0.0005238343414384872
+     },
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.07000000000001094,
+      "overshoot_pct": 1.0841995477676392,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 0.00038768875383539126
+     },
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.07000000000001094,
+      "overshoot_pct": 1.0848771780729294,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 0.00031267224898329004
+     },
+     {
+      "rise_10_90_s": 0.6200000000000969,
+      "onset_latency_s": 0.07000000000001094,
+      "overshoot_pct": 1.084216684103012,
+      "settling_5pct_s": 0.870000000000136,
+      "final_mean": 0.0004052536576637067
+     }
+    ]
+   }
+  ]
+ },
+ "A4": [
+  {
+   "cmd_rad_s": 3.0,
+   "median_over_envs": {
+    "overshoot_pct": 9.377217292785645,
+    "settling_5pct_s": 0.23000000000003595,
+    "rise_10_90_s": 0.1100000000000172,
+    "final_mean": 2.999661946296692,
+    "onset_latency_s": 0.020000000000003126,
+    "envs": 4
+   },
+   "per_env": [
+    {
+     "rise_10_90_s": 0.1100000000000172,
+     "onset_latency_s": 0.020000000000003126,
+     "overshoot_pct": 9.377217292785645,
+     "settling_5pct_s": 0.23000000000003595,
+     "final_mean": 2.999661946296692
+    },
+    {
+     "rise_10_90_s": 0.1100000000000172,
+     "onset_latency_s": 0.020000000000003126,
+     "overshoot_pct": 9.37685171763103,
+     "settling_5pct_s": 0.23000000000003595,
+     "final_mean": 2.9996614408493043
+    },
+    {
+     "rise_10_90_s": 0.1100000000000172,
+     "onset_latency_s": 0.020000000000003126,
+     "overshoot_pct": 9.376613299051929,
+     "settling_5pct_s": 0.23000000000003595,
+     "final_mean": 2.999661364555359
+    },
+    {
+     "rise_10_90_s": 0.1100000000000172,
+     "onset_latency_s": 0.020000000000003126,
+     "overshoot_pct": 9.377646446228027,
+     "settling_5pct_s": 0.23000000000003595,
+     "final_mean": 2.999662232398987
+    }
+   ]
+  },
+  {
+   "cmd_rad_s": -3.0,
+   "median_over_envs": {
+    "overshoot_pct": 9.407885869344067,
+    "settling_5pct_s": 0.22999999999995424,
+    "rise_10_90_s": 0.10999999999997812,
+    "final_mean": -2.9996616363525392,
+    "onset_latency_s": 0.01999999999999602,
+    "envs": 4
+   },
+   "per_env": [
+    {
+     "rise_10_90_s": 0.10999999999997812,
+     "onset_latency_s": 0.01999999999999602,
+     "overshoot_pct": 9.407504399617505,
+     "settling_5pct_s": 0.22999999999995424,
+     "final_mean": -2.9996616363525392
+    },
+    {
+     "rise_10_90_s": 0.10999999999997812,
+     "onset_latency_s": 0.01999999999999602,
+     "overshoot_pct": 9.407154719034839,
+     "settling_5pct_s": 0.22999999999995424,
+     "final_mean": -2.9996617460250854
+    },
+    {
+     "rise_10_90_s": 0.10999999999997812,
+     "onset_latency_s": 0.01999999999999602,
+     "overshoot_pct": 9.407885869344067,
+     "settling_5pct_s": 0.22999999999995424,
+     "final_mean": -2.999661674499512
+    },
+    {
+     "rise_10_90_s": 0.10999999999997812,
+     "onset_latency_s": 0.01999999999999602,
+     "overshoot_pct": 9.408839543660473,
+     "settling_5pct_s": 0.22999999999995424,
+     "final_mean": -2.9996611166000364
+    }
+   ]
+  }
+ ],
+ "A5": {
+  "cmd_body": [
+   2.5,
+   2.5
+  ],
+  "hspeed_last1s_m_s_per_env": [
+   3.5222079253196714,
+   3.52222784280777,
+   3.522235243320465,
+   3.522223560810089
+  ],
+  "tilt_max_deg_per_env": [
+   31.447004318237305,
+   31.44647216796875,
+   31.445945739746094,
+   31.4457950592041
+  ]
+ },
+ "hover_alt_mean_m_per_env": [
+  0.997543941682844,
+  1.000007680992582,
+  1.0068841715950279,
+  1.003179964141466
+ ],
+ "sampling_limit": "Legacy sampling retained: world velocity is refreshed after physics; vehicle orientation and body angular velocity were refreshed before physics. Within-step alignment uncertainty is one physics dt; no exact PX4 latency claim.",
+ "scene_contract": {
+  "NAVRL_MAX_VELOCITY": "2.5",
+  "NAVRL_YAW_RATE_MAX": "3.0",
+  "NAVRL_MAX_TILT_DEG": "45",
+  "NAVRL_ARENA_XY": "40",
+  "NAVRL_ARENA_Z": "3",
+  "NAVRL_NUM_BARS": "1",
+  "NAVRL_MAX_BARS": "1",
+  "NAVRL_BAR_POOL": "bars_h3",
+  "NAVRL_TARGET_DYNAMICS": "legacy",
+  "NAVRL_DISTRACTOR_COUNT": "0"
+ },
+ "actual_obstacle_count": 1,
+ "initial_position_m_per_env": [
+  [
+   5.0,
+   5.0,
+   1.0
+  ],
+  [
+   5.0,
+   5.0,
+   1.0
+  ],
+  [
+   5.0,
+   5.0,
+   1.0
+  ],
+  [
+   5.0,
+   5.0,
+   1.0
+  ]
+ ],
+ "bar_position_m_per_env": [
+  [
+   [
+    38.0,
+    2.0,
+    1.5
+   ]
+  ],
+  [
+   [
+    38.0,
+    2.0,
+    1.5
+   ]
+  ],
+  [
+   [
+    38.0,
+    2.0,
+    1.5
+   ]
+  ],
+  [
+   [
+    38.0,
+    2.0,
+    1.5
+   ]
+  ]
+ ],
+ "final_position_m_per_env": [
+  [
+   23.40563201904297,
+   19.835573196411133,
+   0.9940375089645386
+  ],
+  [
+   23.379589080810547,
+   19.870685577392578,
+   0.9940430521965027
+  ],
+  [
+   23.4502010345459,
+   19.819129943847656,
+   0.9940462112426758
+  ],
+  [
+   23.40239715576172,
+   19.846752166748047,
+   0.9940425753593445
+  ]
+ ],
+ "contact_force_peak_N_per_env": [
+  0.0,
+  0.0,
+  0.0,
+  0.0
+ ],
+ "alt_min_m_per_env": [
+  0.9303721189498901,
+  0.9304193258285522,
+  0.9304476380348206,
+  0.9304118752479553
+ ],
+ "alt_max_m_per_env": [
+  1.1205722093582153,
+  1.1205708980560303,
+  1.1205782890319824,
+  1.1205649375915527
+ ],
+ "whole_run_tilt_max_deg_per_env": [
+  31.447004318237305,
+  31.44647216796875,
+  31.445945739746094,
+  31.4457950592041
+ ],
+ "all_samples_finite": true,
+ "min_bar_dist_xy_m_per_env": [
+  22.689504623413086,
+  22.697500228881836,
+  22.656476974487305,
+  22.687959671020508
+ ],
+ "start_xy_per_env": [
+  [
+   5.0,
+   5.0
+  ],
+  [
+   5.0,
+   5.0
+  ],
+  [
+   5.0,
+   5.0
+  ],
+  [
+   5.0,
+   5.0
+  ]
+ ],
+ "host_faults_after": 0,
+ "source_still_clean": true,
+ "validity": "RECORDED_REVIEW_REQUIRED"
+}

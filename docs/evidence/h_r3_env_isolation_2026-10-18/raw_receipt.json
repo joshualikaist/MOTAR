@@ -1,0 +1,70 @@
+[
+  {
+    "run_id": "ISO-Q01",
+    "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_env_isolation_v1/ISO-Q01",
+    "manifest_sha256": "59861483db04b3bd4af012fa58abd217d475bfd6246cbbcbb0f0d0f240bb907d",
+    "manifest_members": 50,
+    "raw_manifest_verified": "PASS",
+    "source_sha": "d5c91cec21c7e35917409b612957ecfb30f74a84",
+    "status": "STOPPED_INTEGRITY",
+    "stop_reason": "INTEGRITY_EXCEPTION: ValueError: unsafe or duplicate completion output",
+    "gpu_process_seconds": 52.020100285997614,
+    "supervisor_wall_s": 52.15007690398488,
+    "output_bytes": 415066387,
+    "free_disk_gb_after": 17.73586432,
+    "processes": [
+      {
+        "id": "legacy_normal",
+        "returncode": 0,
+        "wall_s": 52.020100285997614,
+        "peak_gpu_mib": 5380
+      }
+    ]
+  },
+  {
+    "run_id": "ISO-Q02",
+    "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_env_isolation_v1/ISO-Q02",
+    "manifest_sha256": "2484270805728b8d160b37fdab2b3a9ad3d461457770bee27e0113e0e19ce5f5",
+    "manifest_members": 242,
+    "raw_manifest_verified": "PASS",
+    "source_sha": "9dabd3c3771ba7f381b20e7fa67ed8820052c50d",
+    "status": "COMPLETED",
+    "stop_reason": null,
+    "gpu_process_seconds": 282.6440904539195,
+    "supervisor_wall_s": 283.9695613089716,
+    "output_bytes": 2073231921,
+    "free_disk_gb_after": 15.660961792,
+    "processes": [
+      {
+        "id": "legacy_normal",
+        "returncode": 0,
+        "wall_s": 51.95627296803286,
+        "peak_gpu_mib": 5380
+      },
+      {
+        "id": "legacy_forced",
+        "returncode": 0,
+        "wall_s": 57.45124616497196,
+        "peak_gpu_mib": 5380
+      },
+      {
+        "id": "fixed_normal",
+        "returncode": 0,
+        "wall_s": 52.09802920295624,
+        "peak_gpu_mib": 5380
+      },
+      {
+        "id": "fixed_forced",
+        "returncode": 0,
+        "wall_s": 63.8829031669884,
+        "peak_gpu_mib": 5380
+      },
+      {
+        "id": "fixed_noeval",
+        "returncode": 0,
+        "wall_s": 57.255638950970024,
+        "peak_gpu_mib": 5380
+      }
+    ]
+  }
+]

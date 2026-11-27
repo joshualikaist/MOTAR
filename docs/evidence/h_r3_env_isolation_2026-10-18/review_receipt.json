@@ -1,0 +1,19 @@
+{
+  "schema": "motar.environment-isolation.fable-review.v1",
+  "reviewed_result_commit": "be4514b8d7bf99aaa168b1e4bd15b296154c5677",
+  "source_commit": "9dabd3c3771ba7f381b20e7fa67ed8820052c50d",
+  "requested_model": "claude-fable-5-1",
+  "actual_canonical_model": "claude-fable-5-1",
+  "status": "COMPLETED_READ_ONLY_SOURCE_REVIEW",
+  "verdict": "SCOPED_GO_MECHANICS_QUALIFIED_SUPPORTED",
+  "blocker_high_findings": 0,
+  "tests_executed_by_reviewer": false,
+  "raw_npz_verified_by_reviewer": false,
+  "wall_s": 178.93859581003198,
+  "review_sha256": "524abe22c939a05cb0b14e75ab80011af1c4ef51bc6a35c966d6e436f9d3dceb",
+  "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_env_isolation_v1/FABLE-Q01",
+  "raw_manifest_sha256": "8badff5fc783eb720464a7e4ae519f9d9d3f7d5856717bfa65ebb5f0b067efec",
+  "private_operational_metadata": "Full CLI transcript outside Git; only extracted review published",
+  "post_review_measurement": "Root snapshot comparison independently performed by root, not reviewed by Fable",
+  "hypothesis_status": "H-R3 PROVISIONAL / CONFIRMATION HOLD"
+}

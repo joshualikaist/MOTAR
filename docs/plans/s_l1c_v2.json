@@ -1,0 +1,56 @@
+{
+  "schema": "motar.s-l1c-v2-plan.v1",
+  "date_kst": "2026-10-18",
+  "base_sha": "aed6affbd2567feee79e658fbe5f07510b039f36",
+  "authority": "User S-L1A/B/C/D acceptance and S-L1C v2 near-range tracking instruction",
+  "purpose": "Improve genuine off-row sphere recall without increasing matched false association. CPU NO-GO stops before production/GPU implementation.",
+  "sensor_contract": "RGB-D Camera + LiDAR; frozen Policy F 898-D; no semantic/GT input to association",
+  "candidates": {
+    "V2-0": "Unmodified S-L1C v1, matched reference.",
+    "V2-A": "Keep every v1 decision. For a v1 rejection, fit the declared 0.20m sphere to at least two valid rows of the prediction-nearest azimuth column. Infer centre-distance roots from measured ray ranges and the track direction, take their median, and require its distance from the prediction below the unchanged association gate. Re-render the sphere analytically on these four rays. Require max sphere residual <=max(0.001m,3*noise_bound), and the equal-horizontal-range vertical-surface max residual to exceed sphere residual by >max(0.001m,4*noise_bound). Reject an unexpected near-band return on a ray the fitted sphere cannot reach. No measurement labels or GT enter this rule. Newly accepted centre distance is the fitted sphere distance; existing v1 accepted measurements remain unchanged.",
+    "V2-B": "V1 fallback plus V2-A sphere/vertical test and azimuth-extent discrimination. The extra horizontal discriminator is only conclusive when the sphere angular radius is strictly below the 5-degree column pitch. Otherwise do not add an acceptance (ABSTAIN_AZIMUTH). Also veto near-band adjacent-column returns outside the predicted sphere. No adaptive widening.",
+    "V2-C": "CPU-only unconstrained shape-rejection removal: eligible range-gated returns are identity-unconfirmed. Measure its recall/false association, but selection is INELIGIBLE_CONTRACT until a separate 5s fused-recency/identity proof is preregistered. No production C implementation or clock change is authorized automatically."
+  },
+  "constants": {"lidar_radius_m": 0.2, "far_m": 12.0, "horizontal_beams": 72, "elevations_deg": [20,10,0,-10], "gate_m": 0.6964101615137754, "sphere_residual_floor_m": 0.001, "hypothesis_margin_floor_m": 0.001, "residual_noise_multiplier": 3, "margin_noise_multiplier": 4, "minimum_sphere_support_rows": 2, "runtime_noise_bound_m_if_selected": 0.0001},
+  "cpu": {
+    "positive_ranges_m": [1.16,1.5,2.0,2.28,2.295,2.3,3.0,6.0],
+    "positive_elevation_deg": {"start": -10.0, "stop": 20.0, "step": 0.5, "count": 61},
+    "positive_bearings_deg": [0,20,45,90,-45,179],
+    "prediction_radial_offsets_m": [-0.15,0,0.15],
+    "positive_geometry_count": 2928,
+    "positive_matched_prediction_count": 8784,
+    "negative_sets": {
+      "tall": {"front_ranges_m": {"start": 1.5, "stop": 11.5, "step": 0.5, "count": 21}, "bearings_deg": [0,20,45,90,180], "full_width_m": 0.6, "height_m": 3.0, "count": 105},
+      "narrow": {"ranges_m": [1.16,1.5,2,2.28,2.3,3], "bearings_deg": [0,20,45,90], "full_widths_m": [0.02,0.06,0.15,0.3,0.8], "prediction_elevations_deg": [-5,0,5,15], "height_m": 3.0, "count": 480},
+      "foreground": {"target_ranges_m": [1.16,1.5,2,2.28,2.3,3], "bearings_deg": [0,20,45,90], "target_elevations_deg": [-5,0,5,15], "front_gaps_m": [0.02,0.05,0.1,0.3], "full_width_m": 0.24, "height_m": 3.0, "count": 384},
+      "eq1d": {"scenes": ["N1","N2","N3","N5","N6","N7","N8"], "unique_level_passes": 7, "source": "EQ1D-R1 frozen rendered scans/layout, priming bar first-hit+0.15m along declared bearing", "count": 7}
+    },
+    "negative_geometry_count": 976,
+    "negative_matched_prediction_count": 2928,
+    "noise_bound_m": [0,0.0001,0.001,0.01,0.03],
+    "noise_realizations": "Zero noise once; each positive bound twice with deterministic alternating-row/column +/- bound and its negation. Do not perturb no-return=12m.",
+    "matched_cases_total": 105408,
+    "primary_noise_bounds_m": [0,0.0001],
+    "primary_near_ranges_m": [1.16,1.5,2.0,2.28],
+    "controls_ranges_m": [2.295,2.3,3,6],
+    "angular_error_diagnostic": {"ranges_m": [1.16,1.5,2,2.28,2.3,3], "elevations_deg": [-5,0,5,15], "bearings_deg": [0,20,45,90], "prediction_errors_bearing_elevation_deg": [[-1,0],[1,0],[0,-1],[0,1]], "radial_offsets_m": [-0.15,0,0.15], "noise_bound_m": 0.0001, "count": 1152},
+    "eligibility": "A genuine-hit opportunity requires an independent sphere first-hit in the prediction-nearest azimuth column. Report all no-hit/no-eligible cases separately. Accepted first-hit BOX is false association even in a scene containing a sphere. No outcome-dependent denominator.",
+    "raw_root": "../aerial_gym_simulator/results/s_l1c_v2_cpu/SL1CV2-CPU01"
+  },
+  "gates": {
+    "CPU-RECALL": "Strictly greater genuine-hit recall than v1 pooled over the four primary near ranges, and no loss in any mandatory range/elevation/bearing/radial-offset stratum with a nonempty opportunity denominator. No paired accepted true return may be lost. Evaluate primary noise bounds separately.",
+    "CPU-NEG": "No additional accepted BOX first-hit in any matched negative or mixed foreground case at any declared noise bound; EQ1D seven unique negatives remain zero at primary bounds. Report inherited distant v1 residual accepts, never relabel as true targets.",
+    "CPU-RANGE": "Existing v1 acceptances keep identical row/range. Newly accepted genuine targets: zero-noise centre error <=0.001m and bounded-primary-noise <=0.02m. Angular-error diagnostics reported separately and cannot be claimed qualified if outside these limits.",
+    "CPU-SELECT": "Only A or B can be eligible. All recall/negative/range gates must pass simultaneously. Among passing candidates maximize newly correct primary acceptances, then minimize false accepts, then new range MAE, then prefer A for simplicity. No passing candidate => NO-GO, no production/GPU implementation.",
+    "C-COV": "Unobserved orthogonal posterior variances >=0.99 of prior; radial variance decreases on accepted range-only updates, as v1. No covariance change.",
+    "C-CLOCK": "Camera alone resets identity age. LiDAR range never resets identity age; fused recency behavior unchanged. 51 consecutive misses expire the 5s tracker. No clock code change.",
+    "C-REGRESSION": "Legacy and A/B/C/D v1: bitwise current-source CPU perception/detector checks versus aed6aff, plus GPU 600-step 14-key logs matching their frozen qualified sources. S-L1D v1 is not combined automatically with v2.",
+    "C-FIREWALL": "Only declared sensor ranges/ray table, current camera validity and tracker prediction/active/gate enter the helper. No GT/semantic/provenance online. Actor898/checkpoint/RMS unchanged. E-L0 P1=P2 on v2.",
+    "GPU-RECALL-NEG": "Same paired no-loss/no-additional-BOX conditions on predeclared rendered fixtures; pooled near recall strictly improves; report by distance/elevation and all abstentions. CPU selection is not a GPU PASS.",
+    "GO": "CPU selection, range/covariance/clocks, all previous-mode regressions, GPU recall/negative and E-L0/firewall/integrity PASS, preservation verified, independent Fable5.1 review without unresolved blocker. Otherwise NO-GO or INCOMPLETE. No post-result tolerance relaxation."
+  },
+  "gpu": {"run_id": "SL1CV2-C01", "raw_root": "../aerial_gym_simulator/results/s_l1c_v2/SL1CV2-C01", "positive_ranges_m": [1.16,1.5,2,2.28,2.3,3], "positive_elevations_deg": [-5,0,5,10,15,20], "bearings_deg": [0,20,45,90], "positive_unique_count": 144, "positive_groups": 3, "num_envs_per_group": 48, "prediction_radial_offsets_m": [-0.15,0,0.15], "negative_unique_count": 31, "negative_description": "7 original EQ1D negatives rendered with their original layout; 12 tall/narrow bars: six mandatory ranges x widths0.02/0.6; 12 mixed foreground scenes: six ranges x gaps0.05/0.3, elevation5,bearing0. Compare actual rendered geometry, do not assume desired label.", "closed_loop_configs": ["static","moving"], "closed_loop_variants": ["off","s_l1a","s_l1b","s_l1c","s_l1d","v2_p1","v2_p2"], "closed_loop_seeds": {"static":4501,"moving":4502}, "closed_loop_envs":8,"closed_loop_steps":600,"density":160,"per_process_wall_s":900,"total_wall_s":7200,"disk_min_free_gb":8,"output_max_gb":2,"oom_reserve_mib":512,"poll_s":5,"no_retry":true,"stop":"fixed committed source/clean tree; per-process and total watchdog, disk/OOM/head/import/RMS/manifest/nonfinite/noninterference guards; preserve partial output and stop, no retry"},
+  "lineage": {"name":"s_l1c_v2","cumulative":"S-L1A + S-L1B + selected S-L1C v2; retain v1 clock/covariance","s_l1d":"disabled on v2; diagnostics API compatibility tested separately, no inheritance of S-L1D v1 qualification"},
+  "next_plans_only": ["S-L1D realistic observed/predicted belief-error stress", "S-L1B target-return carve retention", "remaining camera centre-range bias"],
+  "out_of_scope": ["S-L1D/B production changes","P-L1","G-L1","PPO/retraining","Recovery Planner","H-R confirmation","main push/merge","force push/history rewrite"]
+}

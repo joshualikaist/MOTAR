@@ -1,0 +1,137 @@
+{
+  "source_sha256": "75e18306bb105a30f78dc9b67fe1f6db7c6e2df90896d08409ffb940afddcdf0",
+  "tests": {
+    "positive": {
+      "started": "2026-11-05T14:26:02.692130+09:00",
+      "finished": "2026-11-05T14:26:03.230109+09:00",
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "-c",
+        "import time;time.sleep(.5)"
+      ],
+      "exit_code": 0,
+      "stop_reason": null,
+      "peak_aggregate_rss_bytes": 8515584,
+      "rss_limit_bytes": 67108864,
+      "timeout_s": 5,
+      "poll_interval_s": 0.25,
+      "samples": 3,
+      "processes_observed": 1,
+      "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+      "kernel_cgroup_limit_claimed": false,
+      "subreaper_enabled": true,
+      "live_descendants_after_cleanup": 0
+    },
+    "rss_negative": {
+      "started": "2026-11-05T14:26:03.230150+09:00",
+      "finished": "2026-11-05T14:26:03.365216+09:00",
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "-c",
+        "import time;a=bytearray(16*1024**2);time.sleep(5)"
+      ],
+      "exit_code": -15,
+      "stop_reason": "RSS_LIMIT",
+      "peak_aggregate_rss_bytes": 17174528,
+      "rss_limit_bytes": 2097152,
+      "timeout_s": 5,
+      "poll_interval_s": 0.25,
+      "samples": 1,
+      "processes_observed": 1,
+      "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+      "kernel_cgroup_limit_claimed": false,
+      "subreaper_enabled": true,
+      "live_descendants_after_cleanup": 0
+    },
+    "timeout_negative": {
+      "started": "2026-11-05T14:26:03.365255+09:00",
+      "finished": "2026-11-05T14:26:04.016903+09:00",
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "-c",
+        "import time;time.sleep(5)"
+      ],
+      "exit_code": -15,
+      "stop_reason": "TIMEOUT",
+      "peak_aggregate_rss_bytes": 8531968,
+      "rss_limit_bytes": 67108864,
+      "timeout_s": 0.4,
+      "poll_interval_s": 0.25,
+      "samples": 3,
+      "processes_observed": 1,
+      "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+      "kernel_cgroup_limit_claimed": false,
+      "subreaper_enabled": true,
+      "live_descendants_after_cleanup": 0
+    },
+    "descendant_negative": {
+      "started": "2026-11-05T14:26:04.016950+09:00",
+      "finished": "2026-11-05T14:26:04.409911+09:00",
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "-c",
+        "import subprocess,sys,time;subprocess.Popen([sys.executable,\"-B\",\"-c\",'import time;a=bytearray(20*1024**2);time.sleep(5)']);time.sleep(5)"
+      ],
+      "exit_code": -15,
+      "stop_reason": "RSS_LIMIT",
+      "peak_aggregate_rss_bytes": 39235584,
+      "rss_limit_bytes": 25165824,
+      "timeout_s": 5,
+      "poll_interval_s": 0.25,
+      "samples": 2,
+      "processes_observed": 2,
+      "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+      "kernel_cgroup_limit_claimed": false,
+      "subreaper_enabled": true,
+      "live_descendants_after_cleanup": 0
+    },
+    "late_fork_cleanup": {
+      "started": "2026-11-05T14:26:04.409959+09:00",
+      "finished": "2026-11-05T14:26:06.139436+09:00",
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "-c",
+        "import os,signal,time\ndef term(*a):\n if os.fork()==0:\n  time.sleep(10)\n  os._exit(0)\n os._exit(0)\nsignal.signal(signal.SIGTERM,term)\ntime.sleep(10)"
+      ],
+      "exit_code": 0,
+      "stop_reason": "TIMEOUT",
+      "peak_aggregate_rss_bytes": 8974336,
+      "rss_limit_bytes": 67108864,
+      "timeout_s": 0.5,
+      "poll_interval_s": 0.25,
+      "samples": 3,
+      "processes_observed": 1,
+      "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+      "kernel_cgroup_limit_claimed": false,
+      "subreaper_enabled": true,
+      "live_descendants_after_cleanup": 0
+    },
+    "successful_parent_with_child": {
+      "started": "2026-11-05T14:26:06.139482+09:00",
+      "finished": "2026-11-05T14:26:06.533244+09:00",
+      "argv": [
+        "/usr/bin/python3",
+        "-B",
+        "-c",
+        "import subprocess,sys;subprocess.Popen([sys.executable,\"-B\",\"-c\",\"import time;time.sleep(10)\"])"
+      ],
+      "exit_code": 0,
+      "stop_reason": "LINGERING_DESCENDANTS",
+      "peak_aggregate_rss_bytes": 8966144,
+      "rss_limit_bytes": 67108864,
+      "timeout_s": 5,
+      "poll_interval_s": 0.25,
+      "samples": 2,
+      "processes_observed": 12,
+      "limit_kind": "aggregate process-tree RSS watchdog; shared pages count per process",
+      "kernel_cgroup_limit_claimed": false,
+      "subreaper_enabled": true,
+      "live_descendants_after_cleanup": 0
+    }
+  }
+}

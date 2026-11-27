@@ -1,0 +1,524 @@
+{
+ "scope": "attempt01 immutable raw record, amendment2 authorized sequential run",
+ "root": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/attempt01",
+ "files": {
+  "attempt.json": {
+   "bytes": 13708,
+   "sha256": "d2f3d3283f93f1fc564d6ce2fe2d3a53f3269194bd4735a35030abb97bf5b05a"
+  },
+  "ep000/gazebo_log/ogre.log": {
+   "bytes": 34497,
+   "sha256": "39c3692b0da3ce08058e7808f00903547b4bb746958c6292560526894f0c6642"
+  },
+  "ep000/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "c0bcf1cd224b19f95cb76f94c64e5651da848c4ef35919833aee014dbb9227f3"
+  },
+  "ep000/logs/gzserver.log": {
+   "bytes": 379,
+   "sha256": "15b47b6579acbdde5d9e8c0cba900488c9216b2e9b57fdc2794e9b5de08dbe30"
+  },
+  "ep000/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep000/logs/px4.log": {
+   "bytes": 2859,
+   "sha256": "30822aec6fb1a5eb135098f3d84ead56ddb9df1c42795e84a0e205c45837ef81"
+  },
+  "ep000/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep000/rootfs/log/2026-11-10/15_03_05.ulg": {
+   "bytes": 11997083,
+   "sha256": "e643e436d965d8a7e68d134fbd173cb9a8653390937758aa76d84a14d5f9c6bc"
+  },
+  "ep000/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "d24708a0020e0c6911f5380abbfa8d6b83932cfbfa513dfcba0bdcd67dffdeb3"
+  },
+  "ep000/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "d24708a0020e0c6911f5380abbfa8d6b83932cfbfa513dfcba0bdcd67dffdeb3"
+  },
+  "ep000/session.json": {
+   "bytes": 3954,
+   "sha256": "4f8f11b587dd482c8b4961c585467114129feab5d6e959fd456ba4b14531f843"
+  },
+  "ep000/trace.json": {
+   "bytes": 18304893,
+   "sha256": "e60d59b2c8723e0a94a9a82a43878a0a73915fa8df49067632601ab87235dd8f"
+  },
+  "ep000/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep001/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "28d5d03ce2b00c4c979e3227a2d3bf4cffd14072f1282d6ec129275c89027146"
+  },
+  "ep001/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "beb252b349761728f8e7caac9006483d5ffcdaf8f591c4a06df021acc78e431c"
+  },
+  "ep001/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep001/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep001/logs/px4.log": {
+   "bytes": 2937,
+   "sha256": "6af12f41323f4859208aa9d01a83917f30a915e4263932397b2c2a9ab532b785"
+  },
+  "ep001/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep001/rootfs/log/2026-11-10/15_04_09.ulg": {
+   "bytes": 9624840,
+   "sha256": "c3de35ee49f63440d19d0b239362229bb2fd6260d53b5cfc55faffbcc19e2f48"
+  },
+  "ep001/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "dcaf718763bd63e4b2f88d1e036e10dc7096a36dceb5b0f067aaad560e154d58"
+  },
+  "ep001/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "dcaf718763bd63e4b2f88d1e036e10dc7096a36dceb5b0f067aaad560e154d58"
+  },
+  "ep001/session.json": {
+   "bytes": 3952,
+   "sha256": "f283bdb8ea74d07ecbf0c9580586172f5dd77ef6b0f3dab04288b953f5ebc3d9"
+  },
+  "ep001/trace.json": {
+   "bytes": 14505404,
+   "sha256": "af2fc1759a339e42433f5e96d61cffab5bf8f2f1d16d5e53dfe3b25bf531a7fa"
+  },
+  "ep001/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep002/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "aaab884ff19d06a470368e95c09a21dc3121117759e3cdd910cf846d88fbefda"
+  },
+  "ep002/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "770631bba727a240cd8b4c52d6a0ae295e913bc93d03e3ccc6e5c2c779c4a85f"
+  },
+  "ep002/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep002/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep002/logs/px4.log": {
+   "bytes": 3071,
+   "sha256": "78ce7e48f9afb970662b4fed3bc43cfdb578fe605dd2e870c2268c021683647b"
+  },
+  "ep002/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep002/rootfs/log/2026-11-10/15_04_58.ulg": {
+   "bytes": 11350572,
+   "sha256": "0764fdeadbb91816bf00ecbfcdf268c4c39aaf201e8a937b15630d063edc748c"
+  },
+  "ep002/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "191795fa0fd5b8b0bf0d14c287b88d813456a3c3042a93feab11d9a8761f644d"
+  },
+  "ep002/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "191795fa0fd5b8b0bf0d14c287b88d813456a3c3042a93feab11d9a8761f644d"
+  },
+  "ep002/session.json": {
+   "bytes": 3951,
+   "sha256": "16a500307af5e0a615acbd61b0658c0265a4f15c17634911617a00f250217376"
+  },
+  "ep002/trace.json": {
+   "bytes": 17266304,
+   "sha256": "18aea57b4ebb9b00cddf055bae4cc037b963f8e5193c0f6f89e1f2fb7a4dd111"
+  },
+  "ep002/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep003/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "3c1c4b29f7fbd68bf32897aa34af33fb044f1f7541ca8e02b53e69d22d980a66"
+  },
+  "ep003/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "5c8a43310408bec33c6c56889deacd544d424b84412ea8d05ae41dba8e08a247"
+  },
+  "ep003/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep003/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep003/logs/px4.log": {
+   "bytes": 3071,
+   "sha256": "15a94ffb9e557a79263b760bd6fb3acedd37abcd6576c05b91cd930f57768dd3"
+  },
+  "ep003/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep003/rootfs/log/2026-11-10/15_05_56.ulg": {
+   "bytes": 10283109,
+   "sha256": "3637d0d5c05a52b4ca6127b8978a570e604cc12a750d725f1a6a8e12d0116e27"
+  },
+  "ep003/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "201567a944a8a6da2c802b42df03146845b83ed8023eaf0818ac32769a7f856e"
+  },
+  "ep003/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "201567a944a8a6da2c802b42df03146845b83ed8023eaf0818ac32769a7f856e"
+  },
+  "ep003/session.json": {
+   "bytes": 3951,
+   "sha256": "581e9b32c0754dcad7222d88e52b18ade543e55459a9fcbde7d01061c20caaf7"
+  },
+  "ep003/trace.json": {
+   "bytes": 15573435,
+   "sha256": "03f061d2ac0bca4f35dd160628f037f8399d548bd28ae6de9a8bdf762c32504d"
+  },
+  "ep003/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep004/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "3937a5fe0d22fc168c42d803aacf8ac3fc884208997fe9d56b789b003ae4e29d"
+  },
+  "ep004/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "f51c5a47f734d5fef1a2db6387cd37acafac45bf3ed1bc72ef6508456bd2c608"
+  },
+  "ep004/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep004/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep004/logs/px4.log": {
+   "bytes": 2941,
+   "sha256": "5c8883223747bcd7eedf13c6d9a0aea0eae635c91048180014d08e2672e58b25"
+  },
+  "ep004/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep004/rootfs/log/2026-11-10/15_06_48.ulg": {
+   "bytes": 9630572,
+   "sha256": "01e735e64c17a6eb4877072183184236bb026b9bb370e756cabc93a54125ee96"
+  },
+  "ep004/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "44bc5b793386cc7081fb040518c9a9795e19e35539b837dee4ef2b85b561b95c"
+  },
+  "ep004/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "44bc5b793386cc7081fb040518c9a9795e19e35539b837dee4ef2b85b561b95c"
+  },
+  "ep004/session.json": {
+   "bytes": 3953,
+   "sha256": "fa0974fa0f18b5d5eaf1a44513e0dbdb32612a164673b367347e9397a530aba6"
+  },
+  "ep004/trace.json": {
+   "bytes": 15104030,
+   "sha256": "7e70964e4e3f09e9ee5db41107df9edc7c7b6134e73882238546d5dbe33f9102"
+  },
+  "ep004/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep005/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "17ff280836cc8a9f5e05d8acd5079c8a60bbfc54dc45a15b99ee2bb4bf67c013"
+  },
+  "ep005/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "d62d107a2acdc9f2ad8f28ad4750704fc97ad81efcfe7b1fce704902f064c150"
+  },
+  "ep005/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep005/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep005/logs/px4.log": {
+   "bytes": 2941,
+   "sha256": "7e10debe6cdffa8f26555457a28510ec45096ab6efaf7bd2651dd58bdde01a74"
+  },
+  "ep005/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep005/rootfs/log/2026-11-10/15_07_37.ulg": {
+   "bytes": 9641509,
+   "sha256": "befeb6cd972a92b5440efe16ec2b8e414c5ca5fc303be92459c5862e9869b23b"
+  },
+  "ep005/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "e35e31255721d521890b2ca91e0e38b006fd60f76908502a097e7b8c9cf87ec1"
+  },
+  "ep005/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "e35e31255721d521890b2ca91e0e38b006fd60f76908502a097e7b8c9cf87ec1"
+  },
+  "ep005/session.json": {
+   "bytes": 3953,
+   "sha256": "bd6d777f98abcc547cae8ab451dd2b2b360906b26ceaba29c09798b42702d9fc"
+  },
+  "ep005/trace.json": {
+   "bytes": 15618428,
+   "sha256": "cdc99080d8bdb37ca13e23fe685202d9de5bfc9deed769b6df9dca8bdf038183"
+  },
+  "ep005/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep006/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "ce92cbb0e97d069f0e89d4cbd331fd5ff421bd18d6da5cf27c666f597b94397d"
+  },
+  "ep006/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "169546d44444653342eabd40dbd5265cad1cc8592be050f5e723b6c3513db34f"
+  },
+  "ep006/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep006/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep006/logs/px4.log": {
+   "bytes": 3003,
+   "sha256": "5c00665be1592955b43ff29951c8ba977400f2d72f23bdf275733a5bbf30b523"
+  },
+  "ep006/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep006/rootfs/log/2026-11-10/15_08_27.ulg": {
+   "bytes": 9859565,
+   "sha256": "59c8fe01f76dc96f1774dcd906b59ad2ac6f900d038cfea4e381495cc0e0fbf5"
+  },
+  "ep006/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "96f70be804c64c384ec58b19b5f619784ccee49134f1cf80f6fdacb73b73b00c"
+  },
+  "ep006/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "96f70be804c64c384ec58b19b5f619784ccee49134f1cf80f6fdacb73b73b00c"
+  },
+  "ep006/session.json": {
+   "bytes": 3953,
+   "sha256": "82621337aeb6dee1e915b264ca0103ad3b954018a883366f2627ffcbee9a5248"
+  },
+  "ep006/trace.json": {
+   "bytes": 15683544,
+   "sha256": "37d97f3e023ddb281f1f98c124547e73f97a10a5def40cb9ebf42190988ff6f7"
+  },
+  "ep006/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep007/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "6a4c2508762cb13e20c0faea01f2196bae9e6c1c7b62c22724c29bd29ef11d92"
+  },
+  "ep007/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "81dae532b83b8aa08bba1a8b263cb98b08562e2bc3d9f339db546d0383f824b0"
+  },
+  "ep007/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep007/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep007/logs/px4.log": {
+   "bytes": 3151,
+   "sha256": "f85df214c28ee510c9a0b8740a62124aadfb366fa5f80e134ecd61ab86da5470"
+  },
+  "ep007/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep007/rootfs/log/2026-11-10/15_09_18.ulg": {
+   "bytes": 11354144,
+   "sha256": "92f7d918c559b029741e61b60ae08d4f06460b607290a978dbd735995f8d0e4d"
+  },
+  "ep007/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "f63b04f11b3c7c40e7074279321e76141a60cf64afcf4cd19746b3c0b08b0008"
+  },
+  "ep007/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "f63b04f11b3c7c40e7074279321e76141a60cf64afcf4cd19746b3c0b08b0008"
+  },
+  "ep007/session.json": {
+   "bytes": 3952,
+   "sha256": "450d9838894e7831aa21f1f8098983bc5fe9ca28c5160e72583a8067fb366622"
+  },
+  "ep007/trace.json": {
+   "bytes": 17288380,
+   "sha256": "f881a5cebaff10a032edac4e2c4b60ec1ab2c38421670a00e317974e3f7d4308"
+  },
+  "ep007/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep008/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "7e7bb63c8d31e4f969669bc908ac6211d5060a24aecf1c82f78c12a2af86996f"
+  },
+  "ep008/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "8858fd4f25a92e62073cd87dd2e91d5fa2480f55170b33596c70126d9e148e7b"
+  },
+  "ep008/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep008/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep008/logs/px4.log": {
+   "bytes": 3454,
+   "sha256": "394ca3cb8e367712046db4da36b5562e2123258c248ed15ce20e53ab973b9e05"
+  },
+  "ep008/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep008/rootfs/log/2026-11-10/15_10_15.ulg": {
+   "bytes": 8486595,
+   "sha256": "668af7b4da6f605b67e1ee4a3f668b15df6118d1936cb902cc5a6965c15886f3"
+  },
+  "ep008/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "408e20e5d047dc2bb0c3a4e4d5e6de8216149196c4ab52be2979c611781b5b59"
+  },
+  "ep008/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "408e20e5d047dc2bb0c3a4e4d5e6de8216149196c4ab52be2979c611781b5b59"
+  },
+  "ep008/session.json": {
+   "bytes": 3953,
+   "sha256": "18dcba71599acc1789ea936ab2cd0dd17fa3480f4c685bb1bd2b10af747bf5f0"
+  },
+  "ep008/trace.json": {
+   "bytes": 14662516,
+   "sha256": "324ce9e29c5b5b71f280d2f31a56caffb325f6a825eecd3b2cdbcf28b88ca0cc"
+  },
+  "ep008/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep009/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "39ed39ae3c8f35e96afbcd1bb64544a718435f8772d0f58207bd0c69640b5511"
+  },
+  "ep009/launches.jsonl": {
+   "bytes": 1067,
+   "sha256": "163b0ea9108526134fdc8e2757cfd6813286e658decfd791f0912102c4b05665"
+  },
+  "ep009/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep009/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep009/logs/px4.log": {
+   "bytes": 3134,
+   "sha256": "c6954e69b9c9a1fe1f39f386cae917a928704b56ee657cf7e4693876105fdab3"
+  },
+  "ep009/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep009/rootfs/log/2026-11-10/15_11_02.ulg": {
+   "bytes": 8013268,
+   "sha256": "3efe2efcb053b98ce9f2df2d2a891877d9cbebedaa6a7f54fdf05ffde8eb5479"
+  },
+  "ep009/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "bc869b90736341864989a40a2063ff86a3773ea003479fe7f18a0c59c1bb1fef"
+  },
+  "ep009/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "bc869b90736341864989a40a2063ff86a3773ea003479fe7f18a0c59c1bb1fef"
+  },
+  "ep009/session.json": {
+   "bytes": 3953,
+   "sha256": "2bed72e5fcbae23d5e01c8649d6380ed6cead819d765c72a1e5cd1d1bfcfc781"
+  },
+  "ep009/trace.json": {
+   "bytes": 12965005,
+   "sha256": "772a03e99db9e9caaa3db7749307965fa5bbad2fda861978f38f8661930f545a"
+  },
+  "ep009/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "episodes.jsonl": {
+   "bytes": 753700,
+   "sha256": "cdf4b400efc0b6bbaafc7a9a8309d169c5cf71b9d20a778f213a71e13cb2035b"
+  },
+  "final.json": {
+   "bytes": 300,
+   "sha256": "1833fccefd6184be76fd3317723eb8203627c6515400201a1f016095bff89975"
+  },
+  "reading.json": {
+   "bytes": 5750,
+   "sha256": "a7f3d7cb51e340e4ec5c4ee2344c4fc8ae90638197c3c02742a00c8ad9c6dcad"
+  }
+ },
+ "symlinks": {
+  "ep000/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep000/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep001/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep001/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep002/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep002/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep003/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep003/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep004/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep004/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep005/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep005/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep006/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep006/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep007/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep007/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep008/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep008/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep009/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep009/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data"
+ }
+}

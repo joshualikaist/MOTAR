@@ -1,0 +1,21 @@
+test_recursive_expected_covariance_matches_independent_axis_equations (__main__.HorizonTest) ... ok
+test_bad_headers_fail_and_missing_raw_is_not_promoted (__main__.InventoryTest) ... ok
+test_header_only_forged_huge_shape_never_allocates_or_reads_array (__main__.InventoryTest) ... ok
+test_128_step_synthetic_replay_clear_never_overrides (__main__.PlannerTest) ... ok
+test_all_terminal_bypasses_access_model_priors_and_rng (__main__.PlannerTest) ... ok
+test_bar_safety_override_and_inactive_belief_does_not_delete_obstacles (__main__.PlannerTest) ... ok
+test_forbidden_mutation_firewall_at_planner_and_trace_level (__main__.PlannerTest) ... ok
+test_missing_priors_generator_and_unavailable_yaw_rate_fail_closed (__main__.PlannerTest) ... ok
+test_mode_coverage_including_history_and_known_model_pre_trigger (__main__.PlannerTest) ... ok
+test_no_source_write_global_rng_or_implicit_planner_state (__main__.PlannerTest) ... ok
+test_package_imports_and_forbidden_attribute_names (__main__.PlannerTest) ... ok
+test_partial_terminal_observation_is_not_evaluated_or_logged (__main__.PlannerTest) ... ok
+test_three_scenes_deterministic_shapes_and_no_nan (__main__.PlannerTest) ... ok
+test_digest_matches_canonical_bytes_and_sensitive_allowed_fields (__main__.TraceTest) ... ok
+test_sha256_matches_hashlib_and_padding_boundaries (__main__.TraceTest) ... ok
+test_trace_arrays_are_copies_and_have_no_evaluator_fields (__main__.TraceTest) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 8.647s
+
+OK

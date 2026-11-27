@@ -1,0 +1,58 @@
+{
+ "scope": "smoke01 raw record, ABORTED 2026-11-10 (not a result)",
+ "root": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/smoke01",
+ "files": {
+  "attempt.json": {
+   "bytes": 13068,
+   "sha256": "3e0ead8973a182ffcd469c15967739c666848342e9acbcdeace1eb0f7d9736bd"
+  },
+  "ep000/gazebo_log/ogre.log": {
+   "bytes": 34498,
+   "sha256": "78b8e76884896f80d2203e5ce82c1a523e4e21c05db60e81facad54928bd7a46"
+  },
+  "ep000/launches.jsonl": {
+   "bytes": 853,
+   "sha256": "83d602e295aa0e8f12092c0967efd6838c51df430c9e5cad29ff4d9b03a69892"
+  },
+  "ep000/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep000/logs/px4.log": {
+   "bytes": 2580,
+   "sha256": "a63483db443da79e34752d66e8723d4d00bc583ad975e8b56df8d50a03e8ae22"
+  },
+  "ep000/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep000/rootfs/dataman": {
+   "bytes": 7866640,
+   "sha256": "280103323d1aaef760a134f11df247364e309f36e076ac099832361657091fec"
+  },
+  "ep000/rootfs/log/2026-11-10/06_31_41.ulg": {
+   "bytes": 18811274,
+   "sha256": "0518a316d8ec9c443f1c3bf2362a47556dd4d1d31422aa6e5cb3af6203cc7854"
+  },
+  "ep000/rootfs/parameters.bson": {
+   "bytes": 346,
+   "sha256": "633105986aee7e2f7aeb9414faa7980fcfa4e3b82df778d9e0f0059bad228f52"
+  },
+  "ep000/rootfs/parameters_backup.bson": {
+   "bytes": 346,
+   "sha256": "633105986aee7e2f7aeb9414faa7980fcfa4e3b82df778d9e0f0059bad228f52"
+  },
+  "ep000/session.json": {
+   "bytes": 3568,
+   "sha256": "068bf205caf50719ae406a7d556c7f6074988c47b62f7e0f18375b39ac55a727"
+  },
+  "ep000/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "final.json": {
+   "bytes": 356,
+   "sha256": "af651b070a5e8b1ac021a6d7762cab966ad57aed0fd1a33cfe32145925ad778e"
+  }
+ }
+}

@@ -1,0 +1,1234 @@
+{
+  "schema": "motar.s-l1d-c02-analysis.v1",
+  "run": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C02",
+  "source_sha": "7d0bb37358c0e4a26fe6581cf9ff3f6db30254ed",
+  "gates": {
+    "C02-UNIQUE": "PASS",
+    "C02-ORACLE": "PASS",
+    "C02-MAPPING": "PASS",
+    "C02-SCALE": "PASS",
+    "C02-PARTIAL": "PASS",
+    "C02-CENTRE": "PASS",
+    "C02-SENSOR-NONINTERFERENCE": "PASS",
+    "C02-INTEGRITY": "PASS"
+  },
+  "decision": "GO",
+  "realised": {
+    "scale": [
+      "C02_SC0_1",
+      "C02_SC0_2",
+      "C02_SC1_1",
+      "C02_SC1_2",
+      "C02_SC1_FULL"
+    ],
+    "partial": [
+      "C02_PA_1",
+      "C02_PA_2",
+      "C02_PA_3",
+      "C02_PA_4"
+    ],
+    "centre_only": [
+      "C02_CO_1",
+      "C02_CO_2",
+      "C02_CO_3",
+      "C02_CO_4"
+    ]
+  },
+  "passing": {
+    "scale": [
+      "C02_SC0_1",
+      "C02_SC0_2",
+      "C02_SC1_1",
+      "C02_SC1_2",
+      "C02_SC1_FULL"
+    ],
+    "partial": [
+      "C02_PA_1",
+      "C02_PA_2",
+      "C02_PA_3",
+      "C02_PA_4"
+    ],
+    "centre_only": [
+      "C02_CO_1",
+      "C02_CO_2",
+      "C02_CO_3",
+      "C02_CO_4"
+    ]
+  },
+  "violations": [],
+  "alone_pass_occlusion": [],
+  "realised_all_required": true,
+  "scenes": [
+    {
+      "id": "C02_SC0_1",
+      "design": {
+        "design_evaluator_class": "SCALE_LOSS",
+        "design_alone_px": 0,
+        "design_visible_px": 0,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0184
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "SCALE_LOSS",
+        "oracle_class": "SCALE_LOSS",
+        "alone_px_el0": 0,
+        "alone_px_oracle": 0,
+        "visible_px_rendered": 0,
+        "visible_px_oracle": 0,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": null,
+        "predicted_surface_min_m": null,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          19.799999,
+          0.0,
+          0.03
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 0,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 0,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "SCALE_LOSS",
+        "oracle_class": "SCALE_LOSS",
+        "alone_px_el0": 0,
+        "alone_px_oracle": 0,
+        "visible_px_rendered": 0,
+        "visible_px_oracle": 0,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": null,
+        "predicted_surface_min_m": null,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          19.799999,
+          0.0,
+          0.03
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 0,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 0,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_SC0_2",
+      "design": {
+        "design_evaluator_class": "SCALE_LOSS",
+        "design_alone_px": 0,
+        "design_visible_px": 0,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0201
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "SCALE_LOSS",
+        "oracle_class": "SCALE_LOSS",
+        "alone_px_el0": 0,
+        "alone_px_oracle": 0,
+        "visible_px_rendered": 0,
+        "visible_px_oracle": 0,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": null,
+        "predicted_surface_min_m": null,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          20.0,
+          0.0,
+          0.03
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 0,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 0,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "SCALE_LOSS",
+        "oracle_class": "SCALE_LOSS",
+        "alone_px_el0": 0,
+        "alone_px_oracle": 0,
+        "visible_px_rendered": 0,
+        "visible_px_oracle": 0,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": null,
+        "predicted_surface_min_m": null,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          20.0,
+          0.0,
+          0.03
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 0,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 0,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_SC1_1",
+      "design": {
+        "design_evaluator_class": "VISIBLE",
+        "design_alone_px": 1,
+        "design_visible_px": 1,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0253
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 1,
+        "alone_px_oracle": 1,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 14.750624656677246,
+        "predicted_surface_min_m": 14.750839847217797,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          15.0,
+          -0.09,
+          -0.07
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 1,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 1,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 1,
+        "alone_px_oracle": 1,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 14.750624656677246,
+        "predicted_surface_min_m": 14.750839847217797,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          15.0,
+          -0.09,
+          -0.07
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 1,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 1,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_SC1_2",
+      "design": {
+        "design_evaluator_class": "VISIBLE",
+        "design_alone_px": 1,
+        "design_visible_px": 1,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0564
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 1,
+        "alone_px_oracle": 1,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 17.750810623168945,
+        "predicted_surface_min_m": 17.751032006830496,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          18.0,
+          -0.1,
+          -0.07
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 1,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 1,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 1,
+        "alone_px_oracle": 1,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 17.750810623168945,
+        "predicted_surface_min_m": 17.751032006830496,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          18.0,
+          -0.1,
+          -0.07
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 1,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 1,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_SC1_FULL",
+      "design": {
+        "design_evaluator_class": "FULL",
+        "design_alone_px": 1,
+        "design_visible_px": 0,
+        "design_online_class": "PRED_SCALE_LOSS",
+        "sphere_boundary_margin_m": 0.0564
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "FULL",
+        "oracle_class": "FULL",
+        "alone_px_el0": 1,
+        "alone_px_oracle": 1,
+        "visible_px_rendered": 0,
+        "visible_px_oracle": 0,
+        "detected": false,
+        "centre_blocked_oracle": true,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 8.588913917541504,
+        "predicted_surface_min_m": 17.751032006830496,
+        "occluder_gap_min_m": 9.162118089288992,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          18.0,
+          -0.1,
+          -0.07
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 1,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 1,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 1,
+        "alone_px_oracle": 1,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 17.750810623168945,
+        "predicted_surface_min_m": 17.751032006830496,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          18.0,
+          -0.1,
+          -0.07
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "PRED_SCALE_LOSS",
+        "online_support_px": 1,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "PRED_SCALE_LOSS",
+        "oracle_online_support_px": 1,
+        "oracle_online_occluded_px": 0,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "PRED_SCALE_LOSS"
+        ],
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_PA_1",
+      "design": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0034
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "PARTIAL",
+        "oracle_class": "PARTIAL",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 5.669356346130371,
+        "predicted_surface_min_m": 11.758940185986159,
+        "occluder_gap_min_m": 6.110999969788539,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          -0.02,
+          -0.045
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_PARTIAL_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_PARTIAL_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 11.758927345275879,
+        "predicted_surface_min_m": 11.758940185986159,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          -0.02,
+          -0.045
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_PA_2",
+      "design": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0045
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "PARTIAL",
+        "oracle_class": "PARTIAL",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 5.626053333282471,
+        "predicted_surface_min_m": 11.765349191182395,
+        "occluder_gap_min_m": 6.144579708927978,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          0.004999,
+          -0.05
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_PARTIAL_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_PARTIAL_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 11.765183448791504,
+        "predicted_surface_min_m": 11.765349191182395,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          0.004999,
+          -0.05
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_PA_3",
+      "design": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0042
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "PARTIAL",
+        "oracle_class": "PARTIAL",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 6.108422756195068,
+        "predicted_surface_min_m": 12.751422552348275,
+        "occluder_gap_min_m": 6.729346773162456,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          -0.059999,
+          -0.055
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_PARTIAL_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_PARTIAL_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 12.751258850097656,
+        "predicted_surface_min_m": 12.751422552348275,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          -0.059999,
+          -0.055
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_PA_4",
+      "design": {
+        "design_evaluator_class": "PARTIAL",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0147
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "PARTIAL",
+        "oracle_class": "PARTIAL",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 6.073270797729492,
+        "predicted_surface_min_m": 12.768677976792585,
+        "occluder_gap_min_m": 6.701302802908327,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          0.004999,
+          -0.06
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_PARTIAL_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_PARTIAL_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_PARTIAL_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 12.768569946289062,
+        "predicted_surface_min_m": 12.768677976792585,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          0.004999,
+          -0.06
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_CO_1",
+      "design": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0034
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "CENTRE_ONLY",
+        "oracle_class": "CENTRE_ONLY",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": true,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 5.635054588317871,
+        "predicted_surface_min_m": 11.758940185986159,
+        "occluder_gap_min_m": 6.123885597668288,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          -0.02,
+          -0.045
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_CENTRE_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_CENTRE_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 11.758927345275879,
+        "predicted_surface_min_m": 11.758940185986159,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          -0.02,
+          -0.045
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_CO_2",
+      "design": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0045
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "CENTRE_ONLY",
+        "oracle_class": "CENTRE_ONLY",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": true,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 5.654806137084961,
+        "predicted_surface_min_m": 11.765349191182395,
+        "occluder_gap_min_m": 6.110543054097434,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          0.004999,
+          -0.05
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_CENTRE_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_CENTRE_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 11.765183448791504,
+        "predicted_surface_min_m": 11.765349191182395,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          12.0,
+          0.004999,
+          -0.05
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_CO_3",
+      "design": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0042
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "CENTRE_ONLY",
+        "oracle_class": "CENTRE_ONLY",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": true,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 6.059171676635742,
+        "predicted_surface_min_m": 12.751422552348275,
+        "occluder_gap_min_m": 6.692250875712533,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          -0.059999,
+          -0.055
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_CENTRE_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_CENTRE_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 12.751258850097656,
+        "predicted_surface_min_m": 12.751422552348275,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          -0.059999,
+          -0.055
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    },
+    {
+      "id": "C02_CO_4",
+      "design": {
+        "design_evaluator_class": "CENTRE_ONLY",
+        "design_alone_px": 2,
+        "design_visible_px": 1,
+        "design_online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "sphere_boundary_margin_m": 0.0147
+      },
+      "duplicates_identical": true,
+      "level_scene": {
+        "pass": "level_scene",
+        "el0_class": "CENTRE_ONLY",
+        "oracle_class": "CENTRE_ONLY",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 1,
+        "visible_px_oracle": 1,
+        "detected": false,
+        "centre_blocked_oracle": true,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 6.047971725463867,
+        "predicted_surface_min_m": 12.768677976792585,
+        "occluder_gap_min_m": 6.720706251328718,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          0.004999,
+          -0.06
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "OCCLUSION_CENTRE_EVIDENCE",
+        "online_support_px": 2,
+        "online_occluded_px": 1,
+        "oracle_online_class_on_gpu_depth": "OCCLUSION_CENTRE_EVIDENCE",
+        "oracle_online_support_px": 2,
+        "oracle_online_occluded_px": 1,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": [
+          "OCCLUSION_CENTRE_EVIDENCE"
+        ],
+        "mapping_ok": true
+      },
+      "level_alone": {
+        "pass": "level_alone",
+        "el0_class": "VISIBLE",
+        "oracle_class": "VISIBLE",
+        "alone_px_el0": 2,
+        "alone_px_oracle": 2,
+        "visible_px_rendered": 2,
+        "visible_px_oracle": 2,
+        "detected": true,
+        "centre_blocked_oracle": false,
+        "centre_robust_oracle": true,
+        "delivered_depth_min_over_support_m": 12.768569946289062,
+        "predicted_surface_min_m": 12.768677976792585,
+        "occluder_gap_min_m": null,
+        "occluder_within_tau": false,
+        "primed_belief_body_m": [
+          13.0,
+          0.004999,
+          -0.06
+        ],
+        "primed_cov_diag": [
+          1e-06,
+          1e-06,
+          1e-06
+        ],
+        "tau_m": 0.052000001072883606,
+        "online_class": "DETECTED",
+        "online_support_px": 2,
+        "online_occluded_px": 0,
+        "oracle_online_class_on_gpu_depth": "DETECTED",
+        "oracle_online_support_px": null,
+        "oracle_online_occluded_px": null,
+        "ambiguous_px": 0,
+        "support_agrees": true,
+        "online_agrees_with_oracle": true,
+        "mapping_allowed": null,
+        "mapping_ok": true
+      }
+    }
+  ],
+  "limits": [
+    "Fixture counts are constructed, not population rates; one unique pass per scene.",
+    "GO does not claim real-robot sensor accuracy or Recovery performance."
+  ]
+}

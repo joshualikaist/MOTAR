@@ -1,0 +1,83 @@
+{
+ "unit": "CAM-S3 S3-W",
+ "run": "w",
+ "mode": "smoke",
+ "preregistration": "docs/plans/prereg_camonly_s3w_2026-11-27.md",
+ "preflight": {
+  "head": "cf1184555ebc8fd85efb9208afda3692c0811cfb",
+  "branch": "camonly/s2b",
+  "free_gb": 7.17,
+  "free_gb_required": 1.05,
+  "cuda_processes_seen": []
+ },
+ "values": {
+  "CAMS2_SEED": "1",
+  "CAMS2_DENSITY_MIN_EPOCHS": "1000",
+  "CAMS2_DENSITY_WARMUP": "1000",
+  "CAMS2_THRESHOLD_SCHEDULE": "70:0.001,85:0.001,100:0.001,115:0.001",
+  "CAMS2_THRESHOLD_START": "0.001",
+  "CAMS2_THRESHOLD_END": "0.001",
+  "CAMS2_FREE_MPS": "2.5",
+  "CAMS2_BLIND_MPS": "1.0",
+  "CAMS2_BLIND_WEIGHT": "0.5",
+  "CAMS2_COLLISION_PENALTY": "-40",
+  "CAMS2_RSS_CLIP_M": "4.0",
+  "CAMS2_P9": "1",
+  "CAMS2_DELAY_MIN": "1",
+  "CAMS2_DELAY_MAX": "2",
+  "CAMS2_DETECT_WIDTH": "312",
+  "CAMS2_DETECT_HEIGHT": "234",
+  "NAVRL_SAVE_FREQUENCY": "250",
+  "CAMS3_YAW_RATE_MAX": "1.5708",
+  "CAMS3_BAR_POOL": "bars_h3_thin",
+  "CAMS3_SECTOR_K": "24",
+  "CAMS3_DENSITY_CHECK_EPS": "16"
+ },
+ "run_cores": "0-3,8-11,14-23",
+ "max_epochs": 15025,
+ "max_hours": 0.5,
+ "stop_rule": null,
+ "source_checkpoint": {
+  "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_261125_1344_navrl_v2-cams2b-ft-yaw60-camonly-s1/nn/last_gen_ppo_ep_15000_rew_51.018074.pth",
+  "copy": "/home/fair/motar_tmp/cams3_20261127/source/runs/ppo_261125_1344_navrl_v2-cams2b-ft-yaw60-camonly-s1/nn/last_gen_ppo_ep_15000_rew_51.018074.pth",
+  "sha256": "f2c80fcc2b2eaeb24e0b05d2284e74594a7ed8e7953f6b17b7dce49b09f2bbab",
+  "epoch": 15000,
+  "learning_rate": "7.5e-06"
+ },
+ "env_reference": {
+  "path": "/home/fair/motar_tmp/cams2b_20261124/train_ft/receipt.json",
+  "sha256": "3411d59cc1656a2b94cae97843ecd22c8d5d2d75ebe362def0b3887132f8365f"
+ },
+ "mask_library": {
+  "path": "/home/fair/motar_tmp/cams3_20261127/mask_library_v1.npz",
+  "sha256": "55c781136c3ce26635cab61d11c2e5fe4cbdcd28a7433cb6c315f858c603a351"
+ },
+ "sha256": {
+  "driver": "65bc7ce8f7b12cf08c8df127b1e1e4daa5e0dab33968cd0fd3e21df593953f57",
+  "launcher": "0d905f852b7f9a498f9a3101eceb79fe3e420da07756a63ac06adfb477ec3b51",
+  "wrapper": "b118d4725bd593135a876fd34ca5448a5b740a8dc620c3c4c065f8e384be2fa9"
+ },
+ "faults_before": 0,
+ "started": "2026-11-27T13:45:45",
+ "exit_code": 1,
+ "exit_reason": "\uc54c \uc218 \uc5c6\uc74c",
+ "faults_after": 0,
+ "ended": "2026-11-27T13:46:45",
+ "receipt_check": [],
+ "start_check": [
+  "no epoch block logged"
+ ],
+ "guard_failure": "no epoch block logged",
+ "stop_check": null,
+ "watcher_error": null,
+ "last_epoch": null,
+ "run_folder": null,
+ "checkpoints_every_1000_and_last": [],
+ "final_checkpoint": null,
+ "stages": [],
+ "promotions": [],
+ "speed": null,
+ "gpu_memory_peak_mib_polled": 7656,
+ "curriculum_check": null,
+ "verdict": "SMOKE_FAIL"
+}

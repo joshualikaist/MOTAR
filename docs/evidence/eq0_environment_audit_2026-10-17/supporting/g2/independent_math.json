@@ -1,0 +1,332 @@
+{
+  "camera_intrinsics": {
+    "cx": 79.5,
+    "cy": 44.5,
+    "fx": 84.30241002247699,
+    "fy": 81.18214898721406,
+    "height": 90,
+    "width": 160
+  },
+  "camera_no_obstacle_sphere_results": [
+    {
+      "camera_valid_min_two_pixels": true,
+      "center_range_bias_m": 0.04495311525429857,
+      "mean_surface_plus_radius_estimate_m": 1.0449531152542986,
+      "on_axis_target_pixels_no_obstacles": 496,
+      "range_m": 1
+    },
+    {
+      "camera_valid_min_two_pixels": true,
+      "center_range_bias_m": 0.035879071322440836,
+      "mean_surface_plus_radius_estimate_m": 5.035879071322441,
+      "on_axis_target_pixels_no_obstacles": 16,
+      "range_m": 5
+    },
+    {
+      "camera_valid_min_two_pixels": true,
+      "center_range_bias_m": 0.026388741083732015,
+      "mean_surface_plus_radius_estimate_m": 10.026388741083732,
+      "on_axis_target_pixels_no_obstacles": 4,
+      "range_m": 10
+    },
+    {
+      "camera_valid_min_two_pixels": true,
+      "center_range_bias_m": 0.07166098301245327,
+      "mean_surface_plus_radius_estimate_m": 15.071660983012453,
+      "on_axis_target_pixels_no_obstacles": 4,
+      "range_m": 15
+    },
+    {
+      "camera_valid_min_two_pixels": true,
+      "center_range_bias_m": 0.11232887144628023,
+      "mean_surface_plus_radius_estimate_m": 17.11232887144628,
+      "on_axis_target_pixels_no_obstacles": 4,
+      "range_m": 17
+    },
+    {
+      "camera_valid_min_two_pixels": false,
+      "center_range_bias_m": null,
+      "mean_surface_plus_radius_estimate_m": null,
+      "on_axis_target_pixels_no_obstacles": 0,
+      "range_m": 17.6
+    },
+    {
+      "camera_valid_min_two_pixels": false,
+      "center_range_bias_m": null,
+      "mean_surface_plus_radius_estimate_m": null,
+      "on_axis_target_pixels_no_obstacles": 0,
+      "range_m": 20
+    }
+  ],
+  "camera_ray_pixel_center_support_hfov_deg": 86.64133112757705,
+  "camera_ray_pixel_center_support_vfov_deg": 57.45870620855846,
+  "finite_rim_rays_cannot_prove_full_silhouette": true,
+  "fusion_body_to_camera_origin_front_wall_error_m": -0.1,
+  "fusion_mapping": [
+    {
+      "bearing_error_deg": -1.0839101680163594,
+      "correct_pinhole_u": 150.23812115721626,
+      "lidar_bearing_deg": -40,
+      "linear_u": 152.60344827586206,
+      "pixel_error": 2.7618788427837444,
+      "sampled_camera_bearing_deg": -41.08391016801636,
+      "sampled_u": 153
+    },
+    {
+      "bearing_error_deg": -1.9885443615072376,
+      "correct_pinhole_u": 138.52918298698418,
+      "lidar_bearing_deg": -35,
+      "linear_u": 143.46551724137933,
+      "pixel_error": 4.470817013015818,
+      "sampled_camera_bearing_deg": -36.98854436150724,
+      "sampled_u": 143
+    },
+    {
+      "bearing_error_deg": -2.8819453770997256,
+      "correct_pinhole_u": 128.1720191198113,
+      "lidar_bearing_deg": -30,
+      "linear_u": 134.32758620689657,
+      "pixel_error": 5.827980880188704,
+      "sampled_camera_bearing_deg": -32.881945377099726,
+      "sampled_u": 134
+    },
+    {
+      "bearing_error_deg": -3.3567835671065716,
+      "correct_pinhole_u": 118.81085939440374,
+      "lidar_bearing_deg": -25,
+      "linear_u": 125.18965517241381,
+      "pixel_error": 6.189140605596265,
+      "sampled_camera_bearing_deg": -28.35678356710657,
+      "sampled_u": 125
+    },
+    {
+      "bearing_error_deg": -3.4109268660532095,
+      "correct_pinhole_u": 110.1835679250864,
+      "lidar_bearing_deg": -20,
+      "linear_u": 116.05172413793103,
+      "pixel_error": 5.816432074913607,
+      "sampled_camera_bearing_deg": -23.41092686605321,
+      "sampled_u": 116
+    },
+    {
+      "bearing_error_deg": -3.0666663611078633,
+      "correct_pinhole_u": 102.0887626855201,
+      "lidar_bearing_deg": -15,
+      "linear_u": 106.91379310344828,
+      "pixel_error": 4.911237314479905,
+      "sampled_camera_bearing_deg": -18.066666361107863,
+      "sampled_u": 107
+    },
+    {
+      "bearing_error_deg": -2.3772509206082617,
+      "correct_pinhole_u": 94.3647894257104,
+      "lidar_bearing_deg": -10,
+      "linear_u": 97.77586206896551,
+      "pixel_error": 3.6352105742896015,
+      "sampled_camera_bearing_deg": -12.377250920608262,
+      "sampled_u": 98
+    },
+    {
+      "bearing_error_deg": -1.4295107492523895,
+      "correct_pinhole_u": 86.87550518488098,
+      "lidar_bearing_deg": -5,
+      "linear_u": 88.63793103448276,
+      "pixel_error": 2.1244948151190215,
+      "sampled_camera_bearing_deg": -6.4295107492523895,
+      "sampled_u": 89
+    },
+    {
+      "bearing_error_deg": -0.33981891904912387,
+      "correct_pinhole_u": 79.5,
+      "lidar_bearing_deg": 0,
+      "linear_u": 79.5,
+      "pixel_error": 0.5,
+      "sampled_camera_bearing_deg": -0.33981891904912387,
+      "sampled_u": 80
+    },
+    {
+      "bearing_error_deg": 1.4295107492523895,
+      "correct_pinhole_u": 72.12449481511902,
+      "lidar_bearing_deg": 5,
+      "linear_u": 70.36206896551724,
+      "pixel_error": -2.1244948151190215,
+      "sampled_camera_bearing_deg": 6.4295107492523895,
+      "sampled_u": 70
+    },
+    {
+      "bearing_error_deg": 2.3772509206082617,
+      "correct_pinhole_u": 64.6352105742896,
+      "lidar_bearing_deg": 10,
+      "linear_u": 61.22413793103448,
+      "pixel_error": -3.6352105742896015,
+      "sampled_camera_bearing_deg": 12.377250920608262,
+      "sampled_u": 61
+    },
+    {
+      "bearing_error_deg": 3.0666663611078633,
+      "correct_pinhole_u": 56.911237314479905,
+      "lidar_bearing_deg": 15,
+      "linear_u": 52.08620689655172,
+      "pixel_error": -4.911237314479905,
+      "sampled_camera_bearing_deg": 18.066666361107863,
+      "sampled_u": 52
+    },
+    {
+      "bearing_error_deg": 3.4109268660532095,
+      "correct_pinhole_u": 48.81643207491361,
+      "lidar_bearing_deg": 20,
+      "linear_u": 42.94827586206897,
+      "pixel_error": -5.816432074913607,
+      "sampled_camera_bearing_deg": 23.41092686605321,
+      "sampled_u": 43
+    },
+    {
+      "bearing_error_deg": 3.3567835671065716,
+      "correct_pinhole_u": 40.18914060559627,
+      "lidar_bearing_deg": 25,
+      "linear_u": 33.810344827586206,
+      "pixel_error": -6.189140605596272,
+      "sampled_camera_bearing_deg": 28.35678356710657,
+      "sampled_u": 34
+    },
+    {
+      "bearing_error_deg": 2.8819453770997256,
+      "correct_pinhole_u": 30.827980880188704,
+      "lidar_bearing_deg": 30,
+      "linear_u": 24.67241379310345,
+      "pixel_error": -5.827980880188704,
+      "sampled_camera_bearing_deg": 32.881945377099726,
+      "sampled_u": 25
+    },
+    {
+      "bearing_error_deg": 1.9885443615072376,
+      "correct_pinhole_u": 20.470817013015825,
+      "lidar_bearing_deg": 35,
+      "linear_u": 15.534482758620689,
+      "pixel_error": -4.470817013015825,
+      "sampled_camera_bearing_deg": 36.98854436150724,
+      "sampled_u": 16
+    },
+    {
+      "bearing_error_deg": 1.0839101680163594,
+      "correct_pinhole_u": 8.76187884278373,
+      "lidar_bearing_deg": 40,
+      "linear_u": 6.396551724137929,
+      "pixel_error": -2.76187884278373,
+      "sampled_camera_bearing_deg": 41.08391016801636,
+      "sampled_u": 6
+    }
+  ],
+  "fusion_max_bearing_error_deg": 3.4109268660532095,
+  "lidar_elevations_deg": [
+    20,
+    10,
+    0,
+    -10
+  ],
+  "lidar_horizontal_halfbin_guaranteed_hit_limit_m": 4.58511712521067,
+  "lidar_no_obstacle_sphere_results": [
+    {
+      "bearing_deg": 0,
+      "center_range_m": 2,
+      "elevation_deg": 0,
+      "hits": 3
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 2,
+      "elevation_deg": 5,
+      "hits": 2
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 2,
+      "elevation_deg": 0,
+      "hits": 2
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 2,
+      "elevation_deg": 5,
+      "hits": 4
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 5,
+      "elevation_deg": 0,
+      "hits": 1
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 5,
+      "elevation_deg": 5,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 5,
+      "elevation_deg": 0,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 5,
+      "elevation_deg": 5,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 10,
+      "elevation_deg": 0,
+      "hits": 1
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 10,
+      "elevation_deg": 5,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 10,
+      "elevation_deg": 0,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 10,
+      "elevation_deg": 5,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 12,
+      "elevation_deg": 0,
+      "hits": 1
+    },
+    {
+      "bearing_deg": 0,
+      "center_range_m": 12,
+      "elevation_deg": 5,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 12,
+      "elevation_deg": 0,
+      "hits": 0
+    },
+    {
+      "bearing_deg": 2.5,
+      "center_range_m": 12,
+      "elevation_deg": 5,
+      "hits": 0
+    }
+  ],
+  "lidar_on_axis_range_to_center_bias_from_radius_m": -0.05000000000000002,
+  "lidar_spacing_deg": 5.0,
+  "lidar_unique_azimuths": 72,
+  "lidar_vertical_halfbin_guaranteed_hit_limit_m": 2.2947426491339713,
+  "note": "Independent double-precision reference math, not execution of the GPU renderer or proof of recorded per-frame sensor returns.",
+  "on_axis_camera_pixel_disappearance_center_range_m": 17.543570945636656
+}

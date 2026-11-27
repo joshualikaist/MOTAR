@@ -1,0 +1,18 @@
+{
+ "approved_by": "the user (in this Claude Code session)",
+ "approved_at": "2026-11-27T22:40:01+09:00",
+ "user_words": [
+  "오케이 너가 하자고 하는대로 한번 해보자.",
+  "승인"
+ ],
+ "user_words_times": [
+  "2026-11-27T22:40:01+09:00",
+  "2026-11-27T22:40:04+09:00"
+ ],
+ "approval_record": "/home/fair/motar_tmp/cams3e_20261127/user_approval_eval_scope.json",
+ "scope": "CAM-S3-E v1 (CAM-REF stage 3): GPU evaluation at P_S (the CAM-DX1 V312 construction) at 205 bars, quota 8 per env at 128 envs (1,024 episodes per cell), of CAM-S2b-FT (f2c80fcc...) and CAM-S3 S3-W ep18000 (2626a4b2...), each in its own trained runtime: S0T S2b-FT on bars_h3_thin; S0M S2b-FT with the measured OAK-D masks and top band (false near 0, no sector rule); W S3-W (1.5708 rad/s, measured masks, sector k 24) on bars_h3; WT W on bars_h3_thin; reference S0 = CAM-DX1 V312 205 / 4501-4503 (SHA-256 pinned); smoke S0T, S0M, W, WT at quota 1 (205 / 4501); identity S0ID (S2b-FT at P_S, against CAM-DX1 V312 205 / 4501, first 8 episodes per env), any difference IDENTITY_FAIL; eval S0T, S0M, W, WT x seeds 4501-4503 (12 cells, block-major by seed); wall cap 2.0 h shared by the three stages, cells that cannot finish inside it skipped; unit ledger (amendment 1): no stage beyond what is left of 2.4 h after every CAM-S3-E report and unlisted cell directory under ~/motar_tmp/cams3e_20261127; idle host; tools/camref_stage3_run.py over tools/camref_eval_run.py with eval_navrl_cams3e_arms.sh and tools/camref_entry.py",
+ "scope_sha256": "63fb7f7ef236da3f842cb5b9d0cafa3d4ffab245e9e4acdb6346c9281488408a",
+ "commit": "e73c5732d47dd72e211032a3aa4a285c7ff593d2",
+ "note": "commit and scope SHA filled in after review r2 (GO_WITH_FIXES, no P1), as the approved text foresaw; the scope string adds the unit GPU ledger (tightening only). Review r2 P2-1 (ledger bypass via --out outside the unit folder) is avoided by running with --out under this folder; fix before any rerun.",
+ "written_at": "2026-11-27T22:58:19+09:00"
+}

@@ -1,0 +1,35 @@
+{
+ "files": [
+  {
+   "bytes": 896167,
+   "file": "d2_renders.npz",
+   "sha256": "17d34359bbd77f0871b973d47697f4b75a0fc74a5ae1096108a38a324eb7fd84"
+  },
+  {
+   "bytes": 7962,
+   "file": "d2_meta.json",
+   "sha256": "32d831d2ddf62efb74407075cae22d6a27b316b48415064b097c7520d3be93c7"
+  },
+  {
+   "bytes": 15258,
+   "file": "validity_probes.npz",
+   "sha256": "48eebc1e4804fee636ca4ffa485f7806c83c979be276f078c9eca21fc37e07cf"
+  },
+  {
+   "bytes": 419,
+   "file": "s_l1d_sensor_meta.json",
+   "sha256": "26fbf89561ead0797d307e1c847782dd6e8b209ab01760290d4646def309a443"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 112235008,
+ "process": "sensors_s_l1d",
+ "process_spec": {
+  "batch": "SENSORS",
+  "id": "sensors_s_l1d",
+  "mode": "s_l1d",
+  "num_envs": 43,
+  "seed": 4401
+ },
+ "wall_s": 7.5695481300354
+}

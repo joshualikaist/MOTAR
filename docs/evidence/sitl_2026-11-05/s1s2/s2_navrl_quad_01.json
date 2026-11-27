@@ -1,0 +1,179 @@
+{
+ "stage": "S1",
+ "client": "pymavlink",
+ "vehicle": "navrl_quad (airframe 10090, MOTAR training spec)",
+ "px4_commit": "1dacb4cdef2d7145754fc788fa8dc482eed74b40",
+ "host_faults_before": 0,
+ "affinity": [
+  6,
+  7,
+  12,
+  13
+ ],
+ "started": 1793815270.1180887,
+ "ready_s": 10.033211336005479,
+ "A0": {
+  "altitude_after_climb_m": 1.4228851795196533,
+  "acks": [
+   [
+    511,
+    0
+   ],
+   [
+    511,
+    0
+   ],
+   [
+    176,
+    0
+   ],
+   [
+    400,
+    0
+   ]
+  ],
+  "ok": true,
+  "statustext": []
+ },
+ "A2": {
+  "alt_mean_m": 1.5487322159608206,
+  "alt_rms_err_m": 0.08764212995882202,
+  "tilt_rms_deg": 3.815668329495814,
+  "tilt_max_deg": 9.088611521441493,
+  "samples": 3000
+ },
+ "A3": {
+  "x": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "rise_10_90_s": null,
+    "onset_latency_s": 0.19062047800980508,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 0.5640814314848852,
+    "samples": 150
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "rise_10_90_s": null,
+    "onset_latency_s": 0.47032007802044973,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 1.5367485984371754,
+    "samples": 150
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "rise_10_90_s": null,
+    "onset_latency_s": 0.010731242975452915,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 0.3562919819447302,
+    "samples": 150
+   }
+  ],
+  "y": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "rise_10_90_s": null,
+    "onset_latency_s": 0.2226964629953727,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 0.5125241398791361,
+    "samples": 151
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "rise_10_90_s": null,
+    "onset_latency_s": 0.5031380699947476,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 1.4512317919492264,
+    "samples": 150
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "rise_10_90_s": null,
+    "onset_latency_s": 0.0031629610166419297,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 0.2789320714757715,
+    "samples": 150
+   }
+  ]
+ },
+ "A3_alt_range_m": [
+  1.4263248443603516,
+  1.595810890197754
+ ],
+ "A4": [
+  {
+   "cmd_rad_s": 3.0,
+   "achieved_mean_last1s": 2.585907845497131,
+   "rise_10_90_s": null,
+   "onset_latency_s": 0.06345988300745375,
+   "overshoot_pct": 0.0,
+   "settling_5pct_s": null,
+   "final_mean": 2.6246976375579836,
+   "samples": 151
+  },
+  {
+   "cmd_rad_s": -3.0,
+   "achieved_mean_last1s": -2.471967558860779,
+   "rise_10_90_s": null,
+   "onset_latency_s": 0.08319698000559583,
+   "overshoot_pct": 0.0,
+   "settling_5pct_s": null,
+   "final_mean": -2.541965961456299,
+   "samples": 150
+  }
+ ],
+ "A5": {
+  "cmd_body": [
+   2.5,
+   2.5
+  ],
+  "cmd_norm_m_s": 3.5355339059327378,
+  "tilt_max_deg": 30.377331332130396,
+  "hspeed_max_m_s": 2.086615075890294,
+  "hspeed_last1s_m_s": 2.0107444425995786
+ },
+ "A6": {
+  "timesync_rtt_n": 100,
+  "timesync_rtt_median_ms": 0.10502499935682863,
+  "timesync_rtt_p95_ms": 0.17913701594807208,
+  "setpoint_period_median_s": 0.09999956501997076,
+  "setpoint_period_p95_s": 0.10036383601254784,
+  "setpoint_period_max_s": 0.1999381110072136,
+  "step_onset_latency_median_s": 0.2066584705025889
+ },
+ "params": {
+  "MPC_XY_VEL_MAX": 3.5999999046325684,
+  "MPC_Z_VEL_MAX_UP": 2.5,
+  "MPC_ACC_HOR_MAX": 5.0,
+  "MPC_ACC_HOR": 3.0,
+  "MPC_JERK_MAX": 8.0,
+  "MPC_TILTMAX_AIR": 45.0,
+  "MPC_XY_VEL_P_ACC": 1.7999999523162842,
+  "MPC_XY_VEL_I_ACC": 0.4000000059604645,
+  "MPC_XY_VEL_D_ACC": 0.20000000298023224,
+  "MPC_XY_P": 0.949999988079071,
+  "MPC_Z_P": 1.0,
+  "MC_YAWRATE_MAX": 172.0,
+  "COM_OF_LOSS_T": 1.0,
+  "MPC_THR_HOVER": 0.3100000023841858
+ },
+ "telemetry_counts": {
+  "pos": 7401,
+  "att": 7310
+ },
+ "status": "COMPLETE",
+ "host_faults_after": 0,
+ "finished": 1793815421.6102455
+}

@@ -1,0 +1,95 @@
+{
+  "schema": "motar.boia.g4r.integrity.v1",
+  "base_sha": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "current_head": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "checks": {
+    "head": true,
+    "branch": true,
+    "nonallowed_boia_source_unchanged": true,
+    "old_function_class_definitions_unchanged": true,
+    "old_boia_tests_unchanged": true,
+    "main_head": true,
+    "main_wip": true,
+    "stash": true,
+    "policy_checkpoint": true,
+    "protected_symlinks": true,
+    "prior_evidence_manifest_files": true,
+    "production_source_unchanged": true,
+    "no_staged_files": true
+  },
+  "unchanged_boia_modules": {
+    "motar_eval/boia/__init__.py": true,
+    "motar_eval/boia/access.py": true,
+    "motar_eval/boia/arbitration.py": true,
+    "motar_eval/boia/belief.py": true,
+    "motar_eval/boia/candidates.py": true,
+    "motar_eval/boia/cost.py": true,
+    "motar_eval/boia/dynamics.py": true,
+    "motar_eval/boia/fallback.py": true,
+    "motar_eval/boia/planner.py": true,
+    "motar_eval/boia/terminal.py": true,
+    "motar_eval/boia/trace.py": true,
+    "motar_eval/boia/visibility.py": true
+  },
+  "old_boia_tests": {
+    "tests/test_boia_access.py": true,
+    "tests/test_boia_arbitration.py": true,
+    "tests/test_boia_belief.py": true,
+    "tests/test_boia_candidates_safety.py": true,
+    "tests/test_boia_dynamics.py": true,
+    "tests/test_boia_geometry_visibility.py": true,
+    "tests/test_boia_p0_geometry.py": true,
+    "tests/test_boia_p0_online.py": true,
+    "tests/test_boia_p0_safety.py": true,
+    "tests/test_boia_planner.py": true
+  },
+  "old_definitions": {
+    "motar_eval/boia/geometry.py": {
+      "lidar_points_xy": true,
+      "exclude_target": true,
+      "seg_point_dist": true,
+      "known_free": true,
+      "_radii": true,
+      "_safe_context": true,
+      "point_in_known_free": true,
+      "segment_in_known_free": true
+    },
+    "motar_eval/boia/safety.py": {
+      "_segment_clearance": true,
+      "_stopping_envelope": true,
+      "screen": true
+    },
+    "motar_eval/boia/types.py": {
+      "BoiaParams": true,
+      "CameraParams": true,
+      "FreeContext": true,
+      "OnlineInputs": true,
+      "Rollout": true,
+      "Decision": true
+    }
+  },
+  "main_head": "f74390a1d44ca264960d39018f5e51710e9b7b0a",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "stash_sha": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543",
+  "policy_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "protected_symlinks": {
+    "results/mt_p1_precision_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1",
+    "results/occlusion_pilot_v1": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1"
+  },
+  "raw_payload_full_rehash": "NOT_RUN",
+  "external_raw_backup": "NOT_CREATED",
+  "free_bytes_before": 9655738368,
+  "free_bytes_after": 9651617792,
+  "disk_stop_bytes": 3000000000,
+  "local_commit": false,
+  "remote_push": false,
+  "main_merge": false,
+  "gpu_or_physics_run": false,
+  "session_start_utc": "2026-10-20T03:05:48Z",
+  "session_quota_deadline": "UNKNOWN",
+  "conservative_wrapup_kst": "2026-10-20 16:05 KST"
+}

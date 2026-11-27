@@ -1,0 +1,179 @@
+{
+ "stage": "S1",
+ "client": "pymavlink",
+ "vehicle": "navrl_quad (airframe 10090, MOTAR training spec)",
+ "px4_commit": "1dacb4cdef2d7145754fc788fa8dc482eed74b40",
+ "host_faults_before": 0,
+ "affinity": [
+  6,
+  7,
+  12,
+  13
+ ],
+ "started": 1793815490.7090445,
+ "ready_s": 10.033495253999718,
+ "A0": {
+  "altitude_after_climb_m": 1.4035377502441406,
+  "acks": [
+   [
+    511,
+    0
+   ],
+   [
+    511,
+    0
+   ],
+   [
+    176,
+    0
+   ],
+   [
+    400,
+    0
+   ]
+  ],
+  "ok": true,
+  "statustext": []
+ },
+ "A2": {
+  "alt_mean_m": 1.5769762475715554,
+  "alt_rms_err_m": 0.1009030436662656,
+  "tilt_rms_deg": 4.677167454955789,
+  "tilt_max_deg": 8.43869104099149,
+  "samples": 2999
+ },
+ "A3": {
+  "x": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "rise_10_90_s": 0.8801642809994519,
+    "onset_latency_s": 0.15994321901234798,
+    "overshoot_pct": 10.735441288946879,
+    "settling_5pct_s": null,
+    "final_mean": 1.1068978815259762,
+    "samples": 150
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "rise_10_90_s": 0.8400446879968513,
+    "onset_latency_s": 0.0001565899874549359,
+    "overshoot_pct": 14.301960017956539,
+    "settling_5pct_s": null,
+    "final_mean": 2.7054969427317768,
+    "samples": 150
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "rise_10_90_s": 1.020282180979848,
+    "onset_latency_s": 0.2199747090053279,
+    "overshoot_pct": 6.887048523305417,
+    "settling_5pct_s": null,
+    "final_mean": -0.17079057529850294,
+    "samples": 149
+   }
+  ],
+  "y": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "rise_10_90_s": 0.8602164089970756,
+    "onset_latency_s": 0.10956221801461652,
+    "overshoot_pct": 12.00615219500114,
+    "settling_5pct_s": null,
+    "final_mean": 1.119275598764741,
+    "samples": 150
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "rise_10_90_s": 0.8402484539838042,
+    "onset_latency_s": 0.009509383991826326,
+    "overshoot_pct": 14.20520828032208,
+    "settling_5pct_s": null,
+    "final_mean": 2.7025462801118025,
+    "samples": 150
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "rise_10_90_s": 1.0403095039946493,
+    "onset_latency_s": 0.20969804402557202,
+    "overshoot_pct": 6.57574673009802,
+    "settling_5pct_s": null,
+    "final_mean": -0.16416929536698766,
+    "samples": 150
+   }
+  ]
+ },
+ "A3_alt_range_m": [
+  1.4690284729003906,
+  1.4944617748260498
+ ],
+ "A4": [
+  {
+   "cmd_rad_s": 3.0,
+   "achieved_mean_last1s": 3.028734483718872,
+   "rise_10_90_s": 0.2600592999951914,
+   "onset_latency_s": 0.06718105700565502,
+   "overshoot_pct": 4.816293716430664,
+   "settling_5pct_s": 0.40724338599829935,
+   "final_mean": 3.0113036155700685,
+   "samples": 150
+  },
+  {
+   "cmd_rad_s": -3.0,
+   "achieved_mean_last1s": -3.0429515647888183,
+   "rise_10_90_s": 0.2610107380023692,
+   "onset_latency_s": 0.047055048984475434,
+   "overshoot_pct": 5.870858828226733,
+   "settling_5pct_s": 1.1282590230111964,
+   "final_mean": -3.0220264911651613,
+   "samples": 150
+  }
+ ],
+ "A5": {
+  "cmd_body": [
+   2.5,
+   2.5
+  ],
+  "cmd_norm_m_s": 3.5355339059327378,
+  "tilt_max_deg": 31.442486211613982,
+  "hspeed_max_m_s": 3.961997675440669,
+  "hspeed_last1s_m_s": 3.9355382433465804
+ },
+ "A6": {
+  "timesync_rtt_n": 100,
+  "timesync_rtt_median_ms": 0.10155899508390576,
+  "timesync_rtt_p95_ms": 0.1548650034237653,
+  "setpoint_period_median_s": 0.10000053502153605,
+  "setpoint_period_p95_s": 0.10037409199867398,
+  "setpoint_period_max_s": 0.20303974699345417,
+  "step_onset_latency_median_s": 0.13475271851348225
+ },
+ "params": {
+  "MPC_XY_VEL_MAX": 3.5999999046325684,
+  "MPC_Z_VEL_MAX_UP": 2.5,
+  "MPC_ACC_HOR_MAX": 5.0,
+  "MPC_ACC_HOR": 3.0,
+  "MPC_JERK_MAX": 8.0,
+  "MPC_TILTMAX_AIR": 45.0,
+  "MPC_XY_VEL_P_ACC": 1.7999999523162842,
+  "MPC_XY_VEL_I_ACC": 0.4000000059604645,
+  "MPC_XY_VEL_D_ACC": 0.20000000298023224,
+  "MPC_XY_P": 0.949999988079071,
+  "MPC_Z_P": 1.0,
+  "MC_YAWRATE_MAX": 172.0,
+  "COM_OF_LOSS_T": 1.0,
+  "MPC_THR_HOVER": 0.3100000023841858
+ },
+ "telemetry_counts": {
+  "pos": 7401,
+  "att": 7401
+ },
+ "status": "COMPLETE",
+ "host_faults_after": 0,
+ "finished": 1793815642.2921991
+}

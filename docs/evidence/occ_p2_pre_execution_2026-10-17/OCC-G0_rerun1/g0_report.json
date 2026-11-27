@@ -1,0 +1,619 @@
+{
+ "analysis_cells": {
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__115bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 14787,
+    "frames": 21303,
+    "geometric_full_probe_frames": 1516,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 21303,
+    "rendered_pixels_while_geometric_full": 0,
+    "rendered_zero_while_clear_in_view": 0
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 1516,
+    "full_rendered": 1631,
+    "partial": 541,
+    "visible": 14787
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__160bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 14249,
+    "frames": 23273,
+    "geometric_full_probe_frames": 2176,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 23273,
+    "rendered_pixels_while_geometric_full": 2,
+    "rendered_zero_while_clear_in_view": 0
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 2176,
+    "full_rendered": 2318,
+    "partial": 689,
+    "visible": 14249
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__205bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 13805,
+    "frames": 24046,
+    "geometric_full_probe_frames": 2495,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 24046,
+    "rendered_pixels_while_geometric_full": 1,
+    "rendered_zero_while_clear_in_view": 0
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 2495,
+    "full_rendered": 2658,
+    "partial": 828,
+    "visible": 13805
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__70bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 16015,
+    "frames": 20748,
+    "geometric_full_probe_frames": 942,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 20748,
+    "rendered_pixels_while_geometric_full": 0,
+    "rendered_zero_while_clear_in_view": 1
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 942,
+    "full_rendered": 996,
+    "partial": 274,
+    "visible": 16014
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/static/A1/E0_static__115bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 13509,
+    "frames": 18774,
+    "geometric_full_probe_frames": 317,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 18774,
+    "rendered_pixels_while_geometric_full": 1,
+    "rendered_zero_while_clear_in_view": 0
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 317,
+    "full_rendered": 346,
+    "partial": 215,
+    "visible": 13509
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/static/A1/E0_static__160bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 12848,
+    "frames": 19120,
+    "geometric_full_probe_frames": 483,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 19120,
+    "rendered_pixels_while_geometric_full": 0,
+    "rendered_zero_while_clear_in_view": 1
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 483,
+    "full_rendered": 520,
+    "partial": 159,
+    "visible": 12847
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/static/A1/E0_static__205bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 11993,
+    "frames": 19571,
+    "geometric_full_probe_frames": 566,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 19571,
+    "rendered_pixels_while_geometric_full": 1,
+    "rendered_zero_while_clear_in_view": 1
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 566,
+    "full_rendered": 619,
+    "partial": 278,
+    "visible": 11992
+   }
+  },
+  "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/static/A1/E0_static__70bars__seed4201": {
+   "parity": {
+    "clear_in_view_probe_frames": 14703,
+    "frames": 18442,
+    "geometric_full_probe_frames": 171,
+    "offline_vs_online_box_disagree": 0,
+    "offline_vs_probe_disagree": 0,
+    "probe_frames": 18442,
+    "rendered_pixels_while_geometric_full": 0,
+    "rendered_zero_while_clear_in_view": 0
+   },
+   "problems": [],
+   "render_alignment": "ZERO_LATENCY_RENDER_DELIVERY",
+   "scenes": {
+    "full_geometric": 171,
+    "full_rendered": 187,
+    "partial": 79,
+    "visible": 14703
+   }
+  }
+ },
+ "cap_hours": 2.0,
+ "finished_at": "2026-10-16T17:17:27.995140+00:00",
+ "git_commit": "6441c1ff74b6d085d14ed5604d1d60d66a4634fe",
+ "gpu_hours": 0.2472,
+ "noninterference": "PASS",
+ "output_bytes": 124766511,
+ "output_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1",
+ "pairs": {
+  "moving/A3/E2_obstacle_aware__115bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      184,
+      184
+     ],
+     "observation_rows_compared": 1408,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.0907,
+    "free_disk_gb_after": 21.34,
+    "issues": [],
+    "output_bytes": 3808176,
+    "seconds": 44.2
+   },
+   "on": {
+    "cumulative_hours": 0.109,
+    "free_disk_gb_after": 21.33,
+    "issues": [],
+    "output_bytes": 11194297,
+    "seconds": 65.5
+   }
+  },
+  "moving/A3/E2_obstacle_aware__160bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      204,
+      204
+     ],
+     "observation_rows_compared": 1920,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.1495,
+    "free_disk_gb_after": 21.31,
+    "issues": [],
+    "output_bytes": 5133069,
+    "seconds": 55.8
+   },
+   "on": {
+    "cumulative_hours": 0.1727,
+    "free_disk_gb_after": 21.3,
+    "issues": [],
+    "output_bytes": 15704642,
+    "seconds": 83.2
+   }
+  },
+  "moving/A3/E2_obstacle_aware__205bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      209,
+      209
+     ],
+     "observation_rows_compared": 1792,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.2181,
+    "free_disk_gb_after": 21.28,
+    "issues": [],
+    "output_bytes": 4948108,
+    "seconds": 58.6
+   },
+   "on": {
+    "cumulative_hours": 0.242,
+    "free_disk_gb_after": 21.26,
+    "issues": [],
+    "output_bytes": 15974218,
+    "seconds": 85.9
+   }
+  },
+  "moving/A3/E2_obstacle_aware__70bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      183,
+      183
+     ],
+     "observation_rows_compared": 1408,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.0355,
+    "free_disk_gb_after": 21.37,
+    "issues": [],
+    "output_bytes": 3632141,
+    "seconds": 40.8
+   },
+   "on": {
+    "cumulative_hours": 0.0525,
+    "free_disk_gb_after": 21.36,
+    "issues": [],
+    "output_bytes": 9839199,
+    "seconds": 61.3
+   }
+  },
+  "static/A1/E0_static__115bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      162,
+      162
+     ],
+     "observation_rows_compared": 1280,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.0629,
+    "free_disk_gb_after": 21.36,
+    "issues": [],
+    "output_bytes": 3565616,
+    "seconds": 37.1
+   },
+   "on": {
+    "cumulative_hours": 0.0784,
+    "free_disk_gb_after": 21.35,
+    "issues": [],
+    "output_bytes": 10311760,
+    "seconds": 56.0
+   }
+  },
+  "static/A1/E0_static__160bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      164,
+      164
+     ],
+     "observation_rows_compared": 1152,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.1192,
+    "free_disk_gb_after": 21.33,
+    "issues": [],
+    "output_bytes": 3147663,
+    "seconds": 36.7
+   },
+   "on": {
+    "cumulative_hours": 0.134,
+    "free_disk_gb_after": 21.32,
+    "issues": [],
+    "output_bytes": 9707737,
+    "seconds": 53.3
+   }
+  },
+  "static/A1/E0_static__205bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      170,
+      170
+     ],
+     "observation_rows_compared": 1280,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.1845,
+    "free_disk_gb_after": 21.29,
+    "issues": [],
+    "output_bytes": 3665295,
+    "seconds": 42.7
+   },
+   "on": {
+    "cumulative_hours": 0.2018,
+    "free_disk_gb_after": 21.28,
+    "issues": [],
+    "output_bytes": 11935967,
+    "seconds": 62.1
+   }
+  },
+  "static/A1/E0_static__70bars__seed4201": {
+   "historical": {
+    "keys_only_new": [],
+    "keys_only_old": [],
+    "ledger_mismatches": [],
+    "ledger_rows_compared": 512,
+    "recorder_mismatches": [],
+    "recorder_records_compared": 512,
+    "verdict": "MATCH"
+   },
+   "noninterference": {
+    "checks": {
+     "actor_observations_bitwise_equal": true,
+     "ledger_rows_sha256_equal": true,
+     "recorder_records_equal": true,
+     "result_equal_except_nonce": true,
+     "trajectory_digest_equal": true
+    },
+    "detail": {
+     "digest_steps": [
+      160,
+      160
+     ],
+     "observation_rows_compared": 1280,
+     "recorder_comparison": {
+      "keys_only_new": [],
+      "ledger_mismatches": [],
+      "ledger_rows_compared": 512,
+      "recorder_mismatches": [],
+      "recorder_records_compared": 512
+     }
+    },
+    "verdict": "PASS"
+   },
+   "off": {
+    "cumulative_hours": 0.0096,
+    "free_disk_gb_after": 21.38,
+    "issues": [],
+    "output_bytes": 3363781,
+    "seconds": 34.6
+   },
+   "on": {
+    "cumulative_hours": 0.0241,
+    "free_disk_gb_after": 21.37,
+    "issues": [],
+    "output_bytes": 8823725,
+    "seconds": 52.1
+   }
+  }
+ },
+ "policy_f_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "renderer_parity": {
+  "metrics": {
+   "offline_vs_online_box_disagree": 0,
+   "probe_agreement": 1.0,
+   "rendered_pixels_while_geometric_full": 0.0005769674590353104,
+   "rendered_zero_while_clear_in_view": 2.6807495375707047e-05
+  },
+  "totals": {
+   "clear_in_view_probe_frames": 111909,
+   "frames": 165277,
+   "geometric_full_probe_frames": 8666,
+   "offline_vs_online_box_disagree": 0,
+   "offline_vs_probe_disagree": 0,
+   "probe_frames": 165277,
+   "rendered_pixels_while_geometric_full": 5,
+   "rendered_zero_while_clear_in_view": 3
+  },
+  "verdict": "PASS"
+ },
+ "rerun_note": "rerun after the runner obs-dump path defect stopped the first attempt (kept at OCC-G0/)",
+ "run_id": "OCC-G0",
+ "scene_confirmation": {
+  "examples": {
+   "full_geometric": {
+    "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__115bars__seed4201",
+    "episode": "2/0",
+    "frame": 19
+   },
+   "full_rendered": {
+    "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__115bars__seed4201",
+    "episode": "2/0",
+    "frame": 19
+   },
+   "partial": {
+    "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__115bars__seed4201",
+    "episode": "2/3",
+    "frame": 9
+   },
+   "visible": {
+    "cell": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/on/moving/A3/E2_obstacle_aware__115bars__seed4201",
+    "episode": "0/0",
+    "frame": 0
+   }
+  },
+  "full_geometric": 8666,
+  "full_rendered": 9275,
+  "note": "full_rendered requires the probe; a full_geometric proxy without probe frames is geometry only",
+  "partial": 3063,
+  "verdict": "PRESENT",
+  "visible": 111906
+ },
+ "stop_reason": null,
+ "verdict": "G0_PASS"
+}

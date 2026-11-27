@@ -1,0 +1,6 @@
+..................................
+----------------------------------------------------------------------
+Ran 34 tests in 0.051s
+
+OK
+Real Warp module, launch and detector reference restored: PASS

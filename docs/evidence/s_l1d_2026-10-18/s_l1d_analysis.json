@@ -1,0 +1,2401 @@
+{
+  "schema": "motar.s-l1d-analysis.v1",
+  "run": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C01",
+  "source_sha": "76f0f4cc08ceecf9a05e628ea82d956123d29524",
+  "gates": {
+    "D-ORACLE": "PASS",
+    "D-FIXTURES": "PASS",
+    "D-SEPARATION": "PASS",
+    "D-REACQ": "PASS",
+    "D-REGRESSION": "PASS",
+    "D-EL0": "PASS",
+    "D-FIREWALL": "PASS",
+    "D-INTEGRITY": "PASS"
+  },
+  "decision": "S-L1D_QUALIFIED",
+  "sensors": {
+    "gated": 30,
+    "agree": 30,
+    "within_tau_reported": 0,
+    "alone_occlusion": 0,
+    "zero_support_full": 0,
+    "oracle_support_mismatch": 0,
+    "el0_support_mismatch": 0,
+    "confusion": {
+      "VISIBLE": {
+        "DETECTED": 102
+      },
+      "RANGE_EXIT": {
+        "PRED_RANGE_EXIT": 6
+      },
+      "FOV_EXIT": {
+        "PRED_FOV_EXIT": 12
+      },
+      "FULL": {
+        "OCCLUSION_FULL_EVIDENCE": 12
+      },
+      "PARTIAL": {
+        "DETECTED": 3
+      },
+      "CENTRE_ONLY": {
+        "DETECTED": 9
+      }
+    },
+    "disagreements": [],
+    "flags": [
+      true,
+      true
+    ]
+  },
+  "fixture_rows": [
+    {
+      "scene": "S00",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S01",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S02",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 35,
+      "alone_el0": 35,
+      "alone_oracle": 35,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S03",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S04",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S05",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 4,
+      "alone_el0": 4,
+      "alone_oracle": 4,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S06",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S07",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S08",
+      "pass": "level_scene",
+      "el0": "RANGE_EXIT",
+      "oracle_class": "RANGE_EXIT",
+      "online": "PRED_RANGE_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_RANGE_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S09",
+      "pass": "level_scene",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S10",
+      "pass": "level_scene",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S11",
+      "pass": "level_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 8,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S12",
+      "pass": "level_scene",
+      "el0": "PARTIAL",
+      "oracle_class": "PARTIAL",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 9,
+      "centre_robust": true
+    },
+    {
+      "scene": "S13",
+      "pass": "level_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 26,
+      "centre_robust": true
+    },
+    {
+      "scene": "S14",
+      "pass": "level_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 40,
+      "centre_robust": false
+    },
+    {
+      "scene": "S15",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S16",
+      "pass": "level_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 2,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S17",
+      "pass": "level_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 17,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S18",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S19",
+      "pass": "level_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 14,
+      "alone_el0": 14,
+      "alone_oracle": 14,
+      "occluded": 14,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S20",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 11,
+      "alone_el0": 11,
+      "alone_oracle": 11,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S21",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S22",
+      "pass": "level_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 136,
+      "alone_el0": 136,
+      "alone_oracle": 136,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "A_FOREGROUND",
+      "pass": "level_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 40,
+      "centre_robust": false
+    },
+    {
+      "scene": "S00",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S01",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S02",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 35,
+      "alone_el0": 35,
+      "alone_oracle": 35,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S03",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S04",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S05",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 4,
+      "alone_el0": 4,
+      "alone_oracle": 4,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S06",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S07",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S08",
+      "pass": "level_alone",
+      "el0": "RANGE_EXIT",
+      "oracle_class": "RANGE_EXIT",
+      "online": "PRED_RANGE_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_RANGE_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S09",
+      "pass": "level_alone",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S10",
+      "pass": "level_alone",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S11",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S12",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S13",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S14",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S15",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S16",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S17",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S18",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S19",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 14,
+      "alone_el0": 14,
+      "alone_oracle": 14,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S20",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 11,
+      "alone_el0": 11,
+      "alone_oracle": 11,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S21",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S22",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 136,
+      "alone_el0": 136,
+      "alone_oracle": 136,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "A_FOREGROUND",
+      "pass": "level_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S00",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S01",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S02",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 35,
+      "alone_el0": 35,
+      "alone_oracle": 35,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S03",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S04",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S05",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 4,
+      "alone_el0": 4,
+      "alone_oracle": 4,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S06",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S07",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S08",
+      "pass": "roll15_scene",
+      "el0": "RANGE_EXIT",
+      "oracle_class": "RANGE_EXIT",
+      "online": "PRED_RANGE_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_RANGE_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S09",
+      "pass": "roll15_scene",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S10",
+      "pass": "roll15_scene",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S11",
+      "pass": "roll15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 8,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S12",
+      "pass": "roll15_scene",
+      "el0": "PARTIAL",
+      "oracle_class": "PARTIAL",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 9,
+      "centre_robust": true
+    },
+    {
+      "scene": "S13",
+      "pass": "roll15_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 26,
+      "centre_robust": true
+    },
+    {
+      "scene": "S14",
+      "pass": "roll15_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 40,
+      "centre_robust": false
+    },
+    {
+      "scene": "S15",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S16",
+      "pass": "roll15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 2,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S17",
+      "pass": "roll15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 17,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S18",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S19",
+      "pass": "roll15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 14,
+      "alone_el0": 14,
+      "alone_oracle": 14,
+      "occluded": 14,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S20",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 11,
+      "alone_el0": 11,
+      "alone_oracle": 11,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S21",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S22",
+      "pass": "roll15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 136,
+      "alone_el0": 136,
+      "alone_oracle": 136,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "A_FOREGROUND",
+      "pass": "roll15_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 40,
+      "centre_robust": false
+    },
+    {
+      "scene": "S00",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S01",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S02",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 35,
+      "alone_el0": 35,
+      "alone_oracle": 35,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S03",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S04",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S05",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 4,
+      "alone_el0": 4,
+      "alone_oracle": 4,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S06",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S07",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S08",
+      "pass": "roll15_alone",
+      "el0": "RANGE_EXIT",
+      "oracle_class": "RANGE_EXIT",
+      "online": "PRED_RANGE_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_RANGE_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S09",
+      "pass": "roll15_alone",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S10",
+      "pass": "roll15_alone",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S11",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S12",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S13",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S14",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S15",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S16",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S17",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S18",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S19",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 14,
+      "alone_el0": 14,
+      "alone_oracle": 14,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S20",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 11,
+      "alone_el0": 11,
+      "alone_oracle": 11,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S21",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S22",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 136,
+      "alone_el0": 136,
+      "alone_oracle": 136,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "A_FOREGROUND",
+      "pass": "roll15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S00",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S01",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S02",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 35,
+      "alone_el0": 35,
+      "alone_oracle": 35,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S03",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S04",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S05",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 4,
+      "alone_el0": 4,
+      "alone_oracle": 4,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S06",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S07",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S08",
+      "pass": "pitch15_scene",
+      "el0": "RANGE_EXIT",
+      "oracle_class": "RANGE_EXIT",
+      "online": "PRED_RANGE_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_RANGE_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S09",
+      "pass": "pitch15_scene",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S10",
+      "pass": "pitch15_scene",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S11",
+      "pass": "pitch15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 8,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S12",
+      "pass": "pitch15_scene",
+      "el0": "PARTIAL",
+      "oracle_class": "PARTIAL",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 9,
+      "centre_robust": true
+    },
+    {
+      "scene": "S13",
+      "pass": "pitch15_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 26,
+      "centre_robust": true
+    },
+    {
+      "scene": "S14",
+      "pass": "pitch15_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 40,
+      "centre_robust": false
+    },
+    {
+      "scene": "S15",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S16",
+      "pass": "pitch15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 2,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S17",
+      "pass": "pitch15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 17,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S18",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S19",
+      "pass": "pitch15_scene",
+      "el0": "FULL",
+      "oracle_class": "FULL",
+      "online": "OCCLUSION_FULL_EVIDENCE",
+      "detected": false,
+      "support": 14,
+      "alone_el0": 14,
+      "alone_oracle": 14,
+      "occluded": 14,
+      "centre_robust": true,
+      "allowed": [
+        "OCCLUSION_FULL_EVIDENCE"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S20",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 11,
+      "alone_el0": 11,
+      "alone_oracle": 11,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S21",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S22",
+      "pass": "pitch15_scene",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 136,
+      "alone_el0": 136,
+      "alone_oracle": 136,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "A_FOREGROUND",
+      "pass": "pitch15_scene",
+      "el0": "CENTRE_ONLY",
+      "oracle_class": "CENTRE_ONLY",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 40,
+      "centre_robust": false
+    },
+    {
+      "scene": "S00",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S01",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S02",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 35,
+      "alone_el0": 35,
+      "alone_oracle": 35,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S03",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S04",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S05",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 4,
+      "alone_el0": 4,
+      "alone_oracle": 4,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S06",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S07",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S08",
+      "pass": "pitch15_alone",
+      "el0": "RANGE_EXIT",
+      "oracle_class": "RANGE_EXIT",
+      "online": "PRED_RANGE_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_RANGE_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S09",
+      "pass": "pitch15_alone",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S10",
+      "pass": "pitch15_alone",
+      "el0": "FOV_EXIT",
+      "oracle_class": "FOV_EXIT",
+      "online": "PRED_FOV_EXIT",
+      "detected": false,
+      "support": 0,
+      "alone_el0": 0,
+      "alone_oracle": 0,
+      "occluded": 0,
+      "centre_robust": true,
+      "allowed": [
+        "PRED_FOV_EXIT"
+      ],
+      "occluder_within_tau": false
+    },
+    {
+      "scene": "S11",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 8,
+      "alone_el0": 8,
+      "alone_oracle": 8,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S12",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S13",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S14",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S15",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S16",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 2,
+      "alone_el0": 2,
+      "alone_oracle": 2,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S17",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 17,
+      "alone_el0": 17,
+      "alone_oracle": 17,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S18",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 22,
+      "alone_el0": 22,
+      "alone_oracle": 22,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S19",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 14,
+      "alone_el0": 14,
+      "alone_oracle": 14,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S20",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 11,
+      "alone_el0": 11,
+      "alone_oracle": 11,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S21",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 30,
+      "alone_el0": 30,
+      "alone_oracle": 30,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "S22",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 136,
+      "alone_el0": 136,
+      "alone_oracle": 136,
+      "occluded": 0,
+      "centre_robust": true
+    },
+    {
+      "scene": "A_FOREGROUND",
+      "pass": "pitch15_alone",
+      "el0": "VISIBLE",
+      "oracle_class": "VISIBLE",
+      "online": "DETECTED",
+      "detected": true,
+      "support": 56,
+      "alone_el0": 56,
+      "alone_oracle": 56,
+      "occluded": 0,
+      "centre_robust": true
+    }
+  ],
+  "closed_loop": {
+    "static_s_l1d_p1": {
+      "steps": 601,
+      "identity_confirmed_reacquisitions": 38,
+      "fused_valid_returns": 73,
+      "reacquisition_gt_error_m": {
+        "n": 38,
+        "median": 0.06888256222009659,
+        "max": 0.18827314674854279
+      },
+      "confusion": {
+        "VISIBLE": {
+          "DETECTED": 3744,
+          "UNEXPLAINED_LOSS": 12,
+          "PRED_SCALE_LOSS": 3,
+          "PRED_FOV_EXIT": 1
+        },
+        "PARTIAL": {
+          "DETECTED": 86
+        },
+        "FOV_EXIT": {
+          "PRED_FOV_EXIT": 491,
+          "UNEXPLAINED_LOSS": 244,
+          "PRED_SCALE_LOSS": 6
+        },
+        "FULL": {
+          "OCCLUSION_FULL_EVIDENCE": 128,
+          "OCCLUSION_CENTRE_EVIDENCE": 22,
+          "PRED_FOV_EXIT": 4,
+          "OCCLUSION_PARTIAL_EVIDENCE": 4
+        },
+        "CENTRE_ONLY": {
+          "DETECTED": 56,
+          "OCCLUSION_FULL_EVIDENCE": 1,
+          "OCCLUSION_CENTRE_EVIDENCE": 4,
+          "OCCLUSION_PARTIAL_EVIDENCE": 2
+        }
+      }
+    },
+    "static_s_l1d_p2": {
+      "steps": 601,
+      "identity_confirmed_reacquisitions": 38,
+      "fused_valid_returns": 73,
+      "reacquisition_gt_error_m": {
+        "n": 38,
+        "median": 0.06888256222009659,
+        "max": 0.18827314674854279
+      },
+      "confusion": {
+        "VISIBLE": {
+          "DETECTED": 3744,
+          "UNEXPLAINED_LOSS": 12,
+          "PRED_SCALE_LOSS": 3,
+          "PRED_FOV_EXIT": 1
+        },
+        "PARTIAL": {
+          "DETECTED": 86
+        },
+        "FOV_EXIT": {
+          "PRED_FOV_EXIT": 491,
+          "UNEXPLAINED_LOSS": 244,
+          "PRED_SCALE_LOSS": 6
+        },
+        "FULL": {
+          "OCCLUSION_FULL_EVIDENCE": 128,
+          "OCCLUSION_CENTRE_EVIDENCE": 22,
+          "PRED_FOV_EXIT": 4,
+          "OCCLUSION_PARTIAL_EVIDENCE": 4
+        },
+        "CENTRE_ONLY": {
+          "DETECTED": 56,
+          "OCCLUSION_FULL_EVIDENCE": 1,
+          "OCCLUSION_CENTRE_EVIDENCE": 4,
+          "OCCLUSION_PARTIAL_EVIDENCE": 2
+        }
+      }
+    },
+    "moving_s_l1d_p1": {
+      "steps": 601,
+      "identity_confirmed_reacquisitions": 76,
+      "fused_valid_returns": 72,
+      "reacquisition_gt_error_m": {
+        "n": 76,
+        "median": 0.07866299152374268,
+        "max": 0.17609579861164093
+      },
+      "confusion": {
+        "VISIBLE": {
+          "DETECTED": 3317,
+          "UNEXPLAINED_LOSS": 3,
+          "PRED_FOV_EXIT": 3
+        },
+        "PARTIAL": {
+          "DETECTED": 145
+        },
+        "FULL": {
+          "OCCLUSION_PARTIAL_EVIDENCE": 32,
+          "OCCLUSION_CENTRE_EVIDENCE": 70,
+          "OCCLUSION_FULL_EVIDENCE": 300,
+          "UNEXPLAINED_LOSS": 30,
+          "PRED_FOV_EXIT": 5
+        },
+        "CENTRE_ONLY": {
+          "DETECTED": 89,
+          "OCCLUSION_CENTRE_EVIDENCE": 4
+        },
+        "FOV_EXIT": {
+          "PRED_FOV_EXIT": 545,
+          "OCCLUSION_PARTIAL_EVIDENCE": 3,
+          "UNEXPLAINED_LOSS": 251,
+          "OCCLUSION_FULL_EVIDENCE": 3,
+          "PRED_SCALE_LOSS": 5,
+          "OCCLUSION_CENTRE_EVIDENCE": 3
+        }
+      }
+    },
+    "moving_s_l1d_p2": {
+      "steps": 601,
+      "identity_confirmed_reacquisitions": 76,
+      "fused_valid_returns": 72,
+      "reacquisition_gt_error_m": {
+        "n": 76,
+        "median": 0.07866299152374268,
+        "max": 0.17609579861164093
+      },
+      "confusion": {
+        "VISIBLE": {
+          "DETECTED": 3317,
+          "UNEXPLAINED_LOSS": 3,
+          "PRED_FOV_EXIT": 3
+        },
+        "PARTIAL": {
+          "DETECTED": 145
+        },
+        "FULL": {
+          "OCCLUSION_PARTIAL_EVIDENCE": 32,
+          "OCCLUSION_CENTRE_EVIDENCE": 70,
+          "OCCLUSION_FULL_EVIDENCE": 300,
+          "UNEXPLAINED_LOSS": 30,
+          "PRED_FOV_EXIT": 5
+        },
+        "CENTRE_ONLY": {
+          "DETECTED": 89,
+          "OCCLUSION_CENTRE_EVIDENCE": 4
+        },
+        "FOV_EXIT": {
+          "PRED_FOV_EXIT": 545,
+          "OCCLUSION_PARTIAL_EVIDENCE": 3,
+          "UNEXPLAINED_LOSS": 251,
+          "OCCLUSION_FULL_EVIDENCE": 3,
+          "PRED_SCALE_LOSS": 5,
+          "OCCLUSION_CENTRE_EVIDENCE": 3
+        }
+      }
+    }
+  },
+  "regression": {
+    "static": {
+      "off_vs_el0_r1": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1c_vs_sl1c_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1d_vs_s_l1c_diagnostic_only": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      }
+    },
+    "moving": {
+      "off_vs_el0_r1": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1c_vs_sl1c_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1d_vs_s_l1c_diagnostic_only": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      }
+    }
+  },
+  "e_l0": {
+    "static": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 0,
+        "action": 0,
+        "reward": 0,
+        "done": 0,
+        "captured": 0,
+        "crashed": 0,
+        "pursuer": 0,
+        "target": 0,
+        "resets": 0,
+        "rgb": 0,
+        "depth": 0,
+        "lidar": 0,
+        "semantic": 0,
+        "tracker": 0
+      },
+      "identical": true
+    },
+    "moving": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 0,
+        "action": 0,
+        "reward": 0,
+        "done": 0,
+        "captured": 0,
+        "crashed": 0,
+        "pursuer": 0,
+        "target": 0,
+        "resets": 0,
+        "rgb": 0,
+        "depth": 0,
+        "lidar": 0,
+        "semantic": 0,
+        "tracker": 0
+      },
+      "identical": true
+    }
+  },
+  "actor_obs_dim": {
+    "static_off": 898,
+    "static_s_l1c": 898,
+    "static_s_l1d_p1": 898,
+    "static_s_l1d_p2": 898,
+    "moving_off": 898,
+    "moving_s_l1c": 898,
+    "moving_s_l1d_p1": 898,
+    "moving_s_l1d_p2": 898
+  },
+  "firewall_ast": {
+    "forbidden_parameters": [],
+    "imports": [
+      "math",
+      "os",
+      "torch"
+    ],
+    "import_from": false
+  },
+  "known_limits": [
+    "Constructed fixture counts are not population rates; attitude passes are identical inputs (unique = 1/3).",
+    "Occluders within tau of the target surface are indistinguishable in depth (reported, not gated).",
+    "Occluders beyond the 10 m obstacle far plane are invisible to the obstacle depth.",
+    "The online state is only as good as the track prediction; closed-loop agreement is reported, not gated."
+  ]
+}

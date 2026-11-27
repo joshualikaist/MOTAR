@@ -1,0 +1,64 @@
+{
+  "status": "LIMITATION_REPRODUCED_NOT_CORRECTED",
+  "fixture": "Ideal clear camera target at6m, isolated LiDAR first surface5.8m",
+  "raw_valid": 1,
+  "post_target_exclusion_valid": 0,
+  "known_free_target_bearing_m": 5.7,
+  "forecast_default_unknown_blocks": 0.0,
+  "forecast_unknown_ablation": 1.0,
+  "reason": "Raw first-hit known-free extent still stops before belief endpoint after target obstacle points are excluded. Existing07 intentionally conservative; not a new GT input or sensor performance measurement.",
+  "issue": "motar-3p3.13",
+  "classification": "SPEC_CONFORMING_G4 / KNOWN_DESIGN_MODEL_LIMITATION / NOT_CORRECTED",
+  "qualification": "G5 calibrated detection forecast and online supervisor qualification BLOCKED pending model review",
+  "independent_oracle": "No obstacle after exclusion, target at6m inside FOV. Raw-sector bound=5.8-.1=5.7m; endpoint6>5.7 therefore exact segment containment fails. This is independent of point-distance implementation.",
+  "source_sha256": {
+    "motar_eval/boia/geometry.py": "83f97733ee15148d16f6685c37e7ba9301ae10b707c3a984c6372188081a1133",
+    "motar_eval/boia/visibility.py": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62"
+  },
+  "fixture_inputs": {
+    "N": 1,
+    "K": 1,
+    "M": 1,
+    "H": 1,
+    "dtype": "float64",
+    "ranges_shape": [
+      1,
+      288
+    ],
+    "all_ranges_m": 12.0,
+    "exception_row": 2,
+    "exception_bin": 36,
+    "exception_range_m": 5.8,
+    "own_pos": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "own_yaw": 0.0,
+    "belief_mean": [
+      6.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "belief_covariance": ".001 I6",
+    "m_free": 0.1,
+    "r_T": 0.15,
+    "r_bar_est": 0.2,
+    "camera_fov_rad": [
+      1.5707963267948966,
+      1.0471975511965976
+    ],
+    "camera_fx": 80.0,
+    "camera_offset": [
+      0.0,
+      0.0,
+      0.0
+    ]
+  },
+  "reproduce": "Use lidar_points_xy, exclude_target, known_free to construct FreeContext from fixture_inputs, then forecast with unknown_blocks True/False. No production imports or sensor payloads. The independent endpoint inequality above predicts the result.",
+  "review": "Independent read-only analytical review agrees; not evidence of semantic identity in an actual measurement.",
+  "do_not_fix_by": "Do not fill a target-like ray to far range or discard foreground first hits: belief association may contain a real foreground bar."
+}

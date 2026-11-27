@@ -1,0 +1,119 @@
+{
+  "run_id": "HR3-P03-Q01",
+  "source_commit": "0e8790109a26abdb6d432b50cb7a6b31e9273e9c",
+  "status": "COMPLETED",
+  "wall_s": 2119.5865580749814,
+  "gpu_process_seconds": 2086.12533276499,
+  "output_bytes": 1735331521,
+  "free_disk_gb_after": 13.899657216,
+  "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p03_qualification_v1/HR3-P03-Q01",
+  "final_output_bytes": 1735489055,
+  "peak_device_mib": 5398,
+  "memory_scope": "Whole-device sampled use, including existing display/background processes",
+  "processes": [
+    {
+      "id": "short_normal",
+      "returncode": 0,
+      "wall_s": 31.610910232004244,
+      "loop_wall_s": 7.582764393009711,
+      "peak_gpu_mib": 5398,
+      "snapshots": 8
+    },
+    {
+      "id": "short_forced",
+      "returncode": 0,
+      "wall_s": 31.122306155972183,
+      "loop_wall_s": 8.471608492021915,
+      "peak_gpu_mib": 5398,
+      "snapshots": 8
+    },
+    {
+      "id": "long_B0",
+      "returncode": 0,
+      "wall_s": 225.62249774398515,
+      "loop_wall_s": 202.46515867701964,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_forced",
+      "returncode": 0,
+      "wall_s": 220.48146130301757,
+      "loop_wall_s": 196.20612859301036,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_noeval",
+      "returncode": 0,
+      "wall_s": 212.28126392303966,
+      "loop_wall_s": 187.9938942050212,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_audit",
+      "returncode": 0,
+      "wall_s": 283.48352357401745,
+      "loop_wall_s": 250.453392306983,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_B1",
+      "returncode": 0,
+      "wall_s": 210.753995097999,
+      "loop_wall_s": 187.74774012801936,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_B2",
+      "returncode": 0,
+      "wall_s": 215.2974086139584,
+      "loop_wall_s": 190.0823481180123,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_B3",
+      "returncode": 0,
+      "wall_s": 220.24092878302326,
+      "loop_wall_s": 195.70013243495487,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_B4",
+      "returncode": 0,
+      "wall_s": 215.0556002400117,
+      "loop_wall_s": 191.4563816320151,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    },
+    {
+      "id": "long_B5",
+      "returncode": 0,
+      "wall_s": 220.17543709796155,
+      "loop_wall_s": 196.81300835002912,
+      "peak_gpu_mib": 5398,
+      "snapshots": 13
+    }
+  ],
+  "per_process_output_bytes": {
+    "short_normal": 77609866,
+    "short_forced": 77536791,
+    "long_B0": 168943517,
+    "long_forced": 168700815,
+    "long_noeval": 167629123,
+    "long_audit": 227215996,
+    "long_B1": 168026676,
+    "long_B2": 168589499,
+    "long_B3": 167491190,
+    "long_B4": 169648375,
+    "long_B5": 170097943
+  },
+  "runtime_wall_reduction_vs_audit": 0.20410719148876677,
+  "runtime_storage_reduction_vs_audit": 0.25646292525989234,
+  "performance_scope": "One matched seed/process pair; descriptive, not a general benchmark"
+}

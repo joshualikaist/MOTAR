@@ -1,0 +1,22 @@
+test_all_infeasible_has_zero_advantage_and_actual_fallback_previous_action (test_boia_arbitration.ArbitrationTest) ... ok
+test_alternating_advantage_does_not_flap (test_boia_arbitration.ArbitrationTest) ... ok
+test_below_on_threshold_does_not_intervene (test_boia_arbitration.ArbitrationTest) ... ok
+test_explicit_threshold_frozen_state_purity_and_missing_threshold (test_boia_arbitration.ArbitrationTest) ... ok
+test_fallback_brakes_and_uses_only_active_belief_yaw (test_boia_arbitration.ArbitrationTest) ... ok
+test_minimum_five_engaged_decisions_release_on_sixth_not_fifth (test_boia_arbitration.ArbitrationTest) ... ok
+test_receding_argmin_may_return_f_during_hold_without_forcing_worse_action (test_boia_arbitration.ArbitrationTest) ... ok
+test_safety_override_bypasses_dwell_and_checks_stop_feasibility (test_boia_arbitration.ArbitrationTest) ... ok
+test_terminal_step_never_intervenes_even_when_all_candidates_fail (test_boia_arbitration.ArbitrationTest) ... ok
+test_visible_intercept_never_and_unlocalized_allow_only_safety (test_boia_arbitration.ArbitrationTest) ... ok
+test_infeasible_is_inf_and_empty_obstacle_clearance_cost_is_zero (test_boia_arbitration.CostTest) ... ok
+test_singular_and_non_pd_covariances_fail_explicitly_without_hidden_floor (test_boia_arbitration.CostTest) ... ok
+test_source_imports_no_mutable_runtime_globals_or_implicit_rng (test_boia_arbitration.CostTest) ... ok
+test_terms_and_mode_weights_match_independent_scalar_oracle (test_boia_arbitration.CostTest) ... ok
+test_intercept_precedence_strict_forecast_threshold_and_loss_boundaries (test_boia_arbitration.ModeTest) ... ok
+test_short_forecast_and_camera_miss_clock_ignore_lidar_recency (test_boia_arbitration.ModeTest) ... ok
+test_terminal_reset_ignores_postreset_camera_and_does_not_latch_next_live_step (test_boia_arbitration.ModeTest) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.035s
+
+OK

@@ -1,0 +1,32 @@
+# OAK source and model-generator addendum
+
+Fresh-context reviewer/model: Codex `/root/camera_independent_review`, GPT-6 family, exact deployment identifier unavailable. Same worktree/base/usage/authorization as REVIEW.md. **Verdict: PASS_WITH_LIMITS for revised OAK capture source, runtime preparation and model-generator CPU behavior only. Required repairs remaining0 in this scope.** Full physical companion composition is reviewed separately if introduced. No SDK import, real Device construction, camera access, PX4 tree installation, simulator, GPU or vehicle command occurred in this review.
+
+## Findings and repairs
+
+- **P2 calibrated metric-depth scale:** original build_pipeline disabled spec translation for depth alignment only. Pinned [DepthAI v2.29 StereoDepth.hpp](https://raw.githubusercontent.com/luxonis/depthai-core/v2.29.0/include/depthai/pipeline/node/StereoDepth.hpp) shows disparity-to-depth baseline selection is a separate setting defaulting to design/spec data. Revised pipeline explicitly disables spec translation for both metric conversion and RGB alignment; paired fake-graph assertions pass.
+- **P2 trained-FOV compatibility:** original THE_1080_P/640x360 video path crops away vertical field. [Luxonis IMX378 modes](https://docs.luxonis.com/hardware/sensors/IMX378) document the crop before binning, while nominal full-sensor FOV is stated on [OAK-D Pro](https://docs.luxonis.com/hardware/products/OAK-D%20Pro). From54deg full3040-pixel height and2160-pixel crop, an idealized geometry inference gives39.803677deg vertical FOV; the actual runtime projection rejects this synthetic calibrated matrix. This is not a measurement of this user's camera. Revised source selects THE_12_MP and ISP1/4, streams rgb.isp without video cropping, checks IMX378 identity and tests delivered measured intrinsics against trained pixel rays before startPipeline. [Pinned ColorCamera.cpp](https://raw.githubusercontent.com/luxonis/depthai-core/v2.29.0/src/pipeline/node/ColorCamera.cpp) independently confirms full4056x3040 and ISP scaling to1014x760. Ideal full-sensor calibrated positive accepts all14,400 trained pixel rays; original cropped negative is refused. Actual delivered calibration and physical coverage remain unprovided/NOT_TESTED.
+
+## Independent checks
+
+All CPU commands use hidden CUDA, PYTHONNOUSERSITE=1, numerical threads1, nice10, cores12,13,16GiB address-space cap, timeout300s plus10s kill and aerialgym Python-B.
+
+- Revised OAK tests9/9 PASS. The SDK/graph/queue tests use fakes, not the installed SDK.
+- Updated camera tests27/27 PASS, including both actual trained checkpoints in separate CPU processes, rejection of an inherited detector override before aerial_gym imports, and inference-failure latching. Runtime copies the contract via a JSON roundtrip before validation/use, protecting it from later caller-dict mutation. The source manifest now includes estimator and OAK operational adapters.
+- `probe_oak_model.py` independently derives a nonzero radial-distortion inverse map from the polynomial. All96 map pixels agree; remapped optical-z/invalid-mask agrees, including52 valid and44 border-invalid pixels. Zero-depth remains explicit invalid, uint16 millimetres become floating optical metres, and no synthetic noise is applied.
+- `probe_oak_repaired.py` verifies full-sensor ideal calibrated positive and cropped negative against actual Rectifier/project_rgbd code. These are labeled synthetic geometry controls and never supplied as real calibration evidence.
+- Actual model-generator write exercised only inside reviewer-owned fake PX4 fixtures: every default output byte matches the HEAD generator's default output; RGB-D mode has neither motar_lidar nor gpu_ray and creates its distinct10093 airframe. Actual PX4 installation and Gazebo plugin build/execution are NOT_TESTED.
+
+## Deployment limits
+
+Metadata-only sdk_inventory reports installed_depthai=null, MISSING_OR_UNSUPPORTED. Real device ID, measured mount, aligned-depth coordinate convention evidence, delivered intrinsics/distortion, lens position and host/PX4 clock binding have not been supplied or physically validated. Evidence-path/SHA validation cannot itself establish that caller-provided evidence is a correct calibration. The distorted-RGB alignment prerequisite must actually be qualified for this SDK graph before marking physical input aligned/rectified.
+
+DepthAI [ImgFrame API](https://depthai-docs-website.readthedocs.io/projects/api/en/latest/references/python/) distinguishes host-related getTimestamp from device-only getTimestampDevice; this source uses the former plus an explicit measured host-clock binding. Queue consumption is nonblocking, age/skew/sequence reuse reject, failed sessions latch, and cooperative service/deadline misses reject. These guards do not prove throughput or scheduling on a real companion. Discovery/calibration/startPipeline are blocking SDK startup calls without a proven absolute bound; revised connect explicitly documents that it must run standalone before active OFFBOARD control. The25ms serviced frame path does not make startup bounded. RGB-depth resampling/projection is an adapter, not sensor-equivalence or safety qualification.
+
+The source cannot establish real10Hz compute/camera performance, optical-z correctness/alignment, tracker appearance robustness, receiver concurrency, stop response, closed-loop stability, FC safety or flight readiness. Hardware/live qualification stays NOT_TESTED. Actual physical stereo extended/subpixel mode is selected separately; it is not silently described as the trained synthetic-noise configuration.
+
+## Evidence and Git Traceability
+
+Initial reviewed640x360 source is preserved in oak_snapshot/ with oak_sha256.json; revised1014x760 source in oak_repaired_snapshot/ with oak_repaired_sha256.json. Revised OAK source SHA256679d12e277a4456a7c9fcf2ada88a5be50122ac5571f3f378a6a418884de0e4b; test SHA256c157604c32e8f9d0bc2bb6552fe753c1afdd3b0d1363551adac26b332011c764. Original8-test and revised9-test outputs remain separate. The prior source snapshot was already repaired for metric baseline when captured; the original omission is independently established by this review's initial source read and pinned SDK documentation.
+
+Branch camonly/dev; base/HEAD eefb832e1c4fc6de8e597e990aa9cd58f2228079; reviewer repo changes NONE; new commit NONE; Remote Push NO; Main Merge NO; raw/checkpoint integrity preserved, read only. All review evidence lives only in this own audit directory; existing source dirt is untouched by reviewer.

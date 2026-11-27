@@ -1,0 +1,555 @@
+{
+ "k1d0/205": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   981,
+   2609
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   205,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K1D0",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   981,
+   true,
+   0,
+   0,
+   0,
+   null,
+   null,
+   null,
+   "identity"
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K1D0",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ },
+ "k1d1/205": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   1456,
+   3533
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   205,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K1D1",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   1456,
+   true,
+   0,
+   0,
+   3658,
+   null,
+   null,
+   125,
+   true
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K1D1",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ },
+ "k1d1/70": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   812,
+   2360
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   70,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K1D1",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   812,
+   true,
+   0,
+   0,
+   2484,
+   null,
+   null,
+   124,
+   true
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K1D1",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ },
+ "k2d0/205": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   1077,
+   2809
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   205,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K2D0",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   1077,
+   true,
+   69645,
+   68211,
+   0,
+   true,
+   0.979,
+   null,
+   true
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K2D0",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ },
+ "k2d0/70": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   799,
+   2458
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   70,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K2D0",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   799,
+   true,
+   51768,
+   50504,
+   0,
+   true,
+   0.976,
+   null,
+   true
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K2D0",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ },
+ "k4d0/205": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   1122,
+   2676
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   205,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K4D0",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   1122,
+   true,
+   36984,
+   106632,
+   0,
+   true,
+   2.883,
+   null,
+   true
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K4D0",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ },
+ "k4d0/70": {
+  "MOTAR_in_snapshot": [],
+  "ablation": [
+   "full",
+   true,
+   true,
+   72,
+   4
+  ],
+  "files": [
+   "actionhold_hook.json",
+   "cell.log",
+   "episode_ledger_summary.json",
+   "episodes.jsonl",
+   "kroc2027_episodes.jsonl",
+   "kroc2027_summary.json",
+   "receipt.json",
+   "result.json",
+   "sensor_ablation_receipt.json"
+  ],
+  "ledger_summary": [
+   "COMPLETE",
+   128,
+   16,
+   0,
+   2048,
+   2048,
+   true,
+   1281,
+   3562
+  ],
+  "receipt": [
+   "OK",
+   true,
+   0,
+   true,
+   2048,
+   4501,
+   70,
+   true
+  ],
+  "recorder": [
+   "complete",
+   "PASS",
+   0,
+   0,
+   0,
+   false,
+   true,
+   "G7-K4D0",
+   true,
+   true,
+   0
+  ],
+  "sidecar": [
+   true,
+   true,
+   "player_run_exit",
+   1281,
+   true,
+   42405,
+   121563,
+   0,
+   true,
+   2.867,
+   null,
+   true
+  ],
+  "snapshot_diff_vs_F_excl_paths_nonce": {
+   "NAVRL_KROC2027_RUN_ID": [
+    "G7-K4D0",
+    "GR0-GR0"
+   ],
+   "NAVRL_SENSOR_ABLATION": [
+    "full",
+    null
+   ]
+  }
+ }
+}

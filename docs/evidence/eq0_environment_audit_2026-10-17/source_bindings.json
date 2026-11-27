@@ -1,0 +1,220 @@
+{
+  "AST_exact_symbols_at_referenced_lines": {
+    "aerial_gym/control/motor_model.py": {
+      "169": "rk4_integration",
+      "178": "discrete_mixing_factor"
+    },
+    "aerial_gym/task/navrl_task/navrl_detector.py": {
+      "367": "NavRLTargetDetector/__init__",
+      "894": "NavRLTargetDetector/render_raw_rgbd"
+    },
+    "aerial_gym/task/navrl_task/navrl_perception.py": {
+      "1536": "NavRLPerceptionModule/_detect_rgbd",
+      "1694": "NavRLPerceptionModule/_detect_rgbd",
+      "1818": "NavRLPerceptionModule/_fuse_static_and_extract_obstacles",
+      "1925": "NavRLPerceptionModule/_associate_lidar_target",
+      "2179": "NavRLPerceptionModule/observe",
+      "615": "AppearanceTargetSegmenter"
+    },
+    "aerial_gym/task/navrl_task/navrl_task.py": {
+      "2296": "NavRLTask/_robot_spawn_inflation_radius_m",
+      "2341": "NavRLTask/_spawn_required_surface_margin_m",
+      "2484": "NavRLTask/_runtime_physics_contract",
+      "4953": "NavRLTask/transform_action_to_command",
+      "6019": "NavRLTask/compute_state_reward_and_terminations",
+      "6450": "NavRLTask/_process_obs_perception",
+      "6481": "NavRLTask/_process_obs_perception",
+      "6520": "NavRLTask/_process_obs_perception",
+      "8213": "NavRLTask/_advance_target",
+      "9123": "NavRLTask/_export_bulk_eval_result"
+    },
+    "aerial_gym/task/navrl_task/speed_governor.py": {
+      "465": "apply_speed_governor",
+      "505": "apply_speed_governor/stopping_margin"
+    }
+  },
+  "audited_files": {
+    "aerial_gym/config/controller_config/lee_controller_config.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "d09ce59e3a9f621f44d21597739feb51e46ad4bb4aea46f5630a6b990803b9d9"
+    },
+    "aerial_gym/config/controller_config/lee_controller_config_navrl.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "17b0b86c045d3d901aae6a0fa5546a2aeee2d4721e1b350754020401dba7adf2"
+    },
+    "aerial_gym/config/env_config/navrl_bars_env.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "990cc63edfd635d4b3461bebd98d9981d23b9eb6e44f027f7c295e80530848f8"
+    },
+    "aerial_gym/config/robot_config/base_quad_config.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "7fd5ecab0f2264d3fd6a06c2d05c5ec1f56d4b9a55a48659fc61425e74559975"
+    },
+    "aerial_gym/config/robot_config/navrl_quad_config.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "a76f8a3dd1ce7a39614a989ecf3b6a493e7703f2f4cbaa7f77132a9e6322223e"
+    },
+    "aerial_gym/config/sensor_config/lidar_config/navrl_lidar_config.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "8892f6f04853290e44a0de578734dcd0617c45d71225bc8dd6735aad996f9697"
+    },
+    "aerial_gym/config/sim_config/base_sim_config.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "a555a9c3cd4908277ffec78b5000a03bcec5f03608c9204c338a8f5405adad3a"
+    },
+    "aerial_gym/config/task_config/navrl_task_config.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "f35e1959cb6f7035937642c479bb073d05d8ce3796db9e7c8e9e036c992b6267"
+    },
+    "aerial_gym/control/control_allocation.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "9b0beb0c8986066bf412dd13e8e3c3c1b89ef46f1ff8e746a8680a45f1febe90"
+    },
+    "aerial_gym/control/controllers/base_lee_controller.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "5722b0111a735ac4273fc7087ab18327ff8abe53e7a8d65df39bfa042d23cb14"
+    },
+    "aerial_gym/control/controllers/velocity_control.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "fd01a61d3f4e2d49087763d2c3559df13fdb4a377f20ef9e057e84a9bdbfcec8"
+    },
+    "aerial_gym/control/motor_model.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "1463e22cbeac24474755d1ece5b7757f52af25c67062f26701f503aeeb5f79c3"
+    },
+    "aerial_gym/env_manager/IGE_env_manager.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "2b447a215e55d53f8e711a4ca63224484d7f10eff3720a3d46d33468e56c5fc9"
+    },
+    "aerial_gym/env_manager/asset_manager.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "988db916ded64aa20b09f732dbc981e6ded02080121141018eeb8a40fa8e459a"
+    },
+    "aerial_gym/env_manager/env_manager.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "8802061db7102db1dd98d67d554ddd7e28351b8a40fe69dbc4d768c9fecf16c8"
+    },
+    "aerial_gym/rl_training/rl_games/eval_navrl_target_behavior_arms.sh": {
+      "equals_measured_git_blob": true,
+      "sha256": "4077e2718c73c3177cdf1f775cc11a6b50cb18d591e352382e175c45fb14f7ec"
+    },
+    "aerial_gym/rl_training/rl_games/navrl_action_models.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "234e13f2895c1f04e3d4266b5175ea40eab9082b73d463077206cc595ea48e1f"
+    },
+    "aerial_gym/rl_training/rl_games/navrl_players.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "ee5c7d1310bcba9d70ce05e8e15e294aabaa382aa4e8f98ecbbf3deb25d7c076"
+    },
+    "aerial_gym/rl_training/rl_games/navrl_transformer_network.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "eaa67b3ce0690fa32c871b6d19603d781d0eb9195b16050a930357c78af9422e"
+    },
+    "aerial_gym/rl_training/rl_games/play_navrl.sh": {
+      "equals_measured_git_blob": true,
+      "sha256": "9f300a2093e274171a8ff9ea5407a0a9bff14d9ccb05a2e0b091741bd08103d0"
+    },
+    "aerial_gym/rl_training/rl_games/ppo_navrl_perception_transformer.yaml": {
+      "equals_measured_git_blob": true,
+      "sha256": "5531b9b41933c6cd73525d8b8ebab61fc96e53d04df833d263eb8102f78225c8"
+    },
+    "aerial_gym/rl_training/rl_games/runner.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "54975b442b3aeda63b7e82b8501b67697401c293c29cdc893c7e6477d8a0842a"
+    },
+    "aerial_gym/robots/base_multirotor.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "90aa24dc6b19b9833954ac7abd0bf976062fcf29e2009e72286482835bd4f24c"
+    },
+    "aerial_gym/robots/robot_manager.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "b52221c088129c295f2bc75e174c72d3bae793393cea4d1e5e5e09995460a658"
+    },
+    "aerial_gym/sensors/warp/warp_kernels/warp_lidar_kernels.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "a5970cf9523392d340d22ca4a7d17d5708fc6cac65ac558be031176c503fa9be"
+    },
+    "aerial_gym/sensors/warp/warp_lidar.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "8e2aef1e67d9fad2886543a322fffe7772940120b2639e14a817bdaaa423f2ed"
+    },
+    "aerial_gym/sensors/warp/warp_sensor.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "a47906ec19109b54c8a193dccbf1504e7c8cfc91fc86e0c69b0980bd63252e84"
+    },
+    "aerial_gym/task/navrl_task/kroc_eval_adapter.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af"
+    },
+    "aerial_gym/task/navrl_task/navrl_detector.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "ff04a2dc410342079bd58333c53c571266a7f44c9864ef4e3f6910dd7f6312fa"
+    },
+    "aerial_gym/task/navrl_task/navrl_perception.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "0b7f26aa9c12db5e528a3fe75aa28a146a9fbfb695dc8f988e7b172b11c3082f"
+    },
+    "aerial_gym/task/navrl_task/navrl_task.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "c54616567da64cc5fa8d210ba51f4452af623c10a1a5934db58482f5d761cd0d"
+    },
+    "aerial_gym/task/navrl_task/recovery_visibility_probe.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "f3a15db1b1f199b1203583b06016c273ec4dbd628e23bb6b29afc1f6b9b1ae66"
+    },
+    "aerial_gym/task/navrl_task/speed_governor.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "fe00c84c3b9a4f62518445c134ee9b0b3eb085486e82feddfeb0ea736ebb6847"
+    },
+    "aerial_gym/task/navrl_task/target_motion.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "d8e243f375fd9dc8944a3ae2731900372045f538b051d07834bdcb054939b46f"
+    },
+    "docs/plans/prereg_occlusion_confirmatory_v1.json": {
+      "equals_measured_git_blob": true,
+      "sha256": "077f3daf25621791fcb973ae0581f0f290b75873c5044cb805d3ed8d43cdef67"
+    },
+    "docs/plans/prereg_occlusion_confirmatory_v1.md": {
+      "equals_measured_git_blob": true,
+      "sha256": "b825b75fff1d978f8c3c4d695906efa5197c91c0730c3f5bec309fba875950b7"
+    },
+    "motar_eval/geometry.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "3fd2c5f56b85948d2b79b011181fba0746d48423d69aad0780d0b51a46878c4f"
+    },
+    "motar_eval/occlusion_events.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "35c05146055c6dd62eb0695021e88f209257914d7e752f8863cbc1113804e77a"
+    },
+    "motar_eval/occlusion_geometry.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "1d3854a725858a65ffa881422d60b0d2332f89e88073e34987e035455e591e1c"
+    },
+    "motar_eval/occlusion_trace.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1"
+    },
+    "resources/robots/quad/quad_navrl_collide.urdf": {
+      "equals_measured_git_blob": true,
+      "sha256": "ad9a3110037cb01f94caa11054e367e557e9089b4edd520d0aa59b78578988be"
+    },
+    "tools/kroc2027_eval.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "b5979cecff3967f9feed665dbf6a96d698c3df8db2ef8b3d6579087a8460ee5c"
+    },
+    "tools/occlusion_analysis.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "95911c4def2bdecd1035f3faef149ad46c8975ed5645970dc198f86031279120"
+    },
+    "tools/occlusion_confirmatory.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "33958182f41def22edf88a376fbef4deac3387ae41270c8e43c12d23267a50dc"
+    },
+    "tools/occlusion_confirmatory_analysis.py": {
+      "equals_measured_git_blob": true,
+      "sha256": "596114c13740f66e1c694480b82953b8cea01d366873c82a3e9cbd81b617c5be"
+    }
+  },
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+  "review_edit_note": "Before publication, abbreviated method/class labels in review prose were aligned with AST exact symbols. G1/G2/G4 reproducer output destinations were changed only to fresh temporary directories; computation was retained and rechecked. Historical source/raw unchanged."
+}

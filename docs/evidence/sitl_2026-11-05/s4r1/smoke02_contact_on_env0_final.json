@@ -1,0 +1,14 @@
+{
+ "status": "COMPLETE",
+ "reason": null,
+ "episodes_recorded": 1,
+ "episodes_scheduled": 1,
+ "kernel_faults_before": 0,
+ "kernel_faults_after": 0,
+ "finished": 1794316380.2504876,
+ "git_after": {
+  "head": "023998f10e565033ff3d7e3fc55a354a4dfb1de9",
+  "branch": "camonly/dev",
+  "dirty": ""
+ }
+}

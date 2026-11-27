@@ -1,0 +1,1805 @@
+{
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "base_function_count": 60,
+  "current_function_count": 63,
+  "module_count": 15,
+  "method": "Every AST function joined to explicit source-read contracts; initializer read as whole module.",
+  "missing": [],
+  "files": [
+    {
+      "file": "motar_eval/boia/__init__.py",
+      "sha256": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+      "base_sha256": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+      "functions": [],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/access.py",
+      "sha256": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+      "base_sha256": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+      "functions": [
+        {
+          "function": "_copy_tensor",
+          "line": 27,
+          "end_line": 39,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_copy_tensor",
+                "line": 27,
+                "end_line": 39,
+                "base_line": 27,
+                "inspected": true,
+                "claim": "Checks exact shape/float or bool dtype/finiteness; returns independent detached clone.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-03",
+                  "ON-04"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_scalar",
+          "line": 42,
+          "end_line": 48,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_scalar",
+                "line": 42,
+                "end_line": 48,
+                "base_line": 42,
+                "inspected": true,
+                "claim": "Numeric scalar excludes bool, validates finite and optional positivity.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-03",
+                  "ON-04"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "read_online",
+          "line": 51,
+          "end_line": 121,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "read_online",
+                "line": 51,
+                "end_line": 121,
+                "base_line": 51,
+                "inspected": true,
+                "claim": "Whitelist copies own state, LiDAR and tracker/camera data; computes xyzw yaw; validates calibration/ranges.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-03",
+                  "ON-04"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/arbitration.py",
+      "sha256": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+      "base_sha256": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+      "functions": [
+        {
+          "function": "initial_state",
+          "line": 35,
+          "end_line": 41,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "initial_state",
+                "line": 35,
+                "end_line": 41,
+                "base_line": 35,
+                "inspected": true,
+                "claim": "Independent N-first zero state using reference dtype/device.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-04",
+                  "ON-06"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "update_mode",
+          "line": 44,
+          "end_line": 78,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "update_mode",
+                "line": 44,
+                "end_line": 78,
+                "base_line": 44,
+                "inspected": true,
+                "claim": "Updates camera-only misses/acquisition once; current terminal mask, INTERCEPT and PRE precedence.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-04",
+                  "ON-06"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "advantage",
+          "line": 81,
+          "end_line": 93,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "advantage",
+                "line": 81,
+                "end_line": 93,
+                "base_line": 81,
+                "inspected": true,
+                "claim": "Finite feasible F minus best; +inf for unavailable F with alternative;0 sentinel if none.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-04",
+                  "ON-06"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "decide",
+          "line": 96,
+          "end_line": 142,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "decide",
+                "line": 96,
+                "end_line": 142,
+                "base_line": 96,
+                "inspected": true,
+                "claim": "Safety/gain/dwell arbitration, feasible argmin or hold slot1; exact four-result API and new state.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-04",
+                  "ON-06"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/belief.py",
+      "sha256": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+      "base_sha256": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+      "functions": [
+        {
+          "function": "_positive_dt",
+          "line": 13,
+          "end_line": 19,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_positive_dt",
+                "line": 13,
+                "end_line": 19,
+                "base_line": 13,
+                "inspected": true,
+                "claim": "Validates finite positive numeric dt seconds.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_positive_count",
+          "line": 22,
+          "end_line": 25,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_positive_count",
+                "line": 22,
+                "end_line": 25,
+                "base_line": 22,
+                "inspected": true,
+                "claim": "Validates integer positive sample/step count.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_real",
+          "line": 28,
+          "end_line": 32,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_real",
+                "line": 28,
+                "end_line": 32,
+                "base_line": 28,
+                "inspected": true,
+                "claim": "Restricts finite float32/64 tensor.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_covariance",
+          "line": 35,
+          "end_line": 47,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_covariance",
+                "line": 35,
+                "end_line": 47,
+                "base_line": 35,
+                "inspected": true,
+                "claim": "Checks dimensions, scale-aware symmetry/PSD; returns symmetric average.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_state",
+          "line": 50,
+          "end_line": 59,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_state",
+                "line": 50,
+                "end_line": 59,
+                "base_line": 50,
+                "inspected": true,
+                "claim": "Checks N,6 mean and N,6,6 covariance dtype/device.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_process",
+          "line": 62,
+          "end_line": 68,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_process",
+                "line": 62,
+                "end_line": 68,
+                "base_line": 62,
+                "inspected": true,
+                "claim": "Checks6,6 or N,6,6 PSD Q and broadcasts per env.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "tracker_Q",
+          "line": 71,
+          "end_line": 79,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "tracker_Q",
+                "line": 71,
+                "end_line": 79,
+                "base_line": 71,
+                "inspected": true,
+                "claim": "Reproduces diagonal .025dt\u00b2 position and .25dt velocity process variances.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "predict",
+          "line": 82,
+          "end_line": 102,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "predict",
+                "line": 82,
+                "end_line": 102,
+                "base_line": 82,
+                "inspected": true,
+                "claim": "Recurses deterministic CV means and FPF\u1d40+Q from t+dt to t+Hdt.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_factor",
+          "line": 105,
+          "end_line": 124,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_factor",
+                "line": 105,
+                "end_line": 124,
+                "base_line": 105,
+                "inspected": true,
+                "claim": "Per-env Cholesky retries with explicit recorded diagonal jitter.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "sample",
+          "line": 127,
+          "end_line": 164,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "sample",
+                "line": 127,
+                "end_line": 164,
+                "base_line": 127,
+                "inspected": true,
+                "claim": "Initial Gaussian belief plus independent per-step Q increments; explicit local Generator advances.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "expected_cov",
+          "line": 167,
+          "end_line": 206,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "expected_cov",
+                "line": 167,
+                "end_line": 206,
+                "base_line": 167,
+                "inspected": true,
+                "claim": "Prior/Joseph-posterior convex mixture; exact original at p=0; singular innovation fails closed.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-02",
+                  "ON-07"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/candidates.py",
+      "sha256": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+      "base_sha256": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+      "functions": [
+        {
+          "function": "_clear",
+          "line": 16,
+          "end_line": 21,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_clear",
+                "line": 16,
+                "end_line": 21,
+                "base_line": 16,
+                "inspected": true,
+                "claim": "Boolean segment clearance against per-env valid points.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-05",
+                  "ON-06"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "generate",
+          "line": 24,
+          "end_line": 94,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "generate",
+                "line": 24,
+                "end_line": 94,
+                "base_line": 24,
+                "inspected": true,
+                "claim": "Produces20 deterministic normalized candidate commands and family/fallback diagnostics.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-05",
+                  "ON-06"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/cost.py",
+      "sha256": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+      "base_sha256": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+      "functions": [
+        {
+          "function": "_logdet_pd",
+          "line": 8,
+          "end_line": 15,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_logdet_pd",
+                "line": 8,
+                "end_line": 15,
+                "base_line": 8,
+                "inspected": true,
+                "claim": "Cholesky logdet; symmetric finite strictly PD required, no hidden entropy floor.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-07",
+                  "ON-10"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "evaluate",
+          "line": 18,
+          "end_line": 57,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "evaluate",
+                "line": 18,
+                "end_line": 57,
+                "base_line": 18,
+                "inspected": true,
+                "claim": "Computes five specified scalar utilities and mode weights; masks infeasible/nonfinite scores to+inf.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-07",
+                  "ON-10"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/dynamics.py",
+      "sha256": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+      "base_sha256": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+      "functions": [
+        {
+          "function": "RiskcapConfig.__post_init__",
+          "line": 34,
+          "end_line": 45,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "dynamics.py",
+                "name": "RiskcapConfig.__post_init__",
+                "input_output": "Frozen riskcap-only config to finite nonnegative checks, positive width/brake/range, cap/release ordering.",
+                "units_frame_dt_batch": "Caps m/s; width/margins/clearances metres; reaction/TTC seconds; brake m/s^2. No integration or batch state.",
+                "status": "PASS_CONTRACT",
+                "limits": "Only receipt-bound riskcap branch, with runtime brake=2.96 unlike upstream default=2.0; not a stopping policy.",
+                "source_path": "motar_eval/boia/dynamics.py",
+                "line": 34,
+                "end_line": 45
+              }
+            }
+          ]
+        },
+        {
+          "function": "directional_lidar_clearance",
+          "line": 48,
+          "end_line": 79,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "dynamics.py",
+                "name": "directional_lidar_clearance",
+                "input_output": "(N,V,B) measured slant ranges, (B,) vehicle bearings, (N,2) commanded vehicle XY velocity and optional permitted association mask -> (N,) forward corridor clearance.",
+                "units_frame_dt_batch": "Metres/radians/m/s; horizontal projection cos(elevation), per-bearing minimum rows; every env independent, no dt.",
+                "status": "PASS_MATCHED_ARITHMETIC",
+                "limits": "Original pure file bitwise equality CPU float32/64; finite rows below .995 Rmax; fixed original vertical FOV convention; sparse returns do not certify complete obstacle volume.",
+                "source_path": "motar_eval/boia/dynamics.py",
+                "line": 48,
+                "end_line": 79
+              }
+            }
+          ]
+        },
+        {
+          "function": "apply_riskcap",
+          "line": 82,
+          "end_line": 105,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "dynamics.py",
+                "name": "apply_riskcap",
+                "input_output": "(N,2) vehicle XY request + (N,) corridor clearance -> governed vehicle request and N-first cap/scale/TTC/stopping-margin telemetry.",
+                "units_frame_dt_batch": "Velocity m/s, clearance/margin metres, TTC seconds. No integration; rows independent.",
+                "status": "PASS_MATCHED_ARITHMETIC",
+                "limits": "2 m/s is cap FLOOR, never a minimum requested/executed velocity; brake/reaction/margin affect telemetry only. Does not enforce stopping feasibility.",
+                "source_path": "motar_eval/boia/dynamics.py",
+                "line": 82,
+                "end_line": 105
+              }
+            }
+          ]
+        },
+        {
+          "function": "point_corridor_clearance",
+          "line": 108,
+          "end_line": 127,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "dynamics.py",
+                "name": "point_corridor_clearance",
+                "input_output": "Original world XY points/validity (N,P,2)/(N,P), predicted world pose (N,K,3), yaw (N,K), vehicle request (N,K,2) -> (N,K) corridor clearance.",
+                "units_frame_dt_batch": "Metres/radians/m/s; subtract world translation and invert current yaw; N and K independent; no new sensor scan or integration.",
+                "status": "LIMITED_VALIDITY",
+                "limits": "Reprojects measured snapshot at moved poses, cannot discover unseen obstacles; explicitly ADAPTED and not raw-scan bitwise equivalence.",
+                "source_path": "motar_eval/boia/dynamics.py",
+                "line": 108,
+                "end_line": 127
+              }
+            }
+          ]
+        },
+        {
+          "function": "rollout",
+          "line": 130,
+          "end_line": 194,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "dynamics.py",
+                "name": "rollout",
+                "input_output": "Normalized candidates (N,K,4), world p/v (N,3), yaw (N,), points, config and explicit H/S/dt -> Rollout records.",
+                "units_frame_dt_batch": "Clip normalized action, XY*2.5 m/s per axis, yaw*3 rad/s; body/vehicle command re-rotated using each current yaw. dt=.1 s, S=10 -> .01 s substep; semi-implicit world XY integration, fixed z/zero vz; N/K independent.",
+                "status": "LIMITED_VALIDITY",
+                "limits": "tau_v=.4 s unqualified prior, clipped acceleration 9.81 m/s^2; no actual Lee attitude/motor/altitude dynamics. Positive tau_psi requires explicit initial Euler yaw rate. H/S/dt are call arguments; safety assumes params.dt is the same decision interval used to generate Rollout.",
+                "source_path": "motar_eval/boia/dynamics.py",
+                "line": 130,
+                "end_line": 194
+              }
+            }
+          ]
+        },
+        {
+          "function": "braking_distance",
+          "line": 197,
+          "end_line": 220,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "dynamics.py",
+                "name": "braking_distance",
+                "input_output": "Finite nonnegative speed tensor, declared knot tuple and reaction -> total distance and above-last-knot flag of same shape.",
+                "units_frame_dt_batch": "Speed m/s, distance metres; reaction seconds included ONCE. Below-first constant-deceleration extension, linear interpolation, above-last anchored quadratic extension. Tensor shape preserved.",
+                "status": "LIMITED_VALIDITY",
+                "limits": "Exact nominal knots .82/1.05/1.57 are fixed design values, not newly measured means. Extrapolation is a prior; no low-speed actual Lee calibration. Original helper remains unchanged; safety now envelopes its low-speed inconsistency.",
+                "source_path": "motar_eval/boia/dynamics.py",
+                "line": 197,
+                "end_line": 220
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/fallback.py",
+      "sha256": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+      "base_sha256": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+      "functions": [
+        {
+          "function": "safe_hold",
+          "line": 5,
+          "end_line": 17,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "safe_hold",
+                "line": 5,
+                "end_line": 17,
+                "base_line": 5,
+                "inspected": true,
+                "claim": "Zero normalized translation plus permitted active-bearing yaw, no declared outcome.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-09"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/geometry.py",
+      "sha256": "a2bef3da924aa36be5c1ed9346e6ae1192f683bdcb4010d806a1df0fdc06511d",
+      "base_sha256": "83f97733ee15148d16f6685c37e7ba9301ae10b707c3a984c6372188081a1133",
+      "functions": [
+        {
+          "function": "lidar_points_xy",
+          "line": 13,
+          "end_line": 22,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "lidar_points_xy",
+                "base_lines": [
+                  9,
+                  18
+                ],
+                "current_lines": [
+                  13,
+                  22
+                ],
+                "inputs": "rho (N,V*B) slant metres; azimuth (B), elevation (V), yaw (N) radians; pos (N,3) world metres",
+                "outputs": "points (N,V*B,2) world XY metres and validity (N,V*B) bool",
+                "assumptions_and_limits": "Yaw-only LiDAR orientation; horizontal distance rho*cos(elevation), finite positive range strictly below .995*far is a measured hit. No surface extent or beam footprint reconstruction.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "HorizontalFreeCounterexamples.test_invalid_and_nearzero_ranges_cannot_expand_free_space",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "exclude_target",
+          "line": 25,
+          "end_line": 38,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "exclude_target",
+                "base_lines": [
+                  21,
+                  29
+                ],
+                "current_lines": [
+                  25,
+                  38
+                ],
+                "inputs": "points (N,P,2) world XY m; valid (N,P) bool; belief mean (N,2) m and covariance (N,2,2) m^2; target radius m and chi2 dimensionless",
+                "outputs": "independent cloned validity (N,P) bool",
+                "assumptions_and_limits": "ABSTAIN: beliefs cannot prove identity. All previously valid target and obstacle hits are retained. No semantic/GT input; target self-blocking remains.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "ExclusionCounterexamples: six object-role cases plus mask/order/no-mutation",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "seg_point_dist",
+          "line": 41,
+          "end_line": 53,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "seg_point_dist",
+                "base_lines": [
+                  32,
+                  44
+                ],
+                "current_lines": [
+                  41,
+                  53
+                ],
+                "inputs": "broadcast segment endpoints (N,*Q,2) world XY m; measured points (N,P,2) world XY m",
+                "outputs": "nonnegative distances (N,*Q,P) m",
+                "assumptions_and_limits": "Euclidean closed-segment projection with clamped [0,1] parameter; zero-length segment reduces to point distance. Assumes finite valid geometry supplied by caller.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "VisibilityOriginsAndModelLimits.test_segment_distance_zero_length_and_partition_independent_examples; independent Python scalar projection",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "known_free",
+          "line": 56,
+          "end_line": 83,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "known_free",
+                "base_lines": [
+                  47,
+                  54
+                ],
+                "current_lines": [
+                  56,
+                  83
+                ],
+                "inputs": "rho (N,V*B) slant m; azimuth (B) rad; pos (N,3) m, yaw (N) rad; far and horizontal margin m; optional elevations (V) rad",
+                "outputs": "scan-relative radii (N,B), horizontal m",
+                "assumptions_and_limits": "Default six-argument contract is explicitly four elevations [20,10,0,-10] deg. Other layouts require elevations. Project rows before row minimum, subtract horizontal margin, then adjacent-bin minimum. Invalid/nonpositive evidence never expands a ray; no target-like far fill. Sparse-sector and 2D assumptions remain.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "HorizontalFreeCounterexamples: 0,+/-10,+/-20 deg; before-min projection; undeclared layouts; invalid/near-zero returns",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "_radii",
+          "line": 86,
+          "end_line": 102,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "_radii",
+                "base_lines": [
+                  57,
+                  73
+                ],
+                "current_lines": [
+                  86,
+                  102
+                ],
+                "inputs": "relative XY queries (N,*Q,2) m; yaw (N) rad; sector radii (N,B) m; angles (B) rad",
+                "outputs": "assigned radii (N,*Q) m",
+                "assumptions_and_limits": "Requires >=3 uniformly decreasing full-circle rays; nearest-ray sectors use smaller adjacent radius exactly at numerical boundary (8 machine eps). Sector interpolation is a model, not physical beam coverage.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "IndependentHelperChecks.test_sector_helper_uses_minimum_on_boundary",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "_safe_context",
+          "line": 105,
+          "end_line": 121,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "_safe_context",
+                "base_lines": null,
+                "current_lines": [
+                  105,
+                  121
+                ],
+                "inputs": "pos (N,3) m; yaw (N) rad; radii (N,B) m; far scalar m",
+                "outputs": "valid env mask (N) and locally sanitized pose/yaw/radii with same shapes",
+                "assumptions_and_limits": "Whole env invalid on any nonfinite position/yaw/radius, negative/above-far radius, or nonfinite/nonpositive far. Local zero values must always be combined with valid mask. No scan mutation.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "ContextInputCounterexamples: point and segment checked separately with valid second env",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "point_in_known_free",
+          "line": 124,
+          "end_line": 131,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "point_in_known_free",
+                "base_lines": [
+                  76,
+                  82
+                ],
+                "current_lines": [
+                  124,
+                  131
+                ],
+                "inputs": "queries (N,*Q,2) world XY m and original scan pos/yaw/radii/angles/far",
+                "outputs": "bool membership (N,*Q)",
+                "assumptions_and_limits": "Original LiDAR origin, per-env input guard, finite query, radius bound. Valid finite contexts preserve nearest-sector behavior. Does not certify unobserved inter-ray space or altitude clearance.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "HorizontalFreeCounterexamples; ContextInputCounterexamples; sparse scan limitation fixture",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "segment_in_known_free",
+          "line": 134,
+          "end_line": 161,
+          "source_read_receipts": [
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/geometry.py",
+                "function": "segment_in_known_free",
+                "base_lines": [
+                  85,
+                  111
+                ],
+                "current_lines": [
+                  134,
+                  161
+                ],
+                "inputs": "broadcast endpoints (N,*Q,2) world XY m; original FreeContext",
+                "outputs": "bool segment membership (N,*Q)",
+                "assumptions_and_limits": "Partitions segment at sector-boundary intersections; radial convexity makes endpoint max sufficient within each sector. Exact for represented 2D radial-sector model only. Zero-length segments and invalid context guard included; no physical 3D guarantee.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "Scalar segment examples; ContextInputCounterexamples; retained 6/5.8 negative",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/planner.py",
+      "sha256": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+      "base_sha256": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+      "functions": [
+        {
+          "function": "_subset",
+          "line": 17,
+          "end_line": 20,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_subset",
+                "line": 17,
+                "end_line": 20,
+                "base_line": 17,
+                "inspected": true,
+                "claim": "Selects live N rows; shared angles/elevations/camera calibration retained.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-02",
+                  "ON-03",
+                  "ON-04",
+                  "ON-07",
+                  "ON-08",
+                  "ON-09",
+                  "ON-10",
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_state_subset",
+          "line": 23,
+          "end_line": 24,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_state_subset",
+                "line": 23,
+                "end_line": 24,
+                "base_line": 23,
+                "inspected": true,
+                "claim": "Clones selected explicit BOIA state rows.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-02",
+                  "ON-03",
+                  "ON-04",
+                  "ON-07",
+                  "ON-08",
+                  "ON-09",
+                  "ON-10",
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_merge_state",
+          "line": 27,
+          "end_line": 33,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_merge_state",
+                "line": 27,
+                "end_line": 33,
+                "base_line": 27,
+                "inspected": true,
+                "claim": "Copies complete state and replaces only selected rows.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-02",
+                  "ON-03",
+                  "ON-04",
+                  "ON-07",
+                  "ON-08",
+                  "ON-09",
+                  "ON-10",
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "expected_horizon",
+          "line": 36,
+          "end_line": 48,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "expected_horizon",
+                "line": 36,
+                "end_line": 48,
+                "base_line": 36,
+                "inspected": true,
+                "claim": "Carries each expected posterior into next F/Q prediction, not independent horizon updates.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-02",
+                  "ON-03",
+                  "ON-04",
+                  "ON-07",
+                  "ON-08",
+                  "ON-09",
+                  "ON-10",
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "BoiaPlanner.with_state",
+          "line": 57,
+          "end_line": 58,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "with_state",
+                "line": 57,
+                "end_line": 58,
+                "base_line": 57,
+                "inspected": true,
+                "claim": "Returns a new frozen planner; no implicit retained mutation.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-02",
+                  "ON-03",
+                  "ON-04",
+                  "ON-07",
+                  "ON-08",
+                  "ON-09",
+                  "ON-10",
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "BoiaPlanner.step",
+          "line": 60,
+          "end_line": 133,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "step",
+                "line": 60,
+                "end_line": 133,
+                "base_line": 60,
+                "inspected": true,
+                "claim": "Whitelist/read, live geometry/candidates/rollout/safety/sampling/forecast/cost/arbitration, fallback merge and trace.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-02",
+                  "ON-03",
+                  "ON-04",
+                  "ON-07",
+                  "ON-08",
+                  "ON-09",
+                  "ON-10",
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/safety.py",
+      "sha256": "0d2f200291880a3f0bb01374494740693e059d5245d1d3c065ebd605304c8da9",
+      "base_sha256": "7cc77a9b0893ab006b8614e55394e0f428fb489fd25015aa557b6eec2bdce7ab",
+      "functions": [
+        {
+          "function": "_segment_clearance",
+          "line": 16,
+          "end_line": 21,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "safety.py",
+                "name": "_segment_clearance",
+                "input_output": "World XY segment batches (N,...,2), points (N,P,2), validity (N,P) -> minimum sensed-point segment distance (N,...).",
+                "units_frame_dt_batch": "Metres, all shared world XY; element-wise difference-based distances, no matrix-distance TF32 path; N-independent, no dt.",
+                "status": "PASS_ANALYTIC_POINT_GEOMETRY",
+                "limits": "Empty/all-invalid point sets give +inf; only sensed points, not obstacle surfaces, ray gaps or whole-body known-free containment.",
+                "source_path": "motar_eval/boia/safety.py",
+                "line": 16,
+                "end_line": 21
+              }
+            }
+          ]
+        },
+        {
+          "function": "_stopping_envelope",
+          "line": 24,
+          "end_line": 39,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "safety.py",
+                "name": "_stopping_envelope",
+                "input_output": "Final planar speed (N,K), explicit response config and actual Rollout substep count -> conservative maximum of table total and own-model continuous total.",
+                "units_frame_dt_batch": "Metres from m/s, seconds, m/s^2. Checks finite positive tau/a/dt and params.dt/substeps <= tau. Each N/K entry independent.",
+                "status": "PASS_OWN_MODEL_BOUND_ONLY",
+                "limits": "Continuous derivation for dv/dt=-min(v/tau,a) bounds resolved semi-implicit zero-command response; one reaction term per branch before max. No actual-plant certificate or uncertainty budget; decision interval consistency is an explicit caller precondition.",
+                "source_path": "motar_eval/boia/safety.py",
+                "line": 24,
+                "end_line": 39
+              }
+            }
+          ]
+        },
+        {
+          "function": "screen",
+          "line": 42,
+          "end_line": 102,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "safety.py",
+                "name": "screen",
+                "input_output": "Rollout (N,K,H,S,...), permitted world XY point set/validity and FreeContext -> hard_ok/stop_ok (N,K), clr_min (N,K,H), soft deficit (N,K).",
+                "units_frame_dt_batch": "All positions/clearances metres, velocity world m/s; speed*delay metres. Uses every initial-to-substep and substep-to-substep segment; chunks 256 segments, no cross-env reductions. Endpoint stop extends current planar velocity direction by new envelope.",
+                "status": "LIMITED_VALIDITY",
+                "limits": "Physical radius floor fixed for current NavRL URDF; full-body containment in known free unresolved; position/control/sensor errors NOT_RECORDED. Linear tail direction/first-order response is not actual Lee certification; finite candidate rejection does not prove unavoidable collision.",
+                "source_path": "motar_eval/boia/safety.py",
+                "line": 42,
+                "end_line": 102
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/terminal.py",
+      "sha256": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+      "base_sha256": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+      "functions": [
+        {
+          "function": "apply",
+          "line": 7,
+          "end_line": 17,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "apply",
+                "line": 7,
+                "end_line": 17,
+                "base_line": 7,
+                "inspected": true,
+                "claim": "Pure current-terminal-row BOIA reset; never writes simulator or tracker.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-01",
+                  "ON-09"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/trace.py",
+      "sha256": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+      "base_sha256": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+      "functions": [
+        {
+          "function": "_primes",
+          "line": 13,
+          "end_line": 19,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_primes",
+                "line": 13,
+                "end_line": 19,
+                "base_line": 13,
+                "inspected": true,
+                "claim": "Derives immutable SHA constants from deterministic integer primes.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_cube_root",
+          "line": 22,
+          "end_line": 30,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_cube_root",
+                "line": 22,
+                "end_line": 30,
+                "base_line": 22,
+                "inspected": true,
+                "claim": "Integer cube root for exact SHA fractional-cube-root constants.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "sha256",
+          "line": 38,
+          "end_line": 61,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "sha256",
+                "line": 38,
+                "end_line": 61,
+                "base_line": 38,
+                "inspected": true,
+                "claim": "Standard SHA-256 padding,32bit schedule/rounds,32byte output.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_frame",
+          "line": 64,
+          "end_line": 65,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_frame",
+                "line": 64,
+                "end_line": 65,
+                "base_line": 64,
+                "inspected": true,
+                "claim": "8-byte big-endian payload length followed by bytes.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "_scalar",
+          "line": 68,
+          "end_line": 73,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_scalar",
+                "line": 68,
+                "end_line": 73,
+                "base_line": 68,
+                "inspected": true,
+                "claim": "Framed tuple values and typed ASCII primitives; floats use exact logical float.hex.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "canonical_input",
+          "line": 76,
+          "end_line": 91,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "canonical_input",
+                "line": 76,
+                "end_line": 91,
+                "base_line": 76,
+                "inspected": true,
+                "claim": "Versioned per-field framing of only copied OnlineInputs, global sensor angles and camera calibration.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "function": "record",
+          "line": 94,
+          "end_line": 116,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "record",
+                "line": 94,
+                "end_line": 116,
+                "base_line": 94,
+                "inspected": true,
+                "claim": "Exports only live rows and independent copies; no post-reset digest or evaluator label.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-11"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/types.py",
+      "sha256": "7cd7dcf2fcb34a94e91f5bb2f5dae6139182a74d8393fb0b373b7f0edae9db65",
+      "base_sha256": "99a30ca9da150a22a4393504276e1dc281af64fa9dead2be4a93fe2c276d5b45",
+      "functions": [
+        {
+          "function": "BoiaParams.__post_init__",
+          "line": 59,
+          "end_line": 66,
+          "source_read_receipts": [
+            {
+              "receipt": "safety_audit.json",
+              "contract": {
+                "file": "types.py",
+                "name": "BoiaParams.__post_init__",
+                "input_output": "Frozen scalar priors to validated record; no state or sensor reads.",
+                "units_frame_dt_batch": "Counts H/S/M/K; dt/tau/t_det/t_react seconds, radius/distances metres, a_max m/s^2; weights/thresholds dimensionless. Config is shared explicitly across N; no global mutable state.",
+                "status": "LIMITED_VALIDITY",
+                "limits": "Only explicit positive finite tau_on, nonnegative declared r_bar_est, p_miss range and positive H/S/M/K/dt are checked here; this is not complete semantic validation or calibration. Added safety consumer validates its geometry, response and discretization requirements.",
+                "source_path": "motar_eval/boia/types.py",
+                "line": 59,
+                "end_line": 66
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    },
+    {
+      "file": "motar_eval/boia/visibility.py",
+      "sha256": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd",
+      "base_sha256": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62",
+      "functions": [
+        {
+          "function": "fov_mask",
+          "line": 9,
+          "end_line": 14,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "fov_mask",
+                "line": 9,
+                "end_line": 14,
+                "base_line": 9,
+                "inspected": true,
+                "claim": "Finite positive-forward pinhole FOV and radial far gate.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "fov_mask",
+                "base_lines": [
+                  9,
+                  14
+                ],
+                "current_lines": [
+                  9,
+                  14
+                ],
+                "inputs": "camera-frame vectors (...,3) m; hfov/vfov rad; radial max range m",
+                "outputs": "bool (...), forward x and finite vectors",
+                "assumptions_and_limits": "Yaw-only pinhole centre FOV and Euclidean radial range. Exact floating boundaries have no numerical tolerance; silhouette/partial visibility and exposure effects are not represented.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "IndependentHelperChecks.test_fov_and_camera_transform_use_declared_yaw_frame; interior/exterior margin .01m",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "los_clear",
+          "line": 17,
+          "end_line": 27,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "los_clear",
+                "line": 17,
+                "end_line": 27,
+                "base_line": 17,
+                "inspected": true,
+                "claim": "Point-disc segment clearance plus optional mandatory known-free segment containment.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "los_clear",
+                "base_lines": [
+                  17,
+                  27
+                ],
+                "current_lines": [
+                  17,
+                  27
+                ],
+                "inputs": "explicit start/end (N,*Q,2) world XY m; obstacle points (N,P,2) m; valid mask; disc radius m; optional original FreeContext",
+                "outputs": "bool LOS (N,*Q)",
+                "assumptions_and_limits": "Point-disc segment clearance and optionally original scan-sector coverage. Caller must provide optical origin for camera LOS; no height, silhouette, material/transparency, rolling shutter or new-depth synthesis.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "Camera-origin scalar oracle and retained 6/5.8 negative; geometry scalar-distance check",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "_to_camera",
+          "line": 30,
+          "end_line": 35,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_to_camera",
+                "line": 30,
+                "end_line": 35,
+                "base_line": 30,
+                "inspected": true,
+                "claim": "Rotates world relative vector to yaw-only V and subtracts camera offset.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "_to_camera",
+                "base_lines": [
+                  30,
+                  35
+                ],
+                "current_lines": [
+                  30,
+                  35
+                ],
+                "inputs": "world-relative vectors (N,*Q,3) m; yaw (N,*prefix) rad; declared yaw-frame camera offset m",
+                "outputs": "camera-relative vectors with same shape, m",
+                "assumptions_and_limits": "Inverse yaw rotation then subtract camera offset exactly once. Roll/pitch and full SE(3) calibration are not modeled.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "IndependentHelperChecks scalar +90deg rotation/offset; rotated LOS fixture",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "_camera_origin_xy",
+          "line": 38,
+          "end_line": 43,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_camera_origin_xy",
+                "line": 38,
+                "end_line": 43,
+                "base_line": null,
+                "inspected": true,
+                "claim": "Coordinated P0 patch: world optical centre p_xy+R_yaw offset_xy; excludes vertical LOS guarantee.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "_camera_origin_xy",
+                "base_lines": null,
+                "current_lines": [
+                  38,
+                  43
+                ],
+                "inputs": "ego position (N,*Q,3) world m; yaw (N,*Q) rad; camera offset in vehicle yaw frame m",
+                "outputs": "optical origin (N,*Q,2) world XY m",
+                "assumptions_and_limits": "Added minimal B02 fix: p_ego,XY + R_yaw*camera_offset,XY. Vertical offset is not a planar LOS certificate. Does not alter original LiDAR free-set origin.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "Scalar (0.1,0) optical origin and +90deg rotated counterexample",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "forecast",
+          "line": 46,
+          "end_line": 73,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "forecast",
+                "line": 46,
+                "end_line": 73,
+                "base_line": 38,
+                "inspected": true,
+                "claim": "Loops candidate/time with shared target paths and fixed point/free sets; oracle or stressed gate.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "forecast",
+                "base_lines": [
+                  38,
+                  64
+                ],
+                "current_lines": [
+                  46,
+                  73
+                ],
+                "inputs": "ego rollout (N,K,H,3) world m; yaw (N,K,H) rad; target sample paths (N,M,H,6) [m,m/s]; obstacle points, free context, camera and explicit priors",
+                "outputs": "P_det (N,K,M,H), dimensionless",
+                "assumptions_and_limits": "Uses original static point map, optical-origin LOS, yaw-only camera and projected-area gate. Oracle means this declared geometry model, not simulator GT. Stress p_miss/beta/n0 are explicit uncalibrated priors. Uses params r_T/min_pixels; caller must match camera calibration. No online GT.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "Base false-clear versus independent scalar oracle; corrected optical origin and no-double-offset tests; retained negative",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "p_any",
+          "line": 76,
+          "end_line": 79,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "p_any",
+                "line": 76,
+                "end_line": 79,
+                "base_line": 67,
+                "inspected": true,
+                "claim": "Mean across paths of within-path1-product(1-p); temporal independence conditional assumption.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "p_any",
+                "base_lines": [
+                  67,
+                  70
+                ],
+                "current_lines": [
+                  76,
+                  79
+                ],
+                "inputs": "joint sampled detection probabilities (N,K,M,H)",
+                "outputs": "per-candidate probabilities (N,K)",
+                "assumptions_and_limits": "First product/union within each sampled trajectory, then average over M. Within-path Bernoulli draw independence is a stress-model assumption; geometry 0/1 case is deterministic. Not union of separately averaged marginals.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "IndependentHelperChecks.test_union_is_computed_per_joint_path_before_averaging, hand result .72 versus .66",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "_normal_clearance",
+          "line": 82,
+          "end_line": 89,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "_normal_clearance",
+                "line": 82,
+                "end_line": 89,
+                "base_line": 73,
+                "inspected": true,
+                "claim": "Linear Gaussian signed-margin probability, deterministic branch at zero variance.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "_normal_clearance",
+                "base_lines": [
+                  73,
+                  80
+                ],
+                "current_lines": [
+                  82,
+                  89
+                ],
+                "inputs": "signed margin g m; gradient dimensionless; symmetric PSD covariance m^2; optional strict boolean boundary",
+                "outputs": "linearized Gaussian clearance probability with g shape",
+                "assumptions_and_limits": "Gradient covariance contraction and scalar normal CDF. Valid PSD covariance is caller contract; numerical negative variance clamped to zero. Deterministic zero-variance boundary uses strict forward gate where requested.",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "IndependentHelperChecks scalar erf oracle at variance4, g=-1/0/1; strict zero-variance case",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        },
+        {
+          "function": "bpod_analytic",
+          "line": 92,
+          "end_line": 132,
+          "source_read_receipts": [
+            {
+              "receipt": "online_audit.json",
+              "contract": {
+                "function": "bpod_analytic",
+                "line": 92,
+                "end_line": 132,
+                "base_line": 83,
+                "inspected": true,
+                "claim": "Linearizes one active FOV margin and point-disc clear events, then independent product.",
+                "evidence_kind": "SOURCE_READ",
+                "risk_ids": [
+                  "ON-03",
+                  "ON-08",
+                  "ON-12"
+                ]
+              }
+            },
+            {
+              "receipt": "geometry_audit.json",
+              "contract": {
+                "file": "motar_eval/boia/visibility.py",
+                "function": "bpod_analytic",
+                "base_lines": [
+                  83,
+                  122
+                ],
+                "current_lines": [
+                  92,
+                  132
+                ],
+                "inputs": "ego (N,*Q,3) m; yaw (N,*Q) rad; target mean (N,3) m; covariance (N,3,3) m^2; measured points/valid/radius; camera",
+                "outputs": "dimensionless probability (N,*Q)",
+                "assumptions_and_limits": "Fixed-ego, active-margin FOV/size/range linearization and independent point-disc clearance products. B02 corrected optical-origin mean segment and its derivative. Unknown-space probability omitted by design; forecast comparison requires declared model alignment. Uses cam target_radius/min_pixels (caller must match params).",
+                "time_contract": "No dt advancement; consumes supplied snapshot or H-indexed rollout. Physical timing, sensor delay and latency are not independently calibrated here.",
+                "independent_evidence": "Base false-clear versus scalar geometry; corrected zero-covariance optical-origin result; normal-CDF helper oracle",
+                "qualification": "LIMITED_VALIDITY: synthetic planar contract only; not 3D/sensor realism or end-to-end safety qualification"
+              }
+            }
+          ]
+        }
+      ],
+      "module_read": true
+    }
+  ]
+}

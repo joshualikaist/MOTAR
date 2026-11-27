@@ -1,0 +1,16 @@
+test_knots_interpolation_and_reaction_exactly_once (test_boia_dynamics.BrakingTableTest) ... ok
+test_piecewise_extension_continuity_and_invalid_table (test_boia_dynamics.BrakingTableTest) ... ok
+test_moved_pose_point_corridor_is_explicitly_geometry_not_new_scan (test_boia_dynamics.GovernorTest) ... ok
+test_original_normal_import_chain_is_not_executed (test_boia_dynamics.GovernorTest) ... ok
+test_policy_f_values_are_declared_and_riskcap_does_not_force_braking (test_boia_dynamics.GovernorTest) ... ok
+test_raw_corridor_and_riskcap_bitwise_against_original_subprocess (test_boia_dynamics.GovernorTest) ... ok
+test_clip_acceleration_bound_and_altitude_zero_authority (test_boia_dynamics.RolloutTest) ... ok
+test_current_yaw_rerotation_matches_independent_complex_closed_form (test_boia_dynamics.RolloutTest) ... ok
+test_prior_braking_target_miss_is_limited_validity_not_retuned (test_boia_dynamics.RolloutTest) ... ok
+test_rollout_determinism_batch_and_rng_noninterference (test_boia_dynamics.RolloutTest) ... ok
+test_yaw_lag_requires_explicit_rate_and_matches_scalar_solution (test_boia_dynamics.RolloutTest) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 3.070s
+
+OK

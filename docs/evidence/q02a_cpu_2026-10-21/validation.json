@@ -1,0 +1,82 @@
+{
+ "schema": "motar.q02a.cpu.v1",
+ "created_UTC": "2026-10-21T09:10:42.235316+00:00",
+ "base_commit": "8d286cd56c845a82cdfaeec2d942fb90dc80b81e",
+ "scope": "Q02-A audit, contracts and CPU-only Module A evidence layer",
+ "tests": {
+  "test_q02_evidence": 16,
+  "public_cpu": {
+   "ran": 3081,
+   "failures": 0,
+   "errors": 4,
+   "skipped": 10,
+   "aggregate": "FAIL",
+   "error_ids": [
+    [
+     "test_bounding_box_and_empty_convention",
+     "test_navrl_detect_resolution.DetectReduction"
+    ],
+    [
+     "test_count_centroid_and_range",
+     "test_navrl_detect_resolution.DetectReduction"
+    ],
+    [
+     "test_frame_carries_the_rendered_target_colour_and_far_plane",
+     "test_navrl_detect_resolution.DetectReduction"
+    ],
+    [
+     "test_the_frame_carries_no_image_sized_tensor",
+     "test_navrl_detect_resolution.DetectReduction"
+    ]
+   ],
+   "note": "same 4 pre-existing DetectReduction errors (motar-6nn.5)"
+  }
+ },
+ "q01_replay": {
+  "scope": "SMOKE_NOT_VALIDATION: no occlusion labels; camera flag is oracle-grade in this profile",
+  "unique_frames": 3,
+  "recorded_flag": [
+   "TARGET_VISIBLE",
+   "TARGET_VISIBLE",
+   "TARGET_VISIBLE"
+  ],
+  "camera_flag_cleared": [
+   "IDENTITY_AMBIGUOUS",
+   "IDENTITY_AMBIGUOUS",
+   "IDENTITY_AMBIGUOUS"
+  ],
+  "cpu_ms": [
+   0.163,
+   0.147,
+   0.142,
+   0.699,
+   0.33,
+   0.349
+  ],
+  "raw_written": false,
+  "cpu_ms_note": "first three: recorded detection flag; last three: camera flag cleared (tracker-evidence branch)"
+ },
+ "claims": {
+  "detection_accuracy": "NOT_TESTED_NO_LABELS",
+  "occlusion_classification": "NOT_VALIDATED",
+  "camera_detector": "ORACLE_GRADE_IN_FROZEN_F_PROFILE",
+  "thresholds": "DECLARED_PRIORS",
+  "modules_B_to_E": "DESIGN_ONLY",
+  "online_connection": "NONE",
+  "GPU": "NOT_RUN",
+  "G5": "HOLD"
+ },
+ "production_changed": false,
+ "file_sha256": {
+  "motar_eval/q02/__init__.py": "cfe228b4114ed42c51414cd633a37f5b840d16de23d480477255ffab0c5b4975",
+  "motar_eval/q02/contracts.py": "1322ebca32f0bae5c75d2dc8c8b501b359a6d4c65c221fc5f1151e75851420f7",
+  "motar_eval/q02/geometry.py": "6e1bfe4d3e6b9402f20d5755e8b587e9e5fefbbaaa89db90a452d649379dd752",
+  "motar_eval/q02/validation.py": "fc2478fc555049e7d99e2614e6b0d56b80cc3190eaff4c6896b3c90d4c8b5a36",
+  "motar_eval/q02/evidence.py": "8261c29929ff40a00b197481662421f7df407322c11390f4ac7323e7b53eb14c",
+  "tests/test_q02_evidence.py": "d04308984c601ef2606a4099ee5408e3206d7a1b51951c16c28886810051791d",
+  "docs/research/q02_evidence_aware_reacquisition/Q02A_SPEC.md": "c9c96168bde41533435c18f6d36f849c8d692b2341140a05fcfe696483143004",
+  "docs/research/q02_evidence_aware_reacquisition/HANDOFF.md": "17e1c2ae5ff734174ff90ef9baf75b336d462990554b70f7226c747d467fde6c",
+  "docs/evidence/q02a_cpu_2026-10-21/q01_frame_replay.py": "83c60f47b3d6aa8ba853c416cb391eb094a485b2b37939d8702223bdc1eddd2c",
+  "docs/evidence/q02a_cpu_2026-10-21/q01_frame_replay.json": "6354273f791d7555690cd2b32d0e9fcb7f93128311621aae7b94043a35da9c88"
+ }
+}

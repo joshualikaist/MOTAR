@@ -1,0 +1,117 @@
+{
+  "scope": "dev08 static configuration preparation only",
+  "measurement_status": "NOT_RUN",
+  "runtime_status": "NOT_IMPLEMENTED",
+  "source_base": "1fe9afa398fcbbe7e009f193c93d74735e03a5c0",
+  "focused_final": {
+    "status": "PASS",
+    "ran": 7,
+    "command": "CUDA_VISIBLE_DEVICES= PYTHONNOUSERSITE=1 python3 -B -m unittest discover -s tests -p test_sitl_dev08_preparation.py -v"
+  },
+  "public_cpu": {
+    "status": "FAIL",
+    "ran": 3285,
+    "failures": 2,
+    "errors": 4,
+    "skipped": 17,
+    "excluded": 5,
+    "duration_s": 219.869,
+    "command": "/home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py",
+    "limits": {
+      "CUDA_VISIBLE_DEVICES": "",
+      "PYTHONNOUSERSITE": "1",
+      "nice": 10,
+      "cpus": "6,7,12,13",
+      "rlimit_as_kib_per_process": 8388608,
+      "timeout_s": 900,
+      "kill_grace_s": 20,
+      "blas_omp_threads": 2
+    },
+    "version_note": "included new module before final runtime-status metadata/plan wording repair; final focused verification afterwards"
+  },
+  "availability_recheck": {
+    "ran": 6,
+    "failures": 2,
+    "errors": 2,
+    "passed": 2,
+    "fixture_fix": "created empty /tmp/codex_occ only",
+    "missing_historical_assets_issue": "motar-lp5.6",
+    "source_identical_to_base": true,
+    "no_historical_asset_modified_or_restored": true
+  },
+  "independent_input_audit": {
+    "status": "PASS_SCOPED_INPUT_AUDIT",
+    "file_count": 34,
+    "reviewer": "fresh-context Codex agent /root/dev08_source_review",
+    "model": "Codex; exact backend model identifier NOT_RECORDED",
+    "checkpoint_payload_read": false
+  },
+  "host_faults": {
+    "before": 0,
+    "after": 0
+  },
+  "input_blocker": {
+    "status": "BLOCKED_INCOMPLETE_TARGET_TRACE",
+    "bars": 70,
+    "env": 5,
+    "recorded_frames": 208,
+    "required_frames": 600,
+    "historical_dev07_capture_step": 35,
+    "followup": "motar-q8j"
+  },
+  "external_artifacts": {
+    "public_cpu.log": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/public_cpu.log",
+      "sha256": "9785dd993dde37d7757f7c965d94ec8eb81c9047aa84dfd01fedcfc1dd61e67f"
+    },
+    "focused_final.log": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/focused_final.log",
+      "sha256": "4d791e614e29a9f040df3454df45ac3a409b4cbb6372b8229e1ef24214e8809d"
+    },
+    "availability_recheck.log": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/availability_recheck.log",
+      "sha256": "8aebe355d2c258ed2a7b9977b8f8dd9a9c4446b80b8d51a203faead8075165e0"
+    },
+    "baseline_availability.json": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/baseline_availability.json",
+      "sha256": "3c5f3462b0b0a6ac0a71b97ac1779d501b45f1ed7e25195305cbd3a5bd75cf39"
+    },
+    "host_before_cpu.json": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/host_before_cpu.json",
+      "sha256": "062424f057a9f69657bf7480b272257a589518d9ef65d03346eefa8cdc991258"
+    },
+    "host_after_cpu.json": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/host_after_cpu.json",
+      "sha256": "16a3dad54f481004a8c5d8f968fcf75736eeea3cb1ffa6ec0542cba695e5b1a5"
+    },
+    "source_review_r1/verify_actual_inputs.py": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/source_review_r1/verify_actual_inputs.py",
+      "sha256": "27b75000140a7bd77b37c49bf06c656fa7af421b40f55b0418810612e1a64571"
+    },
+    "source_review_r1/actual_input_checks.json": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/source_review_r1/actual_input_checks.json",
+      "sha256": "3ffe3bb5c763b65a0112202d55259b6a980a5bd5129eca360e27c72b433ef93e"
+    },
+    "source_review_r1/focused_tests.log": {
+      "path": "/home/fair/motar_tmp/dev08_preparation_20261105/source_review_r1/focused_tests.log",
+      "sha256": "3d43f2d32577f0f3c50682a347139ff012c0f9e9477c19f757d760da38ee8827"
+    }
+  },
+  "review": "REVIEW_preparation_r1.md",
+  "records_check_log": "/home/fair/motar_tmp/dev08_preparation_20261105/record_checks.log",
+  "records_check_status": "PASS",
+  "prepared_source_sha256": {
+    "tools/sitl_s3b_dev08.py": "e63049cc92bae56afad212219e42af9f91def1f2fac88f688e69a0065a8fa3fb",
+    "tests/test_sitl_dev08_preparation.py": "957b317a6fa2a4dab446f318127d0adfb3e74654b21832c9bbae1f05f42d169d",
+    "docs/plans/prereg_sitl_dev08_candidate_gains_v1.md": "f9ac386e88eaef3f2e022124b5e8e227ffa567dbf9b05458f97e5df37b50d483"
+  },
+  "preparation_review": {
+    "verdict": "PASS_WITH_LIMITS",
+    "scope": "static configuration/planning only; global PUBLIC_CPU remains FAIL",
+    "path": "REVIEW_preparation_r1.md",
+    "external_path": "/home/fair/motar_tmp/dev08_preparation_20261105/source_review_r1/REVIEW.md",
+    "sha256": "71d07cdd27b7a91a77e9d8ca942c6bca6be43f771deb2afe22eefa09dbdab194"
+  },
+  "records_check_ran": 58,
+  "records_check_log_sha256": "94a1ccbaa4bc658b06c439d9c6f33285fe8d585671b37690a135bd1afbb28537"
+}

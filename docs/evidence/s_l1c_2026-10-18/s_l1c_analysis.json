@@ -1,0 +1,3654 @@
+{
+  "schema": "motar.s-l1c-analysis.v1",
+  "run": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1c_v1/SL1C-C01",
+  "source_sha": "4d5911d3d2fcbf0a285f395e38428dc39ef67868",
+  "gates": {
+    "C-NEG": "PASS",
+    "C-POS": "PASS",
+    "C-COV": "PASS",
+    "C-PROV": "PASS",
+    "C-RADIUS": "PASS",
+    "C-REGRESSION": "PASS",
+    "C-EL0": "PASS",
+    "C-FIREWALL": "PASS",
+    "C-INTEGRITY": "PASS"
+  },
+  "decision": "S-L1C_QUALIFIED",
+  "sensors": {
+    "negatives": {
+      "legacy": {
+        "accepted": 21,
+        "trials": 21
+      },
+      "s_l1b": {
+        "accepted": 21,
+        "trials": 21
+      },
+      "s_l1c": {
+        "accepted": 0,
+        "trials": 21
+      }
+    },
+    "negative_rows": [
+      {
+        "scene": "N1",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N2",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N3",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N5",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N6",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N7",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N8",
+        "pass": "level_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N1",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N2",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N3",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N5",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N6",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N7",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N8",
+        "pass": "roll15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N1",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N2",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N3",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N5",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N6",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N7",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      },
+      {
+        "scene": "N8",
+        "pass": "pitch15_scene",
+        "legacy": 1,
+        "s_l1c": 0,
+        "oracle_s_l1c": false,
+        "extended": true
+      }
+    ],
+    "oracle_mismatch": 0,
+    "positives": {
+      "legacy": {
+        "eligible": 117,
+        "accepted": 114
+      },
+      "s_l1b": {
+        "eligible": 117,
+        "accepted": 114
+      },
+      "s_l1c": {
+        "eligible": 117,
+        "accepted": 117
+      }
+    },
+    "positive_rows": [
+      {
+        "scene": "S00",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S00",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S00",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S02",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S02",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S02",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S03",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S03",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S03",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": true
+      },
+      {
+        "scene": "S06",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S06",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S06",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S09",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S09",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S09",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S11",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S11",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S11",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S12",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S12",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S12",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S13",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S13",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S13",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S15",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S15",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S15",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S16",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S16",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S16",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S18",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S18",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S18",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S19",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S19",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S19",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S20",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S20",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S20",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "level_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "level_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "level_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S00",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S00",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S00",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S02",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S02",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S02",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S03",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S03",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S03",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": true
+      },
+      {
+        "scene": "S06",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S06",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S06",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S09",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S09",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S09",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S11",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S11",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S11",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S12",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S12",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S12",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S13",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S13",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S13",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S15",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S15",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S15",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S16",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S16",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S16",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S18",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S18",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S18",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S19",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S19",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S19",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S20",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S20",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S20",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "roll15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "roll15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "roll15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S00",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S00",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S00",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S01",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S02",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S02",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S02",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S03",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S03",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S03",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S04",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S05",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": true
+      },
+      {
+        "scene": "S06",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S06",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S06",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S07",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S08",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S09",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S09",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S09",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S10",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S11",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S11",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S11",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S12",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S12",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S12",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S13",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S13",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S13",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S14",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "S15",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S15",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S15",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S16",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S16",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S16",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S17",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S18",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S18",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S18",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S19",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S19",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S19",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": false,
+        "s_l1b": false,
+        "s_l1c": false
+      },
+      {
+        "scene": "S20",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S20",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S20",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S21",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "S22",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": true,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": true
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "pitch15_scene",
+        "offset_index": 0,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "pitch15_scene",
+        "offset_index": 1,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      },
+      {
+        "scene": "A_FOREGROUND",
+        "pass": "pitch15_scene",
+        "offset_index": 2,
+        "eligible": false,
+        "legacy": true,
+        "s_l1b": true,
+        "s_l1c": false
+      }
+    ],
+    "radius": {
+      "n": 33,
+      "max_abs_m": 2.5298518279370796e-05
+    },
+    "covariance": {
+      "legacy": {
+        "n": 45,
+        "min_orthogonal_ratio": 0.012823681220106867,
+        "max_u_ratio": 0.015540510542996145
+      },
+      "s_l1b": {
+        "n": 45,
+        "min_orthogonal_ratio": 0.012823681220106867,
+        "max_u_ratio": 0.015540510542996145
+      },
+      "s_l1c": {
+        "n": 39,
+        "min_orthogonal_ratio": 0.9996000969682095,
+        "max_u_ratio": 0.006611967811713352
+      }
+    },
+    "covariance_rows": [
+      {
+        "mode": "legacy",
+        "scene": "S00",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S00",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S00",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S01",
+        "pass": "level_scene",
+        "t1_ratio": 0.0201747053556993,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.008189486407403707
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S01",
+        "pass": "level_scene",
+        "t1_ratio": 0.0201747053556993,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.008189486407403707
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S01",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996001221740665,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.0061779222881376
+      },
+      {
+        "mode": "legacy",
+        "scene": "S03",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.03759390818005478,
+        "u_ratio": 0.007226928565147761
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S03",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.03759390818005478,
+        "u_ratio": 0.007226928565147761
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S03",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996001213990354,
+        "u_ratio": 0.006611967811713352
+      },
+      {
+        "mode": "legacy",
+        "scene": "S04",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S04",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S04",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S05",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S05",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S05",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S09",
+        "pass": "level_scene",
+        "t1_ratio": 0.014455108001604235,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.013909083761498773
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S09",
+        "pass": "level_scene",
+        "t1_ratio": 0.014455108001604235,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.013909083761498773
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S09",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996001480899819,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.0063207985080711215
+      },
+      {
+        "mode": "legacy",
+        "scene": "S10",
+        "pass": "level_scene",
+        "t1_ratio": 0.012823681220106867,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.015540510542996145
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S10",
+        "pass": "level_scene",
+        "t1_ratio": 0.012823681220106867,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.015540510542996145
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S10",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996001642101705,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006481476510196859
+      },
+      {
+        "mode": "legacy",
+        "scene": "S12",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S12",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S12",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S14",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S14",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S15",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S15",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S15",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S18",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S18",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S18",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S20",
+        "pass": "level_scene",
+        "t1_ratio": 0.01554051054299614,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.012823681220106868
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S20",
+        "pass": "level_scene",
+        "t1_ratio": 0.01554051054299614,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.012823681220106868
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S20",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996000969682095,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006466642590963987
+      },
+      {
+        "mode": "legacy",
+        "scene": "S21",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S21",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S21",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S22",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S22",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S22",
+        "pass": "level_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "A_FOREGROUND",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "A_FOREGROUND",
+        "pass": "level_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S00",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S00",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S00",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S01",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.0201747053556993,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.008189486407403707
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S01",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.0201747053556993,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.008189486407403707
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S01",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996001221740665,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.0061779222881376
+      },
+      {
+        "mode": "legacy",
+        "scene": "S03",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.03759390818005478,
+        "u_ratio": 0.007226928565147761
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S03",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.03759390818005478,
+        "u_ratio": 0.007226928565147761
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S03",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996001213990354,
+        "u_ratio": 0.006611967811713352
+      },
+      {
+        "mode": "legacy",
+        "scene": "S04",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S04",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S04",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S05",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S05",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S05",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S09",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.014455108001604235,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.013909083761498773
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S09",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.014455108001604235,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.013909083761498773
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S09",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996001480899819,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.0063207985080711215
+      },
+      {
+        "mode": "legacy",
+        "scene": "S10",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.012823681220106867,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.015540510542996145
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S10",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.012823681220106867,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.015540510542996145
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S10",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996001642101705,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006481476510196859
+      },
+      {
+        "mode": "legacy",
+        "scene": "S12",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S12",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S12",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S14",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S14",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S15",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S15",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S15",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S18",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S18",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S18",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S20",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.01554051054299614,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.012823681220106868
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S20",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.01554051054299614,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.012823681220106868
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S20",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996000969682095,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006466642590963987
+      },
+      {
+        "mode": "legacy",
+        "scene": "S21",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S21",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S21",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S22",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S22",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S22",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "A_FOREGROUND",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "A_FOREGROUND",
+        "pass": "roll15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S00",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S00",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S00",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S01",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.0201747053556993,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.008189486407403707
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S01",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.0201747053556993,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.008189486407403707
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S01",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996001221740665,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.0061779222881376
+      },
+      {
+        "mode": "legacy",
+        "scene": "S03",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.03759390818005478,
+        "u_ratio": 0.007226928565147761
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S03",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.03759390818005478,
+        "u_ratio": 0.007226928565147761
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S03",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996001213990354,
+        "u_ratio": 0.006611967811713352
+      },
+      {
+        "mode": "legacy",
+        "scene": "S04",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S04",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S04",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S05",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S05",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S05",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S09",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.014455108001604235,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.013909083761498773
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S09",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.014455108001604235,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.013909083761498773
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S09",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996001480899819,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.0063207985080711215
+      },
+      {
+        "mode": "legacy",
+        "scene": "S10",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.012823681220106867,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.015540510542996145
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S10",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.012823681220106867,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.015540510542996145
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S10",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996001642101705,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006481476510196859
+      },
+      {
+        "mode": "legacy",
+        "scene": "S12",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S12",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S12",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S14",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S14",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S15",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S15",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S15",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S18",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S18",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S18",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S20",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.01554051054299614,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.012823681220106868
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S20",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.01554051054299614,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.012823681220106868
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S20",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996000969682095,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006466642590963987
+      },
+      {
+        "mode": "legacy",
+        "scene": "S21",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S21",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S21",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "S22",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "S22",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1c",
+        "scene": "S22",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.9996002316474915,
+        "t2_ratio": 0.9996002316474915,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "legacy",
+        "scene": "A_FOREGROUND",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      },
+      {
+        "mode": "s_l1b",
+        "scene": "A_FOREGROUND",
+        "pass": "pitch15_scene",
+        "t1_ratio": 0.02200489118695259,
+        "t2_ratio": 0.038461536169052124,
+        "u_ratio": 0.006359300576150417
+      }
+    ],
+    "flags": {
+      "legacy": [
+        false,
+        false,
+        false
+      ],
+      "s_l1b": [
+        true,
+        true,
+        false
+      ],
+      "s_l1c": [
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "provenance": {
+    "static_off": {
+      "lidar_accepts": 453,
+      "camera_frames": 4010,
+      "steps": 601
+    },
+    "static_s_l1a": {
+      "lidar_accepts": 564,
+      "camera_frames": 3830,
+      "steps": 601
+    },
+    "static_s_l1b": {
+      "lidar_accepts": 529,
+      "camera_frames": 3933,
+      "steps": 601
+    },
+    "static_s_l1c_p1": {
+      "lidar_accepts": 421,
+      "camera_frames": 3886,
+      "steps": 601,
+      "camera_resets_identity": true,
+      "lidar_never_resets_identity": true,
+      "lidar_identity_increment_max_err": 0.0,
+      "fused_age_reset_on_lidar_accept": true,
+      "update_source_counts": {
+        "0": 501,
+        "1": 3886,
+        "2": 421
+      }
+    },
+    "static_s_l1c_p2": {
+      "lidar_accepts": 421,
+      "camera_frames": 3886,
+      "steps": 601,
+      "camera_resets_identity": true,
+      "lidar_never_resets_identity": true,
+      "lidar_identity_increment_max_err": 0.0,
+      "fused_age_reset_on_lidar_accept": true,
+      "update_source_counts": {
+        "0": 501,
+        "1": 3886,
+        "2": 421
+      }
+    },
+    "moving_off": {
+      "lidar_accepts": 360,
+      "camera_frames": 3353,
+      "steps": 601
+    },
+    "moving_s_l1a": {
+      "lidar_accepts": 490,
+      "camera_frames": 3473,
+      "steps": 601
+    },
+    "moving_s_l1b": {
+      "lidar_accepts": 516,
+      "camera_frames": 3469,
+      "steps": 601
+    },
+    "moving_s_l1c_p1": {
+      "lidar_accepts": 362,
+      "camera_frames": 3551,
+      "steps": 601,
+      "camera_resets_identity": true,
+      "lidar_never_resets_identity": true,
+      "lidar_identity_increment_max_err": 0.0,
+      "fused_age_reset_on_lidar_accept": true,
+      "update_source_counts": {
+        "0": 895,
+        "1": 3551,
+        "2": 362
+      }
+    },
+    "moving_s_l1c_p2": {
+      "lidar_accepts": 362,
+      "camera_frames": 3551,
+      "steps": 601,
+      "camera_resets_identity": true,
+      "lidar_never_resets_identity": true,
+      "lidar_identity_increment_max_err": 0.0,
+      "fused_age_reset_on_lidar_accept": true,
+      "update_source_counts": {
+        "0": 895,
+        "1": 3551,
+        "2": 362
+      }
+    }
+  },
+  "regression": {
+    "static": {
+      "off_vs_el0_r1": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1a_vs_sl1a_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1b_vs_sl1b_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      }
+    },
+    "moving": {
+      "off_vs_el0_r1": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1a_vs_sl1a_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      },
+      "s_l1b_vs_sl1b_c01": {
+        "steps_a": 600,
+        "steps_b": 600,
+        "differences": {
+          "obs": 0,
+          "action": 0,
+          "reward": 0,
+          "done": 0,
+          "captured": 0,
+          "crashed": 0,
+          "pursuer": 0,
+          "target": 0,
+          "resets": 0,
+          "rgb": 0,
+          "depth": 0,
+          "lidar": 0,
+          "semantic": 0,
+          "tracker": 0
+        },
+        "identical": true
+      }
+    }
+  },
+  "e_l0": {
+    "static": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 0,
+        "action": 0,
+        "reward": 0,
+        "done": 0,
+        "captured": 0,
+        "crashed": 0,
+        "pursuer": 0,
+        "target": 0,
+        "resets": 0,
+        "rgb": 0,
+        "depth": 0,
+        "lidar": 0,
+        "semantic": 0,
+        "tracker": 0
+      },
+      "identical": true
+    },
+    "moving": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 0,
+        "action": 0,
+        "reward": 0,
+        "done": 0,
+        "captured": 0,
+        "crashed": 0,
+        "pursuer": 0,
+        "target": 0,
+        "resets": 0,
+        "rgb": 0,
+        "depth": 0,
+        "lidar": 0,
+        "semantic": 0,
+        "tracker": 0
+      },
+      "identical": true
+    }
+  },
+  "on_behavior_changes": {
+    "static_s_l1c_vs_s_l1b": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 596,
+        "action": 595,
+        "reward": 595,
+        "done": 181,
+        "captured": 176,
+        "crashed": 7,
+        "pursuer": 595,
+        "target": 566,
+        "resets": 181,
+        "rgb": 595,
+        "depth": 595,
+        "lidar": 595,
+        "semantic": 594,
+        "tracker": 596
+      },
+      "identical": false,
+      "episodes": {
+        "s_l1b": {
+          "captured": 120,
+          "crashed": 2
+        },
+        "s_l1c": {
+          "captured": 116,
+          "crashed": 5
+        }
+      }
+    },
+    "static_s_l1c_vs_off": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 600,
+        "action": 600,
+        "reward": 600,
+        "done": 189,
+        "captured": 185,
+        "crashed": 6,
+        "pursuer": 600,
+        "target": 566,
+        "resets": 189,
+        "rgb": 600,
+        "depth": 600,
+        "lidar": 600,
+        "semantic": 600,
+        "tracker": 600
+      },
+      "identical": false,
+      "episodes": {
+        "off": {
+          "captured": 123,
+          "crashed": 1
+        },
+        "s_l1c": {
+          "captured": 116,
+          "crashed": 5
+        }
+      }
+    },
+    "moving_s_l1c_vs_s_l1b": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 596,
+        "action": 595,
+        "reward": 595,
+        "done": 157,
+        "captured": 152,
+        "crashed": 7,
+        "pursuer": 595,
+        "target": 571,
+        "resets": 157,
+        "rgb": 595,
+        "depth": 595,
+        "lidar": 595,
+        "semantic": 595,
+        "tracker": 596
+      },
+      "identical": false,
+      "episodes": {
+        "s_l1b": {
+          "captured": 89,
+          "crashed": 3
+        },
+        "s_l1c": {
+          "captured": 96,
+          "crashed": 4
+        }
+      }
+    },
+    "moving_s_l1c_vs_off": {
+      "steps_a": 600,
+      "steps_b": 600,
+      "differences": {
+        "obs": 600,
+        "action": 600,
+        "reward": 600,
+        "done": 171,
+        "captured": 160,
+        "crashed": 13,
+        "pursuer": 600,
+        "target": 586,
+        "resets": 171,
+        "rgb": 600,
+        "depth": 600,
+        "lidar": 600,
+        "semantic": 600,
+        "tracker": 600
+      },
+      "identical": false,
+      "episodes": {
+        "off": {
+          "captured": 93,
+          "crashed": 9
+        },
+        "s_l1c": {
+          "captured": 96,
+          "crashed": 4
+        }
+      }
+    }
+  },
+  "actor_obs_dim": {
+    "static_off": 898,
+    "static_s_l1a": 898,
+    "static_s_l1b": 898,
+    "static_s_l1c_p1": 898,
+    "static_s_l1c_p2": 898,
+    "moving_off": 898,
+    "moving_s_l1a": 898,
+    "moving_s_l1b": 898,
+    "moving_s_l1c_p1": 898,
+    "moving_s_l1c_p2": 898
+  },
+  "firewall_ast": {
+    "forbidden_parameters": [],
+    "imports": [
+      "math",
+      "os",
+      "torch"
+    ],
+    "import_from": false
+  },
+  "known_limits": [
+    "Constructed fixture counts are not population rates.",
+    "Shape test assumes vertical-faced obstacles; bars whose front face is beyond about 11.35 m return one row and remain indistinguishable.",
+    "LiDAR association is refused below 1.152 m (recall loss).",
+    "Camera centre-range A7 bias unchanged; silhouette validity (S-L1D) not corrected.",
+    "ON changes the input distribution; Frozen F results measure robustness, not improvement."
+  ]
+}

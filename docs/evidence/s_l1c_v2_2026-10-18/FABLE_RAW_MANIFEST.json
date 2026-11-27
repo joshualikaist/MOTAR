@@ -1,0 +1,38 @@
+{
+  "schema": "motar.s-l1c-v2-review-manifest.v1",
+  "run_id": "SL1CV2-R01",
+  "reviewed_gpu_source": "e45794e876b15f71b5f38c65702fefadc368f93a",
+  "reviewed_result_commit": "d063e7d3c6b2eed0243d1375f53b986ed0ff1d3b",
+  "members": [
+    {
+      "path": "cli_update.log",
+      "bytes": 143,
+      "sha256": "c466fff0ae95fbf4cf4374213159dd99467ba704a87535f26d658a5234a2a744"
+    },
+    {
+      "path": "fable_review.json",
+      "bytes": 10319,
+      "sha256": "96acce03f332084638d1e9789e265901596d3b62d97a1e8f305f0a0922cc8a3f"
+    },
+    {
+      "path": "fable_review.stderr",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "initial_cli_error.jsonl",
+      "bytes": 1390,
+      "sha256": "0cfe64e0a4319303b508b52fb0e249a16f9588c767373b8320777996d3ab4484"
+    },
+    {
+      "path": "review_analysis_fresh.json",
+      "bytes": 505039,
+      "sha256": "15149c888624a9c460d8e209e1ada7ea5f5441bb2ea7ce2acd4c28ce1ab630a7"
+    },
+    {
+      "path": "review_prompt.txt",
+      "bytes": 3890,
+      "sha256": "0ff9c6b026697f9cd52898a72bd36b0b428dfc3d87b4b85148fb69f4363bf59e"
+    }
+  ]
+}

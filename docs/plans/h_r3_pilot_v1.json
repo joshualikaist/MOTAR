@@ -1,0 +1,46 @@
+{
+  "schema": "motar.h-r3-pilot-plan.v1",
+  "created_date_kst": "2026-10-18",
+  "authority": "User message 'MOTAR - Fast Research Hypothesis Validation: H-R3 Pilot' (2026-10-18); exploratory pilot only",
+  "base_sha": "b9c58393862c6784ff73d4787c3118a9035d49fa",
+  "status": "H-R3 PROVISIONAL; pilot exploratory, not confirmatory",
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "references": {"e_l0_plan": "docs/plans/e_l0_evaluation_lineage_v1.json", "eq1d_plan": "docs/plans/eq1d_qualification_v1.json"},
+  "switch": {"name": "NAVRL_SENSOR_LINEAGE", "value_used": "off"},
+  "arms": {
+    "B0": "Frozen Policy F unchanged",
+    "B1": "scripted pursuit toward the online tracker belief; yaw 0; no lateral manoeuvre",
+    "B2": "B1 + yaw toward the belief",
+    "B3": "B2 + lateral velocity toward the nearest clear-line-of-sight viewpoint"
+  },
+  "controller": {
+    "inputs": "own position/velocity/vehicle quaternion, perception.tracker state (belief), raw LiDAR (task._lidar_distance_m, body origin, rows +20..-10 deg, 72 bearings); no target GT, occlusion class, renderer mask or LiDAR semantics",
+    "pursuit_speed_mps": 1.0,
+    "candidate_offsets_m": [-2.0, -1.75, -1.5, -1.25, -1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0],
+    "los_clearance_m": 0.40,
+    "path_clearance_m": 0.50,
+    "selection": "smallest |offset| whose segment candidate->belief clears every LiDAR point by los_clearance and whose segment drone->candidate clears by path_clearance; ties -> positive offset; none -> 0",
+    "lateral_gain_per_s": 1.5,
+    "lateral_max_mps": 1.5,
+    "yaw_gain_per_s": 2.0,
+    "safety_filter": "for each LiDAR point within 1.5 m (horizontal), remove the velocity component toward it, weight clamp((1.5 - r)/1.0, 0, 1); applied in B1, B2 and B3",
+    "candidate_evaluation_in_all_scripted_arms": true,
+    "after_window": "Policy F resumes at reobservation or after W"
+  },
+  "event": {
+    "trigger": "first step t0 of the env's first episode with camera detection False after True at t0-1, at least one earlier detected step, t0 + W <= steps",
+    "window_steps": 20, "step_dt_s": 0.1,
+    "matched": "per-env per-step digests (actor obs row, pursuer state, target state, tracker state, camera flag) identical across the four arms for every step < t0 and identical t0",
+    "classes": {"primary": ["FULL", "CENTRE_ONLY", "PARTIAL"], "separate": ["FOV_EXIT", "RANGE_EXIT", "SCALE_LOSS", "VISIBLE", "NONE"]}
+  },
+  "primary_metric": "identity-correct camera reobservation within W: some j in 0..19 with camera detection True and E-L0 renderer target pixels >= 1 after the action at t0+j; denominator = all matched geometric-occlusion events (crash/capture/reset in W before reobservation = failure)",
+  "contrasts": ["B3-B2 (added translation)", "B3-B1", "B2-B1", "B1-B0", "B2-B0", "B3-B0"],
+  "statistics": "exploratory: paired exact McNemar, paired bootstrap 95% CI of the difference (10000 resamples, seed 0), Wilson CIs; no confirmatory claim",
+  "secondary": ["time to reobservation", "collision in W", "collision-free reobservation", "pursuer-target distance change over W", "pursuer translation distance in W", "FOV retention (evaluator centre-in-frustum fraction)", "observation source (camera/LiDAR) in W", "capture/timeout/incomplete at W and W+30 steps", "controller compute time mean/P95/P99", "target trajectory equality across arms in W"],
+  "run": {
+    "run_id": "HR3-P01", "output_root": "../aerial_gym_simulator/results/h_r3_pilot_v1",
+    "config": "moving", "density": 160, "num_envs": 128, "steps": 600, "seeds": [4502], "extra_seed_if_fewer_than_20_events": 4503,
+    "disk_min_free_gb": 8.0, "output_max_gb": 4.0, "oom_reserve_mib": 512, "poll_s": 5, "process_wall_cap_s": 1200, "total_wall_cap_s": 10800, "no_retry": true,
+    "smoke": {"num_envs": 16, "steps": 300, "collision_stop_fraction": 0.30}
+  }
+}

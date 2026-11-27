@@ -1,0 +1,103 @@
+{
+  "schema": "motar.boia.p0.geometry.comparison.v1",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "synthetic_only": true,
+  "exclusion_role_cases": {
+    "actual_target_positive_tradeoff": {
+      "point_xy_m": [
+        5.85,
+        0.0
+      ],
+      "belief_xy_m": [
+        6.0,
+        0.0
+      ],
+      "Sigma_diagonal_m2": 0.0,
+      "baseline_retained": false,
+      "candidate_retained": true
+    },
+    "foreground_0p20": {
+      "point_xy_m": [
+        5.8,
+        0.0
+      ],
+      "belief_xy_m": [
+        6.0,
+        0.0
+      ],
+      "Sigma_diagonal_m2": 0.0,
+      "baseline_retained": false,
+      "candidate_retained": true
+    },
+    "foreground_0p53": {
+      "point_xy_m": [
+        5.47,
+        0.0
+      ],
+      "belief_xy_m": [
+        6.0,
+        0.0
+      ],
+      "Sigma_diagonal_m2": 0.01,
+      "baseline_retained": false,
+      "candidate_retained": true
+    },
+    "large_covariance": {
+      "point_xy_m": [
+        3.0,
+        0.0
+      ],
+      "belief_xy_m": [
+        6.0,
+        0.0
+      ],
+      "Sigma_diagonal_m2": 4.0,
+      "baseline_retained": false,
+      "candidate_retained": true
+    },
+    "false_association": {
+      "point_xy_m": [
+        3.0,
+        0.2
+      ],
+      "belief_xy_m": [
+        3.0,
+        0.2
+      ],
+      "Sigma_diagonal_m2": 0.01,
+      "baseline_retained": false,
+      "candidate_retained": true
+    },
+    "camera_lidar_depth_mismatch": {
+      "point_xy_m": [
+        4.0,
+        0.0
+      ],
+      "belief_xy_m": [
+        6.0,
+        0.0
+      ],
+      "Sigma_diagonal_m2": 0.5,
+      "baseline_retained": false,
+      "candidate_retained": true
+    }
+  },
+  "projection": {
+    "slant_m": 5.0,
+    "elevation_deg": 20.0,
+    "oracle_horizontal_m": 4.698463103929543,
+    "baseline_bound_m": 5.0,
+    "candidate_bound_m": 4.698463103929543
+  },
+  "camera_origin": {
+    "ego_distance_m": 0.35777087639996635,
+    "camera_distance_m": 0.33311115274528097,
+    "threshold_m": 0.35,
+    "baseline_forecast": 1.0,
+    "baseline_bpod": 1.0,
+    "candidate_forecast": 0.0,
+    "candidate_bpod": 0.0
+  },
+  "baseline_dependency_note": "Unchanged segment helper ASTs verified; no source module or raw data was changed while executing read-only baseline copies.",
+  "scope_note": "A01/B01/B02 numerical comparison generated before the additional B05 input guard; these finite valid contexts have unchanged results. Final source hashes are in geometry_audit.json."
+}

@@ -1,0 +1,52 @@
+{
+  "unit": "U7",
+  "status": "CPU_TESTS_PASS",
+  "tests": {
+    "run": 16,
+    "failures": 0,
+    "errors": 0,
+    "wall_s": 8.647
+  },
+  "base_sha": "3c92982e2a6ec5040c83269f50e1a0d9e48d3f52",
+  "source_binding": "Source and this receipt are in the same unit commit; hashes refer to that commit, not later extensions",
+  "source_files": [
+    "motar_eval/boia/planner.py",
+    "motar_eval/boia/trace.py",
+    "motar_eval/boia/types.py",
+    "tests/test_boia_planner.py",
+    "tools/boia_replay.py",
+    "tools/boia_raw_inventory.py"
+  ],
+  "source_sha256": {
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "99a30ca9da150a22a4393504276e1dc281af64fa9dead2be4a93fe2c276d5b45",
+    "tests/test_boia_planner.py": "c459906af2e01966a5dd9afc95c2cf6175f2381a79eee5565895b241a6df9a1e",
+    "tools/boia_replay.py": "9ef48abaa96b563b635a4314ecd6c314490f6a9f90e3643c24a0f7d4098310ef",
+    "tools/boia_raw_inventory.py": "1c95e73ca84a342a2b192910daa66a84ec76b4a88552b0c842bba3d1ba1cdec3"
+  },
+  "source_line_counts": {
+    "motar_eval/boia/planner.py": 133,
+    "motar_eval/boia/trace.py": 116,
+    "motar_eval/boia/types.py": 136,
+    "tests/test_boia_planner.py": 302,
+    "tools/boia_replay.py": 124,
+    "tools/boia_raw_inventory.py": 124
+  },
+  "data_files": [
+    "docs/research/occlusion_algorithm_v1/raw_inventory.json",
+    "docs/research/occlusion_algorithm_v1/g4_cpu_timing.json"
+  ],
+  "public_cpu": {
+    "ran": 2848,
+    "failures": 0,
+    "errors": 4,
+    "skipped": 10,
+    "excluded": 5,
+    "errors_are": "the four existing test_navrl_detect_resolution errors (motar-6nn.5, test_h_r3_p03_isolation pollution)",
+    "new_boia_failures_or_errors": 0
+  },
+  "interpretation": "CPU unit evidence only; no performance, calibration, simulator or GPU qualification. raw_inventory.json lists representative ZIP/NPY headers and bounded JSON only (payload_integrity_verified=false). g4_cpu_timing.json is one cold CPU decision (12.9 s, N=128, K=20, M=32, H=10, 1 thread) and is NOT a GPU measurement.",
+  "note": "Synthetic replay and raw schema inventory only. The known-free target-return counterexample (motar-3p3.13) and the braking-prior miss at 3.52 m/s (12.56 percent against a 10 percent sanity target) remain unresolved and block G5 calibration.",
+  "disk_stop_below_bytes": 3000000000
+}

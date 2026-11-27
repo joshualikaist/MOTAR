@@ -1,0 +1,27 @@
+{
+  "schema": "motar.hr3p02-fable-review-receipt.v1",
+  "reviewed_result_commit": "b98b400bc29d5d2cf18c91e63a72142719615431",
+  "requested_model": "claude-fable-5-1",
+  "actual_canonical_model": "claude-fable-5-1",
+  "verdict": "NO_GO_CONFIRMATORY_READINESS",
+  "scope": "COMPLETED_FOCUSED_SOURCE_REVIEW; first broad review INCOMPLETE_TIMEOUT",
+  "attempts": [
+    {
+      "status": "INCOMPLETE_TIMEOUT",
+      "returncode": 124,
+      "wall_cap_s": 900
+    },
+    {
+      "status": "COMPLETED",
+      "returncode": 0,
+      "wall_s": 235.85752109100576,
+      "no_tests_executed": true,
+      "no_raw_npz_verification": true
+    }
+  ],
+  "public_review_sha256": "b4bdba4be72f8a9ec9833d16ff799400ed2d3b53243d649dc51ca8b73d904721",
+  "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02-FABLE01",
+  "raw_manifest_sha256": "57e52c96dc313050fbb63fc2e2a5c823f794c7461d7fdc6c35b83b84ef1d0919",
+  "private_operational_metadata": "Full CLI transcript retained outside Git; only extracted review and compact receipt/manifests published",
+  "production_or_gpu_changes": false
+}

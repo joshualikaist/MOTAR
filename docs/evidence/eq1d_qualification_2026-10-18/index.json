@@ -1,0 +1,112 @@
+{
+ "approved_source_commit": "d5877703038737fc0878b7487369d0ab46dfaab0",
+ "commands": {
+  "analysis": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/eq1d_analysis.py --run <raw_root> --out docs/evidence/eq1d_qualification_2026-10-18/eq1d_analysis.json",
+  "run": "PYTHON=<aerialgym python> python -B tools/eq1d_run.py run --approved-commit d5877703038737fc0878b7487369d0ab46dfaab0"
+ },
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 3070 8 GiB, driver 12.8 (Warp report)",
+  "isaacgym": "/home/fair/isaacgym",
+  "numpy": "1.23.0",
+  "python": "3.8.20",
+  "scipy": "1.10.1",
+  "torch": "2.4.1+cu121",
+  "warp": "1.0.0 kernel cache"
+ },
+ "files": {
+  "LINEAGE_DIFFS.md": {
+   "bytes": 5643,
+   "sha256": "304c24f43d90e33a9d9bb8862857cc19575f943ff9843c6aec02c620e474136e"
+  },
+  "REPORT.md": {
+   "bytes": 14314,
+   "sha256": "2f7ac23e17d68dcbc0bd3cc74ceea720b741f575fb1f174b54675201a29e1b3f"
+  },
+  "eq1d_analysis.json": {
+   "bytes": 98688,
+   "sha256": "c33b034a3185c8ea734362c80c69b0a4734d84b0eccc5b6b4c05aebcefbe4e39"
+  },
+  "preservation_after.json": {
+   "bytes": 2494,
+   "sha256": "d308318519d0d9cd9203112241e616f3f9510cd93057785e0a463d2e917e288f"
+  },
+  "run_records/RAW_MANIFEST.json": {
+   "bytes": 4699,
+   "sha256": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22"
+  },
+  "run_records/d1_dt10/d1_meta.json": {
+   "bytes": 2701,
+   "sha256": "26c09f84602285f72a77eb92aeb7216d2893a71b35261debfa62f45978c9a741"
+  },
+  "run_records/d1_dt10/process_done.json": {
+   "bytes": 404,
+   "sha256": "def08274e2d456584b62ab878be2e469ea8170bad6728616254b74986aa781e0"
+  },
+  "run_records/d1_dt2p5/d1_meta.json": {
+   "bytes": 2706,
+   "sha256": "e1b7d7cd0b0385d7b4d0d2eddaa95d2bdc288f672ca165c61566c9afee8b3667"
+  },
+  "run_records/d1_dt2p5/process_done.json": {
+   "bytes": 406,
+   "sha256": "9a83518b29cca94a6eff25f7191c31d7035dd6eaeb9d5ecffe663a9f4a3ce35d"
+  },
+  "run_records/d1_dt5/d1_meta.json": {
+   "bytes": 2702,
+   "sha256": "cdea20b5ecef53c5836ce9eeaad5a4da2559247d5603ac0fa1f74f728aedfbb6"
+  },
+  "run_records/d1_dt5/process_done.json": {
+   "bytes": 404,
+   "sha256": "45d4fed196e0b2bf62dca3df01da310444ad480ffe4002511c914219390d62b8"
+  },
+  "run_records/d2_scenes/d2_meta.json": {
+   "bytes": 5376,
+   "sha256": "8e05ab02a34083757f914e65b1adb4f5934e5aba3e9c82d08bd2b29866406820"
+  },
+  "run_records/d2_scenes/process_done.json": {
+   "bytes": 405,
+   "sha256": "80b4062b1b5e507899ea5f1a9f864aa4424e1e88873bc021a715fd716183667c"
+  },
+  "run_records/d3_n1/d3_meta.json": {
+   "bytes": 56170,
+   "sha256": "482f531c2cb14f06a9d5db848182f62a0ae65dd9a34ef57db86046acb2ef6b91"
+  },
+  "run_records/d3_n1/process_done.json": {
+   "bytes": 403,
+   "sha256": "1d6f472a02a5724ce99af705a1cd4063adfec4748d996650b34373d3976514c5"
+  },
+  "run_records/d3_n128/d3_meta.json": {
+   "bytes": 111027,
+   "sha256": "f1202c723d679fcfcca93339951a3257d3b232634465dacf0e2bfdfdc4ba5f35"
+  },
+  "run_records/d3_n128/process_done.json": {
+   "bytes": 408,
+   "sha256": "f7e3c60456e7af9e9112ff3700c62a3879fd24b45b1c1e9a5e0f8f12cb71d8dd"
+  },
+  "run_records/d3_n2/d3_meta.json": {
+   "bytes": 56870,
+   "sha256": "1f795913180f2661a7ee5bcbaae3d624cf93c28095df704cf180e8d810bbc60d"
+  },
+  "run_records/d3_n2/process_done.json": {
+   "bytes": 403,
+   "sha256": "bb79910df25c1d79bb5041437a2ea3f7c0d744b6acc33d717396dbec404f9314"
+  },
+  "run_records/d3_n4/d3_meta.json": {
+   "bytes": 58272,
+   "sha256": "0b566257b9968f15ee54ff641c59f6ffa0b6f906c27ae0f0cc23b9ccb546606c"
+  },
+  "run_records/d3_n4/process_done.json": {
+   "bytes": 403,
+   "sha256": "1ac62a5250dc6e2707ab00b965ffeb4b7b5f9f2e3635906b6bcea5ec2bbaf875"
+  },
+  "run_records/run_report.json": {
+   "bytes": 10118,
+   "sha256": "2db1c0831499a47106a3e465de158c7bcebc8fb6461b1c616ee6ddf74210a4aa"
+  }
+ },
+ "plan_sha256": "ddb349a16adb67b9b6b3c19e444b6c4a76bb7668189302f903ca8b8bacba81b0",
+ "preregistration_commit": "0a92e76ed27638e86b4c749343d3823add445a4b",
+ "raw_manifest_sha256": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22",
+ "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1",
+ "run_id": "EQ1D-R1",
+ "schema": "motar.eq1d-evidence-index.v1"
+}

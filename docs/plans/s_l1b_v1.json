@@ -1,0 +1,107 @@
+{
+  "schema": "motar.s-l1b-plan.v1",
+  "created_date_kst": "2026-10-18",
+  "authority": "User message 'MOTAR - Unattended Autonomous S-L1B/C/D Research Execution' (2026-10-18): conditional continuous approval of S-L1B, then S-L1C, then S-L1D, each gated on its own preregistered acceptance gates",
+  "base_sha": "2d65f1df40f05eeeadb4b1510a09d4b80fcfdf84",
+  "switch": {
+    "name": "NAVRL_SENSOR_LINEAGE",
+    "values": {"unset": "legacy", "off": "legacy", "s_l1a_v1": "S-L1A only", "s_l1b_v1": "S-L1A + S-L1B (cumulative)"},
+    "unknown": "fail closed (ValueError)"
+  },
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "references": {
+    "s_l1a_plan": "docs/plans/s_l1a_v1.json",
+    "s_l1a_amendment": "docs/plans/s_l1a_v1_amendment1.json",
+    "s_l1a_source": "139184bc0d2a7aa855fe8ab5a2a7f547702defa5",
+    "s_l1a_run": "../aerial_gym_simulator/results/s_l1a_v1/SL1A-C01",
+    "s_l1a_run_manifest_sha256": "cee40f012738de3b3c1df82dcb49888035b0d69542cc18397a21dde5176e42f9",
+    "e_l0_plan": "docs/plans/e_l0_evaluation_lineage_v1.json",
+    "eq1d_plan": "docs/plans/eq1d_qualification_v1.json",
+    "eq1a_record": "docs/evidence/eq1_validation_2026-10-18/eq1a_geometry.json"
+  },
+  "frames": {
+    "lidar": "origin = vehicle origin, yaw-only frame (+x forward, +y left, +z up); azimuth bin j bearing = pi - j*2pi/H (decreasing); row e elevation = 20 - e*10 deg for V=4 (row 0 = +20 deg)",
+    "camera": "origin = vehicle origin + camera_translation (0.10, 0, 0.03) in the yaw-only frame; nominal mount rotation R = identity; camera axes +x forward, +y left, +z up",
+    "extrinsic": "p_lidar = R * (d * r_hat(u, v)) + t; implementation accepts general R and t"
+  },
+  "intrinsics": {
+    "fx": "W / (2 tan(hfov/2))", "fy": "H / (2 tan(vfov/2))", "cx": "(W-1)/2", "cy": "(H-1)/2",
+    "ray": "r_hat = normalize(1, -(u-cx)/fx, -(v-cy)/fy)", "W": 160, "H": 90, "hfov_deg": 87.0, "vfov_deg": 58.0
+  },
+  "range_conventions": {
+    "camera_obstacle_depth": "S-L1A slant range along r_hat from the camera origin; >= 10 m - 1e-3 is no return",
+    "camera_target_depth": "existing renderer slant range, far 20 m (unchanged)",
+    "lidar": "slant range along the beam from the vehicle origin; no return = 12 m; returns below 0.2 m arrive as 0 m (existing clamp, unchanged)",
+    "fused_no_information": "a bin without a valid camera point contributes 12 m (no information)",
+    "radius": {
+      "camera_visual_sphere_m": 0.15,
+      "lidar_proxy_sphere_m": 0.20,
+      "perception_target_radius_m": 0.15,
+      "unchanged_in_s_l1b": "camera centre range = mean surface depth + 0.15 (EQ-1A A7 bias) and LiDAR association centre = surface + 0.15 (A4 -0.05 m) remain Known FAILs assigned to S-L1C's measurement model",
+      "used_by_s_l1b_carve": "predicted LiDAR proxy surface lower bound = camera-observed nearest body range - (0.20 - 0.15)"
+    }
+  },
+  "corrections": {
+    "B1_pixel_bearing": "pinhole intrinsics per pixel; no linear-in-angle column map",
+    "B2_common_origin": "every valid camera depth pixel becomes p_lidar = R d r_hat + t; rho = |p|, az = atan2(y, x), el = atan2(z, hypot(x, y))",
+    "B3_binning": "j = round((pi - az)/dAz) mod H; e = round((20 deg - el)/10 deg); strict per-elevation bins keep 0 <= e <= V-1; the actor-facing conservative envelope clamps e into [0, V-1]; bin value = minimum rho over valid points; rho >= 12 m ignored",
+    "B4_fusion": "fused scan = min(LiDAR after carve, clamped camera envelope) over every bin (no hfov column gate)",
+    "B5_carve_common_frame": "S-L1A candidate/count/fresh-camera rules unchanged; anchor_L = min over valid candidate pixels of |R d r_hat + t|; s_L = anchor_L - (r_lidar - r_camera); LiDAR carve window [s_L, s_L + 0.55) with zero tolerance below s_L; angular limit min(15 deg, asin(r_lidar/(s_L + r_lidar))); camera blank mask = S-L1A rule unchanged",
+    "unchanged": "detector (S-L1A depth), camera target measurement, LiDAR association, tracker, covariance, obstacle token construction, 898-D schema, E-L0"
+  },
+  "robustness": {
+    "pixel": "S-L1A oracle robust pixel: all eight +-0.01 px neighbouring first-hit labels agree",
+    "bin": "a bin is boundary-robust when its float64 oracle value is identical with every azimuth/elevation boundary shifted by -1e-5 and +1e-5 rad",
+    "grazing": "pixels whose ray meets a box face at incidence > 80 deg from the normal are excluded from per-pixel metric gates and reported"
+  },
+  "cpu_fixtures": {
+    "F1_front_plane": "box face x = 5 m (body), y,z within +-20 m; on- and off-axis",
+    "F2_bearings": "0.1 m x 0.1 m vertical bars centred at body bearings +-5, +-20, +-40 deg, body range 3 and 6 m",
+    "F3_vertical": "overhang box above the LiDAR coverage (elevation > 25 deg) and a low box below -15 deg; per-elevation rows versus clamped envelope",
+    "F4_extrinsic": "camera translation (0.20, 0.05, -0.04) and mount rotation pitch 10 deg, yaw 5 deg; oracle renders with the same pose",
+    "F5_carve": "S14 and A_FOREGROUND geometry plus B_TIGHT: on-axis target centre 3 m, bar return at body range 2.77 m (inside S-L1A's camera-frame window, nearer than the 2.80 m LiDAR proxy surface)",
+    "F6_conventions": "camera no-return, target-blanked pixels, depth <= 0, non-finite depth, LiDAR 0 m near returns and 12 m no-return"
+  },
+  "extra_scenes": [
+    {"id": "B_P05", "target": "absent", "bars": [{"x": 4.981, "y": 0.436}]},
+    {"id": "B_M05", "target": "absent", "bars": [{"x": 4.981, "y": -0.436}]},
+    {"id": "B_P20", "target": "absent", "bars": [{"x": 4.698, "y": 1.710}]},
+    {"id": "B_M20", "target": "absent", "bars": [{"x": 4.698, "y": -1.710}]},
+    {"id": "B_P40", "target": "absent", "bars": [{"x": 3.830, "y": 3.214}]},
+    {"id": "B_M40", "target": "absent", "bars": [{"x": 3.830, "y": -3.214}]},
+    {"id": "B_TWO", "target": "absent", "bars": [{"x": 2.819, "y": 1.026}, {"x": 6.578, "y": -2.394}]}
+  ],
+  "gates": {
+    "B-POINT": "per-pixel calibration on robust non-grazing obstacle pixels: |rho_prod - rho_true| <= 1e-4 m, |az| and |el| errors <= 1e-5 rad (CPU exact fixtures F1-F4 with float32 oracle depth; GPU fixtures with delivered depth against the analytic surface point)",
+    "B-A1A2": "the EQ-1A 20 deg counterexample and the front-plane on/off-axis fixture are re-run: S-L1B bearing error <= 1e-5 rad and body-range error <= 1e-4 m where legacy shows 3.41 deg / -0.0998 m; legacy values are reported, not gated",
+    "B-ENVELOPE": "production strict and clamped bins equal the independent float64 reprojection of the same depth image within 1e-4 m on every boundary-robust bin, 0 robust mismatches (CPU and GPU)",
+    "B-VERTICAL": "strict rows contain only in-band points; out-of-coverage points appear only through the clamped edge rows; the 2-D envelope (min over rows) never exceeds the legacy-equivalent conservative minimum of correctly mapped points",
+    "B-CARVE": "S14, A_FOREGROUND (CPU and GPU) and B_TIGHT (CPU) bar returns are never carved and never falsely cleared under s_l1b_v1; no unsupported carve; carve masks equal the independent oracle; target-return retention reported",
+    "B-DEPTH": "s_l1b_v1 delivered depth bitwise equals s_l1a_v1 in every sensor fixture; A-DEPTH thresholds hold (robust non-target max <= 1e-4 m, false-clear = no-hit false-positive = 0)",
+    "B-REGRESSION": "CPU: unset/off and s_l1a_v1 perception fusion and detector outputs bitwise equal to source 139184b on identical inputs. GPU: off digests equal historical EL0-R1 P2 and s_l1a_v1 digests equal SL1A-C01 on_p2 (all 14 keys, 600 steps, static 4501 and moving 4502)",
+    "B-EL0": "s_l1b_v1 with E-L0 P1 and P2 has identical closed-loop digests (static and moving)",
+    "B-FIREWALL": "S-L1B helpers accept only delivered sensor arrays and declared calibration constants (AST/signature test); actor width 898; no target/semantic/simulator pose input",
+    "B-INTEGRITY": "checkpoint, RMS, 898-D, import origins, source SHA, frozen tree, raw manifest valid; no NaN/Inf",
+    "B-RESOURCE": "characterisation only",
+    "verdict": "S-L1B QUALIFIED only when B-POINT, B-A1A2, B-ENVELOPE, B-VERTICAL, B-CARVE, B-DEPTH, B-REGRESSION, B-EL0, B-FIREWALL and B-INTEGRITY pass; otherwise FAIL or INCOMPLETE. GO to S-L1C requires QUALIFIED plus an independent review without an unresolved blocker."
+  },
+  "not_gated_reported": [
+    "per-beam envelope minus LiDAR beam truth (one-sided conservative offset)",
+    "fused scan and obstacle-token change versus s_l1a_v1",
+    "ON closed-loop observation/action/trajectory/outcome changes (no performance claim)",
+    "EQ-1D D2-F1 under its original beam-exact horizontal-range definition (an envelope is not a beam metric)"
+  ],
+  "run": {
+    "run_id": "SL1B-C01",
+    "output_root": "../aerial_gym_simulator/results/s_l1b_v1",
+    "disk_min_free_gb": 8.0, "output_max_gb": 2.0, "oom_reserve_mib": 512, "poll_s": 5,
+    "total_wall_cap_s": 7200, "process_wall_cap_s": 900,
+    "sensor_modes": ["legacy", "s_l1a", "s_l1b"], "sensor_num_envs": 43, "sensor_seed": 4401,
+    "closed_loop_variants": ["off", "s_l1a", "s_l1b_p1", "s_l1b_p2"],
+    "closed_loop_num_envs": 8, "closed_loop_steps": 600, "closed_loop_density": 160,
+    "closed_loop_seed_by_config": {"static": 4501, "moving": 4502},
+    "configs": ["static", "moving E2_direct_l2_v1"],
+    "no_retry": true,
+    "stop": ["nonzero exit/OOM", "watchdog", "disk below 8 GB", "GPU above launch cap", "tracked tree or HEAD change", "missing outputs/nonfinite state", "off, s_l1a or E-L0 non-interference failure"]
+  }
+}

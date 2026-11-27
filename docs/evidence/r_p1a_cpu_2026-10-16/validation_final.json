@@ -1,0 +1,189 @@
+{
+ "authorization": "User approved R-P1a implementation and CPU verification; no commit/GPU/merge/push authorization inferred.",
+ "branch": "codex/mt-p1",
+ "change_scope": {
+  "ignored_evidence_logs": {
+   "commit_note": "a commit must add these six logs explicitly (git add -f), or the SHA-256 references in validation.json and validation_final.json point at untracked files",
+   "files": [
+    "docs/evidence/r_p1a_cpu_2026-10-16/public_cpu.log",
+    "docs/evidence/r_p1a_cpu_2026-10-16/public_cpu_final.log",
+    "docs/evidence/r_p1a_cpu_2026-10-16/public_cpu_reverify.log",
+    "docs/evidence/r_p1a_cpu_2026-10-16/scoped_cpu.log",
+    "docs/evidence/r_p1a_cpu_2026-10-16/scoped_cpu_final.log",
+    "docs/evidence/r_p1a_cpu_2026-10-16/scoped_cpu_reverify.log"
+   ],
+   "rule": ".gitignore:25 *.log"
+  },
+  "staged": [],
+  "tracked_modified": [
+   "WORKLOG.md",
+   "aerial_gym/task/navrl_task/kroc_eval_adapter.py"
+  ],
+  "untracked_link": "results/mt_p1_precision_v1 (symlink to the main checkout's raw results; not to be committed)",
+  "untracked_prior_review_package": [
+   "docs/audits/moving_target_tf32_readonly_2026-10-16.json",
+   "docs/audits/moving_target_tf32_readonly_2026-10-16.md",
+   "docs/audits/mt_precision_governance_addendum_2026-10-16.md",
+   "docs/evidence/mt_precision_review_2026-10-16/KROC27-A-M02/RAW_MANIFEST.json",
+   "docs/evidence/mt_precision_review_2026-10-16/KROC27-A-M02/analysis.json",
+   "docs/evidence/mt_precision_review_2026-10-16/KROC27-A-M02/launch_receipt.json",
+   "docs/evidence/mt_precision_review_2026-10-16/KROC27-A-M02/run_report.json",
+   "docs/evidence/mt_precision_review_2026-10-16/KROC27-A-M02/run_summary.json",
+   "docs/evidence/mt_precision_review_2026-10-16/MT-P2-C01/RAW_MANIFEST.json",
+   "docs/evidence/mt_precision_review_2026-10-16/MT-P2-C01/launch_receipt.json",
+   "docs/evidence/mt_precision_review_2026-10-16/MT-P2-C01/mt_canary_report.json",
+   "docs/evidence/mt_precision_review_2026-10-16/MT-P2-C01/run_summary.json",
+   "docs/evidence/mt_precision_review_2026-10-16/README.md",
+   "docs/evidence/mt_precision_review_2026-10-16/index.json",
+   "docs/evidence/mt_precision_review_2026-10-16/numerical_audit.json",
+   "docs/evidence/mt_precision_review_2026-10-16/preservation_audit.json",
+   "docs/plans/r_p1a_observability_v1.draft.diff",
+   "docs/plans/r_p1a_observability_v1.json",
+   "docs/plans/r_p1a_observability_v1.md"
+  ],
+  "untracked_r_p1a": [
+   "aerial_gym/task/navrl_task/recovery_visibility_probe.py",
+   "docs/audits/r_p1a_implementation_2026-10-16.md",
+   "docs/evidence/r_p1a_cpu_2026-10-16/implementation.diff",
+   "docs/evidence/r_p1a_cpu_2026-10-16/validation.json",
+   "docs/evidence/r_p1a_cpu_2026-10-16/validation_final.json",
+   "motar_eval/recovery_events.py",
+   "tests/test_recovery_events.py",
+   "tests/test_recovery_observability_contract.py",
+   "tests/test_recovery_visibility_geometry.py",
+   "tools/recovery_observability.py"
+  ]
+ },
+ "commands": {
+  "public": "MPLCONFIGDIR=/tmp/mt_p1_mpl_cache PYTHONHASHSEED=0 SOURCE_DATE_EPOCH=0 PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py",
+  "public_prerequisite": "/tmp/mt_p1_mpl_cache/fontlist-v330.json (copy of the host Matplotlib cache, SHA-256 0c77c752ed7be5488d299a3564074a1552b6aef0ed9807aaffd352aa4c1f49c9); /tmp does not survive a reboot",
+  "scoped": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_recovery_*.py' -v"
+ },
+ "date": "2026-10-16",
+ "differences_from_superseded": {
+  "other_source_files": "all six other recorded source SHA-256 values are unchanged",
+  "public_ran": [
+   2318,
+   2319
+  ],
+  "scoped_ran": [
+   37,
+   38
+  ],
+  "tests/test_recovery_observability_contract.py": {
+   "added_test": "test_unsupported_motion_cannot_be_mislabeled_as_valid_direct_lineage",
+   "final_sha256": "f1c81b2fb646902360170b3e6b4d9f0917ad8478d430ed68c686e34d40bd1e13",
+   "modified": "2026-10-16T20:34:31+09:00",
+   "recorded_sha256": "2a933c1330fc713a41283e051fb1f27b631b1882fbf9231eb6d1cd4de82befd5"
+  }
+ },
+ "documents_sha256": {
+  "WORKLOG.md": "11f94b8717d83a26a2a439b8459891f098be5e1d327d1bdf1f6c1ca998eb186d",
+  "docs/audits/r_p1a_implementation_2026-10-16.md": "2d566c2a4ae01860b4c5e70a80a6f8db00d326ee7db7b3a8adb6cc3d5dfc54d9",
+  "implementation.diff": "e441e84ef54915f52038906427f83df0ee3f9f6b9598081aff519db1a3358736"
+ },
+ "last_source_change": "2026-10-16T20:34:31+09:00",
+ "limitations": {
+  "external_backup": "NOT_COMPLETED_EXISTING_BACKUPS_SAME_FILESYSTEM",
+  "full_visual_occlusion": "NOT_RECORDED",
+  "gpu_mesh_renderer_parity": "NOT_TESTED",
+  "gpu_trajectory_noninterference": "NOT_TESTED",
+  "matched_scene_and_actor_pre_loss_prefix": "NOT_RECORDED",
+  "natural_2_5_10_15_second_occlusion_feasibility": "NOT_TESTED",
+  "persistent_physical_target_identity": "NOT_RECORDED",
+  "safe_abort": "NOT_RECORDED",
+  "sampled_dropout_vs_detector_rejection": "NOT_RECORDED",
+  "sensor_capture_timestamp": "NOT_RECORDED"
+ },
+ "logs_sha256": {
+  "public_cpu.log": "c2ab742ed0d521fd8e3b9cdf6f61abe20d58a81aa0fb19fba7bf0e03da639867",
+  "public_cpu_final.log": "7036efcaf8c96ddf6eef3770ec19a02c39b4e148aa24ea36b8d9febd4bca0e31",
+  "public_cpu_reverify.log": "d8dc2302c692b732c7cb7e44f20ed398567647ea00794b9afd65bfa9e4f0ae5e",
+  "scoped_cpu.log": "18bd8490f72a37ac8520373582f5f2327584477de7b78c58b7d17e6c4569a4f5",
+  "scoped_cpu_final.log": "9aa9acbd538a541a6935978e14a5ead19bd3717a8719c1f0b92476ee98f97583",
+  "scoped_cpu_reverify.log": "e031ea506f09b8f574114f039a64a4f0eca425f119c926d448186048c4e82324"
+ },
+ "noninterference_review": {
+  "cpu_tests": "existing KROC outputs byte-identical OFF vs ON; Python/NumPy/torch RNG and actor/tracker inputs preserved (stand-ins)",
+  "gpu": "NOT_TESTED",
+  "gt_separation": "geometry goes only to recovery_events.jsonl / recovery_summary.json, never to observations, rewards or terminations",
+  "off_path": "no new import; every hook guarded by `self._recovery is None`; the eval tool strips inherited NAVRL_KROC2027_* variables",
+  "on_path": "detached copies only, no task-buffer writes, no RNG; probe writes only its own Warp buffer",
+  "timing": "camera validity and current mesh LOS are separate signals; the combined occlusion candidate requires verified zero-latency delivery, else alignment_unknown"
+ },
+ "not_performed": [
+  "GPU evaluation",
+  "simulation rollout",
+  "PPO training",
+  "RecoveryBelief/R-P1b/R-P1c/Planner implementation",
+  "commit",
+  "merge",
+  "push",
+  "raw/WIP/stash deletion"
+ ],
+ "preservation": {
+  "branch_head": "c038ba50193fb6401a473d8eb9ff4be097883e0e",
+  "disk_free": "3.3 GB of 117 GB (98 % used)",
+  "external_backup": "NOT_COMPLETED (archives are on the same filesystem)",
+  "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "raw_manifests": {
+   "KROC27-A-M02": {
+    "members": 452,
+    "mismatches": 0
+   },
+   "MT-P2-C01": {
+    "members": 131,
+    "mismatches": 0
+   }
+  },
+  "snapshot_files_unchanged": "19/19 files in /tmp/r_p1a_preservation_before.json, including the user's three WIP files",
+  "stash": "23ddb33f92cf6c75cf9095e149bb7e2516eb7543"
+ },
+ "public_cpu": {
+  "errors": 0,
+  "excluded": 5,
+  "excluded_reasons": {
+   "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+   "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+  },
+  "failures": 0,
+  "final_log": "public_cpu_final.log",
+  "profile": "PUBLIC_CPU",
+  "ran": 2319,
+  "reverify_errors": 0,
+  "reverify_failures": 0,
+  "reverify_log": "public_cpu_reverify.log",
+  "reverify_ran": 2319,
+  "reverify_skipped": 10,
+  "skipped": 10
+ },
+ "record": "final verification after the last source change; supersedes validation.json, which is kept unchanged as history",
+ "schema": "motar.r-p1a-cpu-implementation.v1",
+ "scoped_cpu": {
+  "errors": 0,
+  "failures": 0,
+  "final_log": "scoped_cpu_final.log",
+  "ran": 38,
+  "reverify_identical_test_list": true,
+  "reverify_log": "scoped_cpu_reverify.log",
+  "reverify_ran": 38,
+  "skipped": 0
+ },
+ "source_base_commit": "c038ba50193fb6401a473d8eb9ff4be097883e0e",
+ "source_files_sha256": {
+  "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "a470f294a0fea0c6a9ebea19cae59c38b0dcb86d02c53eb7f1e1ed4fc5227cd9",
+  "aerial_gym/task/navrl_task/recovery_visibility_probe.py": "f3a15db1b1f199b1203583b06016c273ec4dbd628e23bb6b29afc1f6b9b1ae66",
+  "motar_eval/recovery_events.py": "6130c954c42a5a9f203445f0077c3e228ec0a7e5bea76162afebc88421b65fb9",
+  "tests/test_recovery_events.py": "8581e687de7d81ca110b77978cbd71c042b429be1be5fa24c7af7180944c6f5b",
+  "tests/test_recovery_observability_contract.py": "f1c81b2fb646902360170b3e6b4d9f0917ad8478d430ed68c686e34d40bd1e13",
+  "tests/test_recovery_visibility_geometry.py": "078d8d759294211d1121b5c8b5a82d9f315c49099a40dc56d2474541e86939a0",
+  "tools/recovery_observability.py": "3d4249d2474312960228f24cf8467444884781fe3808f7b9adc783690d80c52a"
+ },
+ "status": "IMPLEMENTED_CPU_VERIFIED_RUNTIME_NOT_TESTED",
+ "supersedes": {
+  "file": "validation.json",
+  "sha256": "18f7e9d0b15c1892e19651428241f3623c626763ceca615f6a04c059b2acb390",
+  "written": "2026-10-16T20:33:59+09:00"
+ }
+}

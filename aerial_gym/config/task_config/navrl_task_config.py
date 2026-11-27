@@ -599,6 +599,13 @@ class task_config:
         # uses that planner only as a velocity reference for a 6-DoF PhysX actor driven by four
         # bounded first-order motors at the 0.01 s physics rate. Both are new training lineages.
         dynamics = os.environ.get("NAVRL_TARGET_DYNAMICS", "legacy").strip().lower()
+        # A separate virtual-target distance lineage. Keep the frozen cdist path by default;
+        # the direct variant must never alter policy/global matmul precision.
+        distance_backend = os.environ.get(
+            "NAVRL_TARGET_DISTANCE_BACKEND", "legacy_cdist"
+        ).strip().lower()
+        if distance_backend not in ("legacy_cdist", "direct_l2_v1"):
+            raise ValueError("NAVRL_TARGET_DISTANCE_BACKEND must be legacy_cdist|direct_l2_v1")
         # Independent target-difficulty axis. "historical" preserves every existing run.
         # e0/e1/e2 reuse the existing static, CV, and bounded waypoint implementations; e3/e4
         # are reserved and fail closed until implemented. Evader-side privileged obstacle GT

@@ -1,0 +1,904 @@
+{
+  "R01_exploratory": "NOT_ANALYSED (R01_SOURCE_UNCOMMITTED; see IMPLEMENTATION_AUDIT.md)",
+  "analysis_sha256": "e963bc975969ec7aa8c83dfa47fd4d7118bbcf076c3718d5e0722c303797ef31",
+  "contrasts": [
+    {
+      "bca95": [
+        0.29952566964285715,
+        0.30838448660714285
+      ],
+      "contrast": "F_SHADOW - B-PN",
+      "mean": 0.3037806919642857,
+      "p_holm": 0.03125,
+      "p_sign_flip": 0.015625,
+      "reading": "SUPERIOR",
+      "seed_differences": [
+        0.306640625,
+        0.2998046875,
+        0.29736328125,
+        0.2958984375,
+        0.3037109375,
+        0.310546875,
+        0.3125
+      ]
+    },
+    {
+      "bca95": [
+        0.08537946428571429,
+        0.09228515625
+      ],
+      "contrast": "F_SHADOW - B-PP",
+      "mean": 0.08872767857142858,
+      "p_holm": 0.03125,
+      "p_sign_flip": 0.015625,
+      "reading": "SUPERIOR",
+      "seed_differences": [
+        0.083984375,
+        0.08837890625,
+        0.08447265625,
+        0.0830078125,
+        0.0947265625,
+        0.09326171875,
+        0.09326171875
+      ]
+    },
+    {
+      "bca95": [
+        -0.21868024553571427,
+        -0.21205745254590752
+      ],
+      "contrast": "B-PN - B-PP",
+      "mean": -0.21505301339285715,
+      "p_sign_flip": 0.015625,
+      "reading": "DESCRIPTIVE_ONLY",
+      "seed_differences": [
+        -0.22265625,
+        -0.21142578125,
+        -0.212890625,
+        -0.212890625,
+        -0.208984375,
+        -0.21728515625,
+        -0.21923828125
+      ]
+    }
+  ],
+  "primary": {
+    "B-PN|4301": 0.64208984375,
+    "B-PN|4302": 0.64990234375,
+    "B-PN|4303": 0.654296875,
+    "B-PN|4304": 0.65966796875,
+    "B-PN|4305": 0.65283203125,
+    "B-PN|4306": 0.6455078125,
+    "B-PN|4307": 0.642578125,
+    "B-PP|4301": 0.86474609375,
+    "B-PP|4302": 0.861328125,
+    "B-PP|4303": 0.8671875,
+    "B-PP|4304": 0.87255859375,
+    "B-PP|4305": 0.86181640625,
+    "B-PP|4306": 0.86279296875,
+    "B-PP|4307": 0.86181640625,
+    "F_SHADOW|4301": 0.94873046875,
+    "F_SHADOW|4302": 0.94970703125,
+    "F_SHADOW|4303": 0.95166015625,
+    "F_SHADOW|4304": 0.95556640625,
+    "F_SHADOW|4305": 0.95654296875,
+    "F_SHADOW|4306": 0.9560546875,
+    "F_SHADOW|4307": 0.955078125
+  },
+  "provenance": {
+    "A": {
+      "manifest_sha256": "31fbb9b89a88ea117eec751d0de7c04265d9080d5cf2da4e0adc40c30c6ef759",
+      "source_commit": "61a3c59958e202b5e6af08623a255432691a3b9e"
+    },
+    "B": {
+      "manifest_sha256": "2a01b676e151edb3d7bb8895d40ec003b2ef73aab0704df5cf80d65de7880cf7",
+      "source_commit": "6460fff7eeb68fa5a4b73aacea27e9d041f8c00b"
+    },
+    "C-PN": {
+      "manifest_sha256": "4e80dbaaf0a99653d20215e6e6ed8d0f0055d837f9255f88349932fad0b4e82a",
+      "source_commit": "386d95ed3985aaa9b03b65b34d7dd147675fe7a0"
+    },
+    "C-PP": {
+      "manifest_sha256": "6308506d26ed839d57cbbdb4ab83493b8e38988ed0517b12f8ad1cabfbb38128",
+      "source_commit": "96aa55ad4d8f940d15e3b37564e461899705ce43"
+    }
+  },
+  "schema": "motar.b1r-analysis-summary.v1",
+  "secondary_per_density": {
+    "B-PN|115": {
+      "actual_speed_mean_mps": {
+        "mean": 1.264266549345762,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.6396098215689195,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.7114955357142857,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.15206473214285715,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 1.3280453985527616,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 73897.28571428571,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 99963.42857142857,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 115572.57142857143,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 1.3280453985527616,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 28.286104910714283,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 15.428652400692766,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.13643973214285715,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 82.71428571428571,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PN|160": {
+      "actual_speed_mean_mps": {
+        "mean": 1.2075963821735824,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.5520607716481027,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.5837053571428571,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.27232142857142855,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 1.2712324552272114,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 67008.85714285714,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 101940.0,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 121399.85714285714,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 1.2712324552272114,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 34.41202566964286,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 16.157097171532673,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.14397321428571427,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 102.57142857142857,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PN|205": {
+      "actual_speed_mean_mps": {
+        "mean": 1.139841579336563,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.4741720639251877,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.47488839285714285,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.36104910714285715,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 1.2031661740144675,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 60375.142857142855,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 102137.57142857143,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 127369.0,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 1.2031661740144675,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 39.465848214285714,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 16.75474253414648,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.1640625,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 133.85714285714286,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PN|70": {
+      "actual_speed_mean_mps": {
+        "mean": 1.3449524045937742,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.7795548237345215,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.828125,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.09263392857142858,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 1.413380807556813,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 73115.42857142857,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 87600.0,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 93806.71428571429,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 1.413380807556813,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 21.65711495535714,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 13.698559907804611,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.07924107142857142,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 37.42857142857143,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PP|115": {
+      "actual_speed_mean_mps": {
+        "mean": 1.8863802827743779,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.8086224006538124,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.9333147321428571,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.0625,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 2.0758145678067534,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 35450.71428571428,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 42072.42857142857,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 43835.71428571428,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 2.1342592996776233,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 11.760825892857143,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 8.311668934967567,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.004185267857142857,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 12.714285714285714,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PP|160": {
+      "actual_speed_mean_mps": {
+        "mean": 1.7488066969567426,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.7376246015320732,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.8367745535714286,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.15652901785714285,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 1.937986625847554,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 36418.42857142857,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 46494.857142857145,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 49410.71428571428,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 2.0133064162144767,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 17.505664062499996,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 9.214394901695977,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.006696428571428571,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 19.285714285714285,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PP|205": {
+      "actual_speed_mean_mps": {
+        "mean": 1.648940073721868,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.6716239858116776,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.712890625,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.2767857142857143,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 1.8400208690418765,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 34064.42857142857,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 46672.142857142855,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 50792.71428571428,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 1.9344415925963763,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 24.014732142857138,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 9.519189207579178,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.010323660714285714,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 24.857142857142858,
+        "n_nonmissing": 7
+      }
+    },
+    "B-PP|70": {
+      "actual_speed_mean_mps": {
+        "mean": 2.022787573326236,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.8784242227530125,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.9754464285714286,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.022600446428571428,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 2.2152019264948075,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 32227.85714285714,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 35870.0,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 36702.857142857145,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 2.2569938058319154,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 8.326395089285715,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 7.0256659432820365,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.001953125,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 7.285714285714286,
+        "n_nonmissing": 7
+      }
+    },
+    "F_SHADOW|115": {
+      "actual_speed_mean_mps": {
+        "mean": 2.6434391229911482,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.810109766252341,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.9760044642857143,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.023716517857142856,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 3.0204949630748517,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 17936.428571428572,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 22071.571428571428,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 22143.714285714286,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 3.2289896879045417,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 5.649581473214285,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 17266.85714285714,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 4.313265040244988,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.00027901785714285713,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 0.7142857142857143,
+        "n_nonmissing": 7
+      }
+    },
+    "F_SHADOW|160": {
+      "actual_speed_mean_mps": {
+        "mean": 2.5537624824700913,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.7512449844281083,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.947265625,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.052734375,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 2.927783461333901,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 17210.285714285714,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 22860.14285714286,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 22911.714285714286,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 3.231415933504469,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 7.430664062500001,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 16255.857142857143,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 4.504621199762522,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 1.0,
+        "n_nonmissing": 7
+      }
+    },
+    "F_SHADOW|205": {
+      "actual_speed_mean_mps": {
+        "mean": 2.453342594262615,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.6918224394997514,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.9045758928571429,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.09542410714285714,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 2.818675623831147,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 16664.714285714286,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 24056.285714285714,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 24091.285714285714,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 3.230383113876081,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 10.046205357142858,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 15146.285714285714,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 4.776328736706221,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 1.1428571428571428,
+        "n_nonmissing": 7
+      }
+    },
+    "F_SHADOW|70": {
+      "actual_speed_mean_mps": {
+        "mean": 2.713297627134419,
+        "n_nonmissing": 7
+      },
+      "camera_detection_fraction": {
+        "mean": 0.8846451653889013,
+        "n_nonmissing": 7
+      },
+      "capture_rate": {
+        "mean": 0.9854910714285714,
+        "n_nonmissing": 7
+      },
+      "crash_rate": {
+        "mean": 0.014508928571428572,
+        "n_nonmissing": 7
+      },
+      "episodes": {
+        "mean": 512.0,
+        "n_nonmissing": 7
+      },
+      "executed_speed_mean_mps": {
+        "mean": 3.092928400501818,
+        "n_nonmissing": 7
+      },
+      "obs_camera_valid": {
+        "mean": 18200.0,
+        "n_nonmissing": 7
+      },
+      "obs_track_active": {
+        "mean": 20561.85714285714,
+        "n_nonmissing": 7
+      },
+      "observations": {
+        "mean": 20574.14285714286,
+        "n_nonmissing": 7
+      },
+      "recorder_rows_missing": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "requested_speed_mean_mps": {
+        "mean": 3.2269213471874805,
+        "n_nonmissing": 7
+      },
+      "rmtc60_s": {
+        "mean": 4.836607142857143,
+        "n_nonmissing": 7
+      },
+      "steps_commanded_over_2p5": {
+        "mean": 17482.714285714286,
+        "n_nonmissing": 7
+      },
+      "time_to_capture_mean_s": {
+        "mean": 4.024502079875864,
+        "n_nonmissing": 7
+      },
+      "timeout_rate": {
+        "mean": 0.0,
+        "n_nonmissing": 7
+      },
+      "track_losses": {
+        "mean": 0.2857142857142857,
+        "n_nonmissing": 7
+      }
+    }
+  },
+  "selection_sha256": "c1c572560f365d34cdf3441233acdaa328f571cded289bae6c0d65d90579797f",
+  "source": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/analysis.json",
+  "statement": "F outperforms both classical sensor-based baselines under this contract"
+}

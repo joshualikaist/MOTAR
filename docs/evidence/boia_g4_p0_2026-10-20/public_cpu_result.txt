@@ -1,0 +1,126 @@
+======================================================================
+ERROR: test_bounding_box_and_empty_convention (test_navrl_detect_resolution.DetectReduction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3973, in pack_arg
+    return arg_type(value)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/types.py", line 135, in __init__
+    super().__setitem__(i, value)
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 285, in test_bounding_box_and_empty_convention
+    self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4218, in launch
+    pack_args(fwd_args, params)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4190, in pack_args
+    params.append(pack_arg(kernel, arg_type, arg_name, a, device, adjoint))
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3975, in pack_arg
+    raise ValueError(f"Failed to convert argument for param {arg_name} to {type_str(arg_type)}")
+ValueError: Failed to convert argument for param target_half_extents to vec3f
+
+======================================================================
+ERROR: test_count_centroid_and_range (test_navrl_detect_resolution.DetectReduction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3973, in pack_arg
+    return arg_type(value)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/types.py", line 135, in __init__
+    super().__setitem__(i, value)
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 268, in test_count_centroid_and_range
+    frame = self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4218, in launch
+    pack_args(fwd_args, params)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4190, in pack_args
+    params.append(pack_arg(kernel, arg_type, arg_name, a, device, adjoint))
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3975, in pack_arg
+    raise ValueError(f"Failed to convert argument for param {arg_name} to {type_str(arg_type)}")
+ValueError: Failed to convert argument for param target_half_extents to vec3f
+
+======================================================================
+ERROR: test_frame_carries_the_rendered_target_colour_and_far_plane (test_navrl_detect_resolution.DetectReduction)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3973, in pack_arg
+    return arg_type(value)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/types.py", line 135, in __init__
+    super().__setitem__(i, value)
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 293, in test_frame_carries_the_rendered_target_colour_and_far_plane
+    frame = self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4218, in launch
+    pack_args(fwd_args, params)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4190, in pack_args
+    params.append(pack_arg(kernel, arg_type, arg_name, a, device, adjoint))
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3975, in pack_arg
+    raise ValueError(f"Failed to convert argument for param {arg_name} to {type_str(arg_type)}")
+ValueError: Failed to convert argument for param target_half_extents to vec3f
+
+======================================================================
+ERROR: test_the_frame_carries_no_image_sized_tensor (test_navrl_detect_resolution.DetectReduction)
+The hand-off must stay a per-env summary: an image or a mask would be a semantic
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3973, in pack_arg
+    return arg_type(value)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/types.py", line 135, in __init__
+    super().__setitem__(i, value)
+TypeError: must be real number, not NoneType
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 306, in test_the_frame_carries_no_image_sized_tensor
+    frame = self._run(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_navrl_detect_resolution.py", line 256, in _run
+    _DET.NavRLTargetDetector._render_detect(stub)
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/task/navrl_task/navrl_detector.py", line 698, in _render_detect
+    wp.launch(
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4218, in launch
+    pack_args(fwd_args, params)
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 4190, in pack_args
+    params.append(pack_arg(kernel, arg_type, arg_name, a, device, adjoint))
+  File "/home/fair/miniconda3/envs/aerialgym/lib/python3.8/site-packages/warp/context.py", line 3975, in pack_arg
+    raise ValueError(f"Failed to convert argument for param {arg_name} to {type_str(arg_type)}")
+ValueError: Failed to convert argument for param target_half_extents to vec3f
+
+----------------------------------------------------------------------
+Ran 2899 tests in 155.117s
+
+FAILED (errors=4, skipped=10)
+{
+  "profile": "PUBLIC_CPU",
+  "status": "FAIL",
+  "ran": 2899,
+  "failures": 0,
+  "errors": 4,
+  "skipped": 10,
+  "excluded": 5,
+  "excluded_reasons": {
+    "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+    "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+  }
+}

@@ -1,0 +1,19 @@
+HEAD 031e77c + uncommitted tests/test_q02b_q03_noninterference.py; 2026-10-22T22:16:47+09:00
+== test_q02_evidence
+Ran 49 tests in 10.047s
+OK
+== test_q02b_timing
+Ran 29 tests in 45.746s
+OK
+== test_q03_local_map
+Ran 12 tests in 0.218s
+OK
+== test_q03_planner
+Ran 15 tests in 3.162s
+OK
+== test_q02b_benchmark_metrics
+Ran 2 tests in 0.000s
+OK
+== test_q02b_q03_noninterference
+Ran 5 tests in 5.181s
+OK

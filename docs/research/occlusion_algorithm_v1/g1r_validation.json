@@ -1,0 +1,46 @@
+{
+  "status": "PASS",
+  "base_sha": "a4472d81ff049f040869d2ee65b08cd1d8f14456",
+  "pdf_files_verified": 30,
+  "unique_papers": 29,
+  "original25_full_read": 25,
+  "extra4_full_read": 4,
+  "fresh_full_original_reads": 15,
+  "prior_identical_full_reads_current_spotchecks": 14,
+  "known_inventory_matches": 24,
+  "inventory_unknown": [
+    "YOPO"
+  ],
+  "duplicate": "EGO-Planner identical SHA; both files preserved",
+  "public_docs": "PASS",
+  "research_local_links": "PASS; existing bracket-exponent reworded to avoid accidental Markdown link, no equation changed",
+  "canonical_tests": {
+    "run": 25,
+    "failures": 0,
+    "errors": 0
+  },
+  "branch_tests": {
+    "run": 4,
+    "failures": 0,
+    "errors": 0
+  },
+  "design_gate": "MINOR_ADJUSTMENTS_PROPOSED",
+  "g3_review_required": false,
+  "proposal_issues": [
+    "motar-3p3.8",
+    "motar-3p3.9",
+    "motar-3p3.10",
+    "motar-3p3.11",
+    "motar-3p3.12"
+  ],
+  "g1r_issue": "motar-3p3.7",
+  "g4_issue": "motar-3p3.5",
+  "disk_stop_below_bytes": 3000000000,
+  "free_bytes": 9398968320,
+  "source_spec07_sha256": "ec563486c23d39c15c3d9201ce997efa99fed265bece8466bfb48b0dced3fb99",
+  "source_plan08_sha256": "b2f4b75798c06ac9c63e62bc30db1eca946059783a005cb7bb852d3ccd86b735",
+  "experiment_plan09_sha256": "a304407378ff02eae439f60db3a6d6adb78629312a92274e38a9e99766abf6bb",
+  "gpu_simulator_code_execution": false,
+  "remote_push": false,
+  "main_merge": false
+}

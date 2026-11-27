@@ -7,9 +7,11 @@ are **not** approvals to run again.
 
 ## 1. Authority — read before running anything heavy
 
-- **No GPU evaluation and no PPO training is authorised.** Every GPU run so far had an explicit,
-  single-use approval; the last one was the H/E0/E1/E2 evaluation of 2026-09-18. A new run needs the
-  user's explicit approval **and** a preregistration committed before execution.
+- **No GPU run is authorised by default.** New PPO training is allowed again (D-2026-11-04-1), but
+  every GPU run, including the
+  approved October 2026 units recorded in [`WORKLOG.md`](../WORKLOG.md), had an explicit user
+  approval naming that run or its unit. A new run needs the user's explicit approval **and** a preregistration committed before
+  execution.
 - Frozen experiments stay frozen. Do not change rewards, the controller, target definitions,
   termination values, observation schemas or checkpoints to "fix" a result.
 - `python tools/check_research_authority.py --json` checks the frozen authority record
@@ -19,14 +21,17 @@ are **not** approvals to run again.
 
 ## 2. Branch and site rules
 
-- `main` is the only long-lived branch; it is both the working and the publishing branch. GitHub Pages
-  serves `/docs` from `main`, so the public site is `docs/status/`. Short-lived branches (agent
-  worktrees under `.codex_worktrees/`, or a review branch the user asks for) are merged back into
-  `main` and then deleted. The rule and its history are in root [`OPERATIONS.md`](../OPERATIONS.md) §0,
-  and `tests/test_branch_policy.py` keeps the documents consistent.
-- Never force-push, `reset --hard`, or rewrite published history. Show the diff before any commit or
-  push. The temporary KROC2027 Phase 1 exception in [`AGENTS.md`](../AGENTS.md) allows scoped local
-  commits on branch `kroc2027-phase1` until that branch is merged or the 2026-10-28 Simulation Freeze.
+- `main` is the publishing branch. GitHub Pages serves `/docs` from `main`, so the public site is
+  `docs/status/`. Research commits currently land on `codex/mt-p1` (worktree `src/MOTAR-mt-p1`) and
+  reach `main` only by an approved merge. Worktree and branch lifecycle, archive refs and the
+  main-only display exclude are in [`AGENTS.md`](../AGENTS.md) ("Git rules"). The historical branch
+  rule is in root [`OPERATIONS.md`](../OPERATIONS.md) §0, and `tests/test_branch_policy.py` keeps the
+  frozen documents consistent.
+- Never force-push, `reset --hard`, or rewrite published history. Review the actual diff and stage
+  explicitly named approved files. Completed, verified authorized work must receive a local commit
+  under the user's 2026-10-17 [Git traceability protocol](research_git_traceability_protocol.md).
+  Remote push and main merge require separate explicit approval. This supersedes the older
+  per-local-commit approval language and temporary exceptions; frozen historical files stay intact.
 - Any tool that writes a GPU-derived number to `runs/` or `results/` records the execution stack with
   `tools/runtime_fingerprint.py` (root `OPERATIONS.md` §0.1). Perception streaming reproduces only in
   `detector_runs/venv`.
@@ -115,14 +120,19 @@ historical records; do not regenerate them in place.
 
 These rules exist because breaking them has voided runs before (see `results/VOID_*`):
 
-- While training or evaluation runs, do **not** edit, add or commit anything under `aerial_gym/`,
-  `tools/` or `resources/robots/`. The launchers compare those trees before every cell. Edit only
-  `docs/`, `tests/`, `WORKLOG.md` or a scratch directory.
-- Do not run heavy CPU or disk work alongside an evaluation; concurrent load has changed results.
+- Commit approved source and preregistration before launch. While training or evaluation runs,
+  do **not** modify or commit any tracked file, including `WORKLOG.md`, docs or tests. Keep HEAD
+  and the tracked tree frozen; write only designated run outputs or scratch files. Do not create
+  runtime files under `aerial_gym/`, `tools/` or `resources/robots/`.
+- Concurrent work follows [`AGENTS.md`](../AGENTS.md) "Concurrent work" (D-2026-11-05-1):
+  - Never write the run's tree, never use CUDA from another job, never run uncapped jobs.
+  - CPU compute is allowed during PPO training on disjoint cores.
+  - During an evaluation it is allowed only after the load-invariance test T-LOAD reads LOAD_INVARIANT.
 - Evaluate a frozen policy only through its recorded contract; `tools/audits/check_eval_condition_contract.py`
   refuses a mismatched condition. HEAD defaults do **not** reproduce the ep25000 training contract of policy F.
 - TensorBoard for this repository: `tensorboard --logdir aerial_gym/rl_training/rl_games/runs --port 6009`.
-- Record the run in [`WORKLOG.md`](../WORKLOG.md) with its numbers and paths before asking for review.
+- After the run ends and its results are validated, record its numbers and paths in
+  [`WORKLOG.md`](../WORKLOG.md) and make a separate local result commit.
 
 ## 8. Housekeeping
 
@@ -131,3 +141,51 @@ These rules exist because breaking them has voided runs before (see `results/VOI
 - **Never** run `git clean -X` or `git clean -fdX`. Ignored paths include `runs/`, checkpoint and source
   snapshots bound by receipts, a registered worktree and `aerial_gym/lms_rl_trial/`.
 - Everything under `results/` is evidence, including logs and VOID folders. Do not delete it.
+
+## 9. Task tracking and session memory
+
+**Beads (`bd`) is the only tracker for actionable work** (decision D-2026-10-19-2 in
+[`DECISIONS.md`](DECISIONS.md)).
+- Long-term direction is in [`ROADMAP.md`](ROADMAP.md) and the current state in
+  [`PROJECT_STATE.md`](PROJECT_STATE.md).
+- Do not keep a Markdown TODO list that duplicates Beads.
+
+```bash
+bd ready                          # unblocked work, highest priority first
+bd list                           # every issue as a tree (epics = roadmap milestones)
+bd show <id>                      # description, acceptance criteria, dependencies
+bd update <id> --claim            # take an issue before working on it
+bd close <id> --reason "..."      # only when its acceptance criteria are met, with the evidence
+bd blocked                        # what is waiting, and on what
+bd stats                          # counts by status
+bd create "title" -p 1 --parent <epic> -d "..." --acceptance "..."   # new work, with source and criteria
+```
+
+**Where the data lives.** The issue database is a local embedded Dolt database in the main
+checkout's `.beads/`. All worktrees resolve to it: run `bd where` to see the path.
+- It is untracked: `.git/info/exclude` lists `/.beads/`.
+- No Dolt remote is configured, and `bd dolt push` needs user approval.
+- `bd init` was run with `--skip-hooks`, so there are no Beads git hooks in the shared `.git/hooks`.
+- Usage metrics are off (`bd metrics`).
+
+**Claude-Mem** is the plugin that records Claude Code sessions in the local `~/.claude-mem/`. It is
+not in this repository.
+- Use it to find *why* something was done (`claude-mem search <query>`, or the memory MCP tools).
+- It never outranks code, tests or committed records.
+- It runs on the user's Anthropic plan (`--provider claude`): cloud sync is off and telemetry is
+  opted out.
+- Never copy its database or logs into the repository.
+
+**Session start:**
+1. Check the Git state.
+2. Read the `bd prime` output (a SessionStart hook prints it) and run `bd ready`.
+3. Read `PROJECT_STATE.md` and only the documents the task needs.
+4. Search memory only when past reasons matter.
+
+**Session end:**
+1. Close only issues whose acceptance criteria are met.
+2. Record blockers on open issues.
+3. Update `PROJECT_STATE.md` or `ROADMAP.md` only if the state or the direction really changed.
+4. Write the WORKLOG entry.
+5. Report the next three ready issues.
+6. Ask before any `git push` or `bd dolt push`.

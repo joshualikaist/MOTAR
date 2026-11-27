@@ -1,0 +1,31 @@
+{
+  "schema": "motar.g4r3.research.manifest.v1",
+  "base_sha": "8689efcd066d64e7b49cecf011e3bd8675380cdb",
+  "files": {
+    "docs/evidence/boia_g4r3_research_2026-10-20/CPU_MODULE_SPEC.md": "e647345f144c304fdafd2a54af4c185a2937c323785b13da024286081bd75fa2",
+    "docs/evidence/boia_g4r3_research_2026-10-20/HANDOFF.md": "9b5983faac989b8e31be19e073a0f6f01015eba05bb8d6a2c6802aecd1dbb963",
+    "docs/evidence/boia_g4r3_research_2026-10-20/INDEPENDENT_REVIEW.md": "cc5c3a875ff647103ae32758d197652f84742e71faf27f8485e224e2f515d18d",
+    "docs/evidence/boia_g4r3_research_2026-10-20/NOVELTY_AND_EVALUATION.md": "7320bd75889b4061c5a47cee028068d8366fce9067b2a3fc2b6e1dfef494bb8a",
+    "docs/evidence/boia_g4r3_research_2026-10-20/ORACLE_PROTOCOL.md": "768913ad7bcda135622639da0a0e569b2fe3041dc9b91ef43909f48f78a7cb1d",
+    "docs/evidence/boia_g4r3_research_2026-10-20/RESEARCH_REPORT.md": "ecafefbe088e6faec95ede71554ed5964ee5508d38576cd549d23beef4d797d1",
+    "docs/evidence/boia_g4r3_research_2026-10-20/boia_final_tests.txt": "6f640b57cad68cec9f8e1ac4c12f68db0c8e89e5ed82201d35c09d9a25ceac52",
+    "docs/evidence/boia_g4r3_research_2026-10-20/focused_final_tests.txt": "c08ef15b8e347f44765d67e64b1ec0a8f1bd847e799a1ace2a0fe63130b7faa5",
+    "docs/evidence/boia_g4r3_research_2026-10-20/independent_oracle.json": "644fbd312710004dd2d37d7125a03b2c461d0ea2c48f78d62ed4eb0dd671134f",
+    "docs/evidence/boia_g4r3_research_2026-10-20/integrity.json": "ca29bd508dcdbf09c4dfd1444ee7da330beeb07ee114baea2bf997c5a2d953ae",
+    "docs/evidence/boia_g4r3_research_2026-10-20/run_independent_oracles.py": "8d444671bb7e8b03bdc7ba0478ec9621bdb6a5889841c1c3a3165af0c22c4911",
+    "docs/evidence/boia_g4r3_research_2026-10-20/uncommitted_paths.json": "2b894af4a39b25b525bf8bc34768167ddb833a97e573cfe8469f09ac745e4ee3",
+    "docs/evidence/boia_g4r3_research_2026-10-20/validation.json": "dfb020a1dc5ad77e27e7ce04acffcd641041b9dac4bf547d22501d2c945a004f",
+    "motar_eval/boia_research/__init__.py": "b058a6309ac89e4ca24f62f7df41d9bfe214defc5051564bdcb0f4e65634e0dc",
+    "motar_eval/boia_research/benefit.py": "5053f400ac6e7ea2af9f79ed8680a61696920f40de900d0de06d0cffd2c76473",
+    "motar_eval/boia_research/decision.py": "5c21a61251f04a2996c2bec8634c43e75285017d0f609067754ef5207ff67f6a",
+    "motar_eval/boia_research/evidence.py": "8c20b71bec2ee58b3e4044b4f9d8fe111d1cd8a81d4ec6914c69354ab51b7e04",
+    "motar_eval/boia_research/types.py": "f4f0561d4fd53479e22492609c2b83097dd5960f64117361d053ab2057012cd0",
+    "tests/test_boia_research.py": "b51807bf4f7405317bf6f1fc14081eba471baf95c3124b42aa4dcbd7a0d1f745",
+    "WORKLOG.md": "49290792144d89f404f5fa05d5a7d02db90dd2e7dbe76cbf229da4eef851a0db"
+  },
+  "self_excluded": true,
+  "part_c_uncommitted": true,
+  "local_only": true,
+  "raw_included": false,
+  "checkpoint_included": false
+}

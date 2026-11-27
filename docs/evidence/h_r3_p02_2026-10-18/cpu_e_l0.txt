@@ -1,0 +1,19 @@
+test_frozen_adapter_untouched (test_e_l0.AttachTest) ... ok
+test_order_arguments_and_returns (test_e_l0.AttachTest) ... ok
+test_switch (test_e_l0.AttachTest) ... ok
+test_chains_existing_callback_and_records (test_e_l0.ContactChainTest) ... ok
+test_beam_row_semantic_and_labels (test_e_l0.LidarProvenanceTest) ... ok
+test_lidar_first_hit_oracle (test_e_l0.LidarProvenanceTest) ... ok
+test_arm_environments (test_e_l0.OrchestratorTest) ... ok
+test_compare_arms_detects_a_difference (test_e_l0.OrchestratorTest) ... ok
+test_contract (test_e_l0.PlanTest) ... ok
+test_official_run (test_e_l0.RecordedEvidenceTest) ... ok
+test_alone_mask_matches_analytic_oracle (test_e_l0.SilhouetteTest) ... ok
+test_camera_provenance (test_e_l0.SilhouetteTest) ... ok
+test_classify_rules (test_e_l0.SilhouetteTest) ... ok
+test_yaw_rotation_and_frustum (test_e_l0.SilhouetteTest) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.336s
+
+OK

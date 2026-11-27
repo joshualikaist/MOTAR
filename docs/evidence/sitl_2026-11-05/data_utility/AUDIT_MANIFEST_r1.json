@@ -1,0 +1,41 @@
+{
+  "scope": "External audit artifacts; original scientific files bound separately in ORIGINAL_MANIFEST.json",
+  "files": {
+    "ORIGINAL_MANIFEST.json": {
+      "bytes": 1077084,
+      "sha256": "74595f70a63bd93e0ade42ca9548c982a18e0bf579d9e7a05745efae223ffaf0"
+    },
+    "PROTOCOL.md": {
+      "bytes": 1799,
+      "sha256": "292cd8748ec12878c05a4c51cbfa16a800166a0fd2a05dd139f72b72e2befefb"
+    },
+    "REPORT.md": {
+      "bytes": 16556,
+      "sha256": "893d92046d3a1a80518ba23aa00ea92742932450def5d9d66dda758e7ebd7e59"
+    },
+    "audit_data.py": {
+      "bytes": 11065,
+      "sha256": "98b5dbb0c37db35b02a6c27e07f7619a3f893ff2dc2201a90cab479840ac0305"
+    },
+    "enrich.log": {
+      "bytes": 53,
+      "sha256": "fc1a87bb244ac51753017faffe2ba527be87d6866b7427a40cc65c2575c4c88a"
+    },
+    "enrich_metrics.py": {
+      "bytes": 9426,
+      "sha256": "b385da077bf49ee615f182b05c36b802c6155e44b9394e26f87e9d21fc6ede85"
+    },
+    "metrics.json": {
+      "bytes": 499589,
+      "sha256": "372c5af134eb638c9647444a9ae4afae61bbcdd32c5287e04a47cb615152bc7f"
+    },
+    "run.log": {
+      "bytes": 134,
+      "sha256": "8709ec8c5dcfc91023fc0455aa8a52b8a6d7e45c6b5a9b02dd850b00b44493a5"
+    },
+    "run_fullulog.log": {
+      "bytes": 134,
+      "sha256": "9b292043de9b76823e7752ad9e7d7c94631d0de212739b6a472ca96c6b06ee65"
+    }
+  }
+}

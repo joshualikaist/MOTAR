@@ -1,0 +1,18 @@
+{
+  "external_backup": "NOT_COMPLETED",
+  "files": {
+    "RAW_MANIFEST.json": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68",
+    "REPORT.md": "b3e32047cf52b15b39945f00c2a71684bbe82ac6315734c87f661c06bbf59db9",
+    "analysis.json": "bc4570abb7e757a046a4628b94db006c8356f83ac44d001cccde0d0d48560465",
+    "launch_receipt.json": "40aeee84b4311d8abc3f300f53f0facfdedcf7770f1f60a8e05d006cb5140e04",
+    "post_run_cpu_audit.json": "6ce9c8564dc750756b9a5f990add6a10d772cd81b111ffa889f6c9cf84972acd",
+    "preservation_after.json": "aa1b3a00ea15f237c2325f6e80d2a6a12fd6645f0407aa668533f78d06b80cfa",
+    "run_report.json": "e8f7f00c31269c1b8f7e41c60f0010589b9f479d66e1684ea979e361f681c6d5",
+    "summary.csv": "3d783e3d84bd36fa58bbd0ebc6abafe5131eb774ef44d00eb093d652f15ddf64"
+  },
+  "historical_records": "No edits; preserved attempts retained.",
+  "process_check": "Supervisor exited 0; no OCC-P2 evaluator/runner process remains. GPU compute list contains RustDesk only.",
+  "raw_git_status": "Raw is untracked in main checkout. Symlinks and branch merge do not add raw to Git. This directory is the separately committed compact text record; see its Git history. No remote push or main merge.",
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+  "source_commit": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+}

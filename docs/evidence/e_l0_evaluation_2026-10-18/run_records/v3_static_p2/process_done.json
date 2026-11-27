@@ -1,0 +1,18 @@
+{
+ "files": [
+  {
+   "bytes": 122905,
+   "file": "v3_trajectory.npz",
+   "sha256": "50b1048880f14923b764680a4e5ea5acb4a18b54f1570f245720cdff29d55cff"
+  },
+  {
+   "bytes": 1270,
+   "file": "v3_meta.json",
+   "sha256": "38e978633983e0bdbc020af4f1582b9658f4b956b2e4cfafce6ac8eef40e97f2"
+  }
+ ],
+ "max_memory_allocated_bytes": 24931328,
+ "nan_fields": [],
+ "process": "v3_static_p2",
+ "wall_s": 43.4225652217865
+}

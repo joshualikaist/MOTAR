@@ -1,0 +1,165 @@
+{
+ "amendment_sha256": "416ea6811ee1508c287f754589e3ce3e61e6bfa47dd7303cbe50bc1c8f8c6973",
+ "approved_source_commit": "139184bc0d2a7aa855fe8ab5a2a7f547702defa5",
+ "commands": {
+  "analysis": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' <aerialgym python> -B tools/s_l1a_analysis.py --run <raw_root> --out docs/evidence/s_l1a_2026-10-18/s_l1a_analysis.json",
+  "preservation": "/tmp/motar_s_l1a_20261018/preservation.py after with 13 explicit --allow-runtime-change S-L1A paths (scratch, read-only)",
+  "run": "PYTHONNOUSERSITE=1 <aerialgym python> -B tools/s_l1a_run.py run --approved-commit 139184bc0d2a7aa855fe8ab5a2a7f547702defa5"
+ },
+ "decision": "S-L1A_QUALIFIED",
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 3070 8 GiB",
+  "numpy": "1.23.0",
+  "python": "3.8.20",
+  "scipy": "1.10.1",
+  "torch": "2.4.1+cu121"
+ },
+ "files": {
+  "PREFLIGHT_AUDIT.md": {
+   "bytes": 2526,
+   "sha256": "1a9e001e511f0003d3c58c8f67a48f5091a236dd63895ccf49fdf362c7f10c76"
+  },
+  "RECOVERY_CPU_VALIDATION.md": {
+   "bytes": 6449,
+   "sha256": "f86cab508d1a35d882face85a7e44092746418e87b875292d129c76f7f5caca3"
+  },
+  "REPORT.md": {
+   "bytes": 7065,
+   "sha256": "68874428758445b8fa9361a85be1043d718bf59b60e662542f1e0354985262ec"
+  },
+  "eq1_test_change_recovered.patch": {
+   "bytes": 1906,
+   "sha256": "4c584a038425d220e06bf871f8d360a559ef6d004acd3ee3b1025d2965e90bf7"
+  },
+  "preservation_after.json": {
+   "bytes": 8669,
+   "sha256": "cc22290109d0aba507240054436444210a90a7ac7f4cc7cf179aaacbafafa632"
+  },
+  "run_records/RAW_MANIFEST.json": {
+   "bytes": 21132,
+   "sha256": "cee40f012738de3b3c1df82dcb49888035b0d69542cc18397a21dde5176e42f9"
+  },
+  "run_records/moving_off/process_done.json": {
+   "bytes": 667,
+   "sha256": "3ca2a06c95b871e4f5bb5e51f1e68ffc263f17848ec9a8ea4bf29c19e645bb19"
+  },
+  "run_records/moving_off/v3_meta.json": {
+   "bytes": 1269,
+   "sha256": "fa7db024ca8032e78a69d07a9ca719da84d4ef2abf4cfd9f5267e0d326af4f11"
+  },
+  "run_records/moving_on_p1/process_done.json": {
+   "bytes": 672,
+   "sha256": "c9a599058f592333c7a9b5a88a631aa0fadd2be9d711a782f3221d56479c7f1c"
+  },
+  "run_records/moving_on_p1/v3_meta.json": {
+   "bytes": 1249,
+   "sha256": "a3623f901dbc5e8f51bb43407b0a376255d0f18ec6dca25cd95cd010ccac36bb"
+  },
+  "run_records/moving_on_p2/process_done.json": {
+   "bytes": 671,
+   "sha256": "f15b813fac713f04f9feb7b0530250bcd1d767610960d6fb360d80233e861c7a"
+  },
+  "run_records/moving_on_p2/v3_meta.json": {
+   "bytes": 1278,
+   "sha256": "c75e7079d9b0081bcc3a7e3ff5475e34d5a3d6435773aeb4746df32927849b66"
+  },
+  "run_records/moving_unset/process_done.json": {
+   "bytes": 673,
+   "sha256": "ed7570ef7e4a4719d7264542f0a6a43c413ca99dc6e7bc4284688ffd6461fc80"
+  },
+  "run_records/moving_unset/v3_meta.json": {
+   "bytes": 1277,
+   "sha256": "b4b6997b94a7525796770805e452c928c1f08a92422e4abafdb1e518a6c4e052"
+  },
+  "run_records/run_report.json": {
+   "bytes": 36507,
+   "sha256": "2bf687b5b0a1c2e5480c32d25a7e92ece1fe7856f1a0443f740246163c1469f4"
+  },
+  "run_records/sensors_depth/d2_meta.json": {
+   "bytes": 6523,
+   "sha256": "423437b1ac8ce42b1cbae6d634c100a27c89278b9e3899826c0135f0a3c08284"
+  },
+  "run_records/sensors_depth/process_done.json": {
+   "bytes": 810,
+   "sha256": "0d2e3536b7d596ee1b3e3babee94e4ece1f7474107e14def931ed4dedef0db34"
+  },
+  "run_records/sensors_depth/s_l1a_sensor_meta.json": {
+   "bytes": 3236,
+   "sha256": "24b9e5d3433d9aa2a53abf4f3c7691b1465c011531cf051a9b5b53de1fb1cb2b"
+  },
+  "run_records/sensors_full/d2_meta.json": {
+   "bytes": 6521,
+   "sha256": "b4c90944260ac1f71d4b06f6f9777bbb3f057056111518d47f2948d9c103e774"
+  },
+  "run_records/sensors_full/process_done.json": {
+   "bytes": 807,
+   "sha256": "30dcd3894fc47925691c47ae6d8883d07b2f6cc5b365c7e4bd6e15f18a9bc0b7"
+  },
+  "run_records/sensors_full/s_l1a_sensor_meta.json": {
+   "bytes": 3221,
+   "sha256": "1f3faba29a2e05f0a5fcda3949157e818f35f96d334766b0365fa5cf3c55db89"
+  },
+  "run_records/sensors_legacy/d2_meta.json": {
+   "bytes": 6525,
+   "sha256": "3a605daf1b80d18a5f18bb10e712c829d67b7e618dfe03579da41aad585a93b1"
+  },
+  "run_records/sensors_legacy/process_done.json": {
+   "bytes": 814,
+   "sha256": "9d0751ca4903d4a6b6665018546f6668a193826344ae3e6b5fcf133ebd996735"
+  },
+  "run_records/sensors_legacy/s_l1a_sensor_meta.json": {
+   "bytes": 3231,
+   "sha256": "4d51db0007daa7c561a2fc146b5f5dc6ac8e7b7693f0cb779c26ea64e1f9a444"
+  },
+  "run_records/static_off/process_done.json": {
+   "bytes": 667,
+   "sha256": "63f72a77c0ace1bd7284655bc77b12861f4bbcc2246ce08c3d52a081c686d221"
+  },
+  "run_records/static_off/v3_meta.json": {
+   "bytes": 1262,
+   "sha256": "aa547244da17d88233addc7b78eb21ce57c3b5e132e6c4faa235c3bc2849a653"
+  },
+  "run_records/static_on_p1/process_done.json": {
+   "bytes": 670,
+   "sha256": "86e2517a44d5f99f992e5222ddc8b9a8e049cf5d8c56cdb2ad3218ba17aa490a"
+  },
+  "run_records/static_on_p1/v3_meta.json": {
+   "bytes": 1240,
+   "sha256": "33c04bb00c2921f68a81b4c7cc550512ad6711a6fe2102057ab5a64f6c7cd3bc"
+  },
+  "run_records/static_on_p2/process_done.json": {
+   "bytes": 671,
+   "sha256": "0cd50b1e11ad2559a602148ecf45e6cedc64ef5262880532147d766eb05ef429"
+  },
+  "run_records/static_on_p2/v3_meta.json": {
+   "bytes": 1270,
+   "sha256": "4553ba2f6448c913dce43eb569c52a1c5d74e4d5440edc5aa6bd94fefa45770b"
+  },
+  "run_records/static_unset/process_done.json": {
+   "bytes": 673,
+   "sha256": "1ab9cbd4f546f85ee29a5e274f88370bed20abf5badba74ad9df522a6da1a33d"
+  },
+  "run_records/static_unset/v3_meta.json": {
+   "bytes": 1270,
+   "sha256": "4db9c2ec0682c28cb099cc873dd61805d6f95405564a55e3c8e8677ee008f604"
+  },
+  "s_l1a_analysis.json": {
+   "bytes": 1128348,
+   "sha256": "5b599d212c908d891435854fc72e9b998965349cd1a2c592e6d12cefdf6ad0f7"
+  }
+ },
+ "gates": {
+  "A-BOUNDARY": "PASS",
+  "A-CARVE": "PASS",
+  "A-DEPTH": "PASS",
+  "A-EL0": "PASS",
+  "A-INTEGRITY": "PASS",
+  "A-OFF": "PASS"
+ },
+ "plan_sha256": "6f92725e72cc264e4954b76a39532c6fe07211ffa0eded40dc662f597a624b5f",
+ "raw_manifest_sha256": "cee40f012738de3b3c1df82dcb49888035b0d69542cc18397a21dde5176e42f9",
+ "raw_root": "../aerial_gym_simulator/results/s_l1a_v1/SL1A-C01 (outside Git)",
+ "run_id": "SL1A-C01",
+ "schema": "motar.s-l1a-evidence-index.v1",
+ "status": "COMPLETED"
+}

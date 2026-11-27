@@ -1,0 +1,347 @@
+{
+  "conditional_c02_commit_gate": "PASS_NO_NEW_FAILURES_OR_ERRORS",
+  "public_cpu_aggregate": "FAIL",
+  "ran": 2941,
+  "failures": 0,
+  "errors": 4,
+  "skipped": 10,
+  "excluded": 5,
+  "runner_seconds": 160.451,
+  "exit_code": 1,
+  "per_method_rows": 2941,
+  "comparison": {
+    "test_navrl_detect_resolution.DetectReduction.test_bounding_box_and_empty_convention": {
+      "same_exception_types_messages": true,
+      "same_terminal_frames": true,
+      "observer_matches_traceback": true,
+      "before": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      },
+      "after": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      }
+    },
+    "test_navrl_detect_resolution.DetectReduction.test_count_centroid_and_range": {
+      "same_exception_types_messages": true,
+      "same_terminal_frames": true,
+      "observer_matches_traceback": true,
+      "before": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      },
+      "after": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      }
+    },
+    "test_navrl_detect_resolution.DetectReduction.test_frame_carries_the_rendered_target_colour_and_far_plane": {
+      "same_exception_types_messages": true,
+      "same_terminal_frames": true,
+      "observer_matches_traceback": true,
+      "before": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      },
+      "after": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      }
+    },
+    "test_navrl_detect_resolution.DetectReduction.test_the_frame_carries_no_image_sized_tensor": {
+      "same_exception_types_messages": true,
+      "same_terminal_frames": true,
+      "observer_matches_traceback": true,
+      "before": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      },
+      "after": {
+        "exception_chain_terminal_first": [
+          {
+            "type": "ValueError",
+            "message": "Failed to convert argument for param target_half_extents to vec3f"
+          },
+          {
+            "type": "TypeError",
+            "message": "must be real number, not NoneType"
+          }
+        ],
+        "terminal_frames": [
+          [
+            "test_navrl_detect_resolution.py",
+            256,
+            "_run"
+          ],
+          [
+            "navrl_detector.py",
+            698,
+            "_render_detect"
+          ],
+          [
+            "context.py",
+            4218,
+            "launch"
+          ],
+          [
+            "context.py",
+            4190,
+            "pack_args"
+          ],
+          [
+            "context.py",
+            3975,
+            "pack_arg"
+          ]
+        ]
+      }
+    }
+  },
+  "scope": "Exact IDs,exception types/messages and terminal call frames; count alone not used."
+}

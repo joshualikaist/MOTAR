@@ -727,6 +727,19 @@ class NavRLPerceptionModule:
     """RGB-D/LiDAR fusion, tracking, uncertainty, and 2-second history encoding."""
 
     def __init__(self, num_envs, device, cfg, step_dt, camera_cfg):
+        self.sensor_lineage_s_l1a = False
+        self.sensor_lineage_s_l1b = False
+        self.sensor_lineage_s_l1c = False
+        self.sensor_lineage_s_l1d = False
+        self.sensor_lineage_s_l1c_v2 = os.environ.get("NAVRL_SENSOR_LINEAGE", "off") == "s_l1c_v2"
+        if os.environ.get("NAVRL_SENSOR_LINEAGE", "off") != "off":
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import sensor_lineage_level
+
+            level = sensor_lineage_level()
+            self.sensor_lineage_s_l1a = level >= 1
+            self.sensor_lineage_s_l1b = level >= 2
+            self.sensor_lineage_s_l1c = level >= 3
+            self.sensor_lineage_s_l1d = level >= 4
         self.num_envs = int(num_envs)
         self.device = device
         self.cfg = cfg
@@ -772,6 +785,18 @@ class NavRLPerceptionModule:
             camera_cfg.camera_translation, dtype=torch.float32, device=device
         ).view(1, 3)
         self.target_radius = float(camera_cfg.camera_target_radius)
+        if self.sensor_lineage_s_l1b:
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import camera_unit_rays
+
+            # S-L1B nominal camera->LiDAR extrinsic: t = camera_translation, R = I (yaw-only frames).
+            self._s_l1b_rays = camera_unit_rays(self.width, self.height, self.fx, self.fy,
+                                                self.cx, self.cy, device=device)
+            self._s_l1b_rotation = torch.eye(3, dtype=torch.float32, device=device)
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                LIDAR_ELEVATION_MAX_DEG, LIDAR_ELEVATION_MIN_DEG)
+
+            self._s_l1b_lidar_elevations = torch.deg2rad(torch.linspace(
+                LIDAR_ELEVATION_MAX_DEG, LIDAR_ELEVATION_MIN_DEG, VBEAMS, device=device))
         self.min_pixels = int(getattr(cfg, "min_target_pixels", 2))
         self.pixel_threshold = float(getattr(cfg, "pixel_threshold", 0.55))
         self.dropout_prob = float(getattr(cfg, "detection_dropout_prob", 0.0))
@@ -1052,9 +1077,25 @@ class NavRLPerceptionModule:
         if self.detect_decoupled:
             self._assert_detect_decoupling_is_equivalent(cfg)
 
+        if self.sensor_lineage_s_l1a and (
+            self.detection_latency_s != 0.0 or self.target_mask_backfill
+            or self.latency_obstacle_fix != "off"
+            or (self.empirical_error is not None and self.empirical_error.max_latency_steps > 0)
+        ):
+            raise ValueError("S-L1A requires fresh camera measurements: no detection latency, "
+                             "mask backfill, delayed empirical errors or latency obstacle fix")
+
         self.tracker = BatchedConstantVelocityTracker(
             num_envs, device, step_dt, float(camera_cfg.tracker_memory_s)
         )
+        if self.sensor_lineage_s_l1c:
+            # S-L1C evaluator-facing identity clock: time since the last camera (identity-bearing)
+            # update. Not an actor input; the tracker's fused-recency age and expiry are unchanged.
+            self._s_l1c_identity_age = torch.full((self.num_envs,), self.tracker.memory_s, device=device)
+            self._s_l1c_update_source = torch.zeros(self.num_envs, dtype=torch.long, device=device)
+            self.last_s_l1c_association = None
+        if self.sensor_lineage_s_l1d:
+            self.last_s_l1d_validity = None
         # S1 shadow-mode counterfactual (docs/prereg_2026-09-03_s1_structure_fix_shadow.md).
         # Read-only beside the live path: its own tracker instance, its own diagnostics keys.
         self._s1_shadow = None
@@ -1151,6 +1192,9 @@ class NavRLPerceptionModule:
 
     def reset_idx(self, env_ids):
         self.tracker.reset_idx(env_ids)
+        if getattr(self, "sensor_lineage_s_l1c", False):
+            self._s_l1c_identity_age[env_ids] = self.tracker.memory_s
+            self._s_l1c_update_source[env_ids] = 0
         if self._s1_shadow is not None:
             self._s1_shadow.reset_idx(env_ids)
         self.robot_history[env_ids] = 0.0
@@ -1798,36 +1842,83 @@ class NavRLPerceptionModule:
         visible,
         drone_vel_w=None,
         vehicle_quat=None,
+        camera_visible=None,
     ):
         scan = lidar_m.view(self.num_envs, VBEAMS, HBEAMS).clone()
 
-        # Camera-associated LiDAR returns are target evidence, not static obstacles. No semantic
-        # ID is consulted: association uses only bearing and metric range agreement.
-        angle_delta = torch.atan2(
-            torch.sin(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
-            torch.cos(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
-        ).abs()
-        target_like = (
-            visible.view(-1, 1, 1)
-            & (angle_delta < TARGET_LIKE_ANGLE_RAD)
-            & ((scan - target_surface_range.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
-        )
+        if getattr(self, "sensor_lineage_s_l1a", False):
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import conservative_carve_masks
+
+            # The current perception pixels, never a tracker/LiDAR-inferred surface,
+            # authorize exclusion. Unsupported evidence leaves all returns intact.
+            confirmed = (torch.zeros_like(visible) if camera_visible is None
+                         else visible & camera_visible)
+            if getattr(self, "sensor_lineage_s_l1b", False):
+                from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                    LIDAR_TARGET_PROXY_RADIUS_M, common_frame_carve_masks)
+
+                # S-L1B: the LiDAR window starts at the camera-observed nearest body range minus
+                # the declared LiDAR-proxy/camera radius difference, in the common frame.
+                masks = common_frame_carve_masks(
+                    scan, self._lidar_angles, raw_depth, target_pixels, confirmed, target_bearing,
+                    self._s_l1b_rays, self._s_l1b_rotation, self.camera_offset.view(3),
+                    self._s_l1b_lidar_elevations,
+                    target_radius=self.target_radius, lidar_target_radius=LIDAR_TARGET_PROXY_RADIUS_M,
+                    min_target_pixels=self.min_pixels, lidar_far_m=self.lidar_max_range,
+                    camera_far_m=self.max_camera_range,
+                )
+            else:
+                masks = conservative_carve_masks(
+                    scan, self._lidar_angles, raw_depth, target_pixels, confirmed, target_bearing,
+                    target_radius=self.target_radius, min_target_pixels=self.min_pixels,
+                    lidar_far_m=self.lidar_max_range, camera_far_m=self.max_camera_range,
+                )
+            target_like = masks["lidar_carve_mask"]
+            target_pixels = masks["camera_blank_mask"]
+        else:
+            # Historical association window, retained unchanged for Frozen F.
+            angle_delta = torch.atan2(
+                torch.sin(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
+                torch.cos(self._lidar_angles.view(1, 1, HBEAMS) - target_bearing.view(-1, 1, 1)),
+            ).abs()
+            target_like = (
+                visible.view(-1, 1, 1)
+                & (angle_delta < TARGET_LIKE_ANGLE_RAD)
+                & ((scan - target_surface_range.view(-1, 1, 1)).abs() < TARGET_LIKE_RANGE_TOL_M)
+            )
         self.last_target_like[:] = target_like
         scan = torch.where(target_like, torch.full_like(scan, self.lidar_max_range), scan)
 
         # Fuse forward RGB-D geometry into the 360-degree LiDAR distance representation.
-        depth_no_target = torch.where(
-            target_pixels, torch.full_like(raw_depth, self.lidar_max_range), raw_depth
-        )
-        camera_col_min = camera_no_return_to_lidar_range(
-            depth_no_target.amin(dim=1), self.camera_obstacle_max_range, self.lidar_max_range
-        ).clamp(0.0, self.lidar_max_range)
-        inside = self._lidar_angles.abs() <= self.hfov * 0.5
-        camera_u = ((self.hfov * 0.5 - self._lidar_angles) / self.hfov * (self.width - 1)).round()
-        camera_u = camera_u.long().clamp(0, self.width - 1)
-        camera_ranges = camera_col_min[:, camera_u]
-        fused_camera = camera_ranges.unsqueeze(1).expand(-1, VBEAMS, -1)
-        scan[:, :, inside] = torch.minimum(scan[:, :, inside], fused_camera[:, :, inside])
+        if getattr(self, "sensor_lineage_s_l1b", False):
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                camera_points_lidar_frame, lidar_envelope_bins)
+
+            # S-L1B: pinhole rays + SE(3) into the LiDAR frame, binned per elevation. The clamped
+            # conservative envelope is fused into every bin; strict bins are diagnostics only.
+            points = camera_points_lidar_frame(
+                raw_depth, self._s_l1b_rays, self._s_l1b_rotation, self.camera_offset.view(3),
+                camera_far_m=self.camera_obstacle_max_range, blank=target_pixels)
+            envelope = lidar_envelope_bins(points, hbeams=HBEAMS, vbeams=VBEAMS,
+                                           lidar_far_m=self.lidar_max_range, clamp=True)
+            self.last_s_l1b_points = points
+            self.last_s_l1b_envelope = envelope
+            self.last_s_l1b_strict = lidar_envelope_bins(points, hbeams=HBEAMS, vbeams=VBEAMS,
+                                                         lidar_far_m=self.lidar_max_range, clamp=False)
+            scan = torch.minimum(scan, envelope)
+        else:
+            depth_no_target = torch.where(
+                target_pixels, torch.full_like(raw_depth, self.lidar_max_range), raw_depth
+            )
+            camera_col_min = camera_no_return_to_lidar_range(
+                depth_no_target.amin(dim=1), self.camera_obstacle_max_range, self.lidar_max_range
+            ).clamp(0.0, self.lidar_max_range)
+            inside = self._lidar_angles.abs() <= self.hfov * 0.5
+            camera_u = ((self.hfov * 0.5 - self._lidar_angles) / self.hfov * (self.width - 1)).round()
+            camera_u = camera_u.long().clamp(0, self.width - 1)
+            camera_ranges = camera_col_min[:, camera_u]
+            fused_camera = camera_ranges.unsqueeze(1).expand(-1, VBEAMS, -1)
+            scan[:, :, inside] = torch.minimum(scan[:, :, inside], fused_camera[:, :, inside])
         static_state = (scan / self.lidar_max_range).clamp(0.0, 1.0)
 
         # Nearest angularly separated obstacle proposals. Bars are static, hence velocity=0;
@@ -1922,6 +2013,23 @@ class NavRLPerceptionModule:
             tokens[:, slot] = feat * valid.unsqueeze(1)
         return static_state.reshape(self.num_envs, -1), tokens
 
+    def _s_l1d_validity(self, depth, detected, drone_pos_w, vehicle_quat):
+        """S-L1D evaluator-facing online validity from delivered depth, the detection flag and the
+        track's own posterior (vehicle frame). Reads no evaluator class, renderer mask or GT pose."""
+        from aerial_gym.task.navrl_task.navrl_sensor_lineage import measurement_validity
+
+        rel = _quat_rotate_inverse_xyzw(vehicle_quat, self.tracker.state[:, :3] - drone_pos_w)
+        eye = torch.eye(3, device=self.device, dtype=rel.dtype).unsqueeze(0).expand(self.num_envs, -1, -1)
+        rot = torch.stack([_quat_rotate_xyzw(vehicle_quat, eye[:, :, i]) for i in range(3)], dim=2)
+        cov = rot.transpose(1, 2).matmul(self.tracker.cov[:, :3, :3]).matmul(rot)
+        validity = measurement_validity(
+            depth, detected, self.tracker.active, rel, cov, self._s_l1b_rays, self.camera_offset.view(3),
+            target_radius=self.target_radius, camera_far_m=self.max_camera_range,
+            min_target_pixels=self.min_pixels, hfov=self.hfov, vfov=self.vfov,
+            fx=self.fx, fy=self.fy, cx=self.cx, cy=self.cy)
+        self.last_s_l1d_validity = validity
+        return validity
+
     def _associate_lidar_target(self, lidar_m, drone_pos_w, vehicle_quat, camera_visible):
         """Associate a raw LiDAR return with the predicted camera-initialized target track."""
         rel = _quat_rotate_inverse_xyzw(
@@ -1950,6 +2058,30 @@ class NavRLPerceptionModule:
         # constant one (WORKLOG 2026-08-07).
         if self.lidar_assoc_gate_m > 0.0:
             gate = torch.full_like(gate, self.lidar_assoc_gate_m)
+        if getattr(self, "sensor_lineage_s_l1c", False):
+            from aerial_gym.task.navrl_task.navrl_sensor_lineage import (
+                range_only_lidar_association, range_only_covariance)
+
+            # S-L1C: identity-free, range-only association with geometric row eligibility, a
+            # vertical-extent shape test and the LiDAR proxy radius; R constrains only the ray.
+            association = range_only_lidar_association
+            if getattr(self, "sensor_lineage_s_l1c_v2", False):
+                from aerial_gym.task.navrl_task.navrl_lidar_association_v2 import range_only_lidar_association_v2
+                association = range_only_lidar_association_v2
+            assoc = association(
+                raw_scan, self._lidar_angles, self._s_l1b_lidar_elevations, rel, camera_visible,
+                self.tracker.active, gate, lidar_far_m=self.lidar_max_range)
+            s_valid = assoc["valid"]
+            measurement_world = drone_pos_w + _quat_rotate_xyzw(vehicle_quat, assoc["measurement_vehicle"])
+            unit_world = _quat_rotate_xyzw(vehicle_quat, assoc["unit_vehicle"])
+            lidar_var = torch.tensor([0.08**2, 0.15**2, 0.20**2], device=self.device).view(1, 3).expand(self.num_envs, -1)
+            self.tracker.correct(measurement_world, s_valid, lidar_var,
+                                 measurement_cov=range_only_covariance(unit_world),
+                                 reset_age=not self.lidar_silent_correct)
+            self.last_s_l1c_association = dict(assoc, gate=gate)
+            s_conf = torch.exp(-(assoc["measured_surface"] - assoc["predicted_surface"]).abs()
+                               / gate.clamp(min=1e-3)) * s_valid.float()
+            return s_valid, s_conf, assoc["measured_surface"], assoc["bearing"]
         valid = (
             self.tracker.active
             & ~camera_visible
@@ -2139,6 +2271,18 @@ class NavRLPerceptionModule:
             # on the association contributes no visibility, no confidence, and no map edits.
             lidar_visible = torch.zeros_like(lidar_visible)
             lidar_confidence = torch.zeros_like(lidar_confidence)
+        if getattr(self, "sensor_lineage_s_l1c", False):
+            camera_update = visible & self.tracker.active
+            self._s_l1c_identity_age = torch.where(
+                camera_update, torch.zeros_like(self._s_l1c_identity_age),
+                torch.where(self.tracker.active, self._s_l1c_identity_age + self.step_dt,
+                            torch.full_like(self._s_l1c_identity_age, self.tracker.memory_s)))
+            self._s_l1c_update_source = torch.where(
+                camera_update, torch.ones_like(self._s_l1c_update_source),
+                torch.where(lidar_visible, torch.full_like(self._s_l1c_update_source, 2),
+                            torch.zeros_like(self._s_l1c_update_source)))
+        s_l1d_validity = (self._s_l1d_validity(depth, visible, drone_pos_w, vehicle_quat)
+                          if getattr(self, "sensor_lineage_s_l1d", False) else None)
         fused_visible = visible | lidar_visible
         fused_surface = torch.where(lidar_visible, lidar_surface, surface_range)
         fused_bearing = torch.where(lidar_visible, lidar_bearing, bearing)
@@ -2169,6 +2313,7 @@ class NavRLPerceptionModule:
             map_visible,
             drone_vel_w=drone_vel_w,
             vehicle_quat=vehicle_quat,
+            **({"camera_visible": visible} if self.sensor_lineage_s_l1a else {}),
         )
         target_now = self._target_features(
             drone_pos_w, drone_vel_w, vehicle_quat, confidence, lidar_confidence
@@ -2264,6 +2409,19 @@ class NavRLPerceptionModule:
             "target_pixels": pixel_count,
             "track_age": self.tracker.age,
             "track_covariance": self.tracker.cov,
+            **(
+                {"s_l1c_identity_age": self._s_l1c_identity_age,
+                 "s_l1c_update_source": self._s_l1c_update_source}
+                if getattr(self, "sensor_lineage_s_l1c", False)
+                else {}
+            ),
+            **(
+                {"s_l1d_online_class": s_l1d_validity["code"], "s_l1d_support_px": s_l1d_validity["support_px"],
+                 "s_l1d_occluded_px": s_l1d_validity["occluded_px"],
+                 "s_l1d_centre_occluded": s_l1d_validity["centre_occluded"], "s_l1d_tau_m": s_l1d_validity["tau_m"]}
+                if s_l1d_validity is not None
+                else {}
+            ),
             **(
                 {
                     "s1_shadow_measurement_world": s1_meas_world,

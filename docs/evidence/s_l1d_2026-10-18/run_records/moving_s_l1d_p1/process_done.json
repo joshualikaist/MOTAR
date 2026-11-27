@@ -1,0 +1,39 @@
+{
+ "actor_obs_dim": 898,
+ "detector_lineage_enabled": true,
+ "files": [
+  {
+   "bytes": 158892,
+   "file": "v3_trajectory.npz",
+   "sha256": "6ff302bd87ddfa80149c3c74942d243c8c2839dbcd4c54a5660d338d22736966"
+  },
+  {
+   "bytes": 1260,
+   "file": "v3_meta.json",
+   "sha256": "b5255678a85e1b4b9aead7105c0e9cea56907e6fbe698a877bc67f5b71d1f5e5"
+  },
+  {
+   "bytes": 26461,
+   "file": "s_l1d_validity_trace.npz",
+   "sha256": "cf2728ef3c6163650d40c50269ffe8b3cf81571edbe82997998527e2ebe87ab2"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 27998720,
+ "perception_s_l1a": true,
+ "perception_s_l1b": true,
+ "perception_s_l1c": true,
+ "perception_s_l1d": true,
+ "process": "moving_s_l1d_p1",
+ "process_spec": {
+  "arm": "P1",
+  "batch": "V3",
+  "config": "moving",
+  "id": "moving_s_l1d_p1",
+  "num_envs": 8,
+  "seed": 4502,
+  "steps": 600,
+  "variant": "s_l1d_p1"
+ },
+ "wall_s": 48.63571619987488
+}

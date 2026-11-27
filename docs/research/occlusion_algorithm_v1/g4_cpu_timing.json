@@ -1,0 +1,46 @@
+{
+  "status": "NOT_A_GPU_MEASUREMENT",
+  "device": "cpu",
+  "N": 128,
+  "K": 20,
+  "M": 32,
+  "H": 10,
+  "S": 10,
+  "dt": 0.1,
+  "dtype": "torch.float32",
+  "threads": 1,
+  "seconds": 12.933525788015686,
+  "milliseconds": 12933.525788015686,
+  "includes": "one complete cold decision including whitelist,20rollouts,swept safety,32samples,visibility,recursive covariance,cost,arbitration,pureSHAtrace",
+  "warmup": 0,
+  "repetitions": 1,
+  "fixture": "clear no-return LiDAR, not target-return visibility qualification",
+  "test_priors": {
+    "tau_on": 0.1,
+    "r_bar_est": 0.2,
+    "R_camera_diag": [
+      0.04,
+      0.04,
+      0.04
+    ]
+  },
+  "gpu_5ms_target": "NOT_TESTED",
+  "source_binding": {
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/visibility.py": "1973a5ee411270dcfe0f73c6067773e3a697391cdcffb3f17122a5fd15aa8d62",
+    "motar_eval/boia/safety.py": "7cc77a9b0893ab006b8614e55394e0f428fb489fd25015aa557b6eec2bdce7ab",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/geometry.py": "83f97733ee15148d16f6685c37e7ba9301ae10b707c3a984c6372188081a1133",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/types.py": "99a30ca9da150a22a4393504276e1dc281af64fa9dead2be4a93fe2c276d5b45",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b"
+  },
+  "utc": "2026-10-19T12:39:47.044578+00:00"
+}

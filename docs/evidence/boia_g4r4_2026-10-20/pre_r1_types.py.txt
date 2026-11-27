@@ -1,0 +1,174 @@
+"""Python3.8-compatible immutable declarations, not verified sensor/plant certificates."""
+from dataclasses import dataclass, field
+from typing import Optional, Tuple
+
+
+@dataclass(frozen=True)
+class ResearchResult:
+    scope: str = field(default="CPU_RESEARCH_ONLY", init=False)
+    physical_qualified: bool = field(default=False, init=False)
+
+
+@dataclass(frozen=True)
+class Provenance:
+    kind: str = "UNAVAILABLE"
+    reference: str = ""
+    domain: str = ""
+    supported: bool = False
+    continuation_covered: bool = False
+
+
+@dataclass(frozen=True)
+class ProbabilityInterval:
+    lower: Optional[float]
+    upper: Optional[float]
+    provenance: Provenance
+
+
+@dataclass(frozen=True)
+class MeasuredEvidence:
+    key: Tuple[str, str, int]
+    first_hit_m: Optional[Tuple[float, float]]
+    camera_surface_m: Optional[Tuple[float, float]]
+    capture_s: Optional[float]
+    arrival_s: Optional[float]
+    now_s: Optional[float]
+    association: Optional[ProbabilityInterval]
+    provenance: Provenance
+    frame_aligned: bool = False
+    same_ray_support: bool = False
+    model_exhaustive: bool = False
+    max_age_s: float = .2
+
+
+@dataclass(frozen=True)
+class UtilityValidity(ResearchResult):
+    valid: bool
+    reason: str
+    domain: str = ""
+
+
+@dataclass(frozen=True)
+class EvidenceSet(ResearchResult):
+    key: Tuple[str, str, int]
+    labels: Tuple[str, ...]
+    first_hits_m: Tuple[Tuple[float, float], ...]
+    valid: bool
+    reasons: Tuple[str, ...]
+    domain: str = ""
+
+
+@dataclass(frozen=True)
+class LossTable:
+    """Declared surrogate losses, rows=scenarios, columns=independent paths or exact atoms."""
+    key: Tuple[str, str, int]
+    scenario_ids: Tuple[str, ...]
+    path_ids: Tuple[str, ...]
+    values: Tuple[Tuple[float, ...], ...]
+
+
+@dataclass(frozen=True)
+class ErrorAllowances:
+    mc: Optional[float] = None
+    set_coverage: Optional[float] = None
+    calibration: Optional[float] = None
+    continuation: Optional[float] = None
+    switching: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class BoundContract:
+    provenance: Provenance
+    domain: str
+    sampling: str
+    exhaustive: bool
+    covered_hypotheses: Tuple[str, ...]
+    set_coverage_proven: bool = False
+    tested_options: int = 1
+    alpha: float = .05
+    difference_bound: Optional[float] = None
+
+
+@dataclass(frozen=True)
+class BenefitResult(ResearchResult):
+    key: Tuple[str, str, int]
+    candidate_id: str
+    wait_s: float
+    valid: bool
+    reason: str
+    lower_bound: Optional[float] = None
+    raw_min: Optional[float] = None
+    scenario_means: Tuple[float, ...] = ()
+    covered_hypotheses: Tuple[str, ...] = ()
+    tested_options: int = 1
+    statistical: bool = False
+    allowances: Optional[ErrorAllowances] = None
+    domain: str = ""
+
+
+@dataclass(frozen=True)
+class Option:
+    candidate_id: str
+    wait_s: float
+    safety_valid: bool
+    utility: UtilityValidity
+    benefit: BenefitResult
+
+
+@dataclass(frozen=True)
+class ResearchState(ResearchResult):
+    env_id: str
+    episode_id: str
+    owner_id: str
+    dwell: int = 0
+    off_count: int = 0
+    last_decision_id: Optional[int] = None
+
+
+@dataclass(frozen=True)
+class SwitchPolicy:
+    tau_on: float
+    tau_off: float
+    min_hold: int = 2
+    off_steps: int = 2
+
+
+@dataclass(frozen=True)
+class ResearchCase:
+    key: Tuple[str, str, int]
+    baseline_id: str
+    baseline_safe: bool
+    options: Tuple[Option, ...]
+    evidence: Optional[EvidenceSet]
+    wait_grid_s: Tuple[float, ...]
+    wait_interval_safe: Tuple[bool, ...]
+    policy: SwitchPolicy
+    backup_id: Optional[str] = None
+    terminal: bool = False
+    endgame: bool = False
+    acquired: bool = True
+
+
+@dataclass(frozen=True)
+class WindowResult(ResearchResult):
+    key: Tuple[str, str, int]
+    valid: bool
+    reason: str
+    current_window_s: Tuple[float, ...] = ()
+    supported_times_s: Tuple[float, ...] = ()
+    closing: bool = False
+    horizon_censored: bool = False
+    selected_id: Optional[str] = None
+    selected_wait_s: Optional[float] = None
+    selected_gain: Optional[float] = None
+    valid_options: Tuple[Option, ...] = ()
+
+
+@dataclass(frozen=True)
+class Decision(ResearchResult):
+    key: Tuple[str, str, int]
+    outcome: str
+    reason: str
+    selected_id: Optional[str]
+    new_state: ResearchState
+    window: Optional[WindowResult] = None

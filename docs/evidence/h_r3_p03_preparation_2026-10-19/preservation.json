@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "failures": [],
+  "base_sha": "ce3d10aacad9358bc888a53edb6c5e6cf4a904cc",
+  "original_tracked_paths": 6035,
+  "old_raw_manifests": 12,
+  "old_raw_member_stat_checks": 463,
+  "raw_check_scope": "ManifestSHA plus member size/mtime unchanged; historical payload fullrehash NOT_REPEATED peruser request. Newoutputs separately fullySHAverified.",
+  "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+  "main_wip_paths": [
+    ".gitignore",
+    "WORKLOG.md",
+    "presentations/README.md"
+  ],
+  "stash_preserved": true,
+  "protected_untracked_preserved": true,
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "backup_or_bundle_requested": false,
+  "remote_push": false,
+  "main_merge": false
+}

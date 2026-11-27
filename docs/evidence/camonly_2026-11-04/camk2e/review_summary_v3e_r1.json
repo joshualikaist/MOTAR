@@ -1,0 +1,723 @@
+{
+  "unit": "CAM-K2-E3 v1 results review r1",
+  "verdict": "PASS",
+  "scope": "Completed registered simulation unit integrity, fixed numerical analysis and scoped result reporting; not a positive reduction-gate verdict.",
+  "reviewer": "Fresh-context Codex /root/e3_result_review",
+  "model": "gpt-6.1-sol (inherited context identification; backend build not exposed)",
+  "execution_commit": "aaca40e8dc6a3492cedd0b692427cbc796661015",
+  "checks": {
+    "assertions_and_comparison_leaves": 3726,
+    "failed": 0,
+    "final_prose_rows": 18
+  },
+  "findings": [
+    {
+      "id": "LOW-1",
+      "severity": "LOW",
+      "status": "RESOLVED",
+      "finding": "CPU reproduction example lacked resource bounds; final example now supplies AS8GiB, timeout600s, CPU6/7, nice10 and single-thread math settings."
+    }
+  ],
+  "audit_harness_correction": "Initial source-preimage discovery omitted extensionless tools/realveh_python. Corrected filter; initial log and recomputation preserved as probe_r0.log and recomputed_probe_r0.json. No experimental bytes changed.",
+  "gate_D": "NO_DETECTED_CHANGE",
+  "R": "SEEDS_DISAGREE",
+  "T": "SEEDS_DISAGREE",
+  "labels_per_seed": {
+    "D_s1": "NO_DETECTED_CHANGE",
+    "R_s1": "NO_DETECTED_CHANGE",
+    "T_s1": "NEGLIGIBLE",
+    "D_s2": "NO_DETECTED_CHANGE",
+    "R_s2": "SMALL_REDUCTION",
+    "T_s2": "NO_DETECTED_CHANGE"
+  },
+  "pooled_rate_pct": {
+    "V3s1": {
+      "crash": 13.338216145833334,
+      "capture": 86.66178385416667,
+      "timeout": 0.0
+    },
+    "V3s2": {
+      "crash": 13.692220052083334,
+      "capture": 86.30777994791667,
+      "timeout": 0.0
+    },
+    "V2Rs1": {
+      "crash": 13.020833333333334,
+      "capture": 86.97916666666667,
+      "timeout": 0.0
+    },
+    "V2Rs2": {
+      "crash": 12.198893229166666,
+      "capture": 87.80110677083333,
+      "timeout": 0.0
+    },
+    "V2s1": {
+      "crash": 14.839680989583334,
+      "capture": 85.16031901041667,
+      "timeout": 0.0
+    },
+    "V2s2": {
+      "crash": 14.839680989583334,
+      "capture": 85.16031901041667,
+      "timeout": 0.0
+    }
+  },
+  "per_density_rate_pct": {
+    "V3s1": {
+      "70": {
+        "crash": 6.624348958333333,
+        "capture": 93.37565104166667,
+        "timeout": 0.0
+      },
+      "115": {
+        "crash": 9.554036458333334,
+        "capture": 90.44596354166667,
+        "timeout": 0.0
+      },
+      "160": {
+        "crash": 14.794921875,
+        "capture": 85.205078125,
+        "timeout": 0.0
+      },
+      "205": {
+        "crash": 22.379557291666668,
+        "capture": 77.62044270833333,
+        "timeout": 0.0
+      }
+    },
+    "V3s2": {
+      "70": {
+        "crash": 3.8248697916666665,
+        "capture": 96.17513020833333,
+        "timeout": 0.0
+      },
+      "115": {
+        "crash": 9.228515625,
+        "capture": 90.771484375,
+        "timeout": 0.0
+      },
+      "160": {
+        "crash": 16.2109375,
+        "capture": 83.7890625,
+        "timeout": 0.0
+      },
+      "205": {
+        "crash": 25.504557291666668,
+        "capture": 74.49544270833333,
+        "timeout": 0.0
+      }
+    },
+    "V2Rs1": {
+      "70": {
+        "crash": 4.573567708333333,
+        "capture": 95.42643229166667,
+        "timeout": 0.0
+      },
+      "115": {
+        "crash": 8.902994791666666,
+        "capture": 91.09700520833333,
+        "timeout": 0.0
+      },
+      "160": {
+        "crash": 15.543619791666666,
+        "capture": 84.45638020833333,
+        "timeout": 0.0
+      },
+      "205": {
+        "crash": 23.063151041666668,
+        "capture": 76.93684895833333,
+        "timeout": 0.0
+      }
+    },
+    "V2Rs2": {
+      "70": {
+        "crash": 4.036458333333333,
+        "capture": 95.96354166666667,
+        "timeout": 0.0
+      },
+      "115": {
+        "crash": 7.958984375,
+        "capture": 92.041015625,
+        "timeout": 0.0
+      },
+      "160": {
+        "crash": 13.557942708333334,
+        "capture": 86.44205729166667,
+        "timeout": 0.0
+      },
+      "205": {
+        "crash": 23.2421875,
+        "capture": 76.7578125,
+        "timeout": 0.0
+      }
+    },
+    "V2s1": {
+      "70": {
+        "crash": 5.843098958333333,
+        "capture": 94.15690104166667,
+        "timeout": 0.0
+      },
+      "115": {
+        "crash": 10.319010416666666,
+        "capture": 89.68098958333333,
+        "timeout": 0.0
+      },
+      "160": {
+        "crash": 16.162109375,
+        "capture": 83.837890625,
+        "timeout": 0.0
+      },
+      "205": {
+        "crash": 27.034505208333332,
+        "capture": 72.96549479166667,
+        "timeout": 0.0
+      }
+    },
+    "V2s2": {
+      "70": {
+        "crash": 5.777994791666667,
+        "capture": 94.22200520833333,
+        "timeout": 0.0
+      },
+      "115": {
+        "crash": 10.514322916666666,
+        "capture": 89.48567708333333,
+        "timeout": 0.0
+      },
+      "160": {
+        "crash": 17.057291666666668,
+        "capture": 82.94270833333333,
+        "timeout": 0.0
+      },
+      "205": {
+        "crash": 26.009114583333332,
+        "capture": 73.99088541666667,
+        "timeout": 0.0
+      }
+    }
+  },
+  "primary_crash": {
+    "D_s1": {
+      "mean_pp": -1.50146484375,
+      "ci95_pp": [
+        -2.0263671875,
+        -0.9765625
+      ],
+      "t95_pp": [
+        -2.2556860313571003,
+        -0.7472436561428996
+      ],
+      "t_df": 8,
+      "blocks_pp": [
+        2.1484375,
+        0.537109375,
+        -0.341796875,
+        -0.439453125,
+        -1.025390625,
+        -0.830078125,
+        -0.048828125,
+        -2.978515625,
+        -1.07421875,
+        -5.2734375,
+        -3.369140625,
+        -5.322265625
+      ],
+      "blocks": [
+        [
+          70,
+          4501
+        ],
+        [
+          70,
+          4502
+        ],
+        [
+          70,
+          4503
+        ],
+        [
+          115,
+          4501
+        ],
+        [
+          115,
+          4502
+        ],
+        [
+          115,
+          4503
+        ],
+        [
+          160,
+          4501
+        ],
+        [
+          160,
+          4502
+        ],
+        [
+          160,
+          4503
+        ],
+        [
+          205,
+          4501
+        ],
+        [
+          205,
+          4502
+        ],
+        [
+          205,
+          4503
+        ]
+      ],
+      "label_c2_scheme": "SMALL_LOWER"
+    },
+    "R_s1": {
+      "mean_pp": -1.81884765625,
+      "ci95_pp": [
+        -2.2745768229166665,
+        -1.416015625
+      ],
+      "t95_pp": [
+        -2.444641443466101,
+        -1.1930538690338988
+      ],
+      "t_df": 8,
+      "blocks_pp": [
+        -1.220703125,
+        -2.24609375,
+        -0.341796875,
+        -0.87890625,
+        -1.953125,
+        -1.416015625,
+        0.537109375,
+        -2.294921875,
+        -0.09765625,
+        -3.564453125,
+        -4.248046875,
+        -4.1015625
+      ],
+      "blocks": [
+        [
+          70,
+          4501
+        ],
+        [
+          70,
+          4502
+        ],
+        [
+          70,
+          4503
+        ],
+        [
+          115,
+          4501
+        ],
+        [
+          115,
+          4502
+        ],
+        [
+          115,
+          4503
+        ],
+        [
+          160,
+          4501
+        ],
+        [
+          160,
+          4502
+        ],
+        [
+          160,
+          4503
+        ],
+        [
+          205,
+          4501
+        ],
+        [
+          205,
+          4502
+        ],
+        [
+          205,
+          4503
+        ]
+      ],
+      "label_c2_scheme": "SMALL_LOWER"
+    },
+    "T_s1": {
+      "mean_pp": 0.3173828125,
+      "ci95_pp": [
+        -0.19938151041666666,
+        0.8138020833333334
+      ],
+      "t95_pp": [
+        -0.44415713490256037,
+        1.0789227599025604
+      ],
+      "t_df": 8,
+      "blocks_pp": [
+        3.369140625,
+        2.783203125,
+        0.0,
+        0.439453125,
+        0.927734375,
+        0.5859375,
+        -0.5859375,
+        -0.68359375,
+        -0.9765625,
+        -1.708984375,
+        0.87890625,
+        -1.220703125
+      ],
+      "blocks": [
+        [
+          70,
+          4501
+        ],
+        [
+          70,
+          4502
+        ],
+        [
+          70,
+          4503
+        ],
+        [
+          115,
+          4501
+        ],
+        [
+          115,
+          4502
+        ],
+        [
+          115,
+          4503
+        ],
+        [
+          160,
+          4501
+        ],
+        [
+          160,
+          4502
+        ],
+        [
+          160,
+          4503
+        ],
+        [
+          205,
+          4501
+        ],
+        [
+          205,
+          4502
+        ],
+        [
+          205,
+          4503
+        ]
+      ],
+      "label_c2_scheme": "NEGLIGIBLE"
+    },
+    "D_s2": {
+      "mean_pp": -1.1474609375,
+      "ci95_pp": [
+        -1.7618815104166667,
+        -0.54931640625
+      ],
+      "t95_pp": [
+        -2.033312205588523,
+        -0.261609669411477
+      ],
+      "t_df": 8,
+      "blocks_pp": [
+        -1.416015625,
+        -2.05078125,
+        -2.392578125,
+        -0.830078125,
+        -1.3671875,
+        -1.66015625,
+        -2.63671875,
+        0.390625,
+        -0.29296875,
+        -2.63671875,
+        -0.29296875,
+        1.416015625
+      ],
+      "blocks": [
+        [
+          70,
+          4501
+        ],
+        [
+          70,
+          4502
+        ],
+        [
+          70,
+          4503
+        ],
+        [
+          115,
+          4501
+        ],
+        [
+          115,
+          4502
+        ],
+        [
+          115,
+          4503
+        ],
+        [
+          160,
+          4501
+        ],
+        [
+          160,
+          4502
+        ],
+        [
+          160,
+          4503
+        ],
+        [
+          205,
+          4501
+        ],
+        [
+          205,
+          4502
+        ],
+        [
+          205,
+          4503
+        ]
+      ],
+      "label_c2_scheme": "SMALL_LOWER"
+    },
+    "R_s2": {
+      "mean_pp": -2.6407877604166665,
+      "ci95_pp": [
+        -3.0232747395833335,
+        -2.2501627604166665
+      ],
+      "t95_pp": [
+        -3.2024461650317555,
+        -2.0791293558015775
+      ],
+      "t_df": 8,
+      "blocks_pp": [
+        -2.197265625,
+        -1.26953125,
+        -1.7578125,
+        -1.66015625,
+        -2.34375,
+        -3.662109375,
+        -3.515625,
+        -4.6875,
+        -2.294921875,
+        -2.44140625,
+        -3.22265625,
+        -2.63671875
+      ],
+      "blocks": [
+        [
+          70,
+          4501
+        ],
+        [
+          70,
+          4502
+        ],
+        [
+          70,
+          4503
+        ],
+        [
+          115,
+          4501
+        ],
+        [
+          115,
+          4502
+        ],
+        [
+          115,
+          4503
+        ],
+        [
+          160,
+          4501
+        ],
+        [
+          160,
+          4502
+        ],
+        [
+          160,
+          4503
+        ],
+        [
+          205,
+          4501
+        ],
+        [
+          205,
+          4502
+        ],
+        [
+          205,
+          4503
+        ]
+      ],
+      "label_c2_scheme": "LOWER"
+    },
+    "T_s2": {
+      "mean_pp": 1.4933268229166667,
+      "ci95_pp": [
+        0.7364908854166666,
+        2.2420247395833335
+      ],
+      "t95_pp": [
+        0.40334511204319656,
+        2.583308533790137
+      ],
+      "t_df": 8,
+      "blocks_pp": [
+        0.78125,
+        -0.78125,
+        -0.634765625,
+        0.830078125,
+        0.9765625,
+        2.001953125,
+        0.87890625,
+        5.078125,
+        2.001953125,
+        -0.1953125,
+        2.9296875,
+        4.052734375
+      ],
+      "blocks": [
+        [
+          70,
+          4501
+        ],
+        [
+          70,
+          4502
+        ],
+        [
+          70,
+          4503
+        ],
+        [
+          115,
+          4501
+        ],
+        [
+          115,
+          4502
+        ],
+        [
+          115,
+          4503
+        ],
+        [
+          160,
+          4501
+        ],
+        [
+          160,
+          4502
+        ],
+        [
+          160,
+          4503
+        ],
+        [
+          205,
+          4501
+        ],
+        [
+          205,
+          4502
+        ],
+        [
+          205,
+          4503
+        ]
+      ],
+      "label_c2_scheme": "SMALL_HIGHER"
+    }
+  },
+  "controls_ok": true,
+  "controls": {
+    "A_on_K1E_F66_minus_K1s1": "WORSE",
+    "A_on_K1E_K1s1_minus_K1s2": "NEGLIGIBLE",
+    "A_on_K1E_K1s1_minus_F66": "MATERIAL_ADAPTATION",
+    "N_on_K1E_K1s2_minus_K1s1": "NO_MATERIAL_LOSS",
+    "N_on_K1E_F66_minus_K1s1": "MATERIAL_LOSS",
+    "D_on_CAMK2E_K2s1_minus_K2s2": "NEGLIGIBLE",
+    "D_on_CAMK2E_K1s1_minus_K2s1": "WORSE",
+    "D_on_CAMK2E_K2s1_minus_K1s1": "SMALL_REDUCTION",
+    "D_on_CAMK2E_K1s2_minus_K2s2": "WORSE",
+    "D_on_CAMK2E_K2s2_minus_K1s2": "SMALL_REDUCTION"
+  },
+  "manifests": {
+    "camk1e": {
+      "files": 322,
+      "failures": [],
+      "manifest_sha256": "1408aef78f244eb5d0a30c03abe9217d497f2c4ff81f664e756baa4eed938809"
+    },
+    "camk2e": {
+      "files": 572,
+      "failures": [],
+      "manifest_sha256": "d542023752acd171dfdcef80bb646e4bb0ecb2d4ab60c61409c4075d32732a75"
+    },
+    "camk2e3": {
+      "files": 490,
+      "bytes": 404581600,
+      "failures": [],
+      "manifest_sha256": "ae972c10cfe4e7d1c4f5388e96d3fa6ecf47e8ae4e4245ac5114b536491464b9"
+    }
+  },
+  "new_cells": 53,
+  "quota_episodes_per_cell": 2048,
+  "new_quota_episodes": 108544,
+  "rate_projection_s": 8810.429834260081,
+  "execution_host_faults": {
+    "before": 0,
+    "after": 0,
+    "same_boot": true
+  },
+  "review_host_faults": {
+    "before": 0,
+    "after": 0
+  },
+  "not_recorded": [
+    "contact-time hit-token share",
+    "same-time camera visibility aligned to contact",
+    "full-run contact clearance from rule telemetry"
+  ],
+  "limits": [
+    "simulation only",
+    "evaluation-block intervals, not training-seed intervals",
+    "2/24 reference cells reproduced, remainder manifest-bound",
+    "no causal decomposition",
+    "no real OAK-D or real-flight validity",
+    "rule counts first 50 frames only",
+    "retrospective review cannot prove continuous idle host beyond recorded preflight and logs"
+  ],
+  "prose_sha256": "a502f66547ef03fac94cf0ae6b96998e983c6385ee108820bb1b80c42f7139ee",
+  "created_utc": "2026-11-10T00:15:41.603707+00:00"
+}

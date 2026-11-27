@@ -1,0 +1,228 @@
+{
+  "all_primary_counts_unchanged_in_affected_episodes": true,
+  "fused_flag_not_equal_camera_or_final_lidar": 0,
+  "inference": "Tiny grazing/FOV margins support floating-point boundary sensitivity, not proof of the exact GPU arithmetic cause.",
+  "known_unique_frames": 5,
+  "rows": [
+    {
+      "acquisition": 0,
+      "cell": "moving/A3/E2_obstacle_aware__160bars__seed4309",
+      "env": 53,
+      "episode": 3,
+      "fov_range_margins_m": [
+        0.6449648691509617,
+        4.10046972180229,
+        10.023933856549233
+      ],
+      "frame": 6,
+      "interval_counts_offline_online_probe": [
+        1,
+        1,
+        1
+      ],
+      "interval_spans_offline_online_probe": [
+        [
+          [
+            7,
+            10,
+            0.30000000000000004
+          ]
+        ],
+        [
+          [
+            6,
+            10,
+            0.4
+          ]
+        ],
+        [
+          [
+            6,
+            10,
+            0.4
+          ]
+        ]
+      ],
+      "nearest_boundary_gap_along_ray_m": 2.19578511894935e-05,
+      "offline_center_blocked": false,
+      "offline_in_view": true,
+      "online_in_view": true,
+      "online_visible": false,
+      "own_reference_not_project_functions": true,
+      "probe_center_blocked": 1,
+      "raw_trace_hashes_verified": true
+    },
+    {
+      "acquisition": 0,
+      "cell": "static/A1/E0_static__115bars__seed4307",
+      "env": 60,
+      "episode": 0,
+      "fov_range_margins_m": [
+        0.7375474912808828,
+        1.1842452532559578,
+        17.467995234825512
+      ],
+      "frame": 32,
+      "interval_counts_offline_online_probe": [
+        2,
+        2,
+        2
+      ],
+      "interval_spans_offline_online_probe": [
+        [
+          [
+            5,
+            14,
+            0.9
+          ],
+          [
+            21,
+            32,
+            1.1
+          ]
+        ],
+        [
+          [
+            5,
+            14,
+            0.9
+          ],
+          [
+            21,
+            33,
+            1.2000000000000002
+          ]
+        ],
+        [
+          [
+            5,
+            14,
+            0.9
+          ],
+          [
+            21,
+            32,
+            1.1
+          ]
+        ]
+      ],
+      "nearest_boundary_gap_along_ray_m": 3.7043501244244156e-06,
+      "offline_center_blocked": false,
+      "offline_in_view": true,
+      "online_in_view": true,
+      "online_visible": false,
+      "own_reference_not_project_functions": true,
+      "probe_center_blocked": 0,
+      "raw_trace_hashes_verified": true
+    },
+    {
+      "acquisition": 0,
+      "cell": "static/A1/E0_static__160bars__seed4307",
+      "env": 94,
+      "episode": 3,
+      "fov_range_margins_m": [
+        -1.9863403633024745e-07,
+        0.5828474883211051,
+        18.53726093215301
+      ],
+      "frame": 33,
+      "interval_counts_offline_online_probe": [
+        0,
+        0,
+        0
+      ],
+      "interval_spans_offline_online_probe": [
+        [],
+        [],
+        []
+      ],
+      "nearest_boundary_gap_along_ray_m": null,
+      "offline_center_blocked": false,
+      "offline_in_view": false,
+      "online_in_view": true,
+      "online_visible": true,
+      "own_reference_not_project_functions": true,
+      "probe_center_blocked": 0,
+      "raw_trace_hashes_verified": true
+    },
+    {
+      "acquisition": 0,
+      "cell": "static/A1/E0_static__205bars__seed4303",
+      "env": 123,
+      "episode": 2,
+      "fov_range_margins_m": [
+        -0.21739405494892505,
+        1.9736191580443758,
+        14.927603602426789
+      ],
+      "frame": 21,
+      "interval_counts_offline_online_probe": [
+        0,
+        0,
+        0
+      ],
+      "interval_spans_offline_online_probe": [
+        [],
+        [],
+        []
+      ],
+      "nearest_boundary_gap_along_ray_m": -2.9479508439824782e-06,
+      "offline_center_blocked": true,
+      "offline_in_view": false,
+      "online_in_view": false,
+      "online_visible": false,
+      "own_reference_not_project_functions": true,
+      "probe_center_blocked": 0,
+      "raw_trace_hashes_verified": true
+    },
+    {
+      "acquisition": 0,
+      "cell": "static/A1/E0_static__205bars__seed4305",
+      "env": 78,
+      "episode": 3,
+      "fov_range_margins_m": [
+        3.3843738503532848,
+        4.702821547468321,
+        10.226091130453733
+      ],
+      "frame": 4,
+      "interval_counts_offline_online_probe": [
+        1,
+        1,
+        1
+      ],
+      "interval_spans_offline_online_probe": [
+        [
+          [
+            4,
+            13,
+            0.9
+          ]
+        ],
+        [
+          [
+            5,
+            13,
+            0.8
+          ]
+        ],
+        [
+          [
+            5,
+            13,
+            0.8
+          ]
+        ]
+      ],
+      "nearest_boundary_gap_along_ray_m": -1.657075595224992e-05,
+      "offline_center_blocked": true,
+      "offline_in_view": true,
+      "online_in_view": true,
+      "online_visible": true,
+      "own_reference_not_project_functions": true,
+      "probe_center_blocked": 0,
+      "raw_trace_hashes_verified": true
+    }
+  ],
+  "sampled_raw_frames": 263424
+}

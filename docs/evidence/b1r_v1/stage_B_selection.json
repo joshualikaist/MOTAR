@@ -1,0 +1,234 @@
+{
+  "cells": 32,
+  "checkpoint_sha256_after": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "evaluation_scene_count": 27804,
+  "g1_details": {
+    "B-PN": [
+      {
+        "cell": "E2_obstacle_aware__115bars__seed4390",
+        "never_track_active": 0.0,
+        "no_belief": 0.0958984375,
+        "standoff": 0.0703125
+      },
+      {
+        "cell": "E2_obstacle_aware__205bars__seed4390",
+        "never_track_active": 0.0,
+        "no_belief": 0.188359375,
+        "standoff": 0.0078125
+      }
+    ],
+    "B-PP": [
+      {
+        "cell": "E2_obstacle_aware__115bars__seed4390",
+        "never_track_active": 0.0,
+        "no_belief": 0.003218157181571816,
+        "standoff": 0.0
+      },
+      {
+        "cell": "E2_obstacle_aware__205bars__seed4390",
+        "never_track_active": 0.00390625,
+        "no_belief": 0.08099262321660182,
+        "standoff": 0.0
+      }
+    ]
+  },
+  "gate": "G1 + scene disjointness",
+  "output_bytes": 852952485,
+  "raw_manifest_sha256": "2a01b676e151edb3d7bb8895d40ec003b2ef73aab0704df5cf80d65de7880cf7",
+  "raw_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/b1r_classical_baseline_v1/B",
+  "run_report_verdict": "COMPLETE",
+  "scene_overlap": 0,
+  "schema": "motar.b1r-stage-record.v1",
+  "selected": {
+    "B-PN": {
+      "N": 8.0,
+      "capture": 312,
+      "capture_115": 0.6953125,
+      "cells": 2,
+      "crash": 115,
+      "timeout": 85,
+      "v_nom": 1.5
+    },
+    "B-PP": {
+      "N": 0.0,
+      "capture": 425,
+      "capture_115": 0.9296875,
+      "cells": 2,
+      "crash": 82,
+      "timeout": 5,
+      "v_nom": 2.5
+    }
+  },
+  "selection_sha256": "c1c572560f365d34cdf3441233acdaa328f571cded289bae6c0d65d90579797f",
+  "signatures": {
+    "B-PN": [],
+    "B-PP": []
+  },
+  "source_commit": "6460fff7eeb68fa5a4b73aacea27e9d041f8c00b",
+  "stage": "B",
+  "table": [
+    {
+      "N": 3.0,
+      "capture": 160,
+      "capture_115": 0.3828125,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 231,
+      "timeout": 121,
+      "v_nom": 1.5
+    },
+    {
+      "N": 3.0,
+      "capture": 156,
+      "capture_115": 0.40625,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 327,
+      "timeout": 29,
+      "v_nom": 2.0
+    },
+    {
+      "N": 3.0,
+      "capture": 134,
+      "capture_115": 0.31640625,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 340,
+      "timeout": 38,
+      "v_nom": 2.5
+    },
+    {
+      "N": 3.0,
+      "capture": 108,
+      "capture_115": 0.23828125,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 356,
+      "timeout": 48,
+      "v_nom": 3.0
+    },
+    {
+      "N": 5.0,
+      "capture": 233,
+      "capture_115": 0.5546875,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 178,
+      "timeout": 101,
+      "v_nom": 1.5
+    },
+    {
+      "N": 5.0,
+      "capture": 237,
+      "capture_115": 0.6171875,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 255,
+      "timeout": 20,
+      "v_nom": 2.0
+    },
+    {
+      "N": 5.0,
+      "capture": 218,
+      "capture_115": 0.5390625,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 262,
+      "timeout": 32,
+      "v_nom": 2.5
+    },
+    {
+      "N": 5.0,
+      "capture": 172,
+      "capture_115": 0.41015625,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 308,
+      "timeout": 32,
+      "v_nom": 3.0
+    },
+    {
+      "N": 8.0,
+      "capture": 312,
+      "capture_115": 0.6953125,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 115,
+      "timeout": 85,
+      "v_nom": 1.5
+    },
+    {
+      "N": 8.0,
+      "capture": 285,
+      "capture_115": 0.70703125,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 211,
+      "timeout": 16,
+      "v_nom": 2.0
+    },
+    {
+      "N": 8.0,
+      "capture": 283,
+      "capture_115": 0.6875,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 221,
+      "timeout": 8,
+      "v_nom": 2.5
+    },
+    {
+      "N": 8.0,
+      "capture": 236,
+      "capture_115": 0.58203125,
+      "cells": 2,
+      "controller": "B-PN",
+      "crash": 257,
+      "timeout": 19,
+      "v_nom": 3.0
+    },
+    {
+      "N": 0.0,
+      "capture": 382,
+      "capture_115": 0.84375,
+      "cells": 2,
+      "controller": "B-PP",
+      "crash": 49,
+      "timeout": 81,
+      "v_nom": 1.5
+    },
+    {
+      "N": 0.0,
+      "capture": 410,
+      "capture_115": 0.89453125,
+      "cells": 2,
+      "controller": "B-PP",
+      "crash": 98,
+      "timeout": 4,
+      "v_nom": 2.0
+    },
+    {
+      "N": 0.0,
+      "capture": 425,
+      "capture_115": 0.9296875,
+      "cells": 2,
+      "controller": "B-PP",
+      "crash": 82,
+      "timeout": 5,
+      "v_nom": 2.5
+    },
+    {
+      "N": 0.0,
+      "capture": 422,
+      "capture_115": 0.9296875,
+      "cells": 2,
+      "controller": "B-PP",
+      "crash": 87,
+      "timeout": 3,
+      "v_nom": 3.0
+    }
+  ],
+  "tuning_scene_count": 26628,
+  "verdict": "PASS",
+  "wall_hours": 1.9489301671847352
+}

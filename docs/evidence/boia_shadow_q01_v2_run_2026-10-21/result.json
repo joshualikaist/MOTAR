@@ -1,0 +1,360 @@
+{
+ "schema": "motar.boia.shadow.q01.v2.result.v1",
+ "run_id": "BOIA-SHADOW-Q01-V2",
+ "approved_commit": "f6a0ce6b17f46c28a4477df2b914cfac1eb5d2d7",
+ "final_source_commit": "453bd12177fca34d58747bf0857844e833a03b64",
+ "config_sha256": "be1c22e4e8e8c66edc655e7c81481f1431de98adccabe1ec43b5412c051ea3e8",
+ "checkpoint_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+ "rms_digest": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+ "raw_root": "/home/fair/workspaces/aerial_gym_ws/boia_shadow_runs/BOIA-SHADOW-Q01-V2",
+ "raw_files": {
+  "S0/actions.jsonl": {
+   "bytes": 18132,
+   "sha256": "4ef46582f87629dcb2c311af1a9e3dc3fc3e7ef5d77c1b476f9a7fd1766a98c2"
+  },
+  "S0/evaluator.jsonl": {
+   "bytes": 13670,
+   "sha256": "00455f3b316c0f956add237d32c8a33e5bbe4bd845b95698896f48ac2fd6b891"
+  },
+  "S0/events.jsonl": {
+   "bytes": 186,
+   "sha256": "9d758edf5bb834fa65a8c720c8b88921f682ecd1cac0121c93b77ee3fa5edab1"
+  },
+  "S0/host.jsonl": {
+   "bytes": 49295,
+   "sha256": "8ce76f16bd61cf00fdbab2fc42818fda904071b2c30137e79eff4ecbbd9e35cc"
+  },
+  "S0/parity.jsonl": {
+   "bytes": 50994,
+   "sha256": "5f70f6f2077ed3f0e89dd009347ffbf220d9561514e79d518cf078bcdd95483f"
+  },
+  "S0/process_done.json": {
+   "bytes": 15703,
+   "sha256": "2cb74e810140c8949904fb182c8c9191587e83784ae81261b978718cc8fe0ba0"
+  },
+  "S0/sensor_000.npz": {
+   "bytes": 6384,
+   "sha256": "ec60aa1dbf5978f49150a41ffd2e78f98321c05b6b93628645121e288d8e1e52"
+  },
+  "S0/sensor_001.npz": {
+   "bytes": 6298,
+   "sha256": "4ec41537945f50e8880103d1d2ab49ab7c0f275ed1e789c088b7f1141893d520"
+  },
+  "S0/sensors.jsonl": {
+   "bytes": 44265,
+   "sha256": "a78179c970dda2a07e582698355404e4dffb1647887b5a01e1c35e3c2ed88b46"
+  },
+  "S0/shadow.jsonl": {
+   "bytes": 3456,
+   "sha256": "e340f832ee381a3a58c82956e0797707adad13a1bf5942f9bc237d3d1e4f7baa"
+  },
+  "S0.log": {
+   "bytes": 19938,
+   "sha256": "76585cf5610ef495a5d0a00cf42359d4852813d1361f9e79b82d6392ef8279e7"
+  },
+  "S0_RAW_MANIFEST.json": {
+   "bytes": 1803,
+   "sha256": "d29430573d3e377f7f5f7542546d298495fdf1c210df42564a3e8921307194cd"
+  },
+  "S0_supervisor.json": {
+   "bytes": 879,
+   "sha256": "311f524e31ec043478948c4ead20c08818a4b1983a4e04823ff31174694b4e19"
+  },
+  "S1_NATIVE/host.jsonl": {
+   "bytes": 73033,
+   "sha256": "43457347b0480966ca79289728982654d5c02af544b695df7e3508f1f81af453"
+  },
+  "S1_NATIVE/process_done.json": {
+   "bytes": 5675,
+   "sha256": "be8a5d2930ed201f20455302c313c5cd71f8488ee2c49b44398874745c6e7d35"
+  },
+  "S1_NATIVE.log": {
+   "bytes": 19938,
+   "sha256": "e7a7dddee61ad7bcbde963d55242aa9b9f27f921ed4efdd9ddf3fe021cc9fb38"
+  },
+  "S1_NATIVE_RAW_MANIFEST.json": {
+   "bytes": 2514,
+   "sha256": "2382c772b98fd0090929cccde158aa954f7b640e8825f979a51eb773eb0a6bb3"
+  },
+  "S1_NATIVE_supervisor.json": {
+   "bytes": 894,
+   "sha256": "91590c9a5d7ba678b6ea5692ccb8b3c68bdc971f873e659a9f1549754ec2b6cb"
+  },
+  "S1_OFF/actions.jsonl": {
+   "bytes": 27206,
+   "sha256": "6e404fad4885df036554ab4d7969f70be0216add9630207427c979a5194ad2f1"
+  },
+  "S1_OFF/evaluator.jsonl": {
+   "bytes": 20516,
+   "sha256": "055256f9f1b6e5669f213f64e567eea275c742e3a9bd687747eb866e43de35ae"
+  },
+  "S1_OFF/events.jsonl": {
+   "bytes": 289,
+   "sha256": "969d23e65804059fc327bcd5bc5b6b4ce7b76c78d76885ebcf89f7eb6835faf3"
+  },
+  "S1_OFF/host.jsonl": {
+   "bytes": 73033,
+   "sha256": "43457347b0480966ca79289728982654d5c02af544b695df7e3508f1f81af453"
+  },
+  "S1_OFF/parity.jsonl": {
+   "bytes": 76521,
+   "sha256": "245cee068083f62344a3839b09e95f09cb7aaa1db919f66b943d502945a8be92"
+  },
+  "S1_OFF/process_done.json": {
+   "bytes": 20898,
+   "sha256": "6060e0c7aa0ab2943c1d56d6907b8fd4ba6ed711fa98dcd2294d591c1a5fa1ca"
+  },
+  "S1_OFF/sensor_000.npz": {
+   "bytes": 6384,
+   "sha256": "ec60aa1dbf5978f49150a41ffd2e78f98321c05b6b93628645121e288d8e1e52"
+  },
+  "S1_OFF/sensor_001.npz": {
+   "bytes": 6298,
+   "sha256": "4ec41537945f50e8880103d1d2ab49ab7c0f275ed1e789c088b7f1141893d520"
+  },
+  "S1_OFF/sensor_002.npz": {
+   "bytes": 9111,
+   "sha256": "26cae37fb768836d32f0a1fe3b67cb2376ae94307405d07f0de8d45d46ff5683"
+  },
+  "S1_OFF/sensors.jsonl": {
+   "bytes": 66533,
+   "sha256": "83af5154a0c69c929739ef29dd6ef770c929abeb128fd074f9bc1f926b266344"
+  },
+  "S1_OFF/shadow.jsonl": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "S1_OFF.log": {
+   "bytes": 19938,
+   "sha256": "1794953e0d6b4646693b24a58499683fc7d5271bae42957bfd7607f6a5747889"
+  },
+  "S1_OFF_RAW_MANIFEST.json": {
+   "bytes": 4492,
+   "sha256": "1fa6bfce8cc6066e9647c8435da338ba3b036e3fc25d591264b0e5ae3322a566"
+  },
+  "S1_OFF_supervisor.json": {
+   "bytes": 887,
+   "sha256": "4ee9f0f35006f94c05ae1ee2883e3eef396fac1d60894fd7f211bc51973689ba"
+  },
+  "S1_ON/actions.jsonl": {
+   "bytes": 27206,
+   "sha256": "6e404fad4885df036554ab4d7969f70be0216add9630207427c979a5194ad2f1"
+  },
+  "S1_ON/evaluator.jsonl": {
+   "bytes": 20516,
+   "sha256": "055256f9f1b6e5669f213f64e567eea275c742e3a9bd687747eb866e43de35ae"
+  },
+  "S1_ON/events.jsonl": {
+   "bytes": 289,
+   "sha256": "969d23e65804059fc327bcd5bc5b6b4ce7b76c78d76885ebcf89f7eb6835faf3"
+  },
+  "S1_ON/host.jsonl": {
+   "bytes": 73033,
+   "sha256": "43457347b0480966ca79289728982654d5c02af544b695df7e3508f1f81af453"
+  },
+  "S1_ON/parity.jsonl": {
+   "bytes": 76521,
+   "sha256": "245cee068083f62344a3839b09e95f09cb7aaa1db919f66b943d502945a8be92"
+  },
+  "S1_ON/process_done.json": {
+   "bytes": 21062,
+   "sha256": "098f97807e49bf3d9924a7999e77039cb1958b8ed38ffec6593823a189d30c91"
+  },
+  "S1_ON/sensor_000.npz": {
+   "bytes": 6384,
+   "sha256": "ec60aa1dbf5978f49150a41ffd2e78f98321c05b6b93628645121e288d8e1e52"
+  },
+  "S1_ON/sensor_001.npz": {
+   "bytes": 6298,
+   "sha256": "4ec41537945f50e8880103d1d2ab49ab7c0f275ed1e789c088b7f1141893d520"
+  },
+  "S1_ON/sensor_002.npz": {
+   "bytes": 9111,
+   "sha256": "26cae37fb768836d32f0a1fe3b67cb2376ae94307405d07f0de8d45d46ff5683"
+  },
+  "S1_ON/sensors.jsonl": {
+   "bytes": 66535,
+   "sha256": "97ea6ee8ccaf589bfac20594542cf4fd67d928a1bae22f2db8ac30ee5dce382a"
+  },
+  "S1_ON/shadow.jsonl": {
+   "bytes": 5186,
+   "sha256": "78518d1f604b37c41f0d6d587b844435432a05ceda9ce1dca3953c345affa69d"
+  },
+  "S1_ON.log": {
+   "bytes": 19938,
+   "sha256": "3286109d23c49a4520d3ca55bbc47b4224e169973b8ed8832e54d16a295b7e08"
+  },
+  "S1_ON_RAW_MANIFEST.json": {
+   "bytes": 6457,
+   "sha256": "09344d4ab2ddb448ae013e815d6d04a9bfba7af83e7727499c76a5f301bc98a3"
+  },
+  "S1_ON_supervisor.json": {
+   "bytes": 885,
+   "sha256": "ce12f6c8507fe40d5b6b5bae11b8db572473a36b26b33b3a5b079b34bdf88775"
+  },
+  "campaign_start.json": {
+   "bytes": 4835,
+   "sha256": "c49cc27fb4980d88f2f1e1e3a3b88eb0dfc7b51d74ca728a151f1f500f891592"
+  },
+  "parity_result.json": {
+   "bytes": 6899,
+   "sha256": "00365287d7c04fca6f4e8be7772e6d6258fd2dbe235529fdcc3ff39341c14e32"
+  }
+ },
+ "verdict": "PASS_EXACT_NATIVE_OFF_ON_PARITY_WITH_REPLAY_CONTROL",
+ "claims": {
+  "boia_computation": "NOT_QUALIFIED",
+  "diagnostic_noninterference": "SUPPORTED_EXACT_THIS_PROFILE",
+  "host_instrumentation": "READ_ONLY_HOST_TRACE_IN_EVERY_STAGE_NO_UNINSTRUMENTED_RUN",
+  "mismatch_cause": null,
+  "observer_noninterference": "SUPPORTED_EXACT_HOST_TRACE_THIS_PROFILE",
+  "replay_reproducibility": "PASS_ON_CONFIGURATION_S0_PREFIX_ONLY",
+  "terminal_reset_compared": {
+   "native_vs_off": true,
+   "off_vs_on": true,
+   "replay_s0_vs_on": false
+  }
+ },
+ "comparisons": {
+  "native_vs_off": "PASS",
+  "off_vs_on": "PASS",
+  "replay_s0_vs_on": "PASS",
+  "runtime_profile": "PASS"
+ },
+ "stages": {
+  "S0": {
+   "supervisor_status": "COMPLETED",
+   "supervisor_wall_s": 8.23,
+   "worker_wall_s": 6.64,
+   "actions": 20,
+   "ended_episodes": 0,
+   "peak_device_mib_sampled": 5332,
+   "peak_torch_allocated_mib": 15.2,
+   "warm_full_step_ms": {
+    "P50": 45.757257961668074,
+    "P95": 86.09048109501599,
+    "P99": 88.99736668914557,
+    "maximum": 89.72408808767796,
+    "n": 19
+   },
+   "observer": true,
+   "shadow": true,
+   "warm_observer_ms": {
+    "P50": 3.8159650284796953,
+    "P95": 7.0742307114414835,
+    "P99": 8.312842228915542,
+    "maximum": 8.622495108284056,
+    "n": 19
+   },
+   "cold_first_observer_ms": 6.192541681230068,
+   "diagnostic_only_ms_max": 0.06915000267326832,
+   "diagnostic_only_n": 4,
+   "terminal": {
+    "capture": false,
+    "crash": false,
+    "timeout": false,
+    "censored": true,
+    "collision_free_capture_proxy": null,
+    "contact_substeps": 0,
+    "qualification": "SUBSTEP_CONTACT_AND_ACTION_BOUNDARY_HEIGHT_OOB_ONLY"
+   }
+  },
+  "S1_NATIVE": {
+   "supervisor_status": "COMPLETED",
+   "supervisor_wall_s": 12.31,
+   "worker_wall_s": 10.3,
+   "actions": 30,
+   "ended_episodes": 1,
+   "peak_device_mib_sampled": 5329,
+   "peak_torch_allocated_mib": 15.2,
+   "warm_full_step_ms": {
+    "P50": 40.56619596667588,
+    "P95": 72.40647601429372,
+    "P99": 271.77009943406995,
+    "maximum": 348.4016651054844,
+    "n": 29
+   },
+   "observer": false,
+   "shadow": false
+  },
+  "S1_OFF": {
+   "supervisor_status": "COMPLETED",
+   "supervisor_wall_s": 8.25,
+   "worker_wall_s": 6.83,
+   "actions": 30,
+   "ended_episodes": 1,
+   "peak_device_mib_sampled": 5332,
+   "peak_torch_allocated_mib": 15.2,
+   "warm_full_step_ms": {
+    "P50": 43.51844103075564,
+    "P95": 57.50108421780168,
+    "P99": 269.0343304723498,
+    "maximum": 350.8531800471246,
+    "n": 29
+   },
+   "observer": true,
+   "shadow": false,
+   "warm_observer_ms": {
+    "P50": 3.612638101913035,
+    "P95": 5.18082259222865,
+    "P99": 5.50991072319448,
+    "maximum": 5.569015978835523,
+    "n": 29
+   },
+   "cold_first_observer_ms": 6.429550005123019,
+   "diagnostic_only_ms_max": null,
+   "diagnostic_only_n": 0,
+   "terminal": {
+    "capture": true,
+    "crash": false,
+    "timeout": false,
+    "censored": false,
+    "collision_free_capture_proxy": true,
+    "contact_substeps": 0,
+    "qualification": "SUBSTEP_CONTACT_AND_ACTION_BOUNDARY_HEIGHT_OOB_ONLY"
+   }
+  },
+  "S1_ON": {
+   "supervisor_status": "COMPLETED",
+   "supervisor_wall_s": 8.21,
+   "worker_wall_s": 6.79,
+   "actions": 30,
+   "ended_episodes": 1,
+   "peak_device_mib_sampled": 5330,
+   "peak_torch_allocated_mib": 15.2,
+   "warm_full_step_ms": {
+    "P50": 44.07816508319229,
+    "P95": 48.88340318575501,
+    "P99": 269.6620931383219,
+    "maximum": 355.207611923106,
+    "n": 29
+   },
+   "observer": true,
+   "shadow": true,
+   "warm_observer_ms": {
+    "P50": 3.7247909931465983,
+    "P95": 5.27248738799244,
+    "P99": 5.775430011563003,
+    "maximum": 5.831534159369767,
+    "n": 29
+   },
+   "cold_first_observer_ms": 6.55246595852077,
+   "diagnostic_only_ms_max": 0.040255021303892136,
+   "diagnostic_only_n": 6,
+   "terminal": {
+    "capture": true,
+    "crash": false,
+    "timeout": false,
+    "censored": false,
+    "collision_free_capture_proxy": true,
+    "contact_substeps": 0,
+    "qualification": "SUBSTEP_CONTACT_AND_ACTION_BOUNDARY_HEIGHT_OOB_ONLY"
+   }
+  }
+ },
+ "campaign_wall_s": 37.0,
+ "campaign_cap_s": 1080,
+ "scope": "passive acquisition/join/logging and exact NATIVE/OFF, OFF/ON, S0/ON-prefix parity for this exact N1 profile; no BOIA computation (diagnose ABSTAIN), no mission benefit, no physical safety, no real-time claim; one episode per stage",
+ "GPU": "RUN_ONCE_APPROVED",
+ "G5": "HOLD"
+}

@@ -1,0 +1,4 @@
+
+# G4-R4 2026-10-20: verified reconstructable CPython caches, never Raw or user sources.
+/aerial_gym/**/__pycache__/*.pyc
+/tools/**/__pycache__/*.pyc

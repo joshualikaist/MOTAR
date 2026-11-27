@@ -1,0 +1,26 @@
+test_belief_gate_excludes_self_and_preserves_distant_bar (test_boia_geometry_visibility.GeometryTest) ... ok
+test_distance_zero_length_and_query_dimensions (test_boia_geometry_visibility.GeometryTest) ... ok
+test_exact_segment_detects_short_unknown_sector_missed_by_coarse_checks (test_boia_geometry_visibility.GeometryTest) ... ok
+test_float32_boundary_below_rounding_point_checks_both_neighbor_sectors (test_boia_geometry_visibility.GeometryTest) ... ok
+test_known_free_far_bound_translation_and_yaw_wrap (test_boia_geometry_visibility.GeometryTest) ... ok
+test_known_free_row_and_neighbor_minimum (test_boia_geometry_visibility.GeometryTest) ... ok
+test_known_free_zero_length_reversal_and_boundary_ray (test_boia_geometry_visibility.GeometryTest) ... ok
+test_lidar_rows_angles_world_rotation_and_validity (test_boia_geometry_visibility.GeometryTest) ... ok
+test_segment_dist_against_independent_dense_brute_force (test_boia_geometry_visibility.GeometryTest) ... ok
+test_adjacent_nested_clear_events_independence_underestimates_visibility (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_batch_chunking_matches_individual_environments_and_is_pure (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_clear_and_blocked_forecast_and_invalid_point (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_degenerate_covariance_and_endpoint_gradients_are_finite (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_fixed_generator_repeatability_and_global_rng_preservation (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_invalid_sample_is_blocked_without_nan_in_both_modes (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_outside_fov_and_range_are_zero (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_parameters_are_explicit_and_frozen (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_same_path_horizon_union_not_product_of_marginals (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_single_occluder_1024_antithetic_mc_agrees_with_linearized_analytic (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_static_import_information_and_rng_boundaries (test_boia_geometry_visibility.VisibilityTest) ... ok
+test_tf32_backend_flag_does_not_change_cpu_distance_result (test_boia_geometry_visibility.VisibilityTest) ... ok
+
+----------------------------------------------------------------------
+Ran 21 tests in 0.051s
+
+OK

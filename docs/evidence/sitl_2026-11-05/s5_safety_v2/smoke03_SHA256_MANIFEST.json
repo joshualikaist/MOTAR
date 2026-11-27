@@ -1,0 +1,170 @@
+{
+ "scope": "smoke03 immutable raw record, amendment2 authorized sequential run",
+ "root": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/smoke03",
+ "files": {
+  "attempt.json": {
+   "bytes": 13500,
+   "sha256": "16ecd8366238b3b9f0798a2c4b45dc89c83125d0d09573cfcfe3c83acf2149d2"
+  },
+  "ep000/gazebo_log/ogre.log": {
+   "bytes": 34497,
+   "sha256": "b292b7077e17eddaefdad9430802d7301612040b2a5a015cd4fea3be0f6ba808"
+  },
+  "ep000/launches.jsonl": {
+   "bytes": 1065,
+   "sha256": "30280937e932d479b5c0648caa1187774b4e5471a77dccf4068939d5c92200b6"
+  },
+  "ep000/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep000/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep000/logs/px4.log": {
+   "bytes": 2859,
+   "sha256": "44c6d0e18d8e530dbd9ac323bfd5aeb42f6f814d832a0fc5827c0633220d7a22"
+  },
+  "ep000/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep000/rootfs/log/2026-11-10/14_59_16.ulg": {
+   "bytes": 11792169,
+   "sha256": "22c94ebf0e44f8d685139f70a44dec589c6e89389b136937e120a3976f9b2982"
+  },
+  "ep000/rootfs/parameters.bson": {
+   "bytes": 865,
+   "sha256": "86baa105d1ca59f7a626019ecf98314fa21f73a47d2fe3a99f04101a3bbfffe9"
+  },
+  "ep000/rootfs/parameters_backup.bson": {
+   "bytes": 865,
+   "sha256": "86baa105d1ca59f7a626019ecf98314fa21f73a47d2fe3a99f04101a3bbfffe9"
+  },
+  "ep000/session.json": {
+   "bytes": 3931,
+   "sha256": "25c69f977328be426aea4141b9eb18113de3e8e136e8d10d2ececea9d42cabe3"
+  },
+  "ep000/trace.json": {
+   "bytes": 17951564,
+   "sha256": "2d242538845ae4e2fcf01d1baf48af821c60db6d67d5b68c223c14dfcb6a96e4"
+  },
+  "ep000/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep001/gazebo_log/ogre.log": {
+   "bytes": 34497,
+   "sha256": "d9230ff246663314682b77d3657c8f18d193d7a0766df638e3b5ac1127e0731e"
+  },
+  "ep001/launches.jsonl": {
+   "bytes": 1065,
+   "sha256": "1973c572ba07cac97edf1282b1e950f48cfc1fb1d963c327bb15f9842a1d61a7"
+  },
+  "ep001/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep001/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep001/logs/px4.log": {
+   "bytes": 2859,
+   "sha256": "9f89d0adb0df1e6cfa34eb2c0de9f40e21c20a40ba00380b7658eb2e655cf664"
+  },
+  "ep001/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep001/rootfs/log/2026-11-10/15_00_15.ulg": {
+   "bytes": 11811171,
+   "sha256": "a6fe69c85cdf8dbb89704d0c524ba78c55b3e9263bfc2fa2c40abb0e286cc8b7"
+  },
+  "ep001/rootfs/parameters.bson": {
+   "bytes": 865,
+   "sha256": "86baa105d1ca59f7a626019ecf98314fa21f73a47d2fe3a99f04101a3bbfffe9"
+  },
+  "ep001/rootfs/parameters_backup.bson": {
+   "bytes": 865,
+   "sha256": "86baa105d1ca59f7a626019ecf98314fa21f73a47d2fe3a99f04101a3bbfffe9"
+  },
+  "ep001/session.json": {
+   "bytes": 3931,
+   "sha256": "b6c3884c0d1ccf93cbba0206bc4a95f790b114e6d394083931b38f620383fb46"
+  },
+  "ep001/trace.json": {
+   "bytes": 19339564,
+   "sha256": "27bea26e4d466c3e37ba245f88f0c8268034c7c33b1cd673db453dce250e58ca"
+  },
+  "ep001/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "ep002/gazebo_log/ogre.log": {
+   "bytes": 34497,
+   "sha256": "77cfa235881b6e2a13e3bb3a1fbe1626d2fb0dcd1fecb7f4bf2e546bf982cbc1"
+  },
+  "ep002/launches.jsonl": {
+   "bytes": 1065,
+   "sha256": "372595cece62ca984543ed55ba6b81e6102710c26453a4018005b5f250d926f2"
+  },
+  "ep002/logs/gzserver.log": {
+   "bytes": 208,
+   "sha256": "ff53b12078ba642ca69a56e1133517e2978d8ce19defca6b40a23b255af10c32"
+  },
+  "ep002/logs/logger_stop.log": {
+   "bytes": 0,
+   "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "ep002/logs/px4.log": {
+   "bytes": 2859,
+   "sha256": "71ff31f1e0992147ff3cee697b3665b5d1c2ab7bbfa3adfd866472d77c6d54c5"
+  },
+  "ep002/logs/spawn_00.log": {
+   "bytes": 530,
+   "sha256": "ca47d28dd13ec0fe8f0ae0ff6c7501582bf8b6c931a8e2a1b13910aad8783040"
+  },
+  "ep002/rootfs/log/2026-11-10/15_01_15.ulg": {
+   "bytes": 12001195,
+   "sha256": "c4aa7ad570dc29c8a6a1957f039a0770875b162876ae9433a653815416b1c2b6"
+  },
+  "ep002/rootfs/parameters.bson": {
+   "bytes": 907,
+   "sha256": "26df3f7dc3cee4e28f0ec37a77246551e0454f484a497246fdae19074d8e5b3b"
+  },
+  "ep002/rootfs/parameters_backup.bson": {
+   "bytes": 907,
+   "sha256": "26df3f7dc3cee4e28f0ec37a77246551e0454f484a497246fdae19074d8e5b3b"
+  },
+  "ep002/session.json": {
+   "bytes": 3933,
+   "sha256": "3fb0a53d8f24bde242efc80007ecef091a13a7f7b97f493b09d74557cba2aa5a"
+  },
+  "ep002/trace.json": {
+   "bytes": 19000463,
+   "sha256": "f3d8ad8d83f7a56f953ddfbbbd81adb198fa828a23015efe8843a5093e8292fd"
+  },
+  "ep002/world/motar_s5_safety.world": {
+   "bytes": 1098,
+   "sha256": "7b7367f9046fa5fc7a5a0bc61c22bdca1bbf85b7f59eec325496f3a244b59836"
+  },
+  "episodes.jsonl": {
+   "bytes": 226885,
+   "sha256": "38cca50a0d357ae4c3427cc506d83023893d74f34bc0fdc8ead996630fcdacb7"
+  },
+  "final.json": {
+   "bytes": 298,
+   "sha256": "d974fccaa74bc07dac59ae478321805330a2ad3cd77d5324ab836ee34e6b1080"
+  }
+ },
+ "symlinks": {
+  "ep000/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep000/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep001/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep001/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data",
+  "ep002/rootfs/etc": "/home/fair/workspaces/px4_ws/PX4-Autopilot/build/px4_sitl_default/etc",
+  "ep002/rootfs/test_data": "/home/fair/workspaces/px4_ws/PX4-Autopilot/test_data"
+ }
+}

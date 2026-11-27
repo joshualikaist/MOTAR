@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "distinct_tests": 96,
+  "environment": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES=empty aerialgym python -B unittest discover",
+  "logs": {
+    "cpu_h_r3.txt": {
+      "tests": 69,
+      "sha256": "2bd9131d711de9078cd27238bae9931eda3dc3d8a5135a0c2c1d2043fca0efb3"
+    },
+    "cpu_e_l0.txt": {
+      "tests": 14,
+      "sha256": "f9bad2bcde7206f0ff7c5d6568a0660bd25141afebb5a4a8189f02f21acaeefc"
+    },
+    "cpu_eq1d.txt": {
+      "tests": 13,
+      "sha256": "8c43c0df1029686a7381f0761dc9171bee6dacf7bedb92c25a9cd578c244bc59"
+    }
+  },
+  "limits": "Focused CPU tests pass; main N128 GPU common-prefix fails. CPU PASS does not qualify full runner."
+}

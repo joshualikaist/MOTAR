@@ -1,0 +1,31 @@
+{
+  "format": "motar-ros2-px4-node-v1",
+  "status": "UNCONFIGURED",
+  "px4_msgs_msg_dir": null,
+  "firmware": {
+    "version": "v1.14.3",
+    "source": null
+  },
+  "frames": {
+    "world": null,
+    "body": null
+  },
+  "topics": {
+    "velocity": "/motar/policy/velocity_enu",
+    "odometry": "/motar/state/odometry",
+    "diagnostics": "/motar/px4/diagnostics"
+  },
+  "enable_offboard_publication": false,
+  "flight_checks_provenance": null,
+  "geofence": {
+    "enabled": false,
+    "frame": "px4_local_enu",
+    "x_min_m": null,
+    "x_max_m": null,
+    "y_min_m": null,
+    "y_max_m": null,
+    "decel_mps2": 2.9608856678,
+    "latency_s": null
+  },
+  "geofence_waiver": null
+}

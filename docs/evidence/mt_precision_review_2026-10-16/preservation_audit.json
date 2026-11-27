@@ -1,0 +1,66 @@
+{
+  "backup_location": "/home/fair/workspaces/aerial_gym_ws/kroc2027_raw_backup",
+  "external_backup_status": "NOT_AVAILABLE_IN_THIS_AUDIT",
+  "inspection_head": "c038ba5",
+  "note": "No source result/archive was changed. Archive payload hashes were streamed without extraction. Same-filesystem archives do not protect against loss of this disk.",
+  "physical_symlink_target": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1",
+  "runs": [
+    {
+      "archive": {
+        "archive_st_dev": 66306,
+        "archived_manifest_matches_current": true,
+        "bytes": 6900241,
+        "classification": "LOCAL_SAME_FILESYSTEM_COPY_NOT_EXTERNAL_BACKUP",
+        "extra_members_excluding_manifest": [],
+        "extraction_performed": false,
+        "manifest_member_problems": [],
+        "manifest_members_matching": 131,
+        "path": "/home/fair/workspaces/aerial_gym_ws/kroc2027_raw_backup/mt_p2_c01_2026-10-16.tar.gz",
+        "path_or_link_problems": [],
+        "raw_st_dev": 66306,
+        "regular_files": 132,
+        "same_filesystem": true,
+        "sha256": "2c2c3dd5005150a38cb4480e3f73af48177842da3ea6f3f860800d2d550d32f4",
+        "sidecar_sha256_matches": true
+      },
+      "manifest_count_field": 131,
+      "manifest_entries": 131,
+      "manifest_sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+      "physical_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01",
+      "raw_bytes_verified": 49827428,
+      "raw_files_verified": 131,
+      "raw_problems": [],
+      "run_id": "MT-P2-C01",
+      "unmanifested_raw_files_excluding_manifest": []
+    },
+    {
+      "archive": {
+        "archive_st_dev": 66306,
+        "archived_manifest_matches_current": true,
+        "bytes": 66951880,
+        "classification": "LOCAL_SAME_FILESYSTEM_COPY_NOT_EXTERNAL_BACKUP",
+        "extra_members_excluding_manifest": [],
+        "extraction_performed": false,
+        "manifest_member_problems": [],
+        "manifest_members_matching": 452,
+        "path": "/home/fair/workspaces/aerial_gym_ws/kroc2027_raw_backup/kroc27_a_m02_2026-10-16.tar.gz",
+        "path_or_link_problems": [],
+        "raw_st_dev": 66306,
+        "regular_files": 453,
+        "same_filesystem": true,
+        "sha256": "3460335ff70612099a006b9c7c6ff19e5fb6b0dfce372d69e271c32196e44e79",
+        "sidecar_sha256_matches": true
+      },
+      "manifest_count_field": 452,
+      "manifest_entries": 452,
+      "manifest_sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+      "physical_root": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02",
+      "raw_bytes_verified": 493152134,
+      "raw_files_verified": 452,
+      "raw_problems": [],
+      "run_id": "KROC27-A-M02",
+      "unmanifested_raw_files_excluding_manifest": []
+    }
+  ],
+  "schema": "motar.mt-precision-preservation-audit.v1"
+}

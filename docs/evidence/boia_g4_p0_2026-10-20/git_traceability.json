@@ -1,0 +1,46 @@
+{
+  "branch": "codex/mt-p1",
+  "base_sha": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+  "source_commits": [
+    {
+      "sha": "9aaf4b512c2a72d7cd78a208e6bfd891a30a548a",
+      "parent": "13d5f195399bf1a7f1cdf9ddeccd3338d8e34c0f",
+      "changed_files": [
+        "WORKLOG.md",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_B05_base_reproduction.json",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_B05_base_tests.txt",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_audit.json",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_audit.md",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_base_reproduction.json",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_base_tests.txt",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_comparison.json",
+        "docs/evidence/boia_g4_p0_2026-10-20/geometry_final_tests.txt",
+        "motar_eval/boia/geometry.py",
+        "motar_eval/boia/visibility.py",
+        "tests/test_boia_geometry_visibility.py",
+        "tests/test_boia_p0_geometry.py"
+      ]
+    },
+    {
+      "sha": "5094af97cf8add10c37abe58eb63c19a154e34bf",
+      "parent": "9aaf4b512c2a72d7cd78a208e6bfd891a30a548a",
+      "changed_files": [
+        "WORKLOG.md",
+        "docs/evidence/boia_g4_p0_2026-10-20/safety_audit.json",
+        "docs/evidence/boia_g4_p0_2026-10-20/safety_audit.md",
+        "motar_eval/boia/safety.py",
+        "motar_eval/boia/types.py",
+        "tests/test_boia_p0_safety.py"
+      ]
+    }
+  ],
+  "result_commit": "Containing commit of this receipt (git log -1 --format=%H -- <this file>); not a self-referential embedded SHA.",
+  "remote_push": false,
+  "main_merge": false,
+  "protected_untracked": [
+    "results/mt_p1_precision_v1",
+    "results/occlusion_pilot_v1"
+  ],
+  "result_files_list": "git diff-tree --no-commit-id --name-only -r <result_commit>",
+  "working_tree_after_expected": "Only two protected untracked symlinks; independently checked at completion."
+}

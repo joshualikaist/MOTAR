@@ -1,0 +1,28 @@
+{
+ "check": "GR-1 H3: ctrl runner environment vs rand40 reference (review_gr1_design/audit/rand40_runner_env.txt)",
+ "reference_keys": 128,
+ "ctrl_keys_total": 221,
+ "differences": {
+  "NAVRL_GAIN_RAND_SEED": [
+   "1",
+   null
+  ],
+  "AERIAL_RUN_TAG": [
+   "v2-gr1-ep25000-205bars-main-riskcap-rand40-s1",
+   "v2-gr1-ep25000-205bars-main-riskcap-ctrl-s1"
+  ],
+  "NAVRL_GAIN_RAND": [
+   "1",
+   null
+  ],
+  "NAVRL_GAIN_RAND_SCALE": [
+   "0.4",
+   null
+  ]
+ },
+ "unexpected_differences": {},
+ "verdict": "ENV_MATCH",
+ "ctrl_navrl_keys": 115,
+ "ref_navrl_keys": 118,
+ "reference_sha256": "f0364606058f78b93c69d397c9b9fb2126e040831fe2b18abd7babf12bd20c6e"
+}

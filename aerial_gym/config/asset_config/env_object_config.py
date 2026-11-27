@@ -815,7 +815,9 @@ class bar_asset_params(asset_state_params):
     # this changes ONLY the height. The bar z-ratio must put the box center at height/2:
     # 2 m pool -> 1.0 m (ratio 1/3 in a 3 m arena), 3 m pool -> 1.5 m (ratio 1/2).
     _bar_pool = (os.environ.get("NAVRL_BAR_POOL", "").strip() or "bars")
-    _bar_z_ratio = 0.5 if _bar_pool == "bars_h3" else 0.3333
+    # "bars_h3_thin" (CAM-S3, docs/plans/prereg_camonly_s3w_2026-11-27.md) = the 40 bars_h3 files plus 14 thin
+    # 0.20-0.30 m bars of the same 3.0 m height, so it takes the same centre ratio.
+    _bar_z_ratio = 0.5 if _bar_pool in ("bars_h3", "bars_h3_thin") else 0.3333
 
     asset_folder = f"{AERIAL_GYM_DIRECTORY}/resources/models/environment_assets/{_bar_pool}"
     file = None  # random pick from the pool -> each bar gets a random footprint

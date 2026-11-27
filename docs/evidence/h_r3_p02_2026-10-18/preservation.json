@@ -1,0 +1,203 @@
+{
+  "status": "PASS",
+  "baseline_sha": "fbee900b0d1483bdc336716eb6e57180e06deebb",
+  "baseline_record_sha256": "2ac9e588befd9b277b591d6b1b0d5ea94732e822db80ddb06c266e488dffc402",
+  "protected_original_tracked_files": 5954,
+  "original_tracked_changes_except_append_only_worklog": [],
+  "old_raw_manifests": [
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/RAW_MANIFEST.json",
+      "sha256": "bbc7365e2bf6b638c71e6aaa26518143a7bac22849b99cd3bfa86461ed45f723",
+      "members": 99,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/eq1d_qualification_v1/EQ1D-R1/RAW_MANIFEST.json",
+      "sha256": "e28dfc68531b559161bbbc217e541917e696b0960837c3418e71f6115efb4b22",
+      "members": 33,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_pilot_v1/HR3-P01_seed4502/RAW_MANIFEST.json",
+      "sha256": "ae2633a28859b91c6ad0499d0835872a430b8a3a97c946cfca5cff885a3ecfcf",
+      "members": 21,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_pilot_v1/smoke/hr3_smoke_20261018_163202/RAW_MANIFEST.json",
+      "sha256": "0af8707a7d7da22dc3a9415a5db9cfaa3ad3c3b85e6315b1ac4581fc2a061de6",
+      "members": 5,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_pilot_v1/smoke/hr3_smoke_20261018_163246/RAW_MANIFEST.json",
+      "sha256": "4ca83913cc3e2ff26caa012b3fe6b29d5d11cb707a3d11febf29c8b3d8cb0567",
+      "members": 17,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_canary_v1/RAW_MANIFEST.json",
+      "sha256": "13e4f79dde92e08e16d0f91f036988a3810f678a7034a9dc2c76db864983b287",
+      "members": 205,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_canary_v1_rerun1/RAW_MANIFEST.json",
+      "sha256": "cb4053e30a6e537a100aa1959508eca8e75b9d1842c6aad877159bb599b329ed",
+      "members": 205,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_A_v1/RAW_MANIFEST.json",
+      "sha256": "7a8042aa0d1a36a6c7fb34d8bf273ef49606e3ee7bf4bde44755ff1628575726",
+      "members": 393,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_B_v1/RAW_MANIFEST.json",
+      "sha256": "cafbc520588719896dc10b661482017bb5134474503ed31ae523bfb1e72a7358",
+      "members": 409,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/kroc2027_moving_target_packets_v1/RAW_MANIFEST.json",
+      "sha256": "2fed2806fccbc1a77a6879393ee6020301f12f8d2d0ef7f191c2b26e9d5c3cfe",
+      "members": 34,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/KROC27-A-M02/RAW_MANIFEST.json",
+      "sha256": "bc90b5b086cbae9db4daebbfcc81cf448f21348f1f648a1df3e025c9cba4bdd7",
+      "members": 452,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/mt_p1_precision_v1/MT-P2-C01/RAW_MANIFEST.json",
+      "sha256": "9b28af167706e6f39224402056943aa1bc1adbb8fa021efac6ef65cea6ebb4e4",
+      "members": 131,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/RAW_MANIFEST.json",
+      "sha256": "c5cd1dbc160122d444119af255fee450405c7d3373025cad6f866d5c0a0cfc68",
+      "members": 1406,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0/RAW_MANIFEST.json",
+      "sha256": "2e051977a68c34c21e1dd8a674b3673c1016d855295ecc73350d323fb007bc88",
+      "members": 53,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-G0_rerun1/RAW_MANIFEST.json",
+      "sha256": "cc26a68a9822da9e99762cda984ded59ce161292adbd56cdc1c7313f4a14a599",
+      "members": 194,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1/RAW_MANIFEST.json",
+      "sha256": "b0f071e873c26829bc13d12d26daa19e9c6aee5c3ddd38ceaa0498d43c0423c4",
+      "members": 14,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_pilot_v1/OCC-P1_rerun1/RAW_MANIFEST.json",
+      "sha256": "6e12d9ac4350419a2214933a4cf445cff642c4ca85cdcf6da0116bc7eacda120",
+      "members": 704,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1a_v1/SL1A-C01/RAW_MANIFEST.json",
+      "sha256": "cee40f012738de3b3c1df82dcb49888035b0d69542cc18397a21dde5176e42f9",
+      "members": 138,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1b_v1/SL1B-C01/RAW_MANIFEST.json",
+      "sha256": "11aab182827ec04a22a12036bd77ace60e080a91c6232c4ba8d4e6499bd15169",
+      "members": 138,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1c_v1/SL1C-C01/RAW_MANIFEST.json",
+      "sha256": "29448df8e9abd5167db624d117030dbbc90fd56475b509ea1f71f2a53fdf60dc",
+      "members": 176,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1c_v2/SL1CV2-C01/RAW_MANIFEST.json",
+      "sha256": "fce6b844146a6e2869f6e619bb7c57aef8d049c662855d9a05c3034c0cb7443b",
+      "members": 284,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1c_v2_cpu/SL1CV2-CPU01/RAW_MANIFEST.json",
+      "sha256": "14d55c094b804e9c6de3c7edd16455c1e2b6a1d8b2977df89afa314154ac3f95",
+      "members": 2,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1c_v2_review/SL1CV2-R01/RAW_MANIFEST.json",
+      "sha256": "c43477a27416410ac436100e273c9b1c62ce4914efab8955567465215e8b2e8d",
+      "members": 6,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C01/RAW_MANIFEST.json",
+      "sha256": "2b5fd37ead4e9671288c8bb37790f7dc1f08ffce94f6daa5d2b5df7c3aa4c598",
+      "members": 131,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/s_l1d_v1/SL1D-C02/RAW_MANIFEST.json",
+      "sha256": "b131bc252313d0d2e3cddd6ac191487ce7cef9d90b448c00b8d2a7f48d09f81c",
+      "members": 23,
+      "mismatches": []
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/target_motion_replication_7seed/RAW_MANIFEST.json",
+      "sha256": "a46510cf75573e9a770ee4b01bcefd33cd268f3315587d53066fde3a43d13eb9",
+      "members": 562,
+      "mismatches": []
+    }
+  ],
+  "old_raw_members_verified": 5835,
+  "new_raw": [
+    {
+      "run_id": "HR3-P02-SMOKE01",
+      "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02-SMOKE01",
+      "manifest_sha256": "bed0c69a87e4854960ae101fffd1f0491051b73fbf62aeade37ec627ec2a1b9d",
+      "members": 9,
+      "mismatches": []
+    },
+    {
+      "run_id": "HR3-P02-SMOKE02",
+      "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02-SMOKE02",
+      "manifest_sha256": "ea46d3728b4f47754c83c86be4b84d0cc41f92eb556aa820b05a18a09f04abdc",
+      "members": 33,
+      "mismatches": []
+    },
+    {
+      "run_id": "HR3-P02",
+      "raw_path": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/h_r3_p02_v1/HR3-P02",
+      "manifest_sha256": "2855cb636bc6b44c541e097b9e9ba3a4f2fbd4662b07dc45483da2a6220f01c6",
+      "members": 61,
+      "mismatches": []
+    }
+  ],
+  "main_head": "cb644bbe46456b1900020177617a13040a3f1552",
+  "main_wip_sha256": {
+    ".gitignore": "0fc139965f0e1e218883e22cb1c2e2cc6c8cf86487b1dd7d402a28a369fb5296",
+    "WORKLOG.md": "a63118ee730803b6c7e0afcceeec0d0595fdbf347ed56fb3474364b79bf6454c",
+    "presentations/README.md": "be8c4b2350a49580c5ea70a45f34c307c34a46f2509ce2eeab8f0f9fdfb69731"
+  },
+  "stash_sha256": "702e0212e8f8b08fe1ebe610bc8fc2d4d45c9f6320ee4d72bd87424cddba25ec",
+  "stash_unchanged": true,
+  "policy_f_sha256": {
+    "research": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+    "main": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+  },
+  "external_backup": "NOT_ESTABLISHED; originals retained on same disk",
+  "raw_git_policy": "Payload remains outside Git; compact reports/manifests only. Symlinks do not track payload."
+}

@@ -1,0 +1,516 @@
+{
+ "schema": "motar.e-l0-run-report.v1",
+ "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1",
+ "smoke": false,
+ "plan_sha256": "1f1b085485408d98fb81dca7494b792ab69adfdf188a39580dfa57ab11af0d35",
+ "preflight": {
+  "head": "79d65b6fa51b4de1d09ece7cf60b6c1941f02005",
+  "tracked_tree_clean": true,
+  "plan_committed_unchanged": true,
+  "policy_f_sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40",
+  "rms_digest": "642fc9f7f86b068e816e156fea7a34782bbc525966650f73cd85aae8cc18387f",
+  "import_origins": {
+   "aerial_gym@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+   "motar_eval@MOTAR-mt-p1": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py",
+   "aerial_gym@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+   "motar_eval@rl_games": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+  },
+  "run_dir": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1",
+  "free_disk_gb": 19.234451456,
+  "gpu": {
+   "name": "NVIDIA GeForce RTX 3070",
+   "total_mib": 8192,
+   "used_mib": 669,
+   "free_mib": 7175,
+   "compute_apps": [
+    {
+     "pid": 1696785,
+     "name": "/usr/share/rustdesk/rustdesk",
+     "used_mib": 190
+    }
+   ]
+  },
+  "receipt_sha256": "85c13b08ba75f58dfe005d8747ef7922d31675ccc7347412cace5feeaabc963c",
+  "e_l0_plan_committed_unchanged": true,
+  "receipt_static_sha256": "85c13b08ba75f58dfe005d8747ef7922d31675ccc7347412cace5feeaabc963c",
+  "receipt_moving_sha256": "b29a14f717a46879f841d9ecfe2e0e61267f13a8f1a6b193196b08214a809a09"
+ },
+ "gpu_memory_cap_mib": 7011,
+ "processes": [
+  {
+   "id": "v3_static_p0",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.234443264,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_static_p0",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_static_p0"
+   ],
+   "wall_s": 41.55199456214905,
+   "returncode": 0,
+   "peak_gpu_mib": 4660,
+   "log": "v3_static_p0.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 122905,
+      "file": "v3_trajectory.npz",
+      "sha256": "50b1048880f14923b764680a4e5ea5acb4a18b54f1570f245720cdff29d55cff"
+     },
+     {
+      "bytes": 1090,
+      "file": "v3_meta.json",
+      "sha256": "f07823845fa4ecad84f8cfb2a3bddfdf9157056db42713fd3c42baa6f204eb7e"
+     }
+    ],
+    "max_memory_allocated_bytes": 24422912,
+    "nan_fields": [],
+    "process": "v3_static_p0",
+    "wall_s": 38.90445399284363
+   },
+   "output_bytes": 748068
+  },
+  {
+   "id": "v3_static_p1",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.23362816,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_static_p1",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_static_p1"
+   ],
+   "wall_s": 46.83125877380371,
+   "returncode": 0,
+   "peak_gpu_mib": 4660,
+   "log": "v3_static_p1.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 122905,
+      "file": "v3_trajectory.npz",
+      "sha256": "50b1048880f14923b764680a4e5ea5acb4a18b54f1570f245720cdff29d55cff"
+     },
+     {
+      "bytes": 1241,
+      "file": "v3_meta.json",
+      "sha256": "432f441f0eeca04d5c044be81d4f63dd8d2f3b6bf420c1eebf5609c3dced88f0"
+     }
+    ],
+    "max_memory_allocated_bytes": 24450048,
+    "nan_fields": [],
+    "process": "v3_static_p1",
+    "wall_s": 40.63172006607056
+   },
+   "output_bytes": 1692906
+  },
+  {
+   "id": "v3_static_p2",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.231875072,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_static_p2",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_static_p2"
+   ],
+   "wall_s": 46.67570972442627,
+   "returncode": 0,
+   "peak_gpu_mib": 4660,
+   "log": "v3_static_p2.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 122905,
+      "file": "v3_trajectory.npz",
+      "sha256": "50b1048880f14923b764680a4e5ea5acb4a18b54f1570f245720cdff29d55cff"
+     },
+     {
+      "bytes": 1270,
+      "file": "v3_meta.json",
+      "sha256": "38e978633983e0bdbc020af4f1582b9658f4b956b2e4cfafce6ac8eef40e97f2"
+     }
+    ],
+    "max_memory_allocated_bytes": 24931328,
+    "nan_fields": [],
+    "process": "v3_static_p2",
+    "wall_s": 43.4225652217865
+   },
+   "output_bytes": 2217735
+  },
+  {
+   "id": "v3_moving_p0",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.2293888,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_moving_p0",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_moving_p0"
+   ],
+   "wall_s": 46.61002802848816,
+   "returncode": 0,
+   "peak_gpu_mib": 4660,
+   "log": "v3_moving_p0.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 159516,
+      "file": "v3_trajectory.npz",
+      "sha256": "a654997a7bac8941a97748af02787f8e420214e08910d3f763e1653fa42f3df5"
+     },
+     {
+      "bytes": 1099,
+      "file": "v3_meta.json",
+      "sha256": "5b49da05e9032c6e36ae094d8d3148a868594e1c4d8a636551416e33d7bb9282"
+     }
+    ],
+    "max_memory_allocated_bytes": 24422912,
+    "nan_fields": [],
+    "process": "v3_moving_p0",
+    "wall_s": 40.37858057022095
+   },
+   "output_bytes": 784622
+  },
+  {
+   "id": "v3_moving_p1",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.228565504,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_moving_p1",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_moving_p1"
+   ],
+   "wall_s": 46.84944677352905,
+   "returncode": 0,
+   "peak_gpu_mib": 4660,
+   "log": "v3_moving_p1.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 159516,
+      "file": "v3_trajectory.npz",
+      "sha256": "a654997a7bac8941a97748af02787f8e420214e08910d3f763e1653fa42f3df5"
+     },
+     {
+      "bytes": 1250,
+      "file": "v3_meta.json",
+      "sha256": "105b287e6e6d463b4a719b8e572ea3cdf5c9301fedd7ea771a604cec0a7b1bca"
+     }
+    ],
+    "max_memory_allocated_bytes": 24450048,
+    "nan_fields": [],
+    "process": "v3_moving_p1",
+    "wall_s": 42.4513578414917
+   },
+   "output_bytes": 1649546
+  },
+  {
+   "id": "v3_moving_p2",
+   "cap_s": 1800,
+   "free_disk_gb_before": 19.226861568,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_moving_p2",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_moving_p2"
+   ],
+   "wall_s": 46.67861223220825,
+   "returncode": 0,
+   "peak_gpu_mib": 4660,
+   "log": "v3_moving_p2.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 159516,
+      "file": "v3_trajectory.npz",
+      "sha256": "a654997a7bac8941a97748af02787f8e420214e08910d3f763e1653fa42f3df5"
+     },
+     {
+      "bytes": 1278,
+      "file": "v3_meta.json",
+      "sha256": "1e8fd1859a6cca6a6b1029664d26580458afe129544f706f1c55cea3576e2ced"
+     }
+    ],
+    "max_memory_allocated_bytes": 24931328,
+    "nan_fields": [],
+    "process": "v3_moving_p2",
+    "wall_s": 45.066657304763794
+   },
+   "output_bytes": 2162850
+  },
+  {
+   "id": "v3_batch_p0",
+   "cap_s": 2400,
+   "free_disk_gb_before": 19.224621056,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_batch_p0",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_batch_p0"
+   ],
+   "wall_s": 67.56208920478821,
+   "returncode": 0,
+   "peak_gpu_mib": 5394,
+   "log": "v3_batch_p0.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 1029406,
+      "file": "v3_trajectory.npz",
+      "sha256": "f463597bbea7242148d6c24b2093f600ffc40431ea55a69a8a97eb0ec5feface"
+     },
+     {
+      "bytes": 1091,
+      "file": "v3_meta.json",
+      "sha256": "a5a70d09e7badc7f091dc6da445befe1e085d613563ea4b6a5e25b288444262d"
+     }
+    ],
+    "max_memory_allocated_bytes": 439946240,
+    "nan_fields": [],
+    "process": "v3_batch_p0",
+    "wall_s": 62.83871150016785
+   },
+   "output_bytes": 1391825
+  },
+  {
+   "id": "v3_batch_p1",
+   "cap_s": 2400,
+   "free_disk_gb_before": 19.223166976,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_batch_p1",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_batch_p1"
+   ],
+   "wall_s": 67.46479558944702,
+   "returncode": 0,
+   "peak_gpu_mib": 5396,
+   "log": "v3_batch_p1.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 1029406,
+      "file": "v3_trajectory.npz",
+      "sha256": "f463597bbea7242148d6c24b2093f600ffc40431ea55a69a8a97eb0ec5feface"
+     },
+     {
+      "bytes": 1240,
+      "file": "v3_meta.json",
+      "sha256": "9585a53b5032bf5cddb26520924a41ee9b11fda1e0a500ef3b1bc7dd81035a1c"
+     }
+    ],
+    "max_memory_allocated_bytes": 439994368,
+    "nan_fields": [],
+    "process": "v3_batch_p1",
+    "wall_s": 63.035255670547485
+   },
+   "output_bytes": 9582390
+  },
+  {
+   "id": "v3_batch_p2",
+   "cap_s": 2400,
+   "free_disk_gb_before": 19.213389824,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v3",
+    "--process",
+    "v3_batch_p2",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v3_batch_p2"
+   ],
+   "wall_s": 67.40631079673767,
+   "returncode": 0,
+   "peak_gpu_mib": 5440,
+   "log": "v3_batch_p2.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 1029406,
+      "file": "v3_trajectory.npz",
+      "sha256": "f463597bbea7242148d6c24b2093f600ffc40431ea55a69a8a97eb0ec5feface"
+     },
+     {
+      "bytes": 1270,
+      "file": "v3_meta.json",
+      "sha256": "9f33250d02600d80d68bce4a887e1f1df601bf040316ae609291bdfce8465272"
+     }
+    ],
+    "max_memory_allocated_bytes": 440020480,
+    "nan_fields": [],
+    "process": "v3_batch_p2",
+    "wall_s": 65.70309805870056
+   },
+   "output_bytes": 13596603
+  },
+  {
+   "id": "v1_scenes",
+   "cap_s": 1200,
+   "free_disk_gb_before": 19.199700992,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v1",
+    "--process",
+    "v1_scenes",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v1_scenes"
+   ],
+   "wall_s": 10.167559623718262,
+   "returncode": 0,
+   "peak_gpu_mib": 4164,
+   "log": "v1_scenes.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 7999,
+      "file": "v1_labels.npz",
+      "sha256": "f54998471166406e93f5d9443b6a5156c722395141dcdcc68fde8ee0dfa754df"
+     },
+     {
+      "bytes": 5427,
+      "file": "v1_meta.json",
+      "sha256": "1f1a5493362a3a7cc67f26f35c36609967f63618a6786860adcb625c38727999"
+     }
+    ],
+    "max_memory_allocated_bytes": 64753152,
+    "nan_fields": [],
+    "process": "v1_scenes",
+    "wall_s": 5.213606119155884
+   },
+   "output_bytes": 13828
+  },
+  {
+   "id": "v2_contact",
+   "cap_s": 1200,
+   "free_disk_gb_before": 19.199660032,
+   "command": [
+    "/home/fair/miniconda3/envs/aerialgym/bin/python",
+    "-B",
+    "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tools/e_l0_launcher.py",
+    "v2",
+    "--process",
+    "v2_contact",
+    "--out",
+    "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/e_l0_evaluation_v1/EL0-R1/v2_contact"
+   ],
+   "wall_s": 10.150615930557251,
+   "returncode": 0,
+   "peak_gpu_mib": 4076,
+   "log": "v2_contact.log",
+   "process_done": {
+    "files": [
+     {
+      "bytes": 949931,
+      "file": "v2_contact.npz",
+      "sha256": "20e31ebaf0b3d6edf837b99855ef4231a56741a923a6f088d2412c833b792759"
+     },
+     {
+      "bytes": 1645,
+      "file": "v2_meta.json",
+      "sha256": "6036efcb8845abf89a38f89c738f3370ce11f9334f6cfda65b740bbc7006baac"
+     }
+    ],
+    "max_memory_allocated_bytes": 25815552,
+    "nan_fields": [],
+    "process": "v2_contact",
+    "wall_s": 6.890362501144409
+   },
+   "output_bytes": 951982
+  }
+ ],
+ "noninterference": {
+  "static_n8": {
+   "reference": "v3_static_p0",
+   "pairs": {
+    "v3_static_p1_vs_v3_static_p0": {
+     "steps": 600,
+     "differences": [],
+     "n_differences": 0
+    },
+    "v3_static_p2_vs_v3_static_p0": {
+     "steps": 600,
+     "differences": [],
+     "n_differences": 0
+    }
+   },
+   "identical": true
+  },
+  "moving_n8": {
+   "reference": "v3_moving_p0",
+   "pairs": {
+    "v3_moving_p1_vs_v3_moving_p0": {
+     "steps": 600,
+     "differences": [],
+     "n_differences": 0
+    },
+    "v3_moving_p2_vs_v3_moving_p0": {
+     "steps": 600,
+     "differences": [],
+     "n_differences": 0
+    }
+   },
+   "identical": true
+  },
+  "static_n128": {
+   "reference": "v3_batch_p0",
+   "pairs": {
+    "v3_batch_p1_vs_v3_batch_p0": {
+     "steps": 320,
+     "differences": [],
+     "n_differences": 0
+    },
+    "v3_batch_p2_vs_v3_batch_p0": {
+     "steps": 320,
+     "differences": [],
+     "n_differences": 0
+    }
+   },
+   "identical": true
+  }
+ },
+ "status": "COMPLETED",
+ "started_at": "2026-10-18T02:24:03+0900",
+ "stop_reason": null,
+ "gpu_seconds_total": 497.9484212398529,
+ "output_bytes_total": 35054929,
+ "free_disk_gb_after": 19.198681088,
+ "finished_at": "2026-10-18T02:32:21+0900"
+}

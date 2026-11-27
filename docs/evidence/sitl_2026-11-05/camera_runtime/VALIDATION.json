@@ -1,0 +1,90 @@
+{
+  "status": "CPU_SOURCE_PREPARATION_PASS_WITH_LIMITS",
+  "profile": {
+    "profile": "PUBLIC_CPU",
+    "status": "PASS",
+    "ran": 4012,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "source_unchanged": true,
+  "source_matches_independent_v2": true,
+  "host_regex_faults_before": 0,
+  "host_regex_faults_after": 0,
+  "test_result_path": "/home/fair/motar_tmp/camera_runtime_20261111/PUBLIC_CPU_RESULT_v2.json",
+  "test_result_sha256": "469bda8f092ab520a14eea477c0d01c141be31348d71c4844b577832b01d9185",
+  "test_base_path": "/home/fair/motar_tmp/camera_runtime_20261111/PUBLIC_CPU_BASE_v2.json",
+  "test_base_sha256": "e7e6823f8e4ee0695ec6c9fe27402966e62928f4f623b3ef6da9be7fe6a85375",
+  "log_path": "/home/fair/motar_tmp/camera_runtime_20261111/public_cpu_v2.log",
+  "log_sha256": "acaa51dce494b0146bc8af11f6142389ef3c4931d3caf4408d34ec0ec309df02",
+  "review": {
+    "verdict": "PASS_WITH_LIMITS_CPU_SOURCE_ONLY",
+    "required_repairs": 0,
+    "path": "/home/fair/motar_tmp/camera_runtime_20261111/review_r1/ADDENDUM_v2.md",
+    "sha256": "44584d1c29f2f8636df17a91dc4ddcd6e9cdfb39c2c5348f541017e733e1b23c",
+    "source_snapshot_sha256": "e6cf3d1a5205fc6b7f761ebd52b823d45dc4abc32f34c00603b24d43ea1fc507"
+  },
+  "replays": [
+    {
+      "seed": 1,
+      "frames": 7,
+      "commands_sent": 0,
+      "exit_code": 0
+    },
+    {
+      "seed": 2,
+      "frames": 7,
+      "commands_sent": 0,
+      "exit_code": 0
+    }
+  ],
+  "artifacts_path": "/home/fair/motar_tmp/camera_runtime_20261111/artifacts_v2",
+  "artifacts_validation_sha256": "20f32109c47c2c93729f11a7300e2275f787db118a4aae2ee454a979031c74c6",
+  "plugin": {
+    "path": "/home/fair/motar_tmp/camera_runtime_20261111/plugin_build_v2/libmotar_rgbd_bridge.so",
+    "sha256": "6a239dd556c7c09c57e968e505a9e12986fc01a98229528979919446ece567f5",
+    "source_sha256": "d330798c10efb41b123a9207f0643c5aa18d532cbb138c1ffe330af9ac6a7195",
+    "cmake_sha256": "95dac6814dab6d1425995106ab84d04f3a4b0ddcc1669809016625c882be2efd",
+    "status": "COMPILED_NOT_LOADED"
+  },
+  "historical_bridge_source_sha256": "661a4d71623aba293cb21feee569837bd5866c7f2357125f432b759196f8e5fa",
+  "prior_failure": {
+    "profile": "PUBLIC_CPU",
+    "ran": 4010,
+    "failures": 2,
+    "errors": 0,
+    "path": "/home/fair/motar_tmp/camera_runtime_20261111/PUBLIC_CPU_RESULT_v1.json",
+    "sha256": "cef8879095e7f071196acb29eaba036d24fc43eda71bcd83d0d5d920d4ab44bc",
+    "preserved": true
+  },
+  "sdk": {
+    "status": "INSTALL_NOT_COMPLETED",
+    "attempts_path": "/home/fair/motar_tmp/camera_runtime_20261111/SDK_INSTALL_ATTEMPTS.json",
+    "attempts_sha256": "24140145fafcec4aa6b10939cabccaf936f8b61b0346114f1ecd5149dde509a6",
+    "actual_api_test": "NOT_TESTED"
+  },
+  "usage": {
+    "policy": "observed_usage_v1",
+    "remaining_percent": null,
+    "source": null,
+    "status": "USAGE_UNKNOWN"
+  },
+  "live": "NOT_TESTED",
+  "hardware": "NOT_TESTED",
+  "flight": "NOT_TESTED",
+  "s3ar": "HOLD",
+  "git": {
+    "branch": "camonly/dev",
+    "base": "eefb832e1c4fc6de8e597e990aa9cd58f2228079",
+    "head": "eefb832e1c4fc6de8e597e990aa9cd58f2228079",
+    "new_commit": null,
+    "push": false,
+    "merge": false
+  }
+}

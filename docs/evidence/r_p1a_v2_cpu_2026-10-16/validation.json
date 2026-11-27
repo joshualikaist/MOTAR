@@ -1,0 +1,116 @@
+{
+ "authorization": "user approved R-P1a-v2 code and CPU verification only; no GPU, PPO, R-P1b, R-P1c, planner, commit, merge, push or deletion",
+ "branch": "codex/mt-p1",
+ "commands": {
+  "kroc": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -t tests -p 'test_kroc2027_*.py'",
+  "occlusion": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -W error::FutureWarning -B -m unittest discover -s tests -p 'test_occlusion_*.py' -v",
+  "public": "MPLCONFIGDIR=/tmp/mt_p1_mpl_cache PYTHONHASHSEED=0 SOURCE_DATE_EPOCH=0 PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B tools/run_tests.py",
+  "recovery": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' /home/fair/miniconda3/envs/aerialgym/bin/python -B -m unittest discover -s tests -p 'test_recovery_*.py' -v"
+ },
+ "date": "2026-10-16",
+ "geometric_finding": "straight pursuit of a static target cannot re-occlude after a clear sight line (CPU property, test_static_pursuit_never_reoccludes_but_lateral_motion_can)",
+ "geometry_cross_check": "numpy offline line of sight equals motar_eval.geometry (torch) on 400 random frames x 60 boxes; rotated boxes equal the box-frame test",
+ "logs_note": "*.log is git-ignored; a commit must add these two explicitly",
+ "logs_sha256": {
+  "occlusion_cpu.log": "c8bd59434b2afa2fc77037918c6f874572b56e107494be35e3546b0abadb322e",
+  "public_cpu.log": "ac6dff317ab5dd22c1ea4916cfc755da143f367acd4f992159bd78d0ba9f33c4"
+ },
+ "noninterference_cpu": "existing KROC episode and summary bytes identical with the trace off and on; task tensors and Python/NumPy/torch RNG unchanged (stand-ins); the trace class assigns no task state (AST)",
+ "not_tested": [
+  "GPU trajectory non-interference",
+  "renderer parity",
+  "natural occlusion rates on real scenes"
+ ],
+ "preservation": {
+  "disk_free": "3.3 GB (98 % used)",
+  "external_backup": "NOT_COMPLETED",
+  "frozen_sources_unchanged_vs_HEAD": [
+   "aerial_gym/task/navrl_task/navrl_task.py",
+   "aerial_gym/task/navrl_task/navrl_perception.py",
+   "aerial_gym/task/navrl_task/navrl_detector.py",
+   "aerial_gym/task/navrl_task/target_motion.py",
+   "motar_eval/events.py",
+   "aerial_gym/config/task_config/navrl_task_config.py",
+   "aerial_gym/env_manager/warp_env_manager.py",
+   "aerial_gym/rl_training/rl_games/eval_navrl_target_behavior_arms.sh"
+  ],
+  "main_head": "cb644bb",
+  "policy_f_sha256_prefix": "f7022139",
+  "raw_manifest_members_verified": 583,
+  "raw_mismatches": 0,
+  "stash": "23ddb33"
+ },
+ "results": {
+  "kroc": {
+   "errors": 0,
+   "failures": 0,
+   "ran": 162,
+   "skipped": 2
+  },
+  "occlusion": {
+   "errors": 0,
+   "failures": 0,
+   "ran": 27,
+   "skipped": 0
+  },
+  "public_cpu": {
+   "errors": 0,
+   "excluded": 5,
+   "failures": 0,
+   "ran": 2346,
+   "skipped": 10
+  },
+  "public_docs_errors": 0,
+  "recovery": {
+   "errors": 0,
+   "failures": 0,
+   "ran": 38,
+   "skipped": 0
+  }
+ },
+ "schema": "motar.r-p1a-v2-cpu-implementation.v1",
+ "source_base_commit": "3fcc64f068ed0d96770a89e52479d2e846c474c7",
+ "source_files_sha256": {
+  "aerial_gym/task/navrl_task/kroc_eval_adapter.py": "1712a7ef38e1dfc3542888eae4c556138695e96d38ee158811955a81c13819af",
+  "docs/plans/occlusion_pilot_v1.json": "bc6278ad76318ffc0a9ae8ff07fa25a121839688c2c969f919156d76d79de534",
+  "docs/plans/occlusion_pilot_v1.md": "a7e4301cc90d3a22f68e5251639e78367e7e2cb338d5cc49a735cb64dbe6d768",
+  "motar_eval/occlusion_events.py": "35c05146055c6dd62eb0695021e88f209257914d7e752f8863cbc1113804e77a",
+  "motar_eval/occlusion_geometry.py": "1d3854a725858a65ffa881422d60b0d2332f89e88073e34987e035455e591e1c",
+  "motar_eval/occlusion_sweep.py": "9a65b5fd0421b4f69d1f5f6170b63fe4ddd2d33ba290b0c5a612346c13e44a0b",
+  "motar_eval/occlusion_trace.py": "ec4aa27c994afb233aedcc48901db29d5c40e9ef33373580f99c03cb68a750e1",
+  "tests/test_occlusion_analysis.py": "5c5e8a255685c8d022ec04926a7bce4e617a793cedd1ad6c290cbdd8824a0860",
+  "tests/test_occlusion_events.py": "6b5c377d4863c8a4f5076807239570e09c90b1cef68291364cbc50a0f950caa4",
+  "tests/test_occlusion_geometry.py": "76d8e5ff4a9ab58c3f807bfe064722b42761b136c166b0d3fa7b24e8329ba52f",
+  "tests/test_occlusion_pilot_stage.py": "a34ae0e571f897f02fd5d2cda84756d1c57778891f58f148d0150c4b3fcb8fce",
+  "tests/test_occlusion_trace.py": "a0e1513ad274a47c761b1bcbcd16365931dd5de7e1afd7a699abacf9088c023e",
+  "tools/kroc2027_eval.py": "bb0ca3f95a46ff3c6792601cefff6d375702c6f4c1b540797cbdc4a06037eaba",
+  "tools/occlusion_analysis.py": "f8a56d867c25e94ae2477e619c0ded4a10a8d231300b9887fda771bf1a390e7a"
+ },
+ "status": "IMPLEMENTED_CPU_VERIFIED_GPU_NOT_TESTED",
+ "storage_estimate_per_quota4_cell": {
+  "existing_kroc_files_mb": [
+   2.0,
+   3.0
+  ],
+  "for_comparison_recovery_full_json_mb_per_cell": 110,
+  "frame_record_bytes": 94,
+  "frames_mb_max": 4.7,
+  "frames_measured_from_MT_P2_C01_E2_A3_cells": [
+   29280,
+   41598
+  ],
+  "layouts_mb_per_1000_resets": 2.2,
+  "pilot_16_cells_gb": [
+   0.18,
+   0.24
+  ],
+  "recovery_compact_mb": [
+   2.6,
+   5.0
+  ],
+  "total_mb": [
+   11,
+   15
+  ]
+ }
+}

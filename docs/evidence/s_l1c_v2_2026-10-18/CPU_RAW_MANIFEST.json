@@ -1,0 +1,14 @@
+{
+  "members": [
+    {
+      "path": "matched.csv.gz",
+      "bytes": 1365825,
+      "sha256": "aa3ea88fabf8326368e8a6b0e6c140cb5000d0c4cc113e89e1cbf905acc57347"
+    },
+    {
+      "path": "selection.json",
+      "bytes": 104811006,
+      "sha256": "6c8234de39671091fbe18afd288b668754aa55bd771cababc61a438730c00032"
+    }
+  ]
+}

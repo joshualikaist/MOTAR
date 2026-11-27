@@ -1,0 +1,127 @@
+{
+ "s3w": [
+  {
+   "epochs": "15001-15500",
+   "episodes": 8860,
+   "capture": 0.6121,
+   "crash": 0.2827,
+   "timeout": 0.1052,
+   "bars": [
+    205
+   ]
+  },
+  {
+   "epochs": "15501-16000",
+   "episodes": 9081,
+   "capture": 0.6093,
+   "crash": 0.2988,
+   "timeout": 0.092,
+   "bars": [
+    205
+   ]
+  },
+  {
+   "epochs": "16001-16500",
+   "episodes": 9408,
+   "capture": 0.6095,
+   "crash": 0.3011,
+   "timeout": 0.0894,
+   "bars": [
+    205
+   ]
+  },
+  {
+   "epochs": "16501-17000",
+   "episodes": 9313,
+   "capture": 0.6098,
+   "crash": 0.2943,
+   "timeout": 0.0959,
+   "bars": [
+    205
+   ]
+  },
+  {
+   "epochs": "17001-17500",
+   "episodes": 9480,
+   "capture": 0.6073,
+   "crash": 0.2995,
+   "timeout": 0.0932,
+   "bars": [
+    205
+   ]
+  },
+  {
+   "epochs": "17501-18000",
+   "episodes": 9358,
+   "capture": 0.6143,
+   "crash": 0.292,
+   "timeout": 0.0936,
+   "bars": [
+    205
+   ]
+  }
+ ],
+ "s2bft": [
+  {
+   "epochs": "12001-12500",
+   "episodes": 9851,
+   "capture": 0.3944,
+   "crash": 0.5461,
+   "timeout": 0.0595,
+   "bars": [
+    175
+   ]
+  },
+  {
+   "epochs": "12501-13000",
+   "episodes": 9286,
+   "capture": 0.4648,
+   "crash": 0.4499,
+   "timeout": 0.0853,
+   "bars": [
+    175
+   ]
+  },
+  {
+   "epochs": "13001-13500",
+   "episodes": 9290,
+   "capture": 0.446,
+   "crash": 0.4695,
+   "timeout": 0.0845,
+   "bars": [
+    190
+   ]
+  },
+  {
+   "epochs": "13501-14000",
+   "episodes": 9403,
+   "capture": 0.4985,
+   "crash": 0.4208,
+   "timeout": 0.0807,
+   "bars": [
+    190
+   ]
+  },
+  {
+   "epochs": "14001-14500",
+   "episodes": 9051,
+   "capture": 0.496,
+   "crash": 0.4147,
+   "timeout": 0.0894,
+   "bars": [
+    190,
+    205
+   ]
+  },
+  {
+   "epochs": "14501-15000",
+   "episodes": 8960,
+   "capture": 0.5097,
+   "crash": 0.3985,
+   "timeout": 0.0917,
+   "bars": [
+    205
+   ]
+  }
+ ]
+}

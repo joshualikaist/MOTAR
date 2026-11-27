@@ -1,0 +1,52 @@
+{
+ "checkpoint": "last_gen_ppo_ep_29000_rew_-4.657931.pth",
+ "checkpoint_sha256": "203deea459ef1d937239281c46f07d96e797839708337666de1ecdf9492e4ea2",
+ "commit": "d85589d8c31200e4bd9506759a56ccf8ef40240d",
+ "note": "env_state records robot navrl_quad like CAM-K1; bind this manifest in CAM-K2-E",
+ "prereg": "docs/plans/prereg_camonly_k2_train_v3_2026-11-08.md",
+ "realveh_receipt_sha256": "dcff167eba4aa042937b56040d16e50eebb9241fbcd76e6131e49c567c123168",
+ "robot": "navrl_quad",
+ "scope": "CAM-K2 v3: camera-only (no_lidar) continuation of CAM-K1 v1 seed s ep28000 for 1,000 epochs (28001..29000) on navrl_quad (robot identity and lineage unchanged) with the real 1.1 kg vehicle's thrust-to-weight modelled as a raised per-motor thrust limit at T/W 4.0 (the thrust-to-weight of a 1.1 kg vehicle at T/W 4.0: maximum thrust acceleration and hover fraction; rotational dynamics and drag navrl_quad's), vehicle randomization (TW_SCALE 0.15, MOTOR_IMBAL 0.05, tau 0.02-0.04 s) and the OAK-D Pro depth model (800P extended disparity + subpixel: MinZ 0.4 m, sigma_d 0.15 px, f*B 66.1875 px m, MaxZ 20 m, hole probability 0.02) with the invalid-depth validity rule blob_near (window 5 px, density 0.5: a dense invalid blob becomes a surface at MinZ, isolated invalid pixels stay no return), fixed 205 bars, LR 5e-6, camera FOV 66x54 deg, yaw_align_weight 0.6, visibility_bonus 0.03; a 2-epoch development smoke (seed 1, not a result) first, then seed 1 then seed 2, each once",
+ "seed": 2,
+ "source": {
+  "path": "/home/fair/motar_tmp/camk1_20261106/train_s2/checkpoint/last_gen_ppo_ep_28000_rew_-10.653644.pth",
+  "sha256": "5128bf2e0461fb45c6b8c4463d4d0a950bb88c0d28923c41d02d99da1102a4b7"
+ },
+ "treatments": {
+  "camtrain": {
+   "NAVRL_CAMTRAIN_HFOV_DEG": 66.0,
+   "NAVRL_CAMTRAIN_VFOV_DEG": 54.0,
+   "NAVRL_CAMTRAIN_VISIBILITY_BONUS": 0.03,
+   "NAVRL_CAMTRAIN_YAW_ALIGN_WEIGHT": 0.6
+  },
+  "depth_model": {
+   "NAVRL_DEPTH_FB_PXM": 66.1875,
+   "NAVRL_DEPTH_HOLE_P": 0.02,
+   "NAVRL_DEPTH_MAXZ_M": 20.0,
+   "NAVRL_DEPTH_MINZ_M": 0.4,
+   "NAVRL_DEPTH_SEED": 4922,
+   "NAVRL_DEPTH_SIGMA_D_PX": 0.15
+  },
+  "depth_validity": {
+   "NAVRL_DEPTH_VALIDITY": "blob_near",
+   "NAVRL_DEPTH_VALIDITY_DENSITY": 0.5,
+   "NAVRL_DEPTH_VALIDITY_WINDOW": 5
+  },
+  "vehicle_rand": {
+   "NAVRL_VEH_RAND_LIMIT_MODE": "raise",
+   "NAVRL_VEH_RAND_MOTOR_IMBAL": 0.05,
+   "NAVRL_VEH_RAND_SEED": 4912,
+   "NAVRL_VEH_RAND_TAU_MAX": 0.04,
+   "NAVRL_VEH_RAND_TAU_MIN": 0.02,
+   "NAVRL_VEH_RAND_TW_NOMINAL": 4.0,
+   "NAVRL_VEH_RAND_TW_SCALE": 0.15
+  }
+ },
+ "unit": "CAM-K2 v3",
+ "veh_rand_cap_per_motor_n": [
+  2.4525039055945115,
+  2.4525039055945115
+ ],
+ "veh_rand_record_sha256": "fade712ce1878aad2774225941acf3a4fb48d327d997dacffaa0e8d02b6b3a76",
+ "verdict": "TRAINED"
+}

@@ -1,0 +1,46 @@
+{
+  "schema": "motar.hr3p02-fable-review-manifest.v1",
+  "reviewed_result_commit": "b98b400",
+  "members": [
+    {
+      "path": "fable_prompt.txt",
+      "bytes": 4677,
+      "sha256": "1fa6e02432585d7a7ed8f3be5604f50a6d319dd8156ea4fd85a447558a9b8119"
+    },
+    {
+      "path": "fable_stream.jsonl",
+      "bytes": 1600615,
+      "sha256": "2b05900c77f68c6c53fc17060100fd45ea2a51d18660ea8c56f900c4507d1940"
+    },
+    {
+      "path": "fable_stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fable_process.json",
+      "bytes": 1113,
+      "sha256": "d4dc7518020419d0338f4c37f84d3f095e574fe9279f5989a497460c77876324"
+    },
+    {
+      "path": "fable_followup_prompt.txt",
+      "bytes": 100637,
+      "sha256": "03620bc410d600f5ef840033c048c0ad4a82adecfa16f76079be4f20e5371f6b"
+    },
+    {
+      "path": "fable_followup.json",
+      "bytes": 9433,
+      "sha256": "b579403d837f033db0a6deed4a9fdba09e714d9188704d3f0d1dabba17dada06"
+    },
+    {
+      "path": "fable_followup_stderr.txt",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "fable_followup_process.json",
+      "bytes": 578,
+      "sha256": "d318aab52f2100d6006bc076ba47e3b2be0ab857f79d9cee20feedd7152cd48c"
+    }
+  ]
+}

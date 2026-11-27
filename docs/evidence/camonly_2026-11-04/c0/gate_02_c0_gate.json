@@ -1,0 +1,64 @@
+{
+ "gate": "camonly C0",
+ "commit": "842fcf5aca2047a31b357099475253b3c82c2829",
+ "base": "ab6531b",
+ "faults_start": 0,
+ "preflight_problems": [],
+ "started": "2026-11-04T18:11:49+0900",
+ "items": {
+  "1_c0_tests": true,
+  "2_mutants": true,
+  "3_suite_no_new_failures": true,
+  "3_new_tests_ran_in_suite": true,
+  "3_new_tests_not_failing_in_suite": true,
+  "4_pinned_files_unchanged": true
+ },
+ "c0_tests": {
+  "exit": 0,
+  "wall_s": 2.3242132663726807
+ },
+ "mutants": {
+  "exit": 0,
+  "wall_s": 11.141615867614746,
+  "summary": {
+   "none": 0,
+   "no_mask": 17,
+   "governor_raw": 5,
+   "no_k2": 3,
+   "fill_zero": 8,
+   "fov_shifted": 5,
+   "assoc_raw": 7,
+   "no_elevation_fix": 3
+  }
+ },
+ "suite": {
+  "exit": 1,
+  "wall_s": 252.15243101119995,
+  "ran": 3248,
+  "base_ran": 3234,
+  "c0_tests": 14,
+  "failing": [
+   "test_bad_headers_fail_and_missing_raw_is_not_promoted (test_boia_planner.InventoryTest)",
+   "test_canonical_schema2_receipts_validate (test_navrl_stopcap_screen_contract.StopcapScreenContractTest)",
+   "test_d1_is_a_closed_q3_continuation_not_p3 (test_navrl_ref5in_run_contract.Ref5inSmokeLauncherContract)",
+   "test_every_recorded_path_exists_and_stays_inside_the_repository (test_result_manifest.CommittedManifestTest)",
+   "test_header_only_forged_huge_shape_never_allocates_or_reads_array (test_boia_planner.InventoryTest)",
+   "test_recorded_hashes_match_the_files (test_result_manifest.CommittedManifestTest)"
+  ],
+  "base_failing": [
+   "test_bad_headers_fail_and_missing_raw_is_not_promoted (test_boia_planner.InventoryTest)",
+   "test_canonical_schema2_receipts_validate (test_navrl_stopcap_screen_contract.StopcapScreenContractTest)",
+   "test_d1_is_a_closed_q3_continuation_not_p3 (test_navrl_ref5in_run_contract.Ref5inSmokeLauncherContract)",
+   "test_every_recorded_path_exists_and_stays_inside_the_repository (test_result_manifest.CommittedManifestTest)",
+   "test_header_only_forged_huge_shape_never_allocates_or_reads_array (test_boia_planner.InventoryTest)",
+   "test_recorded_hashes_match_the_files (test_result_manifest.CommittedManifestTest)"
+  ],
+  "base_log": "/home/fair/motar_tmp/camonly_c0_20261104/public_cpu_base_02.log",
+  "new_failures": [],
+  "fixed_vs_base": []
+ },
+ "faults_end": 0,
+ "finished": "2026-11-04T18:16:14+0900",
+ "verdict": "C0_CONDITIONAL_PASS",
+ "note": "item 5 (independent review) pending; CONDITIONAL until it passes"
+}

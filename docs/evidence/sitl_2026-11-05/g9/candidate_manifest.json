@@ -1,0 +1,16 @@
+{
+  "base_file": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_g9_lee_steps.py",
+  "base_sha256": "5b80600986b70e445c9bb06a3ffba29e333558a12b8e5fa6b6758ca2d99d8364",
+  "candidate_file": "/home/fair/motar_tmp/g9_resume_20261105/sitl_g9_lee_steps_v2.py",
+  "candidate_sha256": "a41a4e1aadacabc023f37ae9b1efddbf01b212b18eeff559b53c35e87c2441a1",
+  "state": "STAGED_OUTSIDE_REPO_NOT_RUN",
+  "gpu_started": false,
+  "install_as": "tools/sitl_g9_lee_steps_v2.py",
+  "original_script_to_preserve": "tools/sitl_g9_lee_steps.py",
+  "required_before_run": [
+    "GR-1b completion analysis and independent review",
+    "dated preregistration amendment and experiment index",
+    "candidate independent review and CPU smoke",
+    "clean local commit and fresh exclusive output directory"
+  ]
+}

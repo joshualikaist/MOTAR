@@ -1,0 +1,236 @@
+test_01_current_safety_stale_utility_may_override (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_02_stale_safety_current_utility_refused (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_03_candidate_binding (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_04_episode_binding (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_05_decision_binding (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_06_missing_safety_is_not_minted_from_boolean (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_07_insufficient_F_current_alternative (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_08_insufficient_F_all_alternatives_unverified (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_09_missing_utility_never_authorizes_F_or_blocks_backup (r4_pre_r1_test.TestIndependentSafety) ... ERROR
+test_10_normal_wait_and_intervene (r4_pre_r1_test.TestIndependentSafety) ... ok
+test_11_order_independence (r4_pre_r1_test.TestIndependentSafety) ... ERROR
+test_12_env_state_and_RNG_isolation (r4_pre_r1_test.TestIndependentSafety) ... ok
+test_13_env_binding_and_version_binding (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_14_time_nan_future_measurement_and_age (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_15_prefix_backup_refs_qualification_and_provenance (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_16_baseline_also_requires_fresh_proof_before_keep_wait_endgame (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_17_future_proof_covers_wait_and_issuance_age (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_18_boolean_veto_and_future_not_current_backup (r4_pre_r1_test.TestIndependentSafety) ... ok
+test_19_unsafe_or_unknown_candidate_cannot_win_utility (r4_pre_r1_test.TestIndependentSafety) ... FAIL
+test_20_safety_helpers_never_read_utility_or_privileged_records (r4_pre_r1_test.TestIndependentSafety) ... ok
+
+======================================================================
+ERROR: test_09_missing_utility_never_authorizes_F_or_blocks_backup (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 62, in test_09_missing_utility_never_authorizes_F_or_blocks_backup
+    self.assertEqual(choose(f.case((o,), baseline_safe=False, evidence=None)).outcome, "SAFETY_OVERRIDE")
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 20, in choose
+    return decide(c, state or initial_state(c.key[0], c.key[1], c.baseline_id))
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt", line 125, in decide
+    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt", line 125, in <setcomp>
+    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt", line 22, in _current_safe
+    and option.safety_valid is True and option.benefit.key == case.key
+AttributeError: 'NoneType' object has no attribute 'key'
+
+======================================================================
+ERROR: test_11_order_independence (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 76, in test_11_order_independence
+    a, b = choose(c), choose(replace(c, options=tuple(reversed(opts))))
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 20, in choose
+    return decide(c, state or initial_state(c.key[0], c.key[1], c.baseline_id))
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt", line 125, in decide
+    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt", line 125, in <setcomp>
+    safe = sorted({o.candidate_id for o in case.options if _current_safe(case, o)})
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/docs/evidence/boia_g4r4_2026-10-20/pre_r1_decision.py.txt", line 22, in _current_safe
+    and option.safety_valid is True and option.benefit.key == case.key
+AttributeError: 'NoneType' object has no attribute 'key'
+
+======================================================================
+FAIL: test_01_current_safety_stale_utility_may_override (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 27, in test_01_current_safety_stale_utility_may_override
+    self.assertEqual((out.outcome, out.selected_id), ("SAFETY_OVERRIDE", "A"))
+AssertionError: Tuples differ: ('NO_CERTIFIED_BACKUP', None) != ('SAFETY_OVERRIDE', 'A')
+
+First differing element 0:
+'NO_CERTIFIED_BACKUP'
+'SAFETY_OVERRIDE'
+
+- ('NO_CERTIFIED_BACKUP', None)
++ ('SAFETY_OVERRIDE', 'A')
+
+======================================================================
+FAIL: test_02_stale_safety_current_utility_refused (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 32, in test_02_stale_safety_current_utility_refused
+    self.assertEqual((out.outcome, out.selected_id), ("NO_CERTIFIED_BACKUP", None))
+AssertionError: Tuples differ: ('SAFETY_OVERRIDE', 'A') != ('NO_CERTIFIED_BACKUP', None)
+
+First differing element 0:
+'SAFETY_OVERRIDE'
+'NO_CERTIFIED_BACKUP'
+
+- ('SAFETY_OVERRIDE', 'A')
++ ('NO_CERTIFIED_BACKUP', None)
+
+======================================================================
+FAIL: test_03_candidate_binding (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 36, in test_03_candidate_binding
+    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, "NO_CERTIFIED_BACKUP")
+AssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'
+- SAFETY_OVERRIDE
++ NO_CERTIFIED_BACKUP
+
+
+======================================================================
+FAIL: test_04_episode_binding (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 40, in test_04_episode_binding
+    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, "NO_CERTIFIED_BACKUP")
+AssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'
+- SAFETY_OVERRIDE
++ NO_CERTIFIED_BACKUP
+
+
+======================================================================
+FAIL: test_05_decision_binding (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 44, in test_05_decision_binding
+    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, "NO_CERTIFIED_BACKUP")
+AssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'
+- SAFETY_OVERRIDE
++ NO_CERTIFIED_BACKUP
+
+
+======================================================================
+FAIL: test_06_missing_safety_is_not_minted_from_boolean (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 50, in test_06_missing_safety_is_not_minted_from_boolean
+    self.assertEqual((out.outcome, out.selected_id), ("NO_CERTIFIED_BACKUP", None))
+AssertionError: Tuples differ: ('SAFETY_OVERRIDE', 'A') != ('NO_CERTIFIED_BACKUP', None)
+
+First differing element 0:
+'SAFETY_OVERRIDE'
+'NO_CERTIFIED_BACKUP'
+
+- ('SAFETY_OVERRIDE', 'A')
++ ('NO_CERTIFIED_BACKUP', None)
+
+======================================================================
+FAIL: test_07_insufficient_F_current_alternative (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 54, in test_07_insufficient_F_current_alternative
+    self.assertEqual((out.outcome, out.selected_id), ("SAFETY_OVERRIDE", "A"))
+AssertionError: Tuples differ: ('INTERVENE', 'A') != ('SAFETY_OVERRIDE', 'A')
+
+First differing element 0:
+'INTERVENE'
+'SAFETY_OVERRIDE'
+
+- ('INTERVENE', 'A')
++ ('SAFETY_OVERRIDE', 'A')
+
+======================================================================
+FAIL: test_08_insufficient_F_all_alternatives_unverified (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 58, in test_08_insufficient_F_all_alternatives_unverified
+    self.assertEqual((out.outcome, out.selected_id), ("NO_CERTIFIED_BACKUP", None))
+AssertionError: Tuples differ: ('INTERVENE', 'A') != ('NO_CERTIFIED_BACKUP', None)
+
+First differing element 0:
+'INTERVENE'
+'NO_CERTIFIED_BACKUP'
+
+- ('INTERVENE', 'A')
++ ('NO_CERTIFIED_BACKUP', None)
+
+======================================================================
+FAIL: test_13_env_binding_and_version_binding (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 97, in test_13_env_binding_and_version_binding
+    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, "NO_CERTIFIED_BACKUP")
+AssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'
+- SAFETY_OVERRIDE
++ NO_CERTIFIED_BACKUP
+
+
+======================================================================
+FAIL: test_14_time_nan_future_measurement_and_age (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 103, in test_14_time_nan_future_measurement_and_age
+    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, "NO_CERTIFIED_BACKUP")
+AssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'
+- SAFETY_OVERRIDE
++ NO_CERTIFIED_BACKUP
+
+
+======================================================================
+FAIL: test_15_prefix_backup_refs_qualification_and_provenance (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 115, in test_15_prefix_backup_refs_qualification_and_provenance
+    self.assertEqual(choose(f.case((o,), baseline_safe=False)).outcome, "NO_CERTIFIED_BACKUP")
+AssertionError: 'SAFETY_OVERRIDE' != 'NO_CERTIFIED_BACKUP'
+- SAFETY_OVERRIDE
++ NO_CERTIFIED_BACKUP
+
+
+======================================================================
+FAIL: test_16_baseline_also_requires_fresh_proof_before_keep_wait_endgame (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 122, in test_16_baseline_also_requires_fresh_proof_before_keep_wait_endgame
+    self.assertEqual((out.outcome, out.selected_id), ("NO_CERTIFIED_BACKUP", None))
+AssertionError: Tuples differ: ('KEEP_F', 'F') != ('NO_CERTIFIED_BACKUP', None)
+
+First differing element 0:
+'KEEP_F'
+'NO_CERTIFIED_BACKUP'
+
+- ('KEEP_F', 'F')
++ ('NO_CERTIFIED_BACKUP', None)
+
+======================================================================
+FAIL: test_17_future_proof_covers_wait_and_issuance_age (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 127, in test_17_future_proof_covers_wait_and_issuance_age
+    self.assertEqual(choose(f.case((a, b))).selected_id, "A")
+AssertionError: 'F' != 'A'
+- F
++ A
+
+
+======================================================================
+FAIL: test_19_unsafe_or_unknown_candidate_cannot_win_utility (r4_pre_r1_test.TestIndependentSafety)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/tests/test_boia_research_safety.py", line 140, in test_19_unsafe_or_unknown_candidate_cannot_win_utility
+    self.assertEqual(choose(f.case((bad, good))).selected_id, "B")
+AssertionError: 'A' != 'B'
+- A
++ B
+
+
+----------------------------------------------------------------------
+Ran 20 tests in 0.005s
+
+FAILED (failures=14, errors=2)
+{"status": "PRE_FIX_FAIL_REPRODUCED", "ran": 20, "failures": 14, "errors": 2}

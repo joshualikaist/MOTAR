@@ -1,0 +1,100 @@
+{
+  "schema": "motar.boia.g4r.evidence.v1",
+  "base_sha": "cdfaffd28534cd37693a6cd678de9766bef4bd25",
+  "source_state": "UNCOMMITTED_PATCH_NOT_A_NEW_COMMIT",
+  "path_base": "repository root",
+  "self_excluded": true,
+  "historical_raw_included": false,
+  "files": {
+    "docs/evidence/boia_g4r_2026-10-20/C02_SOURCE_DIFF.patch": {
+      "bytes": 34000,
+      "sha256": "8358cdb3649e1f5df0b9c4dc94c67553f08b004e72e2b02d57102384c69ba0ba"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/CPU_VALIDATION_PROTOCOL.md": {
+      "bytes": 4614,
+      "sha256": "ba7cf06c8e0d3ba8b15feed6a61a8e5aa96ca208dee6d19b375cce399dd0d552"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/HANDOFF.md": {
+      "bytes": 5647,
+      "sha256": "2b0aff2720ccd86e9d5bc4c7ff7d649621d0a8977fb8ad051c8decfd7c2f2092"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/IMPLEMENTATION_REPORT.md": {
+      "bytes": 20342,
+      "sha256": "cb49d87decaddd65011b7337e8fc2dbab6a252618ad8853b5a8961473f9c8c08"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry.json": {
+      "bytes": 509,
+      "sha256": "9a0ddf15b46a624ca6803de394476b72710eb187da1d1a50e78221595fee3a24"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/adversarial_geometry_check.py": {
+      "bytes": 3133,
+      "sha256": "9f7c827698508d03c5bb836dbbc833ebecc8cff9d67cf3c2078199f644f4f16c"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/boia_before_timing_guard.txt": {
+      "bytes": 20159,
+      "sha256": "74edf04474a5712a6a924f164ce03a4e0ed520df4ccfa8d8f3689f7803677dd2"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/boia_final_tests.txt": {
+      "bytes": 20281,
+      "sha256": "9b7e69a68c177ca36c1293837b1897fa6f17740bf2c824a1975b2018c353da30"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/collect_model_receipt.py": {
+      "bytes": 4459,
+      "sha256": "b1407712100bf16b42faa125c6ec076c91d66fb0a748633d1ca1972bf5f33a2d"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/integrity.json": {
+      "bytes": 3424,
+      "sha256": "8fd5d78ca0c0d5ef7fb04fc06a420e691004abe969b2f3a7836afd23d0345c4e"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/model_receipt.json": {
+      "bytes": 3689,
+      "sha256": "c9149f86f6e5986e2d8807d6cffc1aed82565239f9b43906fc6f3b58fe3b5030"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_before_timing_guard.txt": {
+      "bytes": 20371,
+      "sha256": "fb25d8b55ef93331ac3671ac6096497046c15a21cd8b338f49b8f396229c5351"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/public_cpu_build.json": {
+      "bytes": 2089,
+      "sha256": "09e3f63966d2f833fc886fb6f00ea16d5a49cdcb8059ad924d5483cffbc17f2a"
+    },
+    "docs/evidence/boia_g4r_2026-10-20/validation.json": {
+      "bytes": 37827,
+      "sha256": "7fc98e761e561eae7aa2fa28767a2dc06867ec6cdcbdcea1b9f911dfab8aaea5"
+    },
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/ALGORITHM_PROPOSAL.md": {
+      "bytes": 22188,
+      "sha256": "316cf27689e7a789cfb176c7cc311bc0718e9006f29c69d6deb89485b64611dc"
+    },
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/EXPERIMENT_DRAFT.md": {
+      "bytes": 19536,
+      "sha256": "d459677d26873341a2284f7d4d323ca5b7b31bbc444e3044789772dde2328f4d"
+    },
+    "docs/research/occlusion_algorithm_v1/g4r_2026-10-20/NOVELTY_REVIEW.md": {
+      "bytes": 14064,
+      "sha256": "5124e69455dc63fece1a0d2b089293c2226142b7cf114c31af8926fe17672841"
+    }
+  },
+  "source_sha256": {
+    "motar_eval/boia/__init__.py": "9761f309c2328833d2c2b6ed1c2a33e260aa0f59a2fbe57eb6de2ec6e950179a",
+    "motar_eval/boia/access.py": "02e8c67a9edc84c84dfc51b1312a57051e552c491dc21effc4ee9433b11da4d6",
+    "motar_eval/boia/arbitration.py": "2d5d6b19f88132c1a9d5cad950febe618aa9674e13bb43ea695aec6215c33e5e",
+    "motar_eval/boia/belief.py": "dcdbb3d9c4c4ef06f241a7ffde6d3fcdc0d2f6c51c682d659339a02d8bd4160e",
+    "motar_eval/boia/candidates.py": "7feb0298d0193d868aef0243d47f9c796d4ddc26ae9ee7a715ee8ec41da6cd34",
+    "motar_eval/boia/cost.py": "a8a16d165c172126b11834621617794eda6f13b0639585b1e51a1bf83e00ed68",
+    "motar_eval/boia/dynamics.py": "9ef55b71734100cfc48b70e35da98f4a4764adf1821fa6997a8bab30683a68ac",
+    "motar_eval/boia/fallback.py": "e3740cecb30de9189b3e8b44efde94bb2675aeceb2397ccf00361ffd62dfc69e",
+    "motar_eval/boia/geometry.py": "8cd6eb76ce2e3b9599da738345e6d42777a95732479600797e2d19268f5c1840",
+    "motar_eval/boia/planner.py": "3daf4d58866a1f3b8cfd644ea7d8d9fb71ece0790135da234a323b1cc930c2b8",
+    "motar_eval/boia/safety.py": "0041a40ddb599c400c2e5d0ac7c7a0517d6ffbefa8a7f019c1905a6ab6c883f8",
+    "motar_eval/boia/terminal.py": "804fa6fc03de6489e2314f2f8bfd917a0bc0995cd253cc5ee94eb277847f2576",
+    "motar_eval/boia/trace.py": "784008f611974713853ba8fb2cd4df8d3c7dc4762a9ab3b51c8c6ab105354c5b",
+    "motar_eval/boia/types.py": "f79e69dba3eb4bf4ca99ef3455144a1b3d493541084fa5b4843d9028c6daaf77",
+    "motar_eval/boia/visibility.py": "ec0d92ab647390b4bc9fc12fecc5c8416fd73611c357fc59ac7dbc5ec567b9dd"
+  },
+  "new_test_sha256": {
+    "tests/test_boia_c02_geometry.py": "78752dde05832c1e32013e4abdcadc8733bb28eea7ffc39972dad9b97d5562c0",
+    "tests/test_boia_c02_safety.py": "d2d3d7268f29f9dcada238782050a8b035a0ad4fcc19cc4063f30d7c59eb9c2e"
+  },
+  "worklog_sha256": "f011c376b8bad31ee125fc5e0b94718ab57e92f0bc57db93e601b7c30c7b1e21"
+}

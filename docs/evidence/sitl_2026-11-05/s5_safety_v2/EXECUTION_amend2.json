@@ -1,0 +1,307 @@
+{
+  "unit": "s5_safety_v2",
+  "source_head": "d6e83126f8671e64f3ff490a82b29205c83e4df6",
+  "recorded_at_utc": "2026-11-10T15:23:22.980262+00:00",
+  "authorization": {
+    "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/authorization.json",
+    "bytes": 3557,
+    "sha256": "dd4002f6dfa9e92256928fc85ef4f1fa3ff446c7da0be2c1fb8f99c5f238410e"
+  },
+  "scoped_approval": {
+    "path": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/execution_approval.json",
+    "bytes": 883,
+    "sha256": "f6720752975e878f32f3ad1f46a221de8c0dc48c9fbda9eeee118efa928cf30a"
+  },
+  "review": {
+    "verdict": "PASS_WITH_LIMITS",
+    "report": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/REVIEW.md",
+      "bytes": 14664,
+      "sha256": "634d3005172eeb6d2f3bdbc8bfed701b0f531fe3f8247989e4327b176a078ddb"
+    },
+    "audit_artifacts": [
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/REVIEW.md",
+        "bytes": 14664,
+        "sha256": "634d3005172eeb6d2f3bdbc8bfed701b0f531fe3f8247989e4327b176a078ddb"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/numeric_probe.log",
+        "bytes": 743,
+        "sha256": "42dbb5afee4de4c45d1edd0bf602077c31bd63716642880e5e4291d20796a8db"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/numeric_probe.py",
+        "bytes": 8047,
+        "sha256": "15ab0b93c459fc198fafa385e98c0b662fe8753a1b9a3587653368d3d12dc441"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/numeric_probe_r2.log",
+        "bytes": 711,
+        "sha256": "b44c8ff4c19e7403e32e27da01f74397897072c1ff3695846a8e6d1ba145e14a"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/numeric_results.json",
+        "bytes": 9949,
+        "sha256": "0e0d0dcca9610ea5f0c89e219bbfcf6944cc8d5f9375747a4263d81e17ae6c25"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/probe.log",
+        "bytes": 151,
+        "sha256": "6e06311905935605a5d570646bc82802bb00c14e410227a56e377bcbb76daa36"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/probe.py",
+        "bytes": 12447,
+        "sha256": "3bf427749d0b252bc9c9ff0cecd5af25ff3477c44d5bb0d15cd23268b6de7920"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/probe_r2.log",
+        "bytes": 89,
+        "sha256": "72e4116d8efbc4f6e1ec4076cf032fdcc3fce9eafd5a0ea29707722e1aa6222c"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/probe_results.json",
+        "bytes": 187560,
+        "sha256": "913570905c893363b8a93a960ac02cc04cea9ab5065a1f7c3827afeda7361cd4"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/truncated.ulg",
+        "bytes": 11997082,
+        "sha256": "3210b251b820a966c4a9d2f212ec0ff5baec0be567b3e4f1ef191a522ba47495"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/unit_stop_binding.jsonl",
+        "bytes": 644,
+        "sha256": "ebfa4f705a2a0c390d54de0bf6c76e38be6b0b46af749cb4b56598c96d7eef78"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/unit_stop_binding_r2.jsonl",
+        "bytes": 640,
+        "sha256": "459ac761f340e130963f96a0782e90c0c762c5d1661cdeb70121c050aeb7022f"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/unit_stop_invalid.jsonl",
+        "bytes": 638,
+        "sha256": "3966087a35b2531226af3d7c2e36e98698106ef6e573f231dea8ee613b7e8982"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/unit_stop_invalid_r2.jsonl",
+        "bytes": 639,
+        "sha256": "56f366a12debd9aba5161011a334dbd79057be26164d8e9604c96124f924685e"
+      },
+      {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_results_review_r1/write_report.py",
+        "bytes": 16730,
+        "sha256": "f7b8067d38899b42d1d489b1410ffea42242fddd948c3bc066a2f9f4270584e8"
+      }
+    ]
+  },
+  "runs": {
+    "smoke03": {
+      "raw_root": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/smoke03",
+      "status": "COMPLETE",
+      "count": 3,
+      "valid": 3,
+      "started_utc": "2026-11-10T14:59:13.352419+00:00",
+      "finished_utc": "2026-11-10T15:02:12.974323+00:00",
+      "elapsed_wall_s": 179.6219038963318,
+      "kernel_faults_before": 0,
+      "kernel_faults_after": 0,
+      "raw_manifest": {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/records_s5_safety_v2/smoke03_SHA256_MANIFEST.json",
+        "bytes": 6014,
+        "sha256": "7c3f2a6398e87cbfd48b5ddc1b9df04d2fcce5996a7335325fa309066a98650a"
+      },
+      "passed": 3,
+      "scenarios": [
+        {
+          "scenario": "N0",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 58.389636754989624
+        },
+        {
+          "scenario": "N0R",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 58.499735593795776
+        },
+        {
+          "scenario": "N0J",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 59.49998617172241
+        }
+      ]
+    },
+    "attempt01": {
+      "raw_root": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/attempt01",
+      "status": "COMPLETE",
+      "count": 10,
+      "valid": 10,
+      "started_utc": "2026-11-10T15:03:02.408978+00:00",
+      "finished_utc": "2026-11-10T15:11:45.096546+00:00",
+      "elapsed_wall_s": 522.6875674724579,
+      "kernel_faults_before": 0,
+      "kernel_faults_after": 0,
+      "raw_manifest": {
+        "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/records_s5_safety_v2/attempt01_SHA256_MANIFEST.json",
+        "bytes": 18861,
+        "sha256": "35ac1617c9a45a80ee99ca7f95630ca78a74eb5396dc698fb3f106cda6a55029"
+      },
+      "passed": 10,
+      "scenarios": [
+        {
+          "scenario": "N0",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 62.849180698394775
+        },
+        {
+          "scenario": "OBL",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 48.4216468334198
+        },
+        {
+          "scenario": "GFH",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 56.47039008140564
+        },
+        {
+          "scenario": "GFV",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 51.396883964538574
+        },
+        {
+          "scenario": "OVJ",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 48.40266180038452
+        },
+        {
+          "scenario": "OVR",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 48.37055253982544
+        },
+        {
+          "scenario": "RCL",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 49.526225328445435
+        },
+        {
+          "scenario": "DLL",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 56.482666015625
+        },
+        {
+          "scenario": "KIL",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 46.26779389381409
+        },
+        {
+          "scenario": "FDS",
+          "valid": true,
+          "passed": true,
+          "invalid_reason": null,
+          "fail_reason": null,
+          "wall_s": 43.81600570678711
+        }
+      ],
+      "reading": {
+        "label": "PASS_SITL",
+        "file": {
+          "path": "/home/fair/motar_tmp/sitl_next_20261110/s5_safety_v2/attempt01/reading.json",
+          "bytes": 5750,
+          "sha256": "a7f3d7cb51e340e4ec5c4ee2344c4fc8ae90638197c3c02742a00c8ad9c6dcad"
+        },
+        "integrity_problems": []
+      }
+    }
+  },
+  "reporting_cautions": [
+    "PX4v1.14.3/navrl_quad stand-in SITL only; real FC,RC,vehicle/OAK-D safety not qualified",
+    "Live known-bad discrimination controls remain NOT_TESTED; CPU audit mutations are a separate scope",
+    "Attempt N0 gzserver shutdown returncode-6 with boost thread exception; exact death timestamp NOT_RECORDED; retain review detail",
+    "Kernel regex counter0 does not assert every subprocess exited0"
+  ],
+  "new_live_attempts_authorized": false,
+  "remote_push": "NO",
+  "main_merge": "NO",
+  "historical_evidence": "Original failed/invalid records and all preregistrations preserved",
+  "driver_artifacts": [
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/s5_smoke03.log",
+      "bytes": 763,
+      "sha256": "4e7a83856663fa3ef18e46658abf4f249e37eebf6c22142a1857b71b08d6d4a4"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/s5_attempt01.log",
+      "bytes": 1890,
+      "sha256": "066d95c9663fb7e7525dee55f9d2ccf518d74b3b05ce96efc6555564a73eb11d"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/s5_analyze01.log",
+      "bytes": 41,
+      "sha256": "2a405722a8b498c15f567383c1fa75ac4dd5f492383d48e5b47bda17dd229419"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/package_s5.log",
+      "bytes": 461,
+      "sha256": "f597ed43c544e7fb3833a7e08c790423b8f4cf8de52efe181335d6c0b42260bd"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/package_records.py",
+      "bytes": 2218,
+      "sha256": "90773addba5500dfd0a7a4d5d99d51fba19fb2f4cbf8d4ebbe5e9d10f0d7142e"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/make_execution_record.py",
+      "bytes": 4345,
+      "sha256": "abe9d770e549fb895e218f85335bb05fd8dfd0e2b5dc21ef03343fe984106fcb"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/execution/index_s5_results.log",
+      "bytes": 107,
+      "sha256": "17ebadffe4cf9abfccb50d42aac10cdc1b68bfbbd6c2205a9f882f0aaf65e3f1"
+    }
+  ],
+  "record_checks": {
+    "experiment_index_tests": 9,
+    "failures": 0,
+    "errors": 0,
+    "code_tests_prereg_unchanged": true,
+    "public_cpu_source_validation": "d6e8312 source:3935 tests,0failures,0errors before live execution; not repeated for record-only changes"
+  }
+}

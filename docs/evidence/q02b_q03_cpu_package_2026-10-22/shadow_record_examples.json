@@ -1,0 +1,336 @@
+[
+ {
+  "scenario": "S1_brief_occlusion",
+  "policy": "H3",
+  "time_s": 0.5,
+  "belief": [
+   8.0,
+   0.0,
+   0.0
+  ],
+  "position_uncertainty": {
+   "sqrt_trace_m": 0.17320508075688773,
+   "sigma_range_m": 0.1,
+   "sigma_lateral_m": 0.1
+  },
+  "evidence_hypothesis": "TARGET_VISIBLE",
+  "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+  "geometry_support": "FOOTPRINT_CONSISTENT",
+  "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+  "local_map": {
+   "accepted": true,
+   "reasons": [],
+   "frames": 6,
+   "last_stamp_s": 0.5,
+   "age_s": 0.0,
+   "stale": false,
+   "near_obstacle_warning": false,
+   "z_ref": 1.5,
+   "ground_truth_used": false,
+   "representation": "WORLD_ANCHORED_2D_GRID_ALTITUDE_SLICE"
+  },
+  "candidate_summary": {
+   "evaluated": 0,
+   "l1_open": 0,
+   "l2_pass": 0,
+   "l2_pass_with_view_gain": 0,
+   "l3_dynamic_feasibility": "NOT_VALIDATED",
+   "l4_closed_loop_safety": "NOT_VALIDATED",
+   "plan_status": null,
+   "reasons": []
+  },
+  "state": [
+   "TRACK_F",
+   "TRACK_F"
+  ],
+  "decision": "CONTINUE_F",
+  "reasons": [
+   "TARGET_TRACKED"
+  ],
+  "owner": "F",
+  "action": null,
+  "delta_u": "NOT_ESTIMATED",
+  "runtime_s": 0.1099,
+  "best_candidate": null
+ },
+ {
+  "scenario": "S1_brief_occlusion",
+  "policy": "H3",
+  "time_s": 1.2000000000000002,
+  "belief": [
+   8.0,
+   0.0,
+   0.0
+  ],
+  "position_uncertainty": {
+   "sqrt_trace_m": 0.17320508075688773,
+   "sigma_range_m": 0.1,
+   "sigma_lateral_m": 0.1
+  },
+  "evidence_hypothesis": "TARGET_VISIBLE",
+  "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+  "geometry_support": "FOOTPRINT_CONSISTENT",
+  "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+  "local_map": {
+   "accepted": true,
+   "reasons": [],
+   "frames": 13,
+   "last_stamp_s": 1.2000000000000002,
+   "age_s": 0.0,
+   "stale": false,
+   "near_obstacle_warning": false,
+   "z_ref": 1.5,
+   "ground_truth_used": false,
+   "representation": "WORLD_ANCHORED_2D_GRID_ALTITUDE_SLICE"
+  },
+  "candidate_summary": {
+   "evaluated": 0,
+   "l1_open": 0,
+   "l2_pass": 0,
+   "l2_pass_with_view_gain": 0,
+   "l3_dynamic_feasibility": "NOT_VALIDATED",
+   "l4_closed_loop_safety": "NOT_VALIDATED",
+   "plan_status": null,
+   "reasons": []
+  },
+  "state": [
+   "TRACK_F",
+   "TRACK_F"
+  ],
+  "decision": "CONTINUE_F",
+  "reasons": [
+   "TARGET_TRACKED"
+  ],
+  "owner": "F",
+  "action": null,
+  "delta_u": "NOT_ESTIMATED",
+  "runtime_s": 0.1081,
+  "best_candidate": null
+ },
+ {
+  "scenario": "S1_brief_occlusion",
+  "policy": "BOIA",
+  "time_s": 0.5,
+  "belief": [
+   8.0,
+   0.0,
+   0.0
+  ],
+  "position_uncertainty": {
+   "sqrt_trace_m": 0.17320508075688773,
+   "sigma_range_m": 0.1,
+   "sigma_lateral_m": 0.1
+  },
+  "evidence_hypothesis": "TARGET_VISIBLE",
+  "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+  "geometry_support": "FOOTPRINT_CONSISTENT",
+  "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+  "local_map": {
+   "accepted": true,
+   "reasons": [],
+   "frames": 6,
+   "last_stamp_s": 0.5,
+   "age_s": 0.0,
+   "stale": false,
+   "near_obstacle_warning": false,
+   "z_ref": 1.5,
+   "ground_truth_used": false,
+   "representation": "WORLD_ANCHORED_2D_GRID_ALTITUDE_SLICE"
+  },
+  "candidate_summary": {
+   "evaluated": 0,
+   "l1_open": 0,
+   "l2_pass": 0,
+   "l2_pass_with_view_gain": 0,
+   "l3_dynamic_feasibility": "NOT_VALIDATED",
+   "l4_closed_loop_safety": "NOT_VALIDATED",
+   "plan_status": null,
+   "reasons": []
+  },
+  "state": [
+   "TRACK_F",
+   "TRACK_F"
+  ],
+  "decision": "CONTINUE_F",
+  "reasons": [
+   "TARGET_TRACKED"
+  ],
+  "owner": "F",
+  "action": null,
+  "delta_u": "NOT_ESTIMATED",
+  "runtime_s": 0.1083,
+  "best_candidate": null
+ },
+ {
+  "scenario": "S1_brief_occlusion",
+  "policy": "BOIA",
+  "time_s": 1.2000000000000002,
+  "belief": [
+   8.0,
+   0.0,
+   0.0
+  ],
+  "position_uncertainty": {
+   "sqrt_trace_m": 0.17320508075688773,
+   "sigma_range_m": 0.1,
+   "sigma_lateral_m": 0.1
+  },
+  "evidence_hypothesis": "TARGET_VISIBLE",
+  "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+  "geometry_support": "FOOTPRINT_CONSISTENT",
+  "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+  "local_map": {
+   "accepted": true,
+   "reasons": [],
+   "frames": 13,
+   "last_stamp_s": 1.2000000000000002,
+   "age_s": 0.0,
+   "stale": false,
+   "near_obstacle_warning": false,
+   "z_ref": 1.5,
+   "ground_truth_used": false,
+   "representation": "WORLD_ANCHORED_2D_GRID_ALTITUDE_SLICE"
+  },
+  "candidate_summary": {
+   "evaluated": 0,
+   "l1_open": 0,
+   "l2_pass": 0,
+   "l2_pass_with_view_gain": 0,
+   "l3_dynamic_feasibility": "NOT_VALIDATED",
+   "l4_closed_loop_safety": "NOT_VALIDATED",
+   "plan_status": null,
+   "reasons": []
+  },
+  "state": [
+   "TRACK_F",
+   "TRACK_F"
+  ],
+  "decision": "CONTINUE_F",
+  "reasons": [
+   "TARGET_TRACKED"
+  ],
+  "owner": "F",
+  "action": null,
+  "delta_u": "NOT_ESTIMATED",
+  "runtime_s": 0.1091,
+  "best_candidate": null
+ },
+ {
+  "scenario": "S2_long_occlusion_detour",
+  "policy": "H3",
+  "time_s": 0.5,
+  "belief": [
+   8.0,
+   0.0,
+   0.0
+  ],
+  "position_uncertainty": {
+   "sqrt_trace_m": 0.17320508075688773,
+   "sigma_range_m": 0.1,
+   "sigma_lateral_m": 0.1
+  },
+  "evidence_hypothesis": "TARGET_VISIBLE",
+  "identity_verdict": "CONSISTENT_NOT_CONFIRMED",
+  "geometry_support": "FOOTPRINT_CONSISTENT",
+  "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+  "local_map": {
+   "accepted": true,
+   "reasons": [],
+   "frames": 6,
+   "last_stamp_s": 0.5,
+   "age_s": 0.0,
+   "stale": false,
+   "near_obstacle_warning": false,
+   "z_ref": 1.5,
+   "ground_truth_used": false,
+   "representation": "WORLD_ANCHORED_2D_GRID_ALTITUDE_SLICE"
+  },
+  "candidate_summary": {
+   "evaluated": 0,
+   "l1_open": 0,
+   "l2_pass": 0,
+   "l2_pass_with_view_gain": 0,
+   "l3_dynamic_feasibility": "NOT_VALIDATED",
+   "l4_closed_loop_safety": "NOT_VALIDATED",
+   "plan_status": null,
+   "reasons": []
+  },
+  "state": [
+   "TRACK_F",
+   "TRACK_F"
+  ],
+  "decision": "CONTINUE_F",
+  "reasons": [
+   "TARGET_TRACKED"
+  ],
+  "owner": "F",
+  "action": null,
+  "delta_u": "NOT_ESTIMATED",
+  "runtime_s": 0.1084,
+  "best_candidate": null
+ },
+ {
+  "scenario": "S2_long_occlusion_detour",
+  "policy": "H3",
+  "time_s": 1.2000000000000002,
+  "belief": [
+   8.0,
+   0.0,
+   0.0
+  ],
+  "position_uncertainty": {
+   "sqrt_trace_m": 0.17320508075688773,
+   "sigma_range_m": 0.1,
+   "sigma_lateral_m": 0.1
+  },
+  "evidence_hypothesis": "OCCLUDED",
+  "identity_verdict": "NOT_APPLICABLE",
+  "geometry_support": "NOT_APPLICABLE",
+  "detector_provenance": "ORACLE_TRUE_POSE_RASTER",
+  "local_map": {
+   "accepted": true,
+   "reasons": [],
+   "frames": 13,
+   "last_stamp_s": 1.2000000000000002,
+   "age_s": 0.0,
+   "stale": false,
+   "near_obstacle_warning": false,
+   "z_ref": 1.5,
+   "ground_truth_used": false,
+   "representation": "WORLD_ANCHORED_2D_GRID_ALTITUDE_SLICE"
+  },
+  "candidate_summary": {
+   "evaluated": 7,
+   "l1_open": 7,
+   "l2_pass": 7,
+   "l2_pass_with_view_gain": 4,
+   "l3_dynamic_feasibility": "NOT_VALIDATED",
+   "l4_closed_loop_safety": "NOT_VALIDATED",
+   "plan_status": null,
+   "reasons": []
+  },
+  "state": [
+   "LOSS_SUSPECTED",
+   "REACQUIRE_PLANNED"
+  ],
+  "decision": "PROPOSE_REACQUIRE_SHADOW",
+  "reasons": [
+   "H3_OCCLUSION_TRIGGERED",
+   "EXECUTOR_NOT_AVAILABLE"
+  ],
+  "owner": "F",
+  "action": null,
+  "delta_u": "NOT_ESTIMATED",
+  "runtime_s": 0.078,
+  "best_candidate": [
+   "Q03C02_LEFT",
+   "PASS",
+   "PASS",
+   "NOT_VALIDATED",
+   "NOT_VALIDATED",
+   0.0,
+   0.0,
+   1.75
+  ]
+ }
+]

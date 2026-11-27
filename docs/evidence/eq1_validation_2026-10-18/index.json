@@ -1,0 +1,91 @@
+{
+ "commands": {
+  "eq1a_geometry.json": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/audits/eq1_geometry_reference.py --out docs/evidence/eq1_validation_2026-10-18/eq1a_geometry.json",
+  "eq1b_envelope.json": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/audits/eq1_flight_envelope.py --out docs/evidence/eq1_validation_2026-10-18/eq1b_envelope.json",
+  "eq1b_motor.json": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/audits/eq1_motor_reference.py --out docs/evidence/eq1_validation_2026-10-18/eq1b_motor.json",
+  "eq1b_scene.json": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/audits/eq1_scene_feasibility.py --out docs/evidence/eq1_validation_2026-10-18/eq1b_scene.json",
+  "eq1c_information_flow.json": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/audits/eq1_information_flow.py --out docs/evidence/eq1_validation_2026-10-18/eq1c_information_flow.json",
+  "eq1c_tracking.json": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' PYTHONPATH=$PWD python -B tools/audits/eq1_tracking_reference.py --out docs/evidence/eq1_validation_2026-10-18/eq1c_tracking.json"
+ },
+ "derived_files": {
+  "eq1b_scene_episodes.csv.gz": "written by tools/audits/eq1_scene_feasibility.py next to eq1b_scene.json (gzip mtime 0)"
+ },
+ "environment": {
+  "cpu_count": 24,
+  "cuda_visible_devices": "''",
+  "numpy": "1.23.0",
+  "python": "3.8.20",
+  "scipy": "1.10.1",
+  "torch": "2.4.1+cu121"
+ },
+ "files": {
+  "EQ1D_GPU_CONTRACT.md": {
+   "bytes": 7006,
+   "sha256": "a0c8d0262563d476933eb23920669642f6c34db47f3d7f4930c434e2504924b5"
+  },
+  "EVALUATION_CONTRACT.md": {
+   "bytes": 3801,
+   "sha256": "5da95eb994c76714377e0421c47aeacceaaf1ed908ad2ac033613c3ecc7cc3cc"
+  },
+  "REPORT.md": {
+   "bytes": 19640,
+   "sha256": "0587ff0473f9825fe1c64c3ea43a5b3588f9013f9319ebfb1203dc13e3129f5f"
+  },
+  "SENSOR_CANDIDATES.md": {
+   "bytes": 4698,
+   "sha256": "991f660bd6ad22f3061c429cac79e5a29ed0e57d8ec9d9be0044715f27ba0ed0"
+  },
+  "eq1a_geometry.json": {
+   "bytes": 31705,
+   "sha256": "8c9e51cbb33b419b908ee4eb9bbd517d2cb49038900914e345d251823faeeace"
+  },
+  "eq1b_envelope.json": {
+   "bytes": 86719,
+   "sha256": "b6da8a195af3203546e6a2497fdee5255f7fe9b03f972bcf305dbb59df63285d"
+  },
+  "eq1b_motor.json": {
+   "bytes": 7518,
+   "sha256": "ad3831cd690d3f315c59ac8952aabeb034d401649dba169afb416bd69f77794d"
+  },
+  "eq1b_scene.json": {
+   "bytes": 18246,
+   "sha256": "94786f5394f1ffd44672f48f88a8392cec640594bc22ca216701319d2b0150d1"
+  },
+  "eq1b_scene_episodes.csv.gz": {
+   "bytes": 174804,
+   "sha256": "ecc1d6e2fec76649b77b1f43d50bbcdade82447134403274632c1ef5bbee707a"
+  },
+  "eq1c_information_flow.json": {
+   "bytes": 85990,
+   "sha256": "8a8ceda4255e5c2c079a95428eb0b57ed7ec9506f32f15835f9c253ee483e49e"
+  },
+  "eq1c_tracking.json": {
+   "bytes": 11284,
+   "sha256": "bbc7fec20af0dcc5462fd36e871a15992f1a1ce9edc7db75be665786d5a25f5c"
+  }
+ },
+ "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b",
+ "package": "EQ-1A/B/C CPU independent validation (validation only)",
+ "policy_f": {
+  "path": "aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+  "sha256": "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+ },
+ "raw_root_read_only": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2",
+ "receipt_environment": "/home/fair/workspaces/aerial_gym_ws/src/aerial_gym_simulator/results/occlusion_confirmatory_v1/OCC-P2/static/A1/E0_static__115bars__seed4301/receipt.json",
+ "reproducibility": "every JSON/CSV record was generated twice from the same code into separate folders; all seven files were byte-identical",
+ "schema": "motar.eq1-evidence-index.v1",
+ "source_at_generation": {
+  "files_sha256": {
+   "tools/audits/eq1_common.py": "c27407d96e3367e769c86f8e5f5aa7d2a086c293196afe797eb3a2a7b03c0d85",
+   "tools/audits/eq1_flight_envelope.py": "3f887c6393da2a264a3fbf1997d7eca2c7372429fb268e95f6f797e51ee00f3e",
+   "tools/audits/eq1_geometry_reference.py": "1ee5f43a8f8063441b9c7d25e95e6bba146d55a4eac3c971b6929d0b3791d0f3",
+   "tools/audits/eq1_information_flow.py": "b363d46f1017c62cbb7678ff1fda1e8f4b9e0f8343a45cf379ef2d8a560f0f13",
+   "tools/audits/eq1_motor_reference.py": "7f39f19c346eca81243a9a6c48be3592cd04681def066ffe281318465d72f75a",
+   "tools/audits/eq1_scene_feasibility.py": "df915ceed98ec35e1cbfda29b621421fb9439c08ac9faeb1e0c58b52e88ce4ee",
+   "tools/audits/eq1_tracking_reference.py": "d1c873ffe36c2ff93c6aadfd6274f97b78108d2526330abef46da76a5137f6ce"
+  },
+  "head": "197b79414dddbd3bd3fcecb51f46ddc7677873ce",
+  "identical_to_measurement_source": true,
+  "measurement_source": "5ff285ad053f181c5a1c86dddb2462bb44e6327b"
+ }
+}

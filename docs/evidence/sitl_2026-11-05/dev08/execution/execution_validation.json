@@ -1,0 +1,276 @@
+{
+  "unit": "dev08 observed-prefix-v1 completed2smoke+40main",
+  "execution_commit": "d8f9bc66ad8819c230603b23dc7d4563525c2386",
+  "measurement_status": "COMPLETE",
+  "independent_result_review": "LIMITED_VALIDITY",
+  "process": {
+    "exit_code": 0,
+    "started_at": "2026-11-05T14:19:52.612797+00:00",
+    "ended_at": "2026-11-05T14:51:24.577907+00:00",
+    "kernel_faults_before": 0,
+    "kernel_faults_after": 0,
+    "head_after": "d8f9bc66ad8819c230603b23dc7d4563525c2386",
+    "dirty_after": "",
+    "rlimit_as_bytes": 17179869184
+  },
+  "records": {
+    "all": 42,
+    "main": 40,
+    "smoke_excluded": 2,
+    "pairs": 20
+  },
+  "analysis_copy_sha256": "a6c062587efa97183cd71aaf16a24acb13e7d92e14ec36373f3a687dc55dd0cb",
+  "supplementary_failure_facts_sha256": "db507f5b054543de649b3230b5892062c5b2480ab4048e168c6a4039c6e6f5a4",
+  "raw_manifest": {
+    "path": "/home/fair/motar_tmp/dev08_execute_20261105/analysis_v1/raw_manifest.json",
+    "sha256": "20c5672a88a8ea2153f9ced6edd6293007363ed1fc9cbf3adb99302e9257cb18",
+    "files": 507,
+    "bytes": 697582825
+  },
+  "external_evidence": {
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/execution_approval.json": {
+      "bytes": 905,
+      "sha256": "030f3c5e892f2c51a07635eb91ab997fb1c9a366c5612ef1049f80df19fa73d9"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/execution_process_record.json": {
+      "bytes": 3216,
+      "sha256": "cc1e619422de646d5ffd27410620a1fef2533ab24fc3fa00d9b19c7f92c811d6"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/execution_stdout_attempt01.log": {
+      "bytes": 2060,
+      "sha256": "9bd40e75def72b54d411a4f76f8db8d504d1d91fa15fec4d2c376861d2b94c66"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/analysis_v1/analysis.json": {
+      "bytes": 32166,
+      "sha256": "a6c062587efa97183cd71aaf16a24acb13e7d92e14ec36373f3a687dc55dd0cb"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/analysis_v1/raw_manifest.json": {
+      "bytes": 87417,
+      "sha256": "20c5672a88a8ea2153f9ced6edd6293007363ed1fc9cbf3adb99302e9257cb18"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/analysis_v1/posthoc_failure_cases.json": {
+      "bytes": 3814,
+      "sha256": "db507f5b054543de649b3230b5892062c5b2480ab4048e168c6a4039c6e6f5a4"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/REVIEW.md": {
+      "bytes": 13207,
+      "sha256": "058fa002a01e391b1cdd0a5e15ffb46e073454b29fd21aa01288e63b7de0bd5d"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/analysis_fields_v1.json": {
+      "bytes": 476,
+      "sha256": "ed3d396c8022e5907bde56d7b8383b6d33c381f933562ffd14d442c8135f7218"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/analysis_fields_v1.out": {
+      "bytes": 476,
+      "sha256": "ed3d396c8022e5907bde56d7b8383b6d33c381f933562ffd14d442c8135f7218"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/analysis_fields_v1.py": {
+      "bytes": 2880,
+      "sha256": "01ee18a613edc3730a99760df85095a1809f79f60e2a9457711d5eb7b300c464"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/audit_v1.out": {
+      "bytes": 264,
+      "sha256": "4db4781cdb00ab76145240c9874182137a8283eddbe00082ab36274d227e4993"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/audit_v1.py": {
+      "bytes": 17792,
+      "sha256": "574668e426c482bc5f05ef454fd01b28637e22336b3f242db3ebf6516c769d22"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/audit_v2.out": {
+      "bytes": 4155,
+      "sha256": "a90193279796ccf5f976ab0f674651ef1e261aa5219990e9b89b49b0f7e97199"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/audit_v2.py": {
+      "bytes": 17817,
+      "sha256": "e1a59ab06108d294fc31341c2970eb5aee43d3230906258359407cfba995d4cc"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/independent_results_v2.json": {
+      "bytes": 20295,
+      "sha256": "54a688af9320999fb914e6615ec71c03ca5a880cab1294412377063cd926c2ec"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/receipt_check_v1.json": {
+      "bytes": 348,
+      "sha256": "82cc4e9b6ab49ab604ebbf2a5b1a62a7ce10099e50892aee3e0fad10f4a9ef27"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/receipt_check_v1.out": {
+      "bytes": 348,
+      "sha256": "82cc4e9b6ab49ab604ebbf2a5b1a62a7ce10099e50892aee3e0fad10f4a9ef27"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/receipt_check_v1.py": {
+      "bytes": 2243,
+      "sha256": "f845f09645c09dff510b73e5f49a6aaa1df57697821f8488c4c57e35680bc543"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/supplement_v1.json": {
+      "bytes": 3378,
+      "sha256": "da7d46e583eed43b8a0d83f54193ab77b87eb9aa3b12368097feafa676b91234"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/supplement_v1.out": {
+      "bytes": 3378,
+      "sha256": "da7d46e583eed43b8a0d83f54193ab77b87eb9aa3b12368097feafa676b91234"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/supplement_v1.py": {
+      "bytes": 5814,
+      "sha256": "f5723da534bbe4e572412b087de5657aa1e523c0eff756a79bb0af229400f0c5"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/verified_hashes_v2.json": {
+      "bytes": 117554,
+      "sha256": "e4621abc8f2af56d8f700bbb1a9e262d457d2565955f1b9b9126581c32a3b2bf"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/results_review_r1/MANIFEST.json": {
+      "bytes": 2094,
+      "sha256": "8898ca2126f237c99b944a73fb1d8d5a5768b946edf7d91c9502ac9447f7dd8a"
+    },
+    "/home/fair/motar_tmp/dev08_execute_20261105/root/result_doc_checks.json": {
+      "bytes": 5255,
+      "sha256": "bc5cf7533e3c7c02a360a93911bf7e7bd352e629b11d3d616f6278cd3db3add1"
+    }
+  },
+  "source_freeze": "No tracked writes performed during process; clean source at recorded guard points and process end, hashes match execution commit. No independent continuous filesystem event log.",
+  "notes": [
+    "post hoc failure facts are descriptive, no causal attribution",
+    "full60s outcome/gain selection/formal S3b acceptance not claimed",
+    "source_validation.json remains an unchanged historical preparation record"
+  ],
+  "review_scope": "acceptable as preregistered observed-prefix descriptive development record; no formal acceptance or gain selection",
+  "integrity_recomputation_checks": "PASS",
+  "reviewer": "/root/dev08_results_review",
+  "model": "Codex/GPT-6 family; exact runtime variant NOT_RECORDED",
+  "result_review_copy": {
+    "path": "RESULTS_REVIEW_r1.md",
+    "sha256": "058fa002a01e391b1cdd0a5e15ffb46e073454b29fd21aa01288e63b7de0bd5d"
+  },
+  "independent_check_counts": {
+    "approved_execution_commit": 1,
+    "recorded_clean_tree": 1,
+    "process_completed": 1,
+    "recorded_execution_environment": 1,
+    "recorded_16gib_address_space": 1,
+    "actual_launcher_command": 1,
+    "approval_file_hash": 1,
+    "authorization_hash": 1,
+    "fixed_skip_bound": 1,
+    "recorded_host_faults": 1,
+    "complete_42": 1,
+    "source_committed_and_current_hash": 30,
+    "external_source_hash": 1,
+    "policy_f_stream_hash": 1,
+    "ordered_member_identity": 42,
+    "member_name": 42,
+    "ledger_chain": 42,
+    "member_protocol": 42,
+    "member_valid": 42,
+    "fixed_window": 42,
+    "member_skip_bound": 42,
+    "final_chain_closure": 1,
+    "header_schedule_size": 1,
+    "header_schedule_identity": 42,
+    "inventory_binding": 1,
+    "inventory_asset_hash": 14,
+    "inventory_cell_hash": 20,
+    "input_frame_width": 175104,
+    "input_frame_finite_unique": 12409,
+    "input_frame_contiguous": 40,
+    "unique_layout_reset": 20,
+    "layout_bar_count": 20,
+    "input_prefix_length": 20,
+    "runtime_binding_hash": 103,
+    "booted_fresh_defaults": 42,
+    "fresh_checked_coverage": 42,
+    "override_echo_map": 42,
+    "effective_parameter_map": 42,
+    "session_receipt_hash": 42,
+    "session_source_freeze": 42,
+    "session_identity": 42,
+    "session_clean_cleanup": 42,
+    "session_no_abort": 42,
+    "member_resource_bounds": 42,
+    "session_resource_configuration": 42,
+    "three_owned_launches": 42,
+    "fresh_per_member_rootfs_path": 42,
+    "session_exit_codes": 42,
+    "receiver_closed_no_foreign": 42,
+    "before_member_idle_sample": 42,
+    "checkpoint_counts": 42,
+    "episode_endpoints": 42,
+    "checkpoint_schedule": 2001,
+    "exact_target_index": 2001,
+    "independent_physical_metrics": 2001,
+    "capture_before_crash_decision": 2001,
+    "terminal_no_command": 2001,
+    "recorded_position_lateness": 2001,
+    "recorded_freshness_skews": 2001,
+    "checkpoint_compute_finite": 2001,
+    "checkpoint_sequence_increasing": 1959,
+    "first_terminal_stops_episode": 42,
+    "member_summary_recomputed": 42,
+    "rtf_finite": 42,
+    "pre_main_smoke_timing": 2,
+    "complete_unique_pair": 20,
+    "root_analysis_matches_independent_arms": 1,
+    "root_analysis_matches_independent_by_density": 1,
+    "root_analysis_matches_independent_paired_transitions": 1,
+    "root_analysis_matches_independent_pairs_with_censoring": 1,
+    "root_analysis_matches_independent_candidate_minus_native_capture_checkpoint_s": 1,
+    "raw_manifest_complete_file_set": 1,
+    "raw_manifest_bytes_hash": 507
+  },
+  "independent_metrics": {
+    "compute_ms": {
+      "n": 2001,
+      "min": 0.13089197454974055,
+      "median": 4.99244499951601,
+      "max": 11.195752013009042
+    },
+    "pos_lateness_s": {
+      "n": 2001,
+      "min": 0.0,
+      "median": 0.003999999999997783,
+      "max": 0.023999999999993804
+    },
+    "att_skew_s": {
+      "n": 2001,
+      "min": -0.020000000000003126,
+      "median": 0.0,
+      "max": 0.008000000000002672
+    },
+    "truth_recv_skew_s": {
+      "n": 2001,
+      "min": -0.013872192008420825,
+      "median": -0.007924189034383744,
+      "max": 0.0004695790121331811
+    },
+    "rtf": {
+      "n": 42,
+      "min": 0.9988682856515512,
+      "median": 1.0026800304651027,
+      "max": 1.0057671207471774
+    },
+    "peak_rss_bytes": {
+      "n": 42,
+      "min": 1145364480,
+      "median": 1327904768.0,
+      "max": 1514156032
+    }
+  },
+  "independent_raw_manifest": {
+    "files": 507,
+    "bytes": 697582825
+  },
+  "dual_capture_crash_checkpoints": 0,
+  "followup_issue": "motar-agq",
+  "not_recorded": [
+    "raw MAVLink packet/empirical full50Hz arrival series",
+    "exact truth-stream phase",
+    "actual setpoint transmit/receive timestamps",
+    "exact final RTF denominator timestamp",
+    "physics/noise boot seed and repeated-run reproducibility",
+    "continuous filesystem/idleness/RSS proof"
+  ],
+  "documentation_checks": {
+    "public_docs": "PASS",
+    "staged_experiment_index_tests": 9,
+    "index_status": "OK",
+    "diff_check": "PASS",
+    "primary_numeric_tables_against_analysis_json": "PASS"
+  }
+}

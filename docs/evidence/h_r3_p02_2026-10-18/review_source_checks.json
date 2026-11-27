@@ -1,0 +1,69 @@
+{
+  "status": "SOURCE_CONTRACT_CHECKED_NO_NEW_RUNTIME_TEST",
+  "d8_runtime_receipts": [
+    {
+      "log": "seed4601_B0.log",
+      "sha256": "aac1cfdd7c15ab529345a137123c9626a6a19af9b9268de0b8c2d0cfb4a5c059",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4601_B1.log",
+      "sha256": "97e1413eedae1f3ce9cb8b02db867e51abfee9ea6a7feaa80bededc26dd11c8a",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4601_B2.log",
+      "sha256": "2876cf864c7966a1da4da2962c28c90bd3b5f91cbf1f6c3138839998f4f5de19",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4601_B3.log",
+      "sha256": "3f7bc8257f6fa2cac6e168bc68a0be1299322a4a9cd4062aadbcc1b6ebd3a997",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4601_B4.log",
+      "sha256": "fd3c7449fc01f04be48641a05fe18d6e724ab91fdbe0d1d5aa1c9f02a96f411a",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4601_B5.log",
+      "sha256": "868ea40b405afb0f7070a1fef54b10c29f904fe6d90eee873257af290d986adb",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4602_B0.log",
+      "sha256": "d381debcf6343697df494c071a67528c3686f27247c5a637ec887c6275ad3e3d",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4602_B1.log",
+      "sha256": "599b31f1d3e2a2d7083240b81fd1b24bccc42d69861d5c1caf1f0f3b4fd40457",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4602_B2.log",
+      "sha256": "c43047818ea5dee30e07f3b78deb487ff0aacc3b06ffe9dd79a65974234a9f00",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4602_B3.log",
+      "sha256": "7dda5eed51949c77533e53afc3fe42ebef424693ae6ee41dfea004bb8c33eea8",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4602_B4.log",
+      "sha256": "9310c02e97c68ae1f08a10b0637763360487c513d7acfd937bfc877745f279d0",
+      "d8_dynamic_mesh_treatment": false
+    },
+    {
+      "log": "seed4602_B5.log",
+      "sha256": "16939033a92154ba36a4ff5a70d16b9d9f062a1c18adb8f74430d5557644bd81",
+      "d8_dynamic_mesh_treatment": false
+    }
+  ],
+  "target_mask": "Occlusion-aware analytic target support: navrl_detector.py _render_target_camera_kernel zeroes mask and sets1 only after target intersection and no earlier static mesh hit; D8 off in all12 receipts",
+  "pixel_centers": "Integer row/col arange with cx=(W-1)/2,cy=(H-1)/2, matching P02 scorer; no half-pixel shift",
+  "task_root_writes": "navrl_task.reset_idx at4845/4849/4936 are inside P02 selected-row context and queued; reviewer item7 outside-reset characterization is incorrect",
+  "numerical_root_cause": "NOT_PROVEN; historical vertices/per-modality numeric snapshots NOT_RECORDED"
+}

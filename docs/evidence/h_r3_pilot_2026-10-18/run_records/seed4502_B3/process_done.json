@@ -1,0 +1,19 @@
+{
+ "actor_obs_dim": 898,
+ "files": [
+  {
+   "bytes": 4238682,
+   "file": "h_r3_trace.npz",
+   "sha256": "02d611561349ef3ee46c71470a6926e673d270c46edc89763a128ada9befc541"
+  },
+  {
+   "bytes": 4163,
+   "file": "h_r3_meta.json",
+   "sha256": "47cdf488dd9aa7398baba89e8a50ea00f20d35fc601fa67d6526d500269c5f0b"
+  }
+ ],
+ "nan_fields": [],
+ "peak_allocated_bytes": 439950336,
+ "process": "seed4502_B3",
+ "wall_s": 88.56079292297363
+}

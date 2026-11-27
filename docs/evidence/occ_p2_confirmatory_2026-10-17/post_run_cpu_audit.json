@@ -1,0 +1,44 @@
+{
+  "bounded_geometry_disagreement_audit": {
+    "cause": "Four near-grazing LOS box boundaries and one horizontal FOV boundary.",
+    "conclusion": "All six primary and secondary rate tests unchanged under recorded alternate flags; duration boundaries can differ by one10Hz frame. Preserve original offline endpoint.",
+    "online_mismatches": 4,
+    "primary_exposure_changes": 0,
+    "primary_interval_count_changes_under_alternate_labels": 0,
+    "probe_mismatches": 3,
+    "three_in_view_interval_boundaries_shift_s": 0.1,
+    "unique_frames": 5
+  },
+  "manifest": {
+    "historical_manifests_verified": 7,
+    "historical_members_verified": 1941,
+    "mismatches": 0,
+    "new_members_verified": 1406
+  },
+  "quota": {
+    "cells": 112,
+    "primary_episodes": 57344,
+    "quota_errors": 0,
+    "retained_excluded_tail_episodes": 29042
+  },
+  "reacquisition_boundary_sample": {
+    "camera_and_fused_valid_on_restoration_frame": 1016,
+    "cells": "All eight seed4301 cells",
+    "fused_invalid_on_previous_blocked_frame": 368,
+    "geometry_restorations": 1016,
+    "interpretation": "Latency zero means same-frame restoration/resumption at10Hz. Conditional measure excludes FOV exits/crashes and does not demonstrate recovery-policy or tracker-expiry performance.",
+    "lidar_valid_on_restoration_frame": 0,
+    "lost_subset_same_frame_resumptions": 368,
+    "method": "Recomputed offline center LOS; no online-flag substitution. No off-by-one error found.",
+    "primary_episodes": 4096
+  },
+  "scenes": {
+    "P1_unique": 42120,
+    "P2_sorted_unique_newline_sha256": "da32abcbf44923380f6ccdb6ea44e61e764b77348b50054d1205aac8f8f0320e",
+    "P2_unique": 93092,
+    "overlap": 0
+  },
+  "scope": "Independent CPU read-only post-run audits; no source/raw/preregistration modification",
+  "source_and_preservation": "Source/checkpoint/prereg hashes match; main HEAD, three main WIP file hashes and stash listing match pre-execution. Motion/swept/wall violations zero.",
+  "statistics": "Independent recomputation of all six t statistics, nominal and simultaneous CIs, Holm p and exact sign-flip p found zero discrepancies. All seed contrasts positive14/14."
+}

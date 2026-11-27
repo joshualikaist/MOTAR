@@ -1,0 +1,140 @@
+{
+ "approved_source_commit": "76f0f4cc08ceecf9a05e628ea82d956123d29524",
+ "commands": {
+  "analysis": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' <aerialgym python> -B tools/s_l1d_analysis.py --run <raw_root> --out docs/evidence/s_l1d_2026-10-18/s_l1d_analysis.json",
+  "run": "PYTHONNOUSERSITE=1 <aerialgym python> -B tools/s_l1d_run.py run --approved-commit 76f0f4cc08ceecf9a05e628ea82d956123d29524"
+ },
+ "decision": "S-L1D_QUALIFIED",
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 3070 8 GiB",
+  "numpy": "1.23.0",
+  "python": "3.8.20",
+  "torch": "2.4.1+cu121"
+ },
+ "files": {
+  "REPORT.md": {
+   "bytes": 6526,
+   "sha256": "33356c8d0d5a4c0abfe56104ed6f392a8ef8e68bb007fe1a4d6a719ebf8be265"
+  },
+  "preservation_after.json": {
+   "bytes": 12814,
+   "sha256": "8a1c760bf32fff6b95f88a2dc02ba22e598dc06436ff93e2cb88d171e82b563f"
+  },
+  "run_records/RAW_MANIFEST.json": {
+   "bytes": 20235,
+   "sha256": "2b5fd37ead4e9671288c8bb37790f7dc1f08ffce94f6daa5d2b5df7c3aa4c598"
+  },
+  "run_records/moving_off/process_done.json": {
+   "bytes": 742,
+   "sha256": "2137ffa28c3a41f6fe3e91ca2075749f58ce63f0bde1200df7780c38cdbceeb6"
+  },
+  "run_records/moving_off/v3_meta.json": {
+   "bytes": 1269,
+   "sha256": "f2ce0462d1782be144f965acbec55a5295387880accf4408458ae9db0df2a170"
+  },
+  "run_records/moving_s_l1c/process_done.json": {
+   "bytes": 744,
+   "sha256": "26bb997356bd4c5b49e2d60fb995900165930e7e4b2ddf71584a6898d7a00741"
+  },
+  "run_records/moving_s_l1c/v3_meta.json": {
+   "bytes": 1277,
+   "sha256": "2628c0bcfabfd11516d8c77d49ec5c2c7fe0d0a219492c4e41139216cc245a8f"
+  },
+  "run_records/moving_s_l1d_p1/process_done.json": {
+   "bytes": 898,
+   "sha256": "9d9cfc562fd7b6a0fc9e97bd68fcd680ed3a662ed3986d7e482c6d49d020ede1"
+  },
+  "run_records/moving_s_l1d_p1/v3_meta.json": {
+   "bytes": 1260,
+   "sha256": "b5255678a85e1b4b9aead7105c0e9cea56907e6fbe698a877bc67f5b71d1f5e5"
+  },
+  "run_records/moving_s_l1d_p2/process_done.json": {
+   "bytes": 897,
+   "sha256": "9504b1d3388929e1b2604abf80eee24016a52a14c2a4880d7668f090df8cf30d"
+  },
+  "run_records/moving_s_l1d_p2/v3_meta.json": {
+   "bytes": 1289,
+   "sha256": "254ac234fb03559ed520d335b5a12f504f6cbfb973561a532be623ecc9ba0817"
+  },
+  "run_records/run_report.json": {
+   "bytes": 34191,
+   "sha256": "d819d2935ad18946ae7d7b105d256ef878bbbb03914f286b7c970ff6a2dc2d18"
+  },
+  "run_records/sensors_s_l1c/d2_meta.json": {
+   "bytes": 7962,
+   "sha256": "4a0e7d3ba75afbdd256e2ff2fc76b2be0c30ddfbd188296e2b6714e91d2aecfe"
+  },
+  "run_records/sensors_s_l1c/process_done.json": {
+   "bytes": 810,
+   "sha256": "c9f941f9e03401961663d45d53bf3e80eaf93526aa06a1a58a58d500e48afe0a"
+  },
+  "run_records/sensors_s_l1c/s_l1d_sensor_meta.json": {
+   "bytes": 420,
+   "sha256": "0ce97492da6e16bea30b35d8429a82162a2e49f0c9c0f4c1bd18beffb870513b"
+  },
+  "run_records/sensors_s_l1d/d2_meta.json": {
+   "bytes": 7962,
+   "sha256": "32d831d2ddf62efb74407075cae22d6a27b316b48415064b097c7520d3be93c7"
+  },
+  "run_records/sensors_s_l1d/process_done.json": {
+   "bytes": 809,
+   "sha256": "42eeb670fec534f126b352d80a39afe8b697325ec5a40c63b3682ac1a930c67d"
+  },
+  "run_records/sensors_s_l1d/s_l1d_sensor_meta.json": {
+   "bytes": 419,
+   "sha256": "26fbf89561ead0797d307e1c847782dd6e8b209ab01760290d4646def309a443"
+  },
+  "run_records/static_off/process_done.json": {
+   "bytes": 741,
+   "sha256": "fc19575e7d5feb3fcf7b75546b79e4ac348fd648f6ee4d6d4133fe6da831ffad"
+  },
+  "run_records/static_off/v3_meta.json": {
+   "bytes": 1262,
+   "sha256": "2e145169b78300dfc377539150b1a699aa431f234fe46de8307d29d15c5f2ac2"
+  },
+  "run_records/static_s_l1c/process_done.json": {
+   "bytes": 744,
+   "sha256": "94167a02b1c8e5151d24bf1a93bad71549831a9b92c8832438f40545aeb2eb6a"
+  },
+  "run_records/static_s_l1c/v3_meta.json": {
+   "bytes": 1268,
+   "sha256": "72e7b88daa1773a543ae7e911efa9b8ec7ff3ed117fd3b935682ed586c0190f8"
+  },
+  "run_records/static_s_l1d_p1/process_done.json": {
+   "bytes": 898,
+   "sha256": "b9dd23698d9807f03e4b56c9331b6458e02fc5d0d06cc92aa088968a4a77d294"
+  },
+  "run_records/static_s_l1d_p1/v3_meta.json": {
+   "bytes": 1251,
+   "sha256": "565629157795a8ee9cb53ae736c2f6d5678566e8a07c8dd87978e0f83dff1ef4"
+  },
+  "run_records/static_s_l1d_p2/process_done.json": {
+   "bytes": 898,
+   "sha256": "ea32293f7edfa74111b5ca95b6554da8c777fb3e0e39bf0f3cceba439c5f3702"
+  },
+  "run_records/static_s_l1d_p2/v3_meta.json": {
+   "bytes": 1281,
+   "sha256": "7d0ee881ec5b34c65f4951fcd71063f71c1d9097cf232af190ec88ee454048c7"
+  },
+  "s_l1d_analysis.json": {
+   "bytes": 55077,
+   "sha256": "461aceca0db6ffd946d66b3bec0210a091aa89c2284ba6c7c2efa7a6083f8dd5"
+  }
+ },
+ "gates": {
+  "D-EL0": "PASS",
+  "D-FIREWALL": "PASS",
+  "D-FIXTURES": "PASS",
+  "D-INTEGRITY": "PASS",
+  "D-ORACLE": "PASS",
+  "D-REACQ": "PASS",
+  "D-REGRESSION": "PASS",
+  "D-SEPARATION": "PASS"
+ },
+ "plan_sha256": "73899f2dd25ed36b3a792254579893f9cde791fdef6cd7484294f74df695751a",
+ "raw_manifest_sha256": "2b5fd37ead4e9671288c8bb37790f7dc1f08ffce94f6daa5d2b5df7c3aa4c598",
+ "raw_root": "../aerial_gym_simulator/results/s_l1d_v1/SL1D-C01 (outside Git)",
+ "run_id": "SL1D-C01",
+ "schema": "motar.s-l1d-evidence-index.v1",
+ "status": "COMPLETED"
+}

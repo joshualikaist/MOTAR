@@ -1,0 +1,95 @@
+{
+ "contact_bars": {
+  "20": {
+   "centre": [
+    12.42744998574257,
+    20.0,
+    1.5
+   ],
+   "half": [
+    0.28744998574256897,
+    0.3665499985218048,
+    1.5
+   ],
+   "slot": 0
+  },
+  "21": {
+   "centre": [
+    12.428700014352799,
+    20.0,
+    1.5
+   ],
+   "half": [
+    0.28870001435279846,
+    0.2454500049352646,
+    1.5
+   ],
+   "slot": 0
+  },
+  "22": {
+   "centre": [
+    12.560457079914563,
+    21.705349988937378,
+    1.5
+   ],
+   "half": [
+    0.274150013923645,
+    0.38534998893737793,
+    1.5
+   ],
+   "slot": 0
+  },
+  "23": {
+   "centre": [
+    11.20875000178814,
+    22.09361641674603,
+    1.5
+   ],
+   "half": [
+    0.2775000035762787,
+    0.2576499879360199,
+    1.5
+   ],
+   "slot": 0
+  }
+ },
+ "fixtures": [
+  "hover",
+  "vx 1.0 step",
+  "vx 2.5 step",
+  "vy 1.0 step",
+  "vy -2.5 step",
+  "vx reversal",
+  "vy reversal",
+  "diagonal 3.5355 held",
+  "yaw rate 1.0",
+  "yaw rate 3.0",
+  "vx 2.5 with yaw 1.0",
+  "climb 1.0",
+  "descend 0.5",
+  "brake from 2.0",
+  "brake from 3.5355 (diagonal)",
+  "brake from 2.5",
+  "sinusoid vx 2.0 at 0.5 Hz",
+  "sinusoid vy 2.0 at 1.0 Hz",
+  "saturation vx 10",
+  "saturation diagonal 10",
+  "contact head-on 1 m/s",
+  "contact head-on 2 m/s",
+  "contact corner 3 m/s at 30 deg",
+  "contact oblique 2 m/s at 60 deg"
+ ],
+ "nan_fields": [],
+ "origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-mt-p1/motar_eval/__init__.py"
+ },
+ "process": {
+  "batch": "V2",
+  "cap_s": 1200,
+  "id": "v2_contact",
+  "num_envs": 24
+ },
+ "substeps_per_action": 10,
+ "threshold_n": 0.05
+}

@@ -1,0 +1,95 @@
+steps,n 600 128 keys ['action', 'belief_pos', 'camera', 'captured', 'controller_ms', 'crashed', 'digest', 'el0_alone_px', 'el0_cls', 'el0_in_frustum', 'el0_visible_px', 'intervening', 'lidar_only', 'reset', 'robot_pos', 'shadow_clear', 'shadow_offset', 't0', 'target_pos']
+env config per arm identical: True {'NAVRL_MAX_VELOCITY': '2.5', 'NAVRL_NUM_BARS': '160', 'NAVRL_SEED': '4502', 'NAVRL_SENSOR_LINEAGE': 'off', 'NAVRL_SPEED_GOVERNOR': 'riskcap', 'NAVRL_SPEED_GOVERNOR_BRAKE_MPS2': '2.9608856678', 'NAVRL_SPEED_GOVERNOR_FIXED_MPS': '2.0', 'NAVRL_SPEED_GOVERNOR_FREE_MPS': '3.53553390593', 'NAVRL_SPEED_GOVERNOR_HALF_WIDTH_M': '0.45', 'NAVRL_SPEED_GOVERNOR_MARGIN_M': '0.45', 'NAVRL_SPEED_GOVERNOR_REACTION_S': '0.1', 'NAVRL_SPEED_GOVERNOR_RELEASE_M': '5.0', 'NAVRL_SPEED_GOVERNOR_SLOW_M': '3.0', 'NAVRL_SPEED_GOVERNOR_TTC_S': '1.2', 'NAVRL_TARGET_BEHAVIOR_LEVEL': 'e2_obstacle_aware', 'NAVRL_TARGET_DISTANCE_BACKEND': 'direct_l2_v1', 'NAVRL_TARGET_DYNAMICS': 'bounded', 'NAVRL_TARGET_PATTERN': 'waypoint', 'NAVRL_TARGET_ROUTE_MODE': 'off', 'NAVRL_TARGET_SPEED_FINAL': '1.5', 'NAVRL_TARGET_SPEED_MIN': '0.3', 'NAVRL_TARGET_SPEED_RAMP_EPOCHS': '300'}
+max_velocity/yaw_rate_max/governor 2.5 3.0 riskcap
+triggered 125 matched 107 unmatched 18 never 3
+unmatched reasons {'t0': 9, 'prefix': 9}
+unmatched B0 class at t0-1: {'FOV_EXIT': 16, 'FULL': 2}
+matched t0 range 2 10 hist {2: 2, 3: 5, 4: 6, 5: 45, 6: 34, 7: 9, 8: 2, 9: 1, 10: 3}
+coupling onset vs B0: {'B1': 10, 'B2': 10, 'B3': 10}  B2 vs B1: 11  B3 vs B2: 16
+  B1: envs differing at onset step 10: [15, 41, 42, 45, 47, 51, 52, 53, 58, 69, 75, 77, 81, 83, 87, 89, 100, 103, 108, 111, 117] | any env differing before step 10 in ANY state (incl. branched): [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 43, 44, 46, 48, 49, 50, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 70, 71, 72, 73, 74, 76, 78, 79, 80, 82, 84, 85, 86, 88, 90, 91, 92, 93, 94, 96, 97, 98, 99, 101, 102, 104, 105, 106, 107, 109, 110, 112, 113, 114, 115, 116, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]
+  B2: envs differing at onset step 10: [15, 41, 42, 45, 47, 51, 52, 53, 58, 69, 75, 77, 81, 83, 87, 89, 100, 103, 108, 111, 117] | any env differing before step 10 in ANY state (incl. branched): [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 43, 44, 46, 48, 49, 50, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 70, 71, 72, 73, 74, 76, 78, 79, 80, 82, 84, 85, 86, 88, 90, 91, 92, 93, 94, 96, 97, 98, 99, 101, 102, 104, 105, 106, 107, 109, 110, 112, 113, 114, 115, 116, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]
+  B3: envs differing at onset step 10: [15, 41, 42, 45, 47, 51, 52, 53, 58, 69, 75, 77, 81, 83, 87, 89, 100, 103, 108, 111, 117] | any env differing before step 10 in ANY state (incl. branched): [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 43, 44, 46, 48, 49, 50, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 70, 71, 72, 73, 74, 76, 78, 79, 80, 82, 84, 85, 86, 88, 90, 91, 92, 93, 94, 96, 97, 98, 99, 101, 102, 104, 105, 106, 107, 109, 110, 112, 113, 114, 115, 116, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127]
+  B0 resets at steps<12: [(10, [79]), (11, [34])]
+  B1 resets at steps<12: []
+  B2 resets at steps<12: [(11, [79])]
+  B3 resets at steps<12: [(11, [34, 79])]
+  NOTE same-step reobs+terminal arm=B1 env=34 i=13
+
+PRIMARY n = 22 {'FULL': 18, 'PARTIAL': 0, 'CENTRE_ONLY': 4}
+primary envs/t0: [(8, 3), (17, 2), (19, 3), (27, 3), (30, 4), (40, 6), (48, 5), (49, 9), (50, 6), (56, 6), (57, 5), (61, 6), (73, 6), (76, 6), (78, 4), (80, 5), (84, 4), (85, 4), (86, 2), (98, 3), (119, 3), (120, 6)]
+B0: reobs=18 strict=18 crash=1 crash_ctrl=0 capture=0 terminal=1 reset_in_W=1 cap5=11 crash5=1 false_det=0 median_t=0.90 mean_t_cens=1.182 ddist=-4.249 trans=4.995 fov=0.914 cam=0.339 ctrl_steps_mean=11.82
+   end_reason counts: {'reobserved': 18, 'window': 4}
+B1: reobs=7 strict=7 crash=0 crash_ctrl=0 capture=0 terminal=0 reset_in_W=0 cap5=6 crash5=1 false_det=0 median_t=0.90 mean_t_cens=1.673 ddist=-2.022 trans=2.465 fov=0.832 cam=0.114 ctrl_steps_mean=16.73
+   end_reason counts: {'reobserved': 7, 'window': 15}
+B2: reobs=9 strict=9 crash=0 crash_ctrl=0 capture=0 terminal=0 reset_in_W=0 cap5=4 crash5=1 false_det=0 median_t=0.90 mean_t_cens=1.555 ddist=-2.113 trans=2.583 fov=0.955 cam=0.205 ctrl_steps_mean=15.55
+   end_reason counts: {'reobserved': 9, 'window': 13}
+B3: reobs=17 strict=17 crash=0 crash_ctrl=0 capture=0 terminal=0 reset_in_W=0 cap5=6 crash5=0 false_det=0 median_t=1.00 mean_t_cens=1.286 ddist=-2.319 trans=2.974 fov=0.952 cam=0.309 ctrl_steps_mean=12.86
+   end_reason counts: {'reobserved': 17, 'window': 5}
+B3-B2: diff=+36.4pp n10/n01=9/1 McNemar p=0.0215 boot95=[+13.6,+59.1]
+B3-B1: diff=+45.5pp n10/n01=11/1 McNemar p=0.0063 boot95=[+22.7,+68.2]
+B2-B1: diff=+9.1pp n10/n01=2/0 McNemar p=0.5000 boot95=[+0.0,+22.7]
+B1-B0: diff=-50.0pp n10/n01=2/13 McNemar p=0.0074 boot95=[-77.3,-22.7]
+B2-B0: diff=-40.9pp n10/n01=2/11 McNemar p=0.0225 boot95=[-68.2,-13.6]
+B3-B0: diff=-4.5pp n10/n01=3/4 McNemar p=1.0000 boot95=[-27.3,+18.2]
+patterns B1B2B3: {'000': (4, [8, 56, 61, 86]), '001': (9, [17, 19, 48, 73, 76, 78, 80, 84, 120]), '011': (2, [30, 49]), '110': (1, [50]), '111': (6, [27, 40, 57, 85, 98, 119])}
+B0 reobs among 000: [8, 56, 61, 86]
+shadow offset at t0 per primary event: [(8, 0.5, True), (17, 0.0, False), (19, 0.5, True), (27, -1.25, True), (30, 0.0, True), (40, 0.0, True), (48, 0.25, True), (49, 0.0, False), (50, 1.5, True), (56, 0.25, True), (57, 0.0, True), (61, -0.5, True), (73, -0.5, True), (76, 0.5, True), (78, 0.0, True), (80, 0.5, True), (84, 0.5, True), (85, 0.0, False), (86, -0.5, True), (98, 0.0, False), (119, 0.0, False), (120, 0.0, False)]
+
+ALL MATCHED (107): per arm crash in W / under control / terminal / reset in W / cap5 / crash5
+  B0: crash=5 ctrl=0 crash_envs=[34, 44, 76, 79, 97] ctrl_envs=[] terminal=9 capture=4 same_step_reobs_term=0
+  B1: crash=2 ctrl=1 crash_envs=[34, 44] ctrl_envs=[(34, 'FOV_EXIT')] terminal=3 capture=1 same_step_reobs_term=1
+  B2: crash=2 ctrl=0 crash_envs=[44, 79] ctrl_envs=[] terminal=3 capture=1 same_step_reobs_term=0
+  B3: crash=3 ctrl=0 crash_envs=[34, 44, 79] ctrl_envs=[] terminal=4 capture=1 same_step_reobs_term=0
+  class CENTRE_ONLY n=4: {'B0': 4, 'B1': 2, 'B2': 2, 'B3': 2} B2-B1 n10/n01 0 0 B3-B2 n10/n01 0 0
+  class FOV_EXIT n=83: {'B0': 82, 'B1': 33, 'B2': 82, 'B3': 81} B2-B1 n10/n01 49 0 B3-B2 n10/n01 0 1
+  class FULL n=18: {'B0': 14, 'B1': 5, 'B2': 7, 'B3': 15} B2-B1 n10/n01 2 0 B3-B2 n10/n01 9 1
+  class VISIBLE n=2: {'B0': 2, 'B1': 2, 'B2': 2, 'B3': 2} B2-B1 n10/n01 0 0 B3-B2 n10/n01 0 0
+
+target max diff pre-terminal over matched events: 0.0
+target max diff over full window, primary events (B0 env76 crash aside): 20.2535400390625
+
+B2 vs B3 divergence per primary event: env, t0, pattern, first action diff, first digest diff, B3 nonzero offset ctrl steps, max cmd speed B2/B3
+     8 t0=3 000 fa=0 fd=0 noise_first=False nz_off=17/20 spd B2=1.00 B3=1.80 B2trans=1.72 B3trans=1.83
+    17 t0=2 001 fa=1 fd=1 noise_first=False nz_off=12/13 spd B2=1.00 B3=1.51 B2trans=1.73 B3trans=2.36
+    19 t0=3 001 fa=0 fd=0 noise_first=False nz_off=6/6 spd B2=1.00 B3=1.25 B2trans=1.90 B3trans=3.71
+    27 t0=3 111 fa=0 fd=0 noise_first=False nz_off=7/9 spd B2=1.00 B3=1.80 B2trans=3.01 B3trans=3.33
+    30 t0=4 011 fa=1 fd=1 noise_first=False nz_off=4/5 spd B2=1.00 B3=1.80 B2trans=4.74 B3trans=4.81
+    40 t0=6 111 fa=11 fd=10 noise_first=True nz_off=1/15 spd B2=1.00 B3=1.80 B2trans=2.81 B3trans=2.79
+    48 t0=5 001 fa=0 fd=0 noise_first=False nz_off=8/20 spd B2=1.00 B3=1.80 B2trans=2.23 B3trans=2.42
+    49 t0=9 011 fa=1 fd=1 noise_first=False nz_off=1/10 spd B2=1.00 B3=1.00 B2trans=3.96 B3trans=3.98
+    50 t0=6 110 fa=0 fd=0 noise_first=False nz_off=15/20 spd B2=1.00 B3=1.80 B2trans=2.53 B3trans=2.92
+    56 t0=6 000 fa=0 fd=0 noise_first=False nz_off=10/20 spd B2=1.00 B3=1.80 B2trans=2.60 B3trans=2.62
+    57 t0=5 111 fa=2 fd=2 noise_first=False nz_off=3/9 spd B2=1.00 B3=1.07 B2trans=3.67 B3trans=3.47
+    61 t0=6 000 fa=0 fd=0 noise_first=False nz_off=18/20 spd B2=1.00 B3=1.80 B2trans=2.31 B3trans=2.58
+    73 t0=6 001 fa=0 fd=0 noise_first=False nz_off=6/9 spd B2=0.21 B3=1.21 B2trans=1.06 B3trans=2.32
+    76 t0=6 001 fa=0 fd=0 noise_first=False nz_off=5/7 spd B2=0.21 B3=1.29 B2trans=0.88 B3trans=2.39
+    78 t0=4 001 fa=3 fd=3 noise_first=False nz_off=15/18 spd B2=1.00 B3=1.80 B2trans=2.12 B3trans=2.75
+    80 t0=5 001 fa=0 fd=0 noise_first=False nz_off=18/18 spd B2=1.00 B3=1.39 B2trans=2.41 B3trans=2.62
+    84 t0=4 001 fa=0 fd=0 noise_first=False nz_off=11/11 spd B2=1.00 B3=1.80 B2trans=1.60 B3trans=2.70
+    85 t0=4 111 fa=2 fd=2 noise_first=False nz_off=3/5 spd B2=1.00 B3=1.51 B2trans=4.77 B3trans=3.94
+    86 t0=2 000 fa=0 fd=0 noise_first=False nz_off=16/20 spd B2=1.00 B3=1.80 B2trans=1.80 B3trans=2.09
+    98 t0=3 111 fa=14 fd=13 noise_first=True nz_off=0/7 spd B2=1.00 B3=1.00 B2trans=3.39 B3trans=3.39
+   119 t0=3 111 fa=5 fd=5 noise_first=False nz_off=5/10 spd B2=1.00 B3=1.80 B2trans=3.26 B3trans=3.20
+   120 t0=6 001 fa=4 fd=4 noise_first=False nz_off=7/11 spd B2=1.00 B3=1.80 B2trans=2.32 B3trans=3.23
+noise-first events: 2 among discordant: 0
+median max cmd speed B2/B3: None
+  median max cmd speed B2: 1.000
+  median max cmd speed B3: 1.803
+switch check: steps 195 zero 140 zero&equal 140 nonzero 55 nonzero&equal 0
+B1/B2 same-state control steps: 108 xy action equal: 108 B1 yaw all zero while controlling: True
+compute B0: mean=0.878 p95=0.937 p99=0.983
+compute B1: mean=1.643 p95=1.723 p99=1.898
+compute B2: mean=1.667 p95=1.738 p99=1.875
+compute B3: mean=1.663 p95=1.735 p99=1.829
+belief error at t0-1 (primary): median 0.146 max 0.284
+  pattern 000 belief err at t0-1: [0.17, 0.14, 0.05, 0.13]
+  pattern 001 belief err at t0-1: [0.07, 0.15, 0.11, 0.1, 0.09, 0.21, 0.19, 0.11, 0.16]
+  pattern 011 belief err at t0-1: [0.26, 0.11]
+  pattern 110 belief err at t0-1: [0.18]
+  pattern 111 belief err at t0-1: [0.22, 0.12, 0.28, 0.22, 0.14, 0.22]
+
+UNMATCHED events with B0 class FULL (sensitivity, own t0 per arm):
+  env 89 t0s [16, 16, 15, 15] t0 {'B0': True, 'B1': True, 'B2': True, 'B3': True}
+  env 111 t0s [19, 16, 16, 16] t0 {'B0': True, 'B1': False, 'B2': True, 'B3': True}
+
+first detection step (B0) for primary events: [(8, 0, 3), (17, 0, 2), (19, 0, 3), (27, 0, 3), (30, 0, 4), (40, 0, 6), (48, 0, 5), (49, 0, 9), (50, 0, 6), (56, 0, 6), (57, 0, 5), (61, 0, 6), (73, 0, 6), (76, 0, 6), (78, 0, 4), (80, 0, 5), (84, 0, 4), (85, 0, 4), (86, 0, 2), (98, 0, 3), (119, 0, 3), (120, 0, 6)]

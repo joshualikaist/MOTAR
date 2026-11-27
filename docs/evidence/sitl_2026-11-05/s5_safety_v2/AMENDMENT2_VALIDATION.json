@@ -1,0 +1,109 @@
+{
+  "unit": "s5_safety_v2",
+  "source_base": "fe7daed4a521bde2ded617f66cdcfd7934d50f72",
+  "scope": "CPU amendment2 preparation only; no live PX4/Gazebo/GPU execution",
+  "public_cpu": {
+    "profile": "PUBLIC_CPU",
+    "status": "PASS",
+    "ran": 3935,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 10,
+    "excluded": 5,
+    "excluded_reasons": {
+      "test_navrl_nonoverlap_placement.TestFootprintClearancePlacement": "setUpClass starts a worker that imports aerial_gym (Isaac Gym and Warp need a CUDA device)",
+      "test_navrl_physical_target_lower_contract.LowerContractTest.test_fresh_child_imports_isaacgym_before_packed_torch": "the child process imports isaacgym, which needs a CUDA device"
+    }
+  },
+  "public_cpu_wall_s": 769.634,
+  "kernel_faults_before": 0,
+  "kernel_faults_after": 0,
+  "reviewed_sources": [
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tools/sitl_s5_safety.py",
+      "bytes": 106436,
+      "sha256": "5c3a457824d7d9243940de15a649d20fc8c1c398111965195e31b1cceb52811c"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/tests/test_sitl_s5_safety.py",
+      "bytes": 119330,
+      "sha256": "cb34835854ded433191f3b2fc128f0cde1b649705d179ca948ef20ad052bef9f"
+    },
+    {
+      "path": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/docs/plans/prereg_sitl_s5_safety_v2_amendment2_2026-11-10.md",
+      "bytes": 4611,
+      "sha256": "9b51afee14aba722a6e5db46490159a9fd57d8e2b54711a20cbaffefa17a5a83"
+    }
+  ],
+  "independent_review": {
+    "path": "/home/fair/motar_tmp/sitl_amend2_20261110/review_r1/S5_REVIEW.md",
+    "bytes": 4117,
+    "sha256": "e904aeb5f10377036085a0c63f9ed16811dda9008f4247f83e7e534f3da5f133"
+  },
+  "validation_artifacts": [
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/public_cpu.log",
+      "bytes": 73302,
+      "sha256": "ba2df6eb597fa63f380e87aade4e5cd95c631ccc12c69e3cc36f642be335e8d0"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/public_cpu_r2.log",
+      "bytes": 70551,
+      "sha256": "d233c90e087da8d1aad9a07bac38032947e22120c8b0eb199cba1706bf3a0b10"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s5_focused.log",
+      "bytes": 5917,
+      "sha256": "8e27c00d2fb25eafad669518653653125829405666aa53e606f9536b3161040b"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/s4r1_focused.log",
+      "bytes": 143,
+      "sha256": "0df9fa0e05653b20215511137f9ed652f688482bbfc5ef9b02932cb665a8bb5a"
+    },
+    {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/index_s5.log",
+      "bytes": 107,
+      "sha256": "17ebadffe4cf9abfccb50d42aac10cdc1b68bfbbd6c2205a9f882f0aaf65e3f1"
+    }
+  ],
+  "first_full_run": {
+    "ran": 3935,
+    "failures": 2,
+    "errors": 2,
+    "skipped": 10,
+    "causes": [
+      "two BOIA tests hit the disk-space floor before Cursor removal",
+      "two experiment-index tests ran before new S5 prereg was staged"
+    ]
+  },
+  "cursor_cleanup": {
+    "cleanup.py": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/cursor_cleanup/cleanup.py",
+      "bytes": 3187,
+      "sha256": "e06daac16928f526aa3da80ab068233f90a9a0836fca53e3e6c61c722fb3e3ae"
+    },
+    "plan_all.json": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/cursor_cleanup/plan_all.json",
+      "bytes": 320,
+      "sha256": "5cdcbbcf6069e139cf1268b1470d8a64cc6acf78609194a8010803647f938938"
+    },
+    "REVIEW.md": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/cursor_cleanup/REVIEW.md",
+      "bytes": 4370,
+      "sha256": "54db7b581944fcd522b33637c3828c02f5f32f22dc25298d50544acf58b85cda"
+    },
+    "before.json": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/cursor_cleanup/before.json",
+      "bytes": 319,
+      "sha256": "23b48bda8fc05f81c24ce649a1f962a5307a74f7bbeda8af158532cc8ba123fc"
+    },
+    "after.json": {
+      "path": "/home/fair/motar_tmp/sitl_amend2_20261110/cursor_cleanup/after.json",
+      "bytes": 291,
+      "sha256": "28c985b3339bb5228a2eea8924f7808ac96c32bfffd81ad4f29f5ad3529a1a9f"
+    }
+  },
+  "historical_data": "No research raw/checkpoint or original prereg modified; no exhaustive raw rehash claimed",
+  "execution_approval": "PENDING final-HEAD scoped user approval"
+}

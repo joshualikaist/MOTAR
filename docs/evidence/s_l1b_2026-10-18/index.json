@@ -1,0 +1,155 @@
+{
+ "amendment_sha256": "b39d0365ed89d99c76598d50968ed7ca69e381774976971ade68f493ab040f4b",
+ "approved_source_commit": "a1f97e93af57f97b9778e395ffa8d38f7365e989",
+ "commands": {
+  "analysis": "PYTHONNOUSERSITE=1 CUDA_VISIBLE_DEVICES='' <aerialgym python> -B tools/s_l1b_analysis.py --run <raw_root> --out docs/evidence/s_l1b_2026-10-18/s_l1b_analysis.json",
+  "run": "PYTHONNOUSERSITE=1 <aerialgym python> -B tools/s_l1b_run.py run --approved-commit a1f97e93af57f97b9778e395ffa8d38f7365e989"
+ },
+ "decision": "S-L1B_QUALIFIED",
+ "environment": {
+  "gpu": "NVIDIA GeForce RTX 3070 8 GiB",
+  "numpy": "1.23.0",
+  "python": "3.8.20",
+  "torch": "2.4.1+cu121"
+ },
+ "files": {
+  "REPORT.md": {
+   "bytes": 6486,
+   "sha256": "47e91ec809309b0dfaff2425e2e2b4f035a760c39c5f05501cb3cd9d1bceb214"
+  },
+  "preservation_after.json": {
+   "bytes": 10172,
+   "sha256": "682916255b8b8c78d033e0172c6d8771d9da668ec9eb1cfc4333b6b5201c75b8"
+  },
+  "run_records/RAW_MANIFEST.json": {
+   "bytes": 21291,
+   "sha256": "11aab182827ec04a22a12036bd77ace60e080a91c6232c4ba8d4e6499bd15169"
+  },
+  "run_records/moving_off/process_done.json": {
+   "bytes": 686,
+   "sha256": "d8d094163995ebd614ff2a872a4ea94190e55cddc32c12aa7dbf37fd479a6b89"
+  },
+  "run_records/moving_off/v3_meta.json": {
+   "bytes": 1270,
+   "sha256": "93b3494062016888e3de0986398be635c0e62c0504f5058ef4d615fbee28e24d"
+  },
+  "run_records/moving_s_l1a/process_done.json": {
+   "bytes": 690,
+   "sha256": "257fd603f252645449c04ef0d3000b577b1bbc87c216eb2d72841c47427ff09c"
+  },
+  "run_records/moving_s_l1a/v3_meta.json": {
+   "bytes": 1277,
+   "sha256": "8aa62d4e0b6296526ee427680251c0b095a32eea4df445383f02917f94b2b22f"
+  },
+  "run_records/moving_s_l1b_p1/process_done.json": {
+   "bytes": 696,
+   "sha256": "f458e65980b8fbb85361a86c306b82de64c0e597b5dcf9bf62e30e1c004f24c0"
+  },
+  "run_records/moving_s_l1b_p1/v3_meta.json": {
+   "bytes": 1259,
+   "sha256": "226cd86ea4786d517ac49e065a4badb862783cca12f632d2402a3873c3b071f2"
+  },
+  "run_records/moving_s_l1b_p2/process_done.json": {
+   "bytes": 698,
+   "sha256": "059f7a51c89b6f12888bccb3c8936ea6ad2dd5fe5640b2be12623261076b19e0"
+  },
+  "run_records/moving_s_l1b_p2/v3_meta.json": {
+   "bytes": 1290,
+   "sha256": "eabfd5ae5e00b34d85c519254a79939d979a80e73082f9eb63f57b1b20806278"
+  },
+  "run_records/run_report.json": {
+   "bytes": 34520,
+   "sha256": "c9f53408130b041c0e86ba8bd2c6ddacdf9e00809740d9d10b51168d190cd1fc"
+  },
+  "run_records/sensors_legacy/d2_meta.json": {
+   "bytes": 7964,
+   "sha256": "3acb45ba4cafc05b0c29067ee3d74044a8c893b70f08329c05eb2962f7e511e4"
+  },
+  "run_records/sensors_legacy/process_done.json": {
+   "bytes": 815,
+   "sha256": "fed2adf214c1b949f0ba1b0b37c77d70ceaf2160f0187cdee28bfe7f43148b5b"
+  },
+  "run_records/sensors_legacy/s_l1b_sensor_meta.json": {
+   "bytes": 2145,
+   "sha256": "d6a8c779aa85ddf4ba7fd38b56162c9c2a4c26dd44f17920d8728197fd2a9281"
+  },
+  "run_records/sensors_s_l1a/d2_meta.json": {
+   "bytes": 7962,
+   "sha256": "74d4d76ed1f509545c1dac6ccb5ccd2579b998443effea6d969b299f80273c31"
+  },
+  "run_records/sensors_s_l1a/process_done.json": {
+   "bytes": 811,
+   "sha256": "607f4225a92f473cf2cf5d72ee19c9e44aa1e178e7b90c6dde12fd42398a119f"
+  },
+  "run_records/sensors_s_l1a/s_l1b_sensor_meta.json": {
+   "bytes": 2148,
+   "sha256": "9b9e3cbb15807c694e75842008a5fda6d91d635edbb3352ec88b5c2d0979d382"
+  },
+  "run_records/sensors_s_l1b/d2_meta.json": {
+   "bytes": 7962,
+   "sha256": "15ace373ac01f91305e016e219e3e2e3930d9f95c6016b8e51e1634e329d713d"
+  },
+  "run_records/sensors_s_l1b/process_done.json": {
+   "bytes": 812,
+   "sha256": "e694feed98a9f8415aacef6c13b4011a3ddb85cdacdcfa152c3e131f36c5f90b"
+  },
+  "run_records/sensors_s_l1b/s_l1b_sensor_meta.json": {
+   "bytes": 4623,
+   "sha256": "45685e6145b26c5804ef2bb15aac01397d1f29d5f16488a9ad4065971f3fdbcc"
+  },
+  "run_records/static_off/process_done.json": {
+   "bytes": 685,
+   "sha256": "6b205ea92fd83274b67b674b50d110a15f0943fb5eee9d5f9991658f0795deff"
+  },
+  "run_records/static_off/v3_meta.json": {
+   "bytes": 1261,
+   "sha256": "1ee0b7d9ca3c08903fab705f4823d2fece47b83997bddd3298c4f0002e1d8079"
+  },
+  "run_records/static_s_l1a/process_done.json": {
+   "bytes": 689,
+   "sha256": "5593f7431e1438dad08a3cebcb470fc288fc23161ba51bb24fdf446e8917198a"
+  },
+  "run_records/static_s_l1a/v3_meta.json": {
+   "bytes": 1269,
+   "sha256": "ad67588969e3bbc27d07cf30a3102639a73d3bd2b9f99d1c101509fe06f95689"
+  },
+  "run_records/static_s_l1b_p1/process_done.json": {
+   "bytes": 697,
+   "sha256": "d147b0bc63f98530a97dc8d5ff3ba4dc2b159b718543d0f4e258072eeacf0ad2"
+  },
+  "run_records/static_s_l1b_p1/v3_meta.json": {
+   "bytes": 1253,
+   "sha256": "001ec9be29af42a879b5fdc5174175e337e9b87cd36f2ecc09d46a172e4d2cd6"
+  },
+  "run_records/static_s_l1b_p2/process_done.json": {
+   "bytes": 698,
+   "sha256": "86b3a36469c6afb166f60b08a05ad09a0a95bd89ba0ea769c1a22f04492fe7c3"
+  },
+  "run_records/static_s_l1b_p2/v3_meta.json": {
+   "bytes": 1280,
+   "sha256": "3309943336d62d0e4e9b0b3fbdca0be31e6cd372132cd95582d99dcd1dda20f7"
+  },
+  "s_l1b_analysis.json": {
+   "bytes": 21155,
+   "sha256": "d6284b90f32dfd3ab0d2d6cb100f5d65a49a491ec9a254306b96b5f92972e7a9"
+  }
+ },
+ "gates": {
+  "B-A1A2": "PASS",
+  "B-CARVE": "PASS",
+  "B-DEPTH": "PASS",
+  "B-EL0": "PASS",
+  "B-ENVELOPE": "PASS",
+  "B-FIREWALL": "PASS",
+  "B-INTEGRITY": "PASS",
+  "B-POINT": "PASS",
+  "B-REGRESSION": "PASS",
+  "B-VERTICAL": "PASS"
+ },
+ "plan_sha256": "5d169962bb3e1f8995d634b84868b79a58c392182c9d2001dacbdb0a87385d3d",
+ "raw_manifest_sha256": "11aab182827ec04a22a12036bd77ace60e080a91c6232c4ba8d4e6499bd15169",
+ "raw_root": "../aerial_gym_simulator/results/s_l1b_v1/SL1B-C01 (outside Git)",
+ "run_id": "SL1B-C01",
+ "schema": "motar.s-l1b-evidence-index.v1",
+ "status": "COMPLETED"
+}

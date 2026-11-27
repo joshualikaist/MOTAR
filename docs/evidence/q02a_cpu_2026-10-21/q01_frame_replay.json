@@ -1,0 +1,321 @@
+{
+ "scope": "SMOKE_NOT_VALIDATION: no occlusion labels; camera flag is oracle-grade in this profile",
+ "run_root": "/home/fair/workspaces/aerial_gym_ws/boia_shadow_runs/BOIA-SHADOW-Q01-V2",
+ "unique_frames": 3,
+ "frames": [
+  {
+   "frame": "S0/sensor_000.npz",
+   "key": {
+    "action": 0,
+    "decision": 0,
+    "env": 0,
+    "episode": 0,
+    "observation": 0
+   },
+   "content_sha256": "9f18a87a2a71748631127492c56e16118d5eba5f1d7b35bb3ed1f687b0e58be1",
+   "duplicates": [
+    "S1_OFF/sensor_000.npz",
+    "S1_ON/sensor_000.npz"
+   ],
+   "recorded_flag": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ],
+    "source": "CAMERA_DETECTION",
+    "camera_detected": true,
+    "confidence_raw": 0.4080391228199005,
+    "belief_kind": "MEASUREMENT_UPDATED",
+    "track_age_s": 0.0,
+    "predicted_vehicle_m": [
+     NaN,
+     NaN,
+     NaN
+    ],
+    "predicted_range_m": NaN,
+    "bearing_deg": NaN,
+    "elevation_deg": NaN,
+    "sigma_range_m": NaN,
+    "sigma_lateral_m": NaN,
+    "fov_points_inside": 0,
+    "fov_points_total": 0,
+    "camera_surface_interval_m": [
+     NaN,
+     NaN
+    ],
+    "lidar_surface_interval_m": [
+     NaN,
+     NaN
+    ],
+    "depth_pixels": 0,
+    "depth_foreground": 0,
+    "depth_consistent": 0,
+    "depth_free": 0,
+    "lidar_beams": 0,
+    "lidar_foreground": 0,
+    "lidar_consistent": 0,
+    "lidar_far": 0,
+    "validation_problems": [],
+    "confidence_semantics": "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY",
+    "ground_truth_used": false,
+    "utility": "ABSTAIN",
+    "calibration": "NONE_DECLARED_PRIORS",
+    "cpu_ms": 0.16289600171148777
+   },
+   "camera_flag_cleared": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ],
+    "source": "TRACKER_PREDICTION",
+    "camera_detected": false,
+    "confidence_raw": 0.4080391228199005,
+    "belief_kind": "MEASUREMENT_UPDATED",
+    "track_age_s": 0.0,
+    "predicted_vehicle_m": [
+     10.030435789103482,
+     -1.041930675071967e-07,
+     0.029999971389770508
+    ],
+    "predicted_range_m": 10.030480652372118,
+    "bearing_deg": -5.951708528127297e-07,
+    "elevation_deg": 0.17136509888062942,
+    "sigma_range_m": 0.18582655169370865,
+    "sigma_lateral_m": 0.2019475001588369,
+    "fov_points_inside": 7,
+    "fov_points_total": 7,
+    "camera_surface_interval_m": [
+     9.408782685716066,
+     10.152088892490902
+    ],
+    "lidar_surface_interval_m": [
+     9.4588275489847,
+     10.202133755759537
+    ],
+    "depth_pixels": 121,
+    "depth_foreground": 0,
+    "depth_consistent": 121,
+    "depth_free": 0,
+    "lidar_beams": 3,
+    "lidar_foreground": 0,
+    "lidar_consistent": 1,
+    "lidar_far": 2,
+    "validation_problems": [],
+    "confidence_semantics": "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY",
+    "ground_truth_used": false,
+    "utility": "ABSTAIN",
+    "calibration": "NONE_DECLARED_PRIORS",
+    "cpu_ms": 0.6992609705775976
+   }
+  },
+  {
+   "frame": "S0/sensor_001.npz",
+   "key": {
+    "action": 5,
+    "decision": 5,
+    "env": 0,
+    "episode": 0,
+    "observation": 5
+   },
+   "content_sha256": "b132f524c6538728a669bd3fa8b9a15acdeddccae789923a20359329c3f2dbf7",
+   "duplicates": [
+    "S1_OFF/sensor_001.npz",
+    "S1_ON/sensor_001.npz"
+   ],
+   "recorded_flag": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ],
+    "source": "CAMERA_DETECTION",
+    "camera_detected": true,
+    "confidence_raw": 0.816078245639801,
+    "belief_kind": "MEASUREMENT_UPDATED",
+    "track_age_s": 0.0,
+    "predicted_vehicle_m": [
+     NaN,
+     NaN,
+     NaN
+    ],
+    "predicted_range_m": NaN,
+    "bearing_deg": NaN,
+    "elevation_deg": NaN,
+    "sigma_range_m": NaN,
+    "sigma_lateral_m": NaN,
+    "fov_points_inside": 0,
+    "fov_points_total": 0,
+    "camera_surface_interval_m": [
+     NaN,
+     NaN
+    ],
+    "lidar_surface_interval_m": [
+     NaN,
+     NaN
+    ],
+    "depth_pixels": 0,
+    "depth_foreground": 0,
+    "depth_consistent": 0,
+    "depth_free": 0,
+    "lidar_beams": 0,
+    "lidar_foreground": 0,
+    "lidar_consistent": 0,
+    "lidar_far": 0,
+    "validation_problems": [],
+    "confidence_semantics": "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY",
+    "ground_truth_used": false,
+    "utility": "ABSTAIN",
+    "calibration": "NONE_DECLARED_PRIORS",
+    "cpu_ms": 0.14658609870821238
+   },
+   "camera_flag_cleared": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ],
+    "source": "TRACKER_PREDICTION",
+    "camera_detected": false,
+    "confidence_raw": 0.816078245639801,
+    "belief_kind": "MEASUREMENT_UPDATED",
+    "track_age_s": 0.0,
+    "predicted_vehicle_m": [
+     7.310870276208817,
+     6.138165831752499,
+     0.08947551250457764
+    ],
+    "predicted_range_m": 9.546408216758039,
+    "bearing_deg": 40.016631741851,
+    "elevation_deg": 0.5370233685854446,
+    "sigma_range_m": 0.1153063584678098,
+    "sigma_lateral_m": 0.12494492481295609,
+    "fov_points_inside": 7,
+    "fov_points_total": 7,
+    "camera_surface_interval_m": [
+     9.089195478323319,
+     9.550420912194557
+    ],
+    "lidar_surface_interval_m": [
+     9.11579549982242,
+     9.577020933693658
+    ],
+    "depth_pixels": 121,
+    "depth_foreground": 0,
+    "depth_consistent": 12,
+    "depth_free": 109,
+    "lidar_beams": 3,
+    "lidar_foreground": 0,
+    "lidar_consistent": 1,
+    "lidar_far": 2,
+    "validation_problems": [],
+    "confidence_semantics": "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY",
+    "ground_truth_used": false,
+    "utility": "ABSTAIN",
+    "calibration": "NONE_DECLARED_PRIORS",
+    "cpu_ms": 0.3300539683550596
+   }
+  },
+  {
+   "frame": "S1_OFF/sensor_002.npz",
+   "key": {
+    "action": 10,
+    "decision": 10,
+    "env": 0,
+    "episode": 0,
+    "observation": 10
+   },
+   "content_sha256": "a0dc342674eda4c40dd07f4b8613f46ec41e7ff762a2c50c4bd31a0c54655b4f",
+   "duplicates": [
+    "S1_ON/sensor_002.npz"
+   ],
+   "recorded_flag": {
+    "hypothesis": "TARGET_VISIBLE",
+    "reasons": [
+     "CURRENT_CAMERA_DETECTION"
+    ],
+    "source": "CAMERA_DETECTION",
+    "camera_detected": true,
+    "confidence_raw": 0.816078245639801,
+    "belief_kind": "MEASUREMENT_UPDATED",
+    "track_age_s": 0.0,
+    "predicted_vehicle_m": [
+     NaN,
+     NaN,
+     NaN
+    ],
+    "predicted_range_m": NaN,
+    "bearing_deg": NaN,
+    "elevation_deg": NaN,
+    "sigma_range_m": NaN,
+    "sigma_lateral_m": NaN,
+    "fov_points_inside": 0,
+    "fov_points_total": 0,
+    "camera_surface_interval_m": [
+     NaN,
+     NaN
+    ],
+    "lidar_surface_interval_m": [
+     NaN,
+     NaN
+    ],
+    "depth_pixels": 0,
+    "depth_foreground": 0,
+    "depth_consistent": 0,
+    "depth_free": 0,
+    "lidar_beams": 0,
+    "lidar_foreground": 0,
+    "lidar_consistent": 0,
+    "lidar_far": 0,
+    "validation_problems": [],
+    "confidence_semantics": "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY",
+    "ground_truth_used": false,
+    "utility": "ABSTAIN",
+    "calibration": "NONE_DECLARED_PRIORS",
+    "cpu_ms": 0.14159095007926226
+   },
+   "camera_flag_cleared": {
+    "hypothesis": "IDENTITY_AMBIGUOUS",
+    "reasons": [
+     "SURFACE_AT_EXPECTED_RANGE_WITHOUT_CAMERA_DETECTION"
+    ],
+    "source": "TRACKER_PREDICTION",
+    "camera_detected": false,
+    "confidence_raw": 0.816078245639801,
+    "belief_kind": "MEASUREMENT_UPDATED",
+    "track_age_s": 0.0,
+    "predicted_vehicle_m": [
+     6.693942530978386,
+     4.452343344149307,
+     0.1059030294418335
+    ],
+    "predicted_range_m": 8.04011463313036,
+    "bearing_deg": 33.629078395560455,
+    "elevation_deg": 0.7547121369276341,
+    "sigma_range_m": 0.09131344565583732,
+    "sigma_lateral_m": 0.10115103449444737,
+    "fov_points_inside": 7,
+    "fov_points_total": 7,
+    "camera_surface_interval_m": [
+     7.6240810099446445,
+     7.989334792567993
+    ],
+    "lidar_surface_interval_m": [
+     7.657487741818684,
+     8.022741524442035
+    ],
+    "depth_pixels": 121,
+    "depth_foreground": 0,
+    "depth_consistent": 14,
+    "depth_free": 107,
+    "lidar_beams": 2,
+    "lidar_foreground": 0,
+    "lidar_consistent": 0,
+    "lidar_far": 1,
+    "validation_problems": [],
+    "confidence_semantics": "SEGMENTER_SCORE_X_PIXEL_SUPPORT_NOT_A_PROBABILITY",
+    "ground_truth_used": false,
+    "utility": "ABSTAIN",
+    "calibration": "NONE_DECLARED_PRIORS",
+    "cpu_ms": 0.3490790259093046
+   }
+  }
+ ]
+}

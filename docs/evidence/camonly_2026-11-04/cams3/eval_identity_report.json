@@ -1,0 +1,274 @@
+{
+ "unit": "CAM-S3-E",
+ "stage": "identity",
+ "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly-s2b",
+ "commit": "e73c5732d47dd72e211032a3aa4a285c7ff593d2",
+ "prereg": "docs/plans/prereg_camonly_s3w_eval_2026-11-27.md",
+ "scope": "CAM-S3-E v1 (CAM-REF stage 3): GPU evaluation at P_S (the CAM-DX1 V312 construction) at 205 bars, quota 8 per env at 128 envs (1,024 episodes per cell), of CAM-S2b-FT (f2c80fcc...) and CAM-S3 S3-W ep18000 (2626a4b2...), each in its own trained runtime: S0T S2b-FT on bars_h3_thin; S0M S2b-FT with the measured OAK-D masks and top band (false near 0, no sector rule); W S3-W (1.5708 rad/s, measured masks, sector k 24) on bars_h3; WT W on bars_h3_thin; reference S0 = CAM-DX1 V312 205 / 4501-4503 (SHA-256 pinned); smoke S0T, S0M, W, WT at quota 1 (205 / 4501); identity S0ID (S2b-FT at P_S, against CAM-DX1 V312 205 / 4501, first 8 episodes per env), any difference IDENTITY_FAIL; eval S0T, S0M, W, WT x seeds 4501-4503 (12 cells, block-major by seed); wall cap 2.0 h shared by the three stages, cells that cannot finish inside it skipped; unit ledger (amendment 1): no stage beyond what is left of 2.4 h after every CAM-S3-E report and unlisted cell directory under ~/motar_tmp/cams3e_20261127; idle host; tools/camref_stage3_run.py over tools/camref_eval_run.py with eval_navrl_cams3e_arms.sh and tools/camref_entry.py",
+ "scope_sha256": "63fb7f7ef236da3f842cb5b9d0cafa3d4ffab245e9e4acdb6346c9281488408a",
+ "started": "2026-11-27T23:05:08.081558+09:00",
+ "host_start": {
+  "fault_count": 0,
+  "boot_id": "e239e7db-089c-4c2c-906f-e56058b4bf54",
+  "online": "0-23",
+  "time": "2026-11-27T23:05:08.081533+09:00"
+ },
+ "import_origins": {
+  "aerial_gym": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly-s2b/aerial_gym/__init__.py",
+  "motar_eval": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly-s2b/motar_eval/__init__.py"
+ },
+ "launcher": "aerial_gym/rl_training/rl_games/eval_navrl_cams3e_arms.sh",
+ "launcher_sha256": "94dc5ffe40c7a6028d72cd9dd23e6e0a5d0bead119f6c43ca95df2f5747e7d5a",
+ "checkpoints": {
+  "F": [
+   "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_260805_0413_navrl_v2-speedgov-ep24000-205bars-main-riskcap-s1/nn/last_gen_ppo_ep_25000_rew_39.742134.pth",
+   "f702213936601860995cf61dcc570247e72543b1976e3716055cd8ec5593ad40"
+  ],
+  "K1": [
+   "/home/fair/motar_tmp/camk1_20261106/train_s1/checkpoint/last_gen_ppo_ep_28000_rew_-17.796482.pth",
+   "d7bf51a89b0e8124687e618cf8d95735713d36af2eb34fc5b8819efb14715beb"
+  ],
+  "S2B": [
+   "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_261125_1344_navrl_v2-cams2b-ft-yaw60-camonly-s1/nn/last_gen_ppo_ep_15000_rew_51.018074.pth",
+   "f2c80fcc2b2eaeb24e0b05d2284e74594a7ed8e7953f6b17b7dce49b09f2bbab"
+  ],
+  "S3W": [
+   "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly-s2b/aerial_gym/rl_training/rl_games/runs/ppo_261127_1746_navrl_v2-cams3w-yaw90-camonly-s1/nn/last_gen_ppo_ep_18000_rew_93.111465.pth",
+   "2626a4b24eb29b11c469904ac1a4e06de0349a04e9c83164b23a1e6308fa98ee"
+  ]
+ },
+ "arms": {
+  "F0ID": {
+   "policy": "F",
+   "rung": "F0",
+   "label": "CAMREF_F0ID"
+  },
+  "S0ID": {
+   "policy": "S2B",
+   "rung": "S0",
+   "label": "CAMREF_S0ID"
+  },
+  "F3": {
+   "policy": "F",
+   "rung": "F3",
+   "label": "CAMREF_F3"
+  },
+  "F4": {
+   "policy": "F",
+   "rung": "F4",
+   "label": "CAMREF_F4"
+  },
+  "F8": {
+   "policy": "F",
+   "rung": "F8",
+   "label": "CAMREF_F8"
+  },
+  "S3": {
+   "policy": "S2B",
+   "rung": "S3",
+   "label": "CAMREF_S3"
+  },
+  "S6": {
+   "policy": "S2B",
+   "rung": "S6",
+   "label": "CAMREF_S6"
+  },
+  "K1ID": {
+   "policy": "K1",
+   "rung": "K1PK",
+   "label": "CAMREF_K1ID"
+  },
+  "K1T": {
+   "policy": "K1",
+   "rung": "K1T",
+   "label": "CAMREF_K1T"
+  },
+  "K1S": {
+   "policy": "K1",
+   "rung": "K1S",
+   "label": "CAMREF_K1S"
+  },
+  "F4D": {
+   "policy": "F",
+   "rung": "F4D",
+   "label": "CAMREF_F4D"
+  },
+  "F4R": {
+   "policy": "F",
+   "rung": "F4R",
+   "label": "CAMREF_F4R"
+  },
+  "F4Y": {
+   "policy": "F",
+   "rung": "F4Y",
+   "label": "CAMREF_F4Y"
+  },
+  "F4V": {
+   "policy": "F",
+   "rung": "F4V",
+   "label": "CAMREF_F4V"
+  },
+  "F4A": {
+   "policy": "F",
+   "rung": "F4A",
+   "label": "CAMREF_F4A"
+  },
+  "F4ID": {
+   "policy": "F",
+   "rung": "F4",
+   "label": "CAMREF_F4ID"
+  },
+  "F8ID": {
+   "policy": "F",
+   "rung": "F8",
+   "label": "CAMREF_F8ID"
+  },
+  "S0T": {
+   "policy": "S2B",
+   "rung": "S0T",
+   "label": "CAMS3E_S0T"
+  },
+  "S0M": {
+   "policy": "S2B",
+   "rung": "S0M",
+   "label": "CAMS3E_S0M"
+  },
+  "W": {
+   "policy": "S3W",
+   "rung": "W",
+   "label": "CAMS3E_W"
+  },
+  "WT": {
+   "policy": "S3W",
+   "rung": "WT",
+   "label": "CAMS3E_WT"
+  }
+ },
+ "density": 205,
+ "seeds": [
+  4501,
+  4502,
+  4503
+ ],
+ "budget_h": 0.3,
+ "earlier_stages_h": 0.10638513849841223,
+ "preflight_problems": [],
+ "linked_reports": {
+  "smoke_report.json": "/home/fair/motar_tmp/cams3e_20261127/gpu1/smoke/smoke_report.json"
+ },
+ "env_allowlisted": {
+  "DISPLAY": ":1",
+  "HOME": "/home/fair",
+  "LANG": "en_US.UTF-8",
+  "LC_ADDRESS": "ko_KR.UTF-8",
+  "LC_IDENTIFICATION": "ko_KR.UTF-8",
+  "LC_MEASUREMENT": "ko_KR.UTF-8",
+  "LC_MONETARY": "ko_KR.UTF-8",
+  "LC_NAME": "ko_KR.UTF-8",
+  "LC_NUMERIC": "ko_KR.UTF-8",
+  "LC_PAPER": "ko_KR.UTF-8",
+  "LC_TELEPHONE": "ko_KR.UTF-8",
+  "LC_TIME": "ko_KR.UTF-8",
+  "PATH": "/home/fair/.local/bin:/home/fair/.bun/bin:/usr/local/cuda-11.7/bin:/home/fair/miniconda3/bin:/home/fair/miniconda3/condabin:/home/fair/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
+  "PYTHONNOUSERSITE": "1",
+  "PYTHONPATH": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly-s2b",
+  "USER": "fair"
+ },
+ "committed_sha256": {
+  "camref_entry": "f3e859ead0aea639c87508943216c3635a8ceddda7567954b28f00677c62be42",
+  "camref_rules": "9c36d868cdefd2bcfdbc8e5d9e42ce755b82cb1a04745dba7caeff0b95792c88",
+  "realveh_entry": "7591ea48b62a11e8474de1da8c30359ff538d32201665e4886b4526586980a7d",
+  "yawclip": "116660c9d19fbf4179987977e851b90c3868e777113554f85a9371159208b1cc",
+  "inview": "a43b84d5b16f9f8ccc49d812fb36bb7f4a24d34e2abb43bfaa37293b965c3388",
+  "camref_python": "d3083a087909ff64ea2bb34735847a824ae788be7e8ced3d1ddbb8c61bf71a24"
+ },
+ "identity_comparisons": {
+  "S0ID": {
+   "episodes_new": 1024,
+   "episodes_ref": 1024,
+   "new_complete": true,
+   "keys_equal": true,
+   "outcomes_differ": 0,
+   "outcomes_equal": true,
+   "rows_equal_without_labels": true,
+   "counts_new": {
+    "capture": 743,
+    "crash": 273,
+    "timeout": 8,
+    "n": 1024
+   },
+   "counts_ref": {
+    "capture": 743,
+    "crash": 273,
+    "timeout": 8,
+    "n": 1024
+   },
+   "first_differences": [],
+   "reference": "/home/fair/motar_tmp/camdx1_20261125/a1/eval/V312/DX1_V312__205bars__seed4501"
+  }
+ },
+ "identity_cells": {
+  "S0ID": "IDENTITY_PASS"
+ },
+ "verdict": "IDENTITY_PASS",
+ "records": [
+  {
+   "arm": "S0ID",
+   "base_arm": "S0ID",
+   "policy": "S2B",
+   "rung": "S0",
+   "stage": "IDENTITY",
+   "cell_id": "CAMREF_S0ID__205bars__seed4501",
+   "cell_dir": "/home/fair/motar_tmp/cams3e_20261127/gpu1/identity/S0ID/CAMREF_S0ID__205bars__seed4501",
+   "tree": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly-s2b",
+   "commit": "e73c5732d47dd72e211032a3aa4a285c7ff593d2",
+   "seed": 4501,
+   "density": 205,
+   "num_envs": 128,
+   "quota": 8,
+   "checkpoint": "/home/fair/workspaces/aerial_gym_ws/src/MOTAR-camonly/aerial_gym/rl_training/rl_games/runs/ppo_261125_1344_navrl_v2-cams2b-ft-yaw60-camonly-s1/nn/last_gen_ppo_ep_15000_rew_51.018074.pth",
+   "checkpoint_sha256": "f2c80fcc2b2eaeb24e0b05d2284e74594a7ed8e7953f6b17b7dce49b09f2bbab",
+   "exit": 0,
+   "wall_s": 328.59341263771057,
+   "timeout_s": 1079.999983549118,
+   "loadavg_at_start": [
+    "1.13",
+    "1.42",
+    "1.11"
+   ],
+   "host_after": {
+    "fault_count": 0,
+    "boot_id": "e239e7db-089c-4c2c-906f-e56058b4bf54",
+    "online": "0-23",
+    "time": "2026-11-27T23:10:36.591498+09:00"
+   },
+   "stats": {
+    "quota_episodes": 1024,
+    "finished_episodes": 2448,
+    "counts": {
+     "capture": 743,
+     "crash": 273,
+     "timeout": 8
+    },
+    "duration_s": 328,
+    "result_sha256": "01f57451314bf06f6a174534cf3db587a92e317cee3e99e16912eca8b2193dbb"
+   },
+   "camref_last_line": null,
+   "mismatch_lines": [
+    "\u001b[33;20m[10596 ms][navrl_task] - WARNING : NavRL TRAINING SEED MISMATCH | checkpoint=1 running=4501. Density evidence will be reset. (navrl_task.py:3854)\u001b[0m",
+    "\u001b[33;20m[10596 ms][navrl_task] - WARNING : NavRL CONFIG MISMATCH | NAVRL_P9_SEED: checkpoint trained with 4952.000, running with 45013.000. This changes policy inputs -- results are NOT comparable unless intentional. (navrl_task.py:4498)\u001b[0m",
+    "\u001b[33;20m[10596 ms][navrl_task] - WARNING : NavRL TASK-DISTRIBUTION MISMATCH | NAVRL_GENERAL_GOAL_DIST_MAX: checkpoint used 28.000, running with 12.000. The density competence window will be reset. (navrl_task.py:4544)\u001b[0m"
+   ],
+   "problems": [],
+   "verdict": "OK"
+  }
+ ],
+ "host_end": {
+  "fault_count": 0,
+  "boot_id": "e239e7db-089c-4c2c-906f-e56058b4bf54",
+  "online": "0-23",
+  "time": "2026-11-27T23:10:36.700447+09:00"
+ },
+ "wall_s": 328.6186754703522,
+ "finished": "2026-11-27T23:10:36.700465+09:00"
+}

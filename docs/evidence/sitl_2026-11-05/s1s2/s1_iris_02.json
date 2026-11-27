@@ -1,0 +1,179 @@
+{
+ "stage": "S1",
+ "client": "pymavlink",
+ "vehicle": "iris (PX4 default parameters)",
+ "px4_commit": "1dacb4cdef2d7145754fc788fa8dc482eed74b40",
+ "host_faults_before": 0,
+ "affinity": [
+  6,
+  7,
+  12,
+  13
+ ],
+ "started": 1793814985.1585941,
+ "ready_s": 10.03106833199854,
+ "A0": {
+  "altitude_after_climb_m": 1.443716049194336,
+  "acks": [
+   [
+    511,
+    0
+   ],
+   [
+    511,
+    0
+   ],
+   [
+    176,
+    0
+   ],
+   [
+    400,
+    0
+   ]
+  ],
+  "ok": true,
+  "statustext": []
+ },
+ "A2": {
+  "alt_mean_m": 1.548325000445048,
+  "alt_rms_err_m": 0.06112684460071582,
+  "tilt_rms_deg": 1.3186000781490925,
+  "tilt_max_deg": 1.474177082189468,
+  "samples": 3000
+ },
+ "A3": {
+  "x": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "rise_10_90_s": 1.540215472021373,
+    "onset_latency_s": 0.152059793996159,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": 2.532396445982158,
+    "final_mean": 0.9629185904389721,
+    "samples": 150
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "rise_10_90_s": 1.6801610199909192,
+    "onset_latency_s": 0.15214250798453577,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 2.4226326911689813,
+    "samples": 150
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "rise_10_90_s": 1.3801103629812133,
+    "onset_latency_s": 0.012126629997510463,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": 2.092463848006446,
+    "final_mean": 0.060721835664369006,
+    "samples": 150
+   }
+  ],
+  "y": [
+   {
+    "from": 0.0,
+    "to": 1.0,
+    "rise_10_90_s": 1.500216418004129,
+    "onset_latency_s": 0.16223150902078487,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": 2.6624725309957284,
+    "final_mean": 0.9613771068682788,
+    "samples": 150
+   },
+   {
+    "from": 1.0,
+    "to": 2.5,
+    "rise_10_90_s": 1.6401670289924368,
+    "onset_latency_s": 0.1620365450216923,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": null,
+    "final_mean": 2.41781246314923,
+    "samples": 150
+   },
+   {
+    "from": 2.5,
+    "to": 0.0,
+    "rise_10_90_s": 1.3600630720029585,
+    "onset_latency_s": 0.0019732510263565928,
+    "overshoot_pct": 0.0,
+    "settling_5pct_s": 2.0829483600100502,
+    "final_mean": 0.05794700241927468,
+    "samples": 150
+   }
+  ]
+ },
+ "A3_alt_range_m": [
+  1.4653040170669556,
+  1.512220025062561
+ ],
+ "A4": [
+  {
+   "cmd_rad_s": 3.0,
+   "achieved_mean_last1s": 2.91125967502594,
+   "rise_10_90_s": 0.30107467400375754,
+   "onset_latency_s": 0.05679523799335584,
+   "overshoot_pct": 0.0,
+   "settling_5pct_s": 0.7372310519858729,
+   "final_mean": 2.920315456390381,
+   "samples": 151
+  },
+  {
+   "cmd_rad_s": -3.0,
+   "achieved_mean_last1s": -2.9050071382522584,
+   "rise_10_90_s": 0.3199067010136787,
+   "onset_latency_s": 0.05670119298156351,
+   "overshoot_pct": 0.0,
+   "settling_5pct_s": 0.9966225639800541,
+   "final_mean": -2.914796018600464,
+   "samples": 150
+  }
+ ],
+ "A5": {
+  "cmd_body": [
+   2.5,
+   2.5
+  ],
+  "cmd_norm_m_s": 3.5355339059327378,
+  "tilt_max_deg": 31.401244976470263,
+  "hspeed_max_m_s": 3.4098195244474234,
+  "hspeed_last1s_m_s": 3.3571652498416715
+ },
+ "A6": {
+  "timesync_rtt_n": 100,
+  "timesync_rtt_median_ms": 0.09494250116404146,
+  "timesync_rtt_p95_ms": 0.1623920106794685,
+  "setpoint_period_median_s": 0.10000043999752961,
+  "setpoint_period_p95_s": 0.10037922899937257,
+  "setpoint_period_max_s": 0.20160188802401535,
+  "step_onset_latency_median_s": 0.15210115099034738
+ },
+ "params": {
+  "MPC_XY_VEL_MAX": 12.0,
+  "MPC_Z_VEL_MAX_UP": 3.0,
+  "MPC_ACC_HOR_MAX": 5.0,
+  "MPC_ACC_HOR": 3.0,
+  "MPC_JERK_MAX": 8.0,
+  "MPC_TILTMAX_AIR": 45.0,
+  "MPC_XY_VEL_P_ACC": 1.7999999523162842,
+  "MPC_XY_VEL_I_ACC": 0.4000000059604645,
+  "MPC_XY_VEL_D_ACC": 0.20000000298023224,
+  "MPC_XY_P": 0.949999988079071,
+  "MPC_Z_P": 1.0,
+  "MC_YAWRATE_MAX": 200.0,
+  "COM_OF_LOSS_T": 1.0,
+  "MPC_THR_HOVER": 0.5
+ },
+ "telemetry_counts": {
+  "pos": 7401,
+  "att": 7400
+ },
+ "status": "COMPLETE",
+ "host_faults_after": 0,
+ "finished": 1793815136.6400504
+}

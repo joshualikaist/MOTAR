@@ -1,0 +1,190 @@
+"""CPU checks of tools/h_r3_analysis.py on synthetic four-arm traces."""
+import ast
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+
+import numpy as np
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "tools"))
+import h_r3_analysis as ha  # noqa: E402
+
+CLASSES = ["NONE", "RANGE_EXIT", "FOV_EXIT", "SCALE_LOSS", "FULL", "CENTRE_ONLY", "PARTIAL", "VISIBLE"]
+STEPS, N, W = 60, 4, ha.PLAN["event"]["window_steps"]
+
+
+def base_trace():
+    z = lambda dt=bool: np.zeros((STEPS, N), dtype=dt)
+    tr = {"camera": z(), "lidar_only": z(), "el0_cls": np.full((STEPS, N), 7, dtype=np.int64),
+          "el0_visible_px": np.full((STEPS, N), 50, dtype=np.int64), "el0_alone_px": np.full((STEPS, N), 50, dtype=np.int64),
+          "el0_in_frustum": np.ones((STEPS, N), dtype=bool), "crashed": z(), "captured": z(), "reset": z(),
+          "robot_pos": np.zeros((STEPS, N, 3), dtype=np.float32), "target_pos": np.zeros((STEPS, N, 3), dtype=np.float32),
+          "belief_pos": np.zeros((STEPS, N, 3), dtype=np.float32), "action": np.zeros((STEPS, N, 4), dtype=np.float32),
+          "intervening": z(), "shadow_offset": np.zeros((STEPS, N), dtype=np.float32), "shadow_clear": np.ones((STEPS, N), dtype=bool),
+          "digest": np.arange(STEPS * N, dtype=np.uint64).reshape(STEPS, N), "controller_ms": np.ones(STEPS),
+          "t0": np.array([10, 10, 10, -1])}
+    tr["camera"][:10] = True
+    tr["target_pos"][:, :, 0] = 5.0
+    tr["el0_cls"][9, 0] = 4      # FULL (primary) for env 0 at the branch observation
+    tr["el0_cls"][9, 1] = 2      # FOV_EXIT for env 1
+    tr["el0_cls"][9, 2] = 5      # CENTRE_ONLY for env 2
+    tr["el0_visible_px"][10:, :3] = 0
+    return tr
+
+
+def write_run(root, traces):
+    for arm, tr in traces.items():
+        d = Path(root) / ("seed4502_" + arm)
+        d.mkdir(parents=True)
+        np.savez(d / "h_r3_trace.npz", **tr)
+        (d / "h_r3_meta.json").write_text(json.dumps({"el0_classes": CLASSES, "end_reason": ["window"] * N}))
+
+
+def arms_from(edit):
+    traces = {}
+    for arm in ha.ARMS:
+        tr = base_trace()
+        edit(arm, tr)
+        traces[arm] = tr
+    return traces
+
+
+class AnalysisTest(unittest.TestCase):
+    def run_analysis(self, traces):
+        with tempfile.TemporaryDirectory() as tmp:
+            write_run(tmp, traces)
+            return ha.analyse(tmp)
+
+    def test_primary_denominator_counts_crash_as_failure(self):
+        def edit(arm, tr):
+            if arm == "B3":                      # reobserves env 0 after 3 steps
+                tr["camera"][12, 0], tr["el0_visible_px"][12, 0] = True, 40
+            if arm == "B2":                      # crashes before reobserving
+                tr["crashed"][11, 0] = tr["reset"][11, 0] = True
+                tr["camera"][13, 0], tr["el0_visible_px"][13, 0] = True, 40
+        r = self.run_analysis(arms_from(edit))
+        self.assertEqual(r["counts"]["matched_events"], 3)
+        self.assertEqual(r["counts"]["primary_events"], 2)              # FULL + CENTRE_ONLY, not FOV_EXIT
+        arms = r["primary"]["arms"]
+        self.assertEqual([arms[a]["n"] for a in ha.ARMS], [2, 2, 2, 2])
+        self.assertEqual(arms["B3"]["reobserved"], 1)
+        self.assertAlmostEqual(arms["B3"]["median_time_s"], 0.3)
+        self.assertEqual(arms["B2"]["reobserved"], 0)
+        self.assertEqual(arms["B2"]["collision_in_window"], 1)
+        c = r["primary"]["contrasts"]["B3-B2"]
+        self.assertEqual((c["n10"], c["n01"]), (1, 0))
+        self.assertAlmostEqual(c["rate_diff"], 0.5)
+        self.assertIn("FOV_EXIT", r["separate_classes"])
+
+    def test_camera_without_target_pixels_is_not_reobservation(self):
+        def edit(arm, tr):
+            if arm == "B3":
+                tr["camera"][12, 0] = True       # detection but zero renderer pixels
+        r = self.run_analysis(arms_from(edit))
+        b3 = r["primary"]["arms"]["B3"]
+        self.assertEqual(b3["reobserved"], 0)
+        self.assertEqual(b3["camera_detection_without_target_pixels"], 1)
+
+    def test_prefix_mismatch_and_t0_mismatch_are_unmatched(self):
+        def edit(arm, tr):
+            if arm == "B1":
+                tr["digest"][5, 0] += np.uint64(1)
+                tr["t0"][1] = 11
+        r = self.run_analysis(arms_from(edit))
+        reasons = {u["env"]: u["reason"] for u in r["unmatched"]}
+        self.assertEqual(reasons, {0: "prefix digest differs", 1: "t0 differs"})
+        self.assertEqual(r["counts"]["matched_events"], 1)
+        self.assertEqual(r["coupling_onset_step_vs_B0"][4502]["B1"], 5)
+
+    def test_kinematics_stop_before_terminal_and_target_diff(self):
+        def edit(arm, tr):
+            tr["robot_pos"][10:, 0, 0] = np.arange(1, STEPS - 9)
+            if arm == "B1":
+                tr["captured"][12, 0] = tr["reset"][12, 0] = True
+                tr["robot_pos"][12:, 0] = 99.0   # post-reset state must be ignored
+                tr["target_pos"][12:, 0] = -50.0
+        r = self.run_analysis(arms_from(edit))
+        ev = [e for e in r["events"] if e["env"] == 0][0]
+        b1 = ev["results"]["B1"]
+        self.assertAlmostEqual(b1["translation_m"], 2.0)
+        self.assertAlmostEqual(b1["distance_change_m"], -2.0)
+        self.assertTrue(b1["capture_in_window"])
+        self.assertEqual(ev["target_max_diff_pre_terminal_m"], 0.0)
+
+    def test_statistics(self):
+        self.assertAlmostEqual(ha.mcnemar_exact(4, 0), 0.125)
+        self.assertEqual(ha.mcnemar_exact(0, 0), 1.0)
+        lo, hi = ha.wilson(4, 5)
+        self.assertAlmostEqual(lo, 0.3755, places=3)
+        self.assertAlmostEqual(hi, 0.9638, places=3)
+
+    def test_posthoc_separates_noise_from_action_divergence(self):
+        import h_r3_posthoc as hp
+
+        def edit(arm, tr):
+            if arm == "B3":
+                tr["camera"][12, 0], tr["el0_visible_px"][12, 0] = True, 40
+                tr["action"][11, 0, 1] = 0.5                  # env 0: lateral command first, at step 11
+                tr["digest"][11:, 0] += np.uint64(10 ** 6)
+                tr["digest"][13:, 2] += np.uint64(10 ** 6)    # env 2: digests separate with equal actions
+            tr["intervening"][10:20, :3] = True
+        with tempfile.TemporaryDirectory() as tmp:
+            write_run(tmp, arms_from(edit))
+            analysis = ha.analyse(tmp)
+            analysis["max_velocity"] = 2.5
+            rows = {r["env"]: r for r in hp.diagnose(tmp, analysis, W)["events"]}
+        self.assertEqual((rows[0]["first_action_diff_step"], rows[0]["first_digest_diff_step"]), (1, 1))
+        self.assertFalse(rows[0]["noise_before_action"])
+        self.assertEqual(rows[0]["pattern_B1B2B3"], "001")
+        self.assertTrue(rows[2]["noise_before_action"])
+        self.assertAlmostEqual(rows[0]["max_cmd_speed_mps"]["B3"], 1.25, places=5)
+        self.assertEqual(hp.mcnemar_events(9 / 22, 1 / 22), 32)
+
+    def test_review_correction_terminal_step_is_not_reobservation(self):
+        import h_r3_review_corrections as hc
+
+        def edit(arm, tr):
+            if arm == "B1":                      # crash at index 12; index 12 holds the new episode's view
+                tr["crashed"][12, 0] = tr["reset"][12, 0] = True
+                tr["camera"][12, 0], tr["el0_visible_px"][12, 0] = True, 4
+        traces = arms_from(edit)
+        with tempfile.TemporaryDirectory() as tmp:
+            write_run(tmp, traces)
+            r = ha.analyse(tmp)
+        ev = [e for e in r["events"] if e["env"] == 0][0]
+        self.assertTrue(ev["results"]["B1"]["reobserved"])          # v1 same-index behaviour (recorded defect)
+        self.assertFalse(hc.strict_reobserved(traces["B1"], 0, 10, W))
+        traces["B3"]["camera"][11, 0], traces["B3"]["el0_visible_px"][11, 0] = True, 30
+        self.assertTrue(hc.strict_reobserved(traces["B3"], 0, 10, W))
+
+    def test_review_correction_motion_counts_control_steps_only(self):
+        import h_r3_review_corrections as hc
+        tr = base_trace()
+        tr["robot_pos"][10:, 0, 0] = np.arange(1, STEPS - 9)        # 1 m per step throughout
+        tr["intervening"][10:13, 0] = True                          # three steps under arm control
+        tr["action"][10:13, 0, 0] = [0.4, 0.4, 0.02]
+        m = hc.control_motion(tr, 0, 10, W, 2.5)
+        self.assertEqual(m["control_steps"], 3)
+        self.assertAlmostEqual(m["translation_m"], 3.0)
+        self.assertAlmostEqual(m["min_cmd_speed_mps"], 0.05, places=6)
+        self.assertAlmostEqual(m["mean_cmd_speed_mps"], (1.0 + 1.0 + 0.05) / 3, places=6)
+
+    def test_review_correction_imports_no_production_code(self):
+        tree = ast.parse((ROOT / "tools/h_r3_review_corrections.py").read_text())
+        mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+        mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
+        self.assertEqual(mods, {"__future__", "argparse", "hashlib", "json", "pathlib", "sys", "numpy", "h_r3_analysis"})
+
+    def test_imports_no_production_code(self):
+        for name in ("h_r3_analysis.py", "h_r3_posthoc.py"):
+            tree = ast.parse((ROOT / "tools" / name).read_text())
+            mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
+            mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
+            self.assertEqual(mods, {"__future__", "argparse", "json", "math", "pathlib", "numpy"}, name)
+
+
+if __name__ == "__main__":
+    unittest.main()
